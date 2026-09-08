@@ -101,6 +101,38 @@ final class HealthSyncTests: XCTestCase {
         XCTAssertEqual(anchor.token, [7], "recording a failure never clears the last good anchor")
     }
 
+    // Range bounds and stored instants must be compared on one axis. Stored
+    // samples are UTC `...Z`; a caller asking in +03:00 was previously compared
+    // lexically, which is wrong by exactly the offset.
+    func testSampleQueryNormalisesOffsetsBeforeComparing() async throws {
+        let (db, store, provider, clock) = try fixture()
+        try await provider.requestAuthorisation(for: [.bodyMass])
+        // 2026-02-25T06:00:00Z
+        let instant = Date(timeIntervalSince1970: 1_771_999_200)
+        provider.enqueue(HealthChangeSet(added: [sample("w1", 81.2, instant.timeIntervalSince1970)],
+                                         deletedExternalIDs: [], nextAnchor: [1]), for: .bodyMass)
+        try await HealthSyncService(db: db, provider: provider, writer: store,
+                                    healthDomain: .bodyMass, clock: clock).syncOnce()
+
+        let stored = try XCTUnwrap(db.query("SELECT start_at FROM health_sample;")
+            .first?.string("start_at"))
+        XCTAssertEqual(stored, "2026-02-25T06:00:00Z")
+
+        // 08:00–10:00 in +03:00 is 05:00–07:00 UTC, so the sample is inside it.
+        let entries = try store.entries(from: "2026-02-25T08:00:00+03:00",
+                                        to: "2026-02-25T10:00:00+03:00")
+        XCTAssertEqual(entries.count, 1,
+                       "a +03:00 window must be compared in UTC, not lexically")
+        XCTAssertEqual(entries[0].rangeFit, .definite)
+
+        // And a window that genuinely excludes it still excludes it.
+        XCTAssertTrue(try store.entries(from: "2026-02-25T10:00:00+03:00",
+                                        to: "2026-02-25T12:00:00+03:00").isEmpty)
+        // The same window expressed in UTC gives the same answer.
+        XCTAssertEqual(try store.entries(from: "2026-02-25T05:00:00Z",
+                                         to: "2026-02-25T07:00:00Z").count, 1)
+    }
+
     func testResyncAfterFailureReplaysTheSameRange() async throws {
         let (db, store, provider, clock) = try fixture()
         try await provider.requestAuthorisation(for: [.bodyMass])

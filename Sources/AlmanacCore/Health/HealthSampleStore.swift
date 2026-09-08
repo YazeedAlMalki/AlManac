@@ -107,13 +107,18 @@ public struct HealthSampleStore: HealthSampleWriting, TimelineProviding, @unchec
 
     public func entries(from: String, to: String) throws -> [TimelineEntry] {
         guard let range = DateRange(from: from, to: to) else { return [] }
+        // Normalised to UTC before it reaches SQL. `start_at` is stored as a
+        // UTC `...Z` string, so comparing it lexically against a caller's
+        // `+03:00` text would be wrong by three hours — and silently so.
+        let bounds = range.utcTextBounds
         return try db.query("""
         SELECT id, external_id, start_at, value, unit, source_name
         FROM health_sample
         WHERE source_system = ? AND domain = ? AND deleted_at IS NULL
           AND start_at >= ? AND start_at < ?
         ORDER BY start_at;
-        """, [.text(sourceSystem), .text(healthDomain.rawValue), .text(from), .text(to)])
+        """, [.text(sourceSystem), .text(healthDomain.rawValue),
+              .text(bounds.start), .text(bounds.end)])
         .compactMap { row in
             // Samples always carry a full instant, so their span is a point and
             // the fit is always `.definite`. Computed through the same API as

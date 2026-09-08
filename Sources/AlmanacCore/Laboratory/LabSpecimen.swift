@@ -33,15 +33,23 @@ public enum SpecimenKind: String, Codable, Sendable, CaseIterable, Hashable {
         }
     }
 
-    /// Whether two results may be placed on one series.
+    /// Whether two results were taken from **the same specimen material**.
     ///
-    /// Conservative on purpose: only an identical, stated kind qualifies.
-    /// `unknown` is comparable with nothing, **including another `unknown`** —
-    /// two records that both fail to say what they measured are not evidence
-    /// that they measured the same thing. Serum and plasma are also kept apart:
-    /// they are different fractions and their reference intervals differ.
-    public static func directlyComparable(_ a: SpecimenKind, _ b: SpecimenKind) -> Bool {
-        a != .unknown && a == b
+    /// This is a specimen check and nothing more. It does not establish that
+    /// two results are comparable: that also needs the same analyte, method,
+    /// assay, unit and reference frame, none of which this function sees. A
+    /// true answer is one necessary condition, not a verdict.
+    ///
+    /// Conservative on purpose. `unknown` matches nothing, **including another
+    /// `unknown`** — two records that both fail to say what they measured are
+    /// not evidence that they match. `other` also matches nothing, including
+    /// another `other`: "stated, and not one of the listed kinds" covers saliva,
+    /// CSF and stool at once, so two `other` specimens stay unresolved until
+    /// something identifies them specifically. Serum and plasma stay apart;
+    /// they are different fractions with different reference intervals.
+    public static func sameSpecimen(_ a: SpecimenKind, _ b: SpecimenKind) -> Bool {
+        guard a != .unknown, a != .other else { return false }
+        return a == b
     }
 
     /// Whether two results are *known* to describe different material. This is

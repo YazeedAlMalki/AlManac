@@ -72,6 +72,7 @@ public enum LabError: Error, CustomStringConvertible, Sendable {
     case missingReasonRequired
     case missingReasonNotAllowed(LabValueType)
     case observationNotFound(String)
+    case reportNotFound(String)
     case noCurrentRevision(String)
 
     public var description: String {
@@ -82,6 +83,8 @@ public enum LabError: Error, CustomStringConvertible, Sendable {
             return "a missing reason is only valid for value_type 'absent', not '\(t.rawValue)'."
         case .observationNotFound(let id):
             return "no observation with id \(id)."
+        case .reportNotFound(let id):
+            return "no report with id \(id)."
         case .noCurrentRevision(let id):
             return "observation \(id) has no current revision."
         }

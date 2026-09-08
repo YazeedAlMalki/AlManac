@@ -329,12 +329,16 @@ final class LaboratoryTests: XCTestCase {
                                                 specimenKind: .serum),
                        [inSerum.observationID])
 
-        XCTAssertFalse(SpecimenKind.directlyComparable(.serum, .urine))
+        XCTAssertFalse(SpecimenKind.sameSpecimen(.serum, .urine))
         XCTAssertTrue(SpecimenKind.knownDifferentMaterial(.serum, .urine))
-        XCTAssertFalse(SpecimenKind.directlyComparable(.serum, .plasma),
+        XCTAssertFalse(SpecimenKind.sameSpecimen(.serum, .plasma),
                        "different fractions, different reference intervals")
-        XCTAssertFalse(SpecimenKind.directlyComparable(.unknown, .unknown),
+        XCTAssertFalse(SpecimenKind.sameSpecimen(.unknown, .unknown),
                        "two unstated specimens are not evidence that they match")
+        XCTAssertFalse(SpecimenKind.sameSpecimen(.other, .other),
+                       "'other' covers saliva, CSF and stool at once — unresolved")
+        XCTAssertFalse(SpecimenKind.knownDifferentMaterial(.other, .other),
+                       "unresolved is not the same as known to differ")
         XCTAssertFalse(SpecimenKind.knownDifferentMaterial(.serum, .unknown),
                        "unstated is not knowledge of a difference")
 
@@ -379,6 +383,59 @@ final class LaboratoryTests: XCTestCase {
         XCTAssertEqual(history.count, 1)
         XCTAssertEqual(history[0].laboratoryNameText, "Al Borg")
         XCTAssertEqual(history[0].reportedAtText, "2026-02-20")
+    }
+
+    // Aliases are unique per (analyte, fold), not per fold, so a person can
+    // introduce a collision after seeding. Resolving that with LIMIT 1 would
+    // pick a winner by row order.
+    func testAliasCollisionAfterSeedingLeavesTheRecordUnmatched() throws {
+        let (_, store, catalog) = try fixture()
+        XCTAssertEqual(try catalog.matchCandidates(sourceText: "Ferritin").unique?.analyteID,
+                       "almanac:lab.iron.ferritin")
+
+        // A second analyte claims the same word.
+        try catalog.addAlias("Ferritin", to: "almanac:lab.iron.serum-iron", origin: "user")
+
+        let result = try catalog.matchCandidates(sourceText: "Ferritin")
+        XCTAssertTrue(result.isAmbiguous)
+        XCTAssertEqual(result.candidates.map(\.analyteID),
+                       ["almanac:lab.iron.ferritin", "almanac:lab.iron.serum-iron"])
+        XCTAssertNil(result.unique)
+        XCTAssertNil(try catalog.match(sourceText: "Ferritin"),
+                     "the convenience accessor refuses an ambiguous answer too")
+
+        // A record imported now stays unmatched, and says why.
+        var c = LabRevisionContent()
+        c.lifecycle = .final
+        c.valueType = .quantitative
+        c.numericValue = 42
+        c.unitText = "ng/mL"
+        c.sourceAnalyteText = "Ferritin"
+        c.sourceValueText = "42"
+        var draft = LabObservationDraft()
+        draft.reportID = try store.saveReport(LabReportDraft())
+        let outcome = try store.record(draft, content: c)
+        XCTAssertNil(try store.catalogAnalyteID(of: outcome.observationID))
+
+        let view = try XCTUnwrap(try store.currentResults(inReport: draft.reportID!).first)
+        XCTAssertTrue(view.isUnmatched)
+        XCTAssertEqual(view.ambiguousCandidates,
+                       ["almanac:lab.iron.ferritin", "almanac:lab.iron.serum-iron"])
+        XCTAssertEqual(view.displayName, "Ferritin", "the source's own words survive")
+    }
+
+    // The same for verified external codes.
+    func testExternalCodeCollisionIsAmbiguousNotArbitrary() throws {
+        let (_, _, catalog) = try fixture()
+        try catalog.addExternalCode(system: "loinc", code: "2276-4",
+                                    to: "almanac:lab.iron.ferritin", verified: true)
+        XCTAssertEqual(try catalog.matchExternalCode(system: "loinc", code: "2276-4")?.analyteID,
+                       "almanac:lab.iron.ferritin")
+        try catalog.addExternalCode(system: "loinc", code: "2276-4",
+                                    to: "almanac:lab.iron.serum-iron", verified: true)
+        XCTAssertTrue(try catalog.externalCodeCandidates(system: "loinc", code: "2276-4")
+            .isAmbiguous)
+        XCTAssertNil(try catalog.matchExternalCode(system: "loinc", code: "2276-4"))
     }
 
     func testUnitCompatibilityRefusesDimensionlessBlanketPermission() throws {

@@ -39,8 +39,36 @@ public struct CatalogMatch: Sendable, Hashable {
     public let confidence: String    // "exact_alias" | "verified_code" | "user_assigned"
 }
 
+/// The result of asking the catalog what a piece of text means.
+public enum CatalogMatchResult: Sendable, Hashable {
+    case none
+    case unique(CatalogMatch)
+    /// Two or more distinct analytes answer to the same text. This is never
+    /// resolved by picking one: the observation stays unmatched with its source
+    /// text intact, and the candidates go to a person to choose from.
+    case ambiguous([CatalogMatch])
+
+    public var unique: CatalogMatch? {
+        if case .unique(let match) = self { return match }
+        return nil
+    }
+
+    public var candidates: [CatalogMatch] {
+        switch self {
+        case .none:                  return []
+        case .unique(let match):     return [match]
+        case .ambiguous(let matches): return matches
+        }
+    }
+
+    public var isAmbiguous: Bool {
+        if case .ambiguous = self { return true }
+        return false
+    }
+}
+
 public struct LabCatalogStore: Sendable {
-    private let db: Database
+    let db: Database
     private let clock: any Clock
 
     public init(db: Database, clock: any Clock = SystemClock()) {
@@ -121,26 +149,58 @@ public struct LabCatalogStore: Sendable {
                      [.text(analyteID), .text(locale)]).first?.string("name")
     }
 
-    /// Alias lookup, folded. Returns nil rather than a nearest guess.
-    public func match(sourceText: String?) throws -> CatalogMatch? {
-        guard let sourceText, !sourceText.isEmpty else { return nil }
+    /// Alias lookup, folded, and **ambiguity-aware**.
+    ///
+    /// The alias table is unique on `(analyte_id, alias_fold)`, not on the fold
+    /// alone, so one piece of text can legitimately answer to two analytes once
+    /// a person adds their own aliases. Resolving that with `LIMIT 1` picks a
+    /// winner by physical row order, which is arbitrary and silent. It returns
+    /// every candidate instead, and the caller leaves the record unmatched.
+    public func matchCandidates(sourceText: String?) throws -> CatalogMatchResult {
+        guard let sourceText, !sourceText.isEmpty else { return .none }
         let folded = TextFold.fold(sourceText)
-        guard !folded.isEmpty else { return nil }
-        if let row = try db.query(
-            "SELECT analyte_id FROM lab_catalog_alias WHERE alias_fold = ? LIMIT 1;",
-            [.text(folded)]).first, let id = row.string("analyte_id") {
-            return CatalogMatch(analyteID: id, origin: "alias", confidence: "exact_alias")
+        guard !folded.isEmpty else { return .none }
+        let ids = try db.query("""
+            SELECT DISTINCT analyte_id FROM lab_catalog_alias
+            WHERE alias_fold = ? ORDER BY analyte_id;
+            """, [.text(folded)]).compactMap { $0.string("analyte_id") }
+        let matches = ids.map {
+            CatalogMatch(analyteID: $0, origin: "alias", confidence: "exact_alias")
         }
-        return nil
+        switch matches.count {
+        case 0:  return .none
+        case 1:  return .unique(matches[0])
+        default: return .ambiguous(matches)
+        }
+    }
+
+    /// The single unmistakable match, or nil. **Nil covers both "nothing
+    /// matched" and "several things matched"** — see `matchCandidates` when the
+    /// difference matters, which it does for a person choosing from a list.
+    public func match(sourceText: String?) throws -> CatalogMatch? {
+        try matchCandidates(sourceText: sourceText).unique
+    }
+
+    /// Verified external codes only, and ambiguity-aware for the same reason:
+    /// the code table is keyed by `(analyte_id, system, code)`, so one verified
+    /// code could be attached to two analytes by mistake.
+    public func externalCodeCandidates(system: String, code: String) throws -> CatalogMatchResult {
+        let ids = try db.query("""
+            SELECT DISTINCT analyte_id FROM lab_catalog_external_code
+            WHERE system = ? AND code = ? AND verified = 1 ORDER BY analyte_id;
+            """, [.text(system), .text(code)]).compactMap { $0.string("analyte_id") }
+        let matches = ids.map {
+            CatalogMatch(analyteID: $0, origin: "external_code", confidence: "verified_code")
+        }
+        switch matches.count {
+        case 0:  return .none
+        case 1:  return .unique(matches[0])
+        default: return .ambiguous(matches)
+        }
     }
 
     public func matchExternalCode(system: String, code: String) throws -> CatalogMatch? {
-        guard let row = try db.query("""
-            SELECT analyte_id FROM lab_catalog_external_code
-            WHERE system = ? AND code = ? AND verified = 1 LIMIT 1;
-            """, [.text(system), .text(code)]).first,
-            let id = row.string("analyte_id") else { return nil }
-        return CatalogMatch(analyteID: id, origin: "external_code", confidence: "verified_code")
+        try externalCodeCandidates(system: system, code: code).unique
     }
 
     public func analyte(_ id: String) throws -> CatalogAnalyte? {

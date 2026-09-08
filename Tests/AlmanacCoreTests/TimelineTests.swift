@@ -150,19 +150,55 @@ final class TimelineTests: XCTestCase {
         XCTAssertEqual(startingMidMonth[0].occurrence.text, "2019-03",
                        "storage still holds the month; no day was invented")
 
+        // Whole month, but the record states no offset, so membership still
+        // cannot be called definite — see testUnknownOffsetIsNeverDefinite.
         let wholeMonth = try lab.entries(from: "2019-03-01", to: "2019-04-01")
         XCTAssertEqual(wholeMonth.count, 1)
-        XCTAssertEqual(wholeMonth[0].rangeFit, .definite)
+        XCTAssertEqual(wholeMonth[0].rangeFit, .potential)
 
         let differentMonth = try lab.entries(from: "2019-05-01", to: "2019-06-01")
         XCTAssertEqual(differentMonth.count, 0, "no overlap at all means excluded")
 
-        // The same for a year, and for a range ending inside the span.
-        let yearValue = PartialDateTime(text: "2019", precision: .year)
-        let range = try XCTUnwrap(DateRange(from: "2019-07-01", to: "2020-01-01"))
-        XCTAssertEqual(yearValue.fit(in: range), .potential)
-        let exact = try XCTUnwrap(DateRange(from: "2019-01-01", to: "2020-01-01"))
-        XCTAssertEqual(yearValue.fit(in: exact), .definite)
+        // With the offset stated, the same containment is definite.
+        let known = PartialDateTime(text: "2019-03", precision: .month,
+                                    zone: ZoneContext(offsetMinutes: 180,
+                                                      identifier: "Asia/Riyadh"))
+        let march = try XCTUnwrap(DateRange(from: "2019-02-01", to: "2019-05-01"))
+        XCTAssertEqual(known.fit(in: march), .definite)
+        let midMarch = try XCTUnwrap(DateRange(from: "2019-03-15", to: "2019-04-01"))
+        XCTAssertEqual(known.fit(in: midMarch), .potential)
+        let elsewhere = try XCTUnwrap(DateRange(from: "2019-06-01", to: "2019-07-01"))
+        XCTAssertNil(known.fit(in: elsewhere))
+    }
+
+    // An unknown offset can put the true instant up to 14 hours either side of
+    // where the label reads. The span widens so nothing is wrongly excluded,
+    // and the answer is never definite — that is the claim it cannot support.
+    func testUnknownOffsetIsNeverDefinite() throws {
+        let noOffset = PartialDateTime(text: "2019-03-14T08:10", precision: .minute)
+        XCTAssertFalse(noOffset.hasKnownOffset)
+        let containing = try XCTUnwrap(DateRange(from: "2019-01-01", to: "2020-01-01"))
+        XCTAssertEqual(noOffset.fit(in: containing), .potential,
+                       "a bare wall-clock reading is not pinned to an instant")
+
+        // Widened, so a range just outside the naive UTC reading still overlaps.
+        let justBefore = try XCTUnwrap(DateRange(from: "2019-03-13T20:00:00Z",
+                                                 to: "2019-03-13T23:00:00Z"))
+        XCTAssertEqual(noOffset.fit(in: justBefore), .potential)
+
+        // The same reading with its offset stated is pinned, and definite.
+        let withOffset = PartialDateTime(text: "2019-03-14T08:10", precision: .minute,
+                                         zone: ZoneContext(offsetMinutes: 180))
+        XCTAssertTrue(withOffset.hasKnownOffset)
+        XCTAssertEqual(withOffset.fit(in: containing), .definite)
+        XCTAssertNil(withOffset.fit(in: justBefore),
+                     "pinned, so it is genuinely outside that window")
+
+        // Text carrying its own offset counts as known without a ZoneContext.
+        XCTAssertTrue(PartialDateTime(text: "2019-03-14T08:10:00Z", precision: .instant)
+            .hasKnownOffset)
+        XCTAssertTrue(PartialDateTime(text: "2019-03-14T08:10:00+03:00", precision: .instant)
+            .hasKnownOffset)
     }
 
     func testCoarsePrecisionSortsAtTheStartOfItsSpan() throws {

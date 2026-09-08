@@ -32,6 +32,22 @@ public struct DateRange: Sendable, Hashable {
         self.start = start
         self.end = end
     }
+
+    /// The bounds as canonical UTC ISO-8601 text.
+    ///
+    /// For SQL, where stored instants are UTC strings. Comparing a stored
+    /// `...Z` value against a caller's `+03:00` text lexically is wrong by the
+    /// size of the offset; normalising both to UTC first is the fix.
+    public var utcTextBounds: (start: String, end: String) {
+        (DateRange.utcFormatter.string(from: start), DateRange.utcFormatter.string(from: end))
+    }
+
+    static let utcFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f
+    }()
 }
 
 extension PartialDateTime {
@@ -129,8 +145,40 @@ extension PartialDateTime {
     /// that it happened outside the range — which the record does not say.
     public func fit(in range: DateRange) -> RangeFit? {
         guard let span else { return nil }
-        if span.end <= range.start || span.start >= range.end { return nil }
+
+        // With no offset the span was resolved in UTC, which is a convenience,
+        // not a fact. The true instant can be up to 14 hours either side, so
+        // the overlap test widens by that much — never wrongly excluding — and
+        // the answer can never be `.definite`, because definite membership is
+        // exactly the claim an unknown offset cannot support.
+        let known = hasKnownOffset
+        let lower = known ? span.start : span.start.addingTimeInterval(-PartialDateTime.maxOffset)
+        let upper = known ? span.end : span.end.addingTimeInterval(PartialDateTime.maxOffset)
+
+        if upper <= range.start || lower >= range.end { return nil }
+        guard known else { return .potential }
         if span.start >= range.start && span.end <= range.end { return .definite }
         return .potential
+    }
+
+    /// The widest real UTC offset, used only to widen an uncertain span.
+    static let maxOffset: TimeInterval = 14 * 3600
+
+    /// Whether this value's instant is pinned to a real point on the timeline.
+    ///
+    /// True when the stored text carries its own offset (`Z` or `±hh:mm`) or a
+    /// zone was recorded alongside it. False for a bare label such as
+    /// `"2019-03"` or `"2019-03-14T08:10"` with no recorded zone — those name a
+    /// wall-clock reading whose instant depends on where the person was.
+    public var hasKnownOffset: Bool {
+        if zone.offsetMinutes != nil { return true }
+        guard isKnown, !text.isEmpty else { return false }
+        if text.hasSuffix("Z") || text.hasSuffix("z") { return true }
+        // ±hh:mm or ±hhmm at the end, after the time part.
+        let tail = text.suffix(6)
+        if tail.count == 6, let sign = tail.first, sign == "+" || sign == "-" { return true }
+        let short = text.suffix(5)
+        if short.count == 5, let sign = short.first, sign == "+" || sign == "-" { return true }
+        return false
     }
 }
