@@ -1,7 +1,8 @@
 # Almanac — Implementation status
 
 **Date:** 2026-09-08
-**Commits:** `9b7e0f8` (slice checkpoint), `e55080b` (correctness pass). Local
+**Commits:** `9b7e0f8` (slice checkpoint), `e55080b` (correctness pass),
+`6cbd49e` (status), `4b6f12e` (manual-entry APIs and targeted fixes). Local
 only; nothing pushed.
 **Slice:** first bounded implementation slice — Laboratory persistence, one
 HealthProvider sample type, a shared timeline over module-provided queries, and
@@ -16,7 +17,7 @@ the Laboratory UI, and it does not complete the Almanac application.
 **Environment:** Swift 6.0.3 (`swift-6.0.3-RELEASE`, ubuntu24.04 toolchain),
 x86_64 Linux, in the session's cloud container. **Not** `yamal`'s Swift 6.3.3.
 
-**Result:** `swift build` clean; `swift test` → **62 tests, 0 failures.**
+**Result:** `swift build` clean; `swift test` → **79 tests, 0 failures.**
 
 Commands as run:
 
@@ -172,10 +173,10 @@ the same as an applied one.
 
 ### Snapshot verification
 
-All **43** build and test inputs — everything under `Sources/` and `Tests/`,
+All **49** build and test inputs — everything under `Sources/` and `Tests/`,
 plus `Package.swift` and the vendored SQLite amalgamation — were compared by
 `md5sum` between the tested container copy and this working tree, and are
-byte-identical. `Package.swift` declares no resource bundles, and there are no
+byte-identical (the two manifests hash to one value). `Package.swift` declares no resource bundles, and there are no
 non-source files under `Sources/` or `Tests/`.
 
 ### Toolchain, precisely
@@ -184,7 +185,7 @@ non-source files under `Sources/` or `Tests/`.
 |---|---|
 | Ran on | Swift 6.0.3 (`swift-6.0.3-RELEASE`, ubuntu24.04 build), x86_64 Linux, cloud container |
 | Commands | `swift build` then `swift test` |
-| Result | build clean, 62 tests, 0 failures |
+| Result | build clean, 79 tests, 0 failures |
 | **Not** run on | the project's Swift 6.3.3 |
 
 The 6.3.3 attempt and why it failed, so this is not repeated: access to
@@ -199,7 +200,7 @@ either — 3.3 GB across 2026 files, against a 50-file, 500 MB transfer limit.
 
     cd ~/projects/almanac && source env.sh && swift build && swift test
 
-Expected: 62 tests, 0 failures. Any difference is a 6.3.3-specific finding.
+Expected: 79 tests, 0 failures. Any difference is a 6.3.3-specific finding.
 
 ---
 
@@ -212,15 +213,10 @@ app target, no binary, and no screen. Core tests do not establish otherwise.
 The flow *create report → add results → save → view history → reopen report*
 needs two things, in this order.
 
-### Core work first — small, and testable on Linux today
+### Core work — done (commit `4b6f12e`)
 
-| Missing | Why the flow needs it |
-|---|---|
-| `LabStore.reports(limit:offset:)` and `report(id:)` | Nothing can list or reopen a report; only `observationIDs(inReport:)` exists |
-| `LabCatalogStore.search(prefix:)` | Analyte pick-list. Matching today is exact-fold only, which is right for import and useless for typing |
-
-Both are ordinary additions to existing types, both are unit-testable without
-a Mac, and doing them first means the app target starts against a complete API.
+Every persistence call the flow needs now exists and is tested. See §4c.
+Nothing further is required from the core before the app target starts.
 
 ### Then the app target — what it actually requires
 
@@ -244,6 +240,43 @@ results and opens one result's revision history.
 
 Everything that flow needs from persistence already exists and is tested,
 except the two read APIs above.
+
+---
+
+## 4c. Manual-entry APIs and targeted fixes (commit `4b6f12e`)
+
+Migration 006 appended. 001-005 untouched.
+
+| Area | What changed | Verified by |
+|---|---|---|
+| Editing by Almanac id | `updateReport(id:_:)`, `reviseObservation(id:content:)` — no source or external identifier needed to correct a manual record; a result correction keeps one observation identity | `ManualEntryTests.testReportIsEditableByAlmanacIDWithNoSourceIdentifiers`, `testCreateReopenEditHistoryAndASecondMeasurement` |
+| Audited metadata corrections | `updateObservationMetadata` for specimen, collection time, catalog mapping and report association, writing previous values, actor, reason and touched fields to `lab_observation_metadata_revision`. These edits previously did **nothing**, because `record` compares result content | `testMetadataCorrectionIsAuditedAndAppliesWithUnchangedValue`, `testCatalogMappingCorrectionIsAttributedToTheUser` |
+| leave-unchanged vs clear | `FieldEdit` — three cases where an optional has two | `testLeaveUnchangedIsNotTheSameAsClear` |
+| Stale imports | `SourceOrdering` + replay detection. A → B → reimport A leaves B current, both retrievable | `ImportOrderingTests.testStaleReimportDoesNotBecomeCurrent` |
+| Revert vs replay | A ranked version may set the record back to an earlier value; only the ordering marker distinguishes the two | `testExplicitRevertWithNewerOrderingIsAppliedNotTreatedAsReplay` |
+| Unranked imports | `UnrankedImportPolicy` — default applies and records `superseded_unranked`; `.holdAsConflict` refuses and logs a conflict | `testUnrankedNewContentIsHeldAsAConflictUnderTheStrictPolicy`, `testUnrankedChangeUnderTheDefaultPolicyIsRecordedAsUnranked` |
+| Ambiguous matching | `LIMIT 1` picked a winner by row order once a person added a colliding alias. Candidates are returned; the record stays unmatched | `LaboratoryTests.testAliasCollisionAfterSeedingLeavesTheRecordUnmatched`, `testExternalCodeCollisionIsAmbiguousNotArbitrary` |
+| Sample query offsets | Bounds normalised to UTC before SQL; a `+03:00` window was compared lexically against `...Z` and was wrong by the offset | `HealthSyncTests.testSampleQueryNormalisesOffsetsBeforeComparing` |
+| Unknown offsets | Span widened by 14 hours so nothing is wrongly excluded, and the fit can never be `.definite` | `TimelineTests.testUnknownOffsetIsNeverDefinite` |
+| Specimen helper | `directlyComparable` → `sameSpecimen`, documented as specimen-only. `other` matches nothing, including another `other` | `LaboratoryTests.testSpecimenIsOptionalAndBloodAndUrineDoNotMerge` |
+| Reading APIs | `reports(limit:offset:)` with a total ordering, `report(id:)`, `currentResults(inReport:)`, `LabCatalogStore.suggest`, `measurements(analyteID:specimenKind:)` | `testReportsPaginateDeterministically`, `testSuggestSearchesCanonicalNamesAndAliases` |
+
+### Longitudinal history is not revision history
+
+Two ferritin results a year apart are **two measurements with one revision
+each**. One ferritin result the laboratory later amended is **one measurement
+with two revisions**. `measurements(analyteID:)` answers the first,
+`revisions(of:)` the second, and they are deliberately different calls with
+different names — a screen that mixes them shows a correction as though the
+value had changed in the body.
+
+### The file-backed verification
+
+`ManualEntryTests` writes to a real SQLite file, lets the connection close,
+reopens it, and only then reads back: create a report → reopen → edit a result
+→ inspect its revision history → add another measurement in a second report →
+retrieve both measurements. An in-memory database would pass that sequence even
+if nothing were ever written to disk.
 
 ---
 
