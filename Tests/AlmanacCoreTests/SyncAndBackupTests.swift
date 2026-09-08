@@ -83,7 +83,11 @@ final class BackupServiceTests: XCTestCase {
             "SELECT sha256, schema_version, note FROM backup_manifest ORDER BY id DESC LIMIT 1;"
         ).first)
         XCTAssertEqual(row.string("sha256")?.count, 64)
-        XCTAssertEqual(row.int("schema_version"), 1)
+        // The migration head, not a literal: this assertion is about the
+        // manifest recording whatever schema the snapshot was taken at.
+        let head = try db.query(
+            "SELECT COALESCE(MAX(version), 0) AS v FROM schema_migrations;").first?.int("v")
+        XCTAssertEqual(row.int("schema_version"), head)
         XCTAssertEqual(row.string("note"), "unit test")
 
         // The snapshot really is a usable database with the data in it.

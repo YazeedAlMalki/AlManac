@@ -49,8 +49,13 @@ public enum Migration001_CoreInfrastructure: Migration {
 /// The migration list the app runs at launch. Append only.
 public enum AlmanacMigrations {
     public static let all: [any Migration.Type] = [
-        Migration001_CoreInfrastructure.self
-        // 002 — domain schema (48 tables). BLOCKED: Technical Spec v1.0 text
-        //       is not in the project. Do not author from inference.
+        Migration001_CoreInfrastructure.self,
+        Migration002_LaboratoryCatalog.self,
+        Migration003_LaboratoryRecords.self,
+        Migration004_HealthSamples.self
+        // The Technical Spec v1.0 48-table schema is still unavailable and is
+        // still not authored from inference. Numbering for it is settled per
+        // docs/architecture/health-data-foundation.md §11, and renumbering
+        // 002-004 stays free until a durable database exists.
     ]
 }
