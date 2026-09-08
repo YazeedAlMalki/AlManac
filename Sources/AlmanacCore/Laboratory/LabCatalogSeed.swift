@@ -25,13 +25,15 @@ public enum LabCatalogSeed {
         public let valueType: LabValueType
         public let aliases: [String]
         public let arabic: String?
+        public let role: MeasurementRole
     }
 
     static func e(_ id: String, _ name: String, _ family: String, _ subfamily: String?,
                   _ form: String?, _ type: LabValueType = .quantitative,
-                  _ aliases: [String], _ arabic: String? = nil) -> Entry {
+                  _ aliases: [String], _ arabic: String? = nil,
+                  _ role: MeasurementRole = .direct) -> Entry {
         Entry(id: id, name: name, family: family, subfamily: subfamily, form: form,
-              valueType: type, aliases: aliases, arabic: arabic)
+              valueType: type, aliases: aliases, arabic: arabic, role: role)
     }
 
     // MARK: Vitamins — every family, every distinct form
@@ -39,8 +41,11 @@ public enum LabCatalogSeed {
     public static let vitamins: [Entry] = [
         e("almanac:lab.vitamin-a.retinol", "Retinol", "vitamin", "vitamin_a", "retinol",
           .quantitative, ["Retinol", "Vitamin A", "Vitamin A (retinol)"], "فيتامين أ"),
+        // A dietary precursor the body converts to retinol — not a measurement
+        // of vitamin A, and a normal beta-carotene does not establish adequacy.
         e("almanac:lab.vitamin-a.beta-carotene", "Beta-carotene", "vitamin", "vitamin_a",
-          "beta_carotene", .quantitative, ["Beta carotene", "B-carotene", "Betacarotene"]),
+          "beta_carotene", .quantitative, ["Beta carotene", "B-carotene", "Betacarotene"],
+          nil, .precursor),
 
         e("almanac:lab.vitamin-b1.thiamine", "Thiamine", "vitamin", "vitamin_b1", "thiamine",
           .quantitative, ["Thiamine", "Thiamin", "Vitamin B1"], "فيتامين ب1"),
@@ -50,8 +55,12 @@ public enum LabCatalogSeed {
 
         e("almanac:lab.vitamin-b2.riboflavin", "Riboflavin", "vitamin", "vitamin_b2",
           "riboflavin", .quantitative, ["Riboflavin", "Vitamin B2"]),
+        // An enzyme activation assay: how much a red-cell enzyme speeds up when
+        // riboflavin is added. It reports a coefficient, never an amount of
+        // riboflavin, so it is a functional marker of status.
         e("almanac:lab.vitamin-b2.egrac", "Erythrocyte glutathione reductase activation coefficient",
-          "vitamin", "vitamin_b2", "egrac", .ratio, ["EGRAC", "Glutathione reductase activation"]),
+          "vitamin", "vitamin_b2", "egrac", .ratio, ["EGRAC", "Glutathione reductase activation"],
+          nil, .functionalMarker),
 
         e("almanac:lab.vitamin-b3.niacin", "Niacin", "vitamin", "vitamin_b3", "niacin",
           .quantitative, ["Niacin", "Vitamin B3", "Nicotinic acid"]),
@@ -80,9 +89,12 @@ public enum LabCatalogSeed {
         e("almanac:lab.vitamin-b12.holotranscobalamin", "Holotranscobalamin", "vitamin",
           "vitamin_b12", "holotranscobalamin", .quantitative,
           ["Holotranscobalamin", "Active B12", "HoloTC"]),
+        // A metabolite that accumulates when B12 is functionally insufficient.
+        // It measures methylmalonic acid, not B12, and it rises as B12 status
+        // falls — the opposite direction to a B12 level.
         e("almanac:lab.vitamin-b12.methylmalonic-acid", "Methylmalonic acid", "vitamin",
           "vitamin_b12", "methylmalonic_acid", .quantitative,
-          ["Methylmalonic acid", "MMA"]),
+          ["Methylmalonic acid", "MMA"], nil, .metabolicMarker),
 
         e("almanac:lab.vitamin-c.ascorbic-acid", "Ascorbic acid", "vitamin", "vitamin_c",
           "ascorbic_acid", .quantitative,
@@ -109,10 +121,22 @@ public enum LabCatalogSeed {
 
         e("almanac:lab.vitamin-k.phylloquinone", "Phylloquinone", "vitamin", "vitamin_k",
           "phylloquinone", .quantitative, ["Phylloquinone", "Vitamin K1", "Vitamin K"]),
+        // Under-carboxylated prothrombin, which appears when vitamin K is
+        // absent or antagonised. A protein-based functional marker of K status,
+        // not a measurement of vitamin K.
         e("almanac:lab.vitamin-k.pivka-ii", "PIVKA-II", "vitamin", "vitamin_k",
           "pivka_ii", .quantitative,
-          ["PIVKA II", "Des-gamma-carboxy prothrombin", "DCP"])
+          ["PIVKA II", "Des-gamma-carboxy prothrombin", "DCP"], nil, .functionalMarker)
     ]
+
+    /// The 24 vitamin-family entries are **not** 24 forms of vitamins.
+    /// 20 are direct measurements; the other four are one precursor
+    /// (beta-carotene), two functional markers (EGRAC, PIVKA-II) and one
+    /// metabolic marker (methylmalonic acid). `CatalogCoverageTests` asserts
+    /// these counts against the coverage document.
+    public static var vitaminRoleCounts: [MeasurementRole: Int] {
+        Dictionary(grouping: vitamins, by: \.role).mapValues(\.count)
+    }
 
     // MARK: A working core, so a realistic report can be recorded
 
@@ -125,6 +149,35 @@ public enum LabCatalogSeed {
           .quantitative, ["WBC", "White blood cells", "Leucocytes", "White cell count"]),
         e("almanac:lab.haematology.platelets", "Platelet count", "haematology", nil, nil,
           .quantitative, ["Platelets", "PLT", "Platelet count"]),
+        // Completing the CBC: a four-analyte "complete blood count" was not one.
+        e("almanac:lab.haematology.rbc", "Red cell count", "haematology", nil, nil,
+          .quantitative, ["RBC", "Red blood cells", "Red cell count", "Erythrocyte count"]),
+        e("almanac:lab.haematology.mcv", "Mean corpuscular volume", "haematology", nil, nil,
+          .quantitative, ["MCV", "Mean corpuscular volume", "Mean cell volume"]),
+        e("almanac:lab.haematology.mch", "Mean corpuscular haemoglobin", "haematology", nil,
+          nil, .quantitative, ["MCH", "Mean corpuscular hemoglobin"]),
+        e("almanac:lab.haematology.mchc", "Mean corpuscular haemoglobin concentration",
+          "haematology", nil, nil, .quantitative,
+          ["MCHC", "Mean corpuscular hemoglobin concentration"]),
+        e("almanac:lab.haematology.rdw", "Red cell distribution width", "haematology", nil,
+          nil, .quantitative, ["RDW", "Red cell distribution width", "RDW-CV"]),
+        e("almanac:lab.haematology.mpv", "Mean platelet volume", "haematology", nil, nil,
+          .quantitative, ["MPV", "Mean platelet volume"]),
+        e("almanac:lab.haematology.neutrophils-absolute", "Neutrophils, absolute",
+          "haematology", nil, "absolute", .quantitative,
+          ["Neutrophils", "Absolute neutrophils", "ANC", "Neutrophil count"]),
+        e("almanac:lab.haematology.lymphocytes-absolute", "Lymphocytes, absolute",
+          "haematology", nil, "absolute", .quantitative,
+          ["Lymphocytes", "Absolute lymphocytes", "ALC", "Lymphocyte count"]),
+        e("almanac:lab.haematology.monocytes-absolute", "Monocytes, absolute", "haematology",
+          nil, "absolute", .quantitative,
+          ["Monocytes", "Absolute monocytes", "Monocyte count"]),
+        e("almanac:lab.haematology.eosinophils-absolute", "Eosinophils, absolute",
+          "haematology", nil, "absolute", .quantitative,
+          ["Eosinophils", "Absolute eosinophils", "Eosinophil count"]),
+        e("almanac:lab.haematology.basophils-absolute", "Basophils, absolute", "haematology",
+          nil, "absolute", .quantitative,
+          ["Basophils", "Absolute basophils", "Basophil count"]),
 
         e("almanac:lab.iron.ferritin", "Ferritin", "iron_studies", nil, nil, .quantitative,
           ["Ferritin", "Serum ferritin"], "فيريتين"),
@@ -181,11 +234,26 @@ public enum LabCatalogSeed {
     public static var all: [Entry] { vitamins + core }
 
     public static let panels: [(id: String, name: String, members: [String])] = [
-        ("almanac:panel.cbc", "Complete blood count", [
+        // Complete, in the sense a laboratory means it: red indices, platelet
+        // indices and a five-part differential. The differential is seeded as
+        // absolute counts only; the percentage forms are tracked as not seeded
+        // in docs/features/laboratory-catalog-coverage.md rather than implied.
+        ("almanac:panel.cbc", "Complete blood count with differential", [
+            "almanac:lab.haematology.rbc",
             "almanac:lab.haematology.haemoglobin",
             "almanac:lab.haematology.haematocrit",
+            "almanac:lab.haematology.mcv",
+            "almanac:lab.haematology.mch",
+            "almanac:lab.haematology.mchc",
+            "almanac:lab.haematology.rdw",
+            "almanac:lab.haematology.platelets",
+            "almanac:lab.haematology.mpv",
             "almanac:lab.haematology.wbc",
-            "almanac:lab.haematology.platelets"
+            "almanac:lab.haematology.neutrophils-absolute",
+            "almanac:lab.haematology.lymphocytes-absolute",
+            "almanac:lab.haematology.monocytes-absolute",
+            "almanac:lab.haematology.eosinophils-absolute",
+            "almanac:lab.haematology.basophils-absolute"
         ]),
         ("almanac:panel.lipids", "Lipid panel", [
             "almanac:lab.lipids.total-cholesterol",
@@ -217,7 +285,7 @@ public enum LabCatalogSeed {
             try catalog.upsert(CatalogAnalyte(
                 id: entry.id, canonicalName: entry.name, family: entry.family,
                 subfamily: entry.subfamily, form: entry.form,
-                defaultValueType: entry.valueType))
+                defaultValueType: entry.valueType, measurementRole: entry.role))
             try catalog.addAlias(entry.name, to: entry.id, locale: "en")
             for alias in entry.aliases {
                 try catalog.addAlias(alias, to: entry.id, locale: "en")

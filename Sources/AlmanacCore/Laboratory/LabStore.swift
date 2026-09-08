@@ -26,8 +26,38 @@ public struct LabObservationDraft: Sendable {
     /// identify. Never used to disambiguate revisions.
     public var repeatIndex: Int = 0
     public var collectedAt: PartialDateTime = .unknown
+    /// The specimen as classified. Defaults to `.unknown`, which is a recorded
+    /// answer and never blocks an incomplete manual entry.
+    public var specimenKind: SpecimenKind = .unknown
+    /// The specimen exactly as the source printed it, preserved alongside the
+    /// classification and never replaced by it.
     public var specimenText: String? = nil
     public init() {}
+}
+
+public enum LabReportOutcome: Sendable, Hashable {
+    case created(reportID: String)
+    case unchanged(reportID: String)
+    /// The source restated this report with different metadata. The live row
+    /// now carries the new values and `supersededRevisionID` holds the old.
+    case updated(reportID: String, supersededRevisionID: String, revisionNumber: Int)
+
+    public var reportID: String {
+        switch self {
+        case .created(let id), .unchanged(let id): return id
+        case .updated(let id, _, _): return id
+        }
+    }
+}
+
+/// A superseded set of report-level metadata.
+public struct LabReportRevision: Sendable, Hashable {
+    public let id: String
+    public let reportID: String
+    public let revisionNumber: Int
+    public let laboratoryNameText: String?
+    public let reportedAtText: String?
+    public let supersededAt: String
 }
 
 public enum LabRecordOutcome: Sendable, Hashable {
@@ -74,13 +104,89 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
 
     // MARK: - Reports
 
+    /// Returns the report's id. See `upsertReport` for what happened to it.
     @discardableResult
     public func saveReport(_ draft: LabReportDraft) throws -> String {
+        try upsertReport(draft).reportID
+    }
+
+    /// Find-or-create by `(source_system, source_report_id)`, and — the point
+    /// of this method — **never silently discard changed report metadata**.
+    ///
+    /// A laboratory that reissues a report with a corrected draw date or a
+    /// corrected name is stating a fact. The previous values move to
+    /// `lab_report_revision` and the live row takes the new ones, so neither
+    /// the correction nor what it replaced is lost.
+    @discardableResult
+    public func upsertReport(_ draft: LabReportDraft) throws -> LabReportOutcome {
         if let system = draft.sourceSystem, let sourceID = draft.sourceReportID,
            let existing = try db.query("""
-               SELECT id FROM lab_report WHERE source_system = ? AND source_report_id = ?;
-               """, [.text(system), .text(sourceID)]).first?.string("id") {
-            return existing
+               SELECT id, laboratory_name_text, reported_at, reported_precision,
+                      reported_tz_offset_minutes, reported_tz_id, header_text
+               FROM lab_report WHERE source_system = ? AND source_report_id = ?;
+               """, [.text(system), .text(sourceID)]).first,
+           let reportID = existing.string("id") {
+
+            let stored = LabStore.reportFingerprint(
+                laboratoryName: existing.string("laboratory_name_text"),
+                reportedAt: existing.string("reported_at"),
+                precision: existing.string("reported_precision") ?? TimePrecision.unknown.rawValue,
+                offsetMinutes: existing.int("reported_tz_offset_minutes").map(Int.init),
+                zoneID: existing.string("reported_tz_id"),
+                header: existing.string("header_text"))
+            let incoming = LabStore.reportFingerprint(
+                laboratoryName: draft.laboratoryNameText,
+                reportedAt: draft.reportedAt.isKnown ? draft.reportedAt.text : nil,
+                precision: draft.reportedAt.precision.rawValue,
+                offsetMinutes: draft.reportedAt.zone.offsetMinutes,
+                zoneID: draft.reportedAt.zone.identifier,
+                header: draft.headerText)
+
+            if stored == incoming { return .unchanged(reportID: reportID) }
+
+            return try db.transaction {
+                let number = Int(try db.query("""
+                    SELECT COALESCE(MAX(revision_number), 0) AS n
+                    FROM lab_report_revision WHERE report_id = ?;
+                    """, [.text(reportID)]).first?.int("n") ?? 0) + 1
+                let revisionID = UUID().uuidString
+                try db.run("""
+                INSERT INTO lab_report_revision
+                    (id, report_id, revision_number, laboratory_name_text, reported_at,
+                     reported_precision, reported_tz_offset_minutes, reported_tz_id,
+                     header_text, content_fingerprint, actor, superseded_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """, [
+                    .text(revisionID), .text(reportID), .integer(Int64(number)),
+                    existing.string("laboratory_name_text").map { SQLValue.text($0) } ?? .null,
+                    existing.string("reported_at").map { SQLValue.text($0) } ?? .null,
+                    .text(existing.string("reported_precision") ?? TimePrecision.unknown.rawValue),
+                    existing.int("reported_tz_offset_minutes").map { SQLValue.integer($0) } ?? .null,
+                    existing.string("reported_tz_id").map { SQLValue.text($0) } ?? .null,
+                    existing.string("header_text").map { SQLValue.text($0) } ?? .null,
+                    .text(stored), .text(draft.entryOrigin), .text(nowText)
+                ])
+                try db.run("""
+                UPDATE lab_report SET
+                    laboratory_name_text       = ?,
+                    reported_at                = ?,
+                    reported_precision         = ?,
+                    reported_tz_offset_minutes = ?,
+                    reported_tz_id             = ?,
+                    header_text                = ?
+                WHERE id = ?;
+                """, [
+                    draft.laboratoryNameText.map { SQLValue.text($0) } ?? .null,
+                    draft.reportedAt.isKnown ? .text(draft.reportedAt.text) : .null,
+                    .text(draft.reportedAt.precision.rawValue),
+                    draft.reportedAt.zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
+                    draft.reportedAt.zone.identifier.map { SQLValue.text($0) } ?? .null,
+                    draft.headerText.map { SQLValue.text($0) } ?? .null,
+                    .text(reportID)
+                ])
+                return .updated(reportID: reportID, supersededRevisionID: revisionID,
+                                revisionNumber: number)
+            }
         }
         try db.run("""
         INSERT INTO lab_report
@@ -102,7 +208,32 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
             .text(nowText),
             zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null
         ])
-        return draft.id
+        return .created(reportID: draft.id)
+    }
+
+    static func reportFingerprint(laboratoryName: String?, reportedAt: String?,
+                                  precision: String, offsetMinutes: Int?,
+                                  zoneID: String?, header: String?) -> String {
+        let parts: [String?] = [laboratoryName, reportedAt, precision,
+                                offsetMinutes.map { String($0) }, zoneID, header]
+        return SHA256File.hex(of: Array(parts.map { $0 ?? "\u{0}" }
+            .joined(separator: "\u{1}").utf8))
+    }
+
+    /// Superseded report metadata, oldest first.
+    public func reportRevisions(of reportID: String) throws -> [LabReportRevision] {
+        try db.query("""
+        SELECT id, report_id, revision_number, laboratory_name_text, reported_at, superseded_at
+        FROM lab_report_revision WHERE report_id = ? ORDER BY revision_number;
+        """, [.text(reportID)]).compactMap { row in
+            guard let id = row.string("id"), let reportID = row.string("report_id"),
+                  let number = row.int("revision_number") else { return nil }
+            return LabReportRevision(
+                id: id, reportID: reportID, revisionNumber: Int(number),
+                laboratoryNameText: row.string("laboratory_name_text"),
+                reportedAtText: row.string("reported_at"),
+                supersededAt: row.string("superseded_at") ?? "")
+        }
     }
 
     // MARK: - Observations and revisions
@@ -160,8 +291,8 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
                 (id, report_id, source_system, source_observation_id, catalog_analyte_id,
                  match_origin, match_confidence, time_point_label, repeat_index,
                  collected_at, collected_precision, collected_tz_offset_minutes,
-                 collected_tz_id, specimen_text, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                 collected_tz_id, specimen_kind, specimen_text, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
             """, [
                 .text(observationID),
                 observation.reportID.map { SQLValue.text($0) } ?? .null,
@@ -176,6 +307,7 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
                 .text(observation.collectedAt.precision.rawValue),
                 observation.collectedAt.zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
                 observation.collectedAt.zone.identifier.map { SQLValue.text($0) } ?? .null,
+                .text(observation.specimenKind.rawValue),
                 observation.specimenText.map { SQLValue.text($0) } ?? .null,
                 .text(nowText)
             ])
@@ -256,6 +388,44 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
                      [.text(observationID)]).first?.string("catalog_analyte_id")
     }
 
+    public func specimenKind(of observationID: String) throws -> SpecimenKind {
+        try db.query("SELECT specimen_kind FROM lab_observation WHERE id = ?;",
+                     [.text(observationID)]).first?.string("specimen_kind")
+            .flatMap(SpecimenKind.init(rawValue:)) ?? .unknown
+    }
+
+    public func observationIDs(analyteID: String, specimenKind: SpecimenKind? = nil) throws -> [String] {
+        if let specimenKind {
+            return try db.query("""
+            SELECT id FROM lab_observation
+            WHERE catalog_analyte_id = ? AND specimen_kind = ? ORDER BY created_at;
+            """, [.text(analyteID), .text(specimenKind.rawValue)]).compactMap { $0.string("id") }
+        }
+        return try db.query("""
+        SELECT id FROM lab_observation WHERE catalog_analyte_id = ? ORDER BY created_at;
+        """, [.text(analyteID)]).compactMap { $0.string("id") }
+    }
+
+    /// Observations of one analyte, split by specimen so that nothing which
+    /// must not be merged can be merged by accident.
+    ///
+    /// A blood result and a urine result for the same analyte land in different
+    /// groups, and an observation whose specimen was never stated lands in the
+    /// `.unknown` group rather than being folded into a stated one.
+    public func observationsBySpecimen(analyteID: String) throws -> [SpecimenKind: [String]] {
+        let rows = try db.query("""
+        SELECT id, specimen_kind FROM lab_observation
+        WHERE catalog_analyte_id = ? ORDER BY created_at;
+        """, [.text(analyteID)])
+        var groups: [SpecimenKind: [String]] = [:]
+        for row in rows {
+            guard let id = row.string("id") else { continue }
+            let kind = row.string("specimen_kind").flatMap(SpecimenKind.init(rawValue:)) ?? .unknown
+            groups[kind, default: []].append(id)
+        }
+        return groups
+    }
+
     static func revision(from row: Row) -> LabRevision? {
         guard let id = row.string("id"), let observationID = row.string("observation_id"),
               let number = row.int("revision_number") else { return nil }
@@ -324,11 +494,17 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
         LEFT JOIN lab_catalog_analyte a ON a.id = o.catalog_analyte_id;
         """)
 
+        guard let range = DateRange(from: from, to: to) else { return [] }
+
         var entries: [TimelineEntry] = []
         for row in rows {
             guard let observationID = row.string("obs_id") else { continue }
             let (occurrence, basis) = LabStore.placement(row)
-            guard occurrence.isKnown, occurrence.text >= from, occurrence.text < to else { continue }
+            // Span-based, not prefix-based. A record placed at "2019-03" covers
+            // the whole of March, so a range starting on the 15th still
+            // overlaps it and the record is returned as `.potential` rather
+            // than vanishing because its span start sorts before the boundary.
+            guard let fit = occurrence.fit(in: range) else { continue }
 
             var content = LabRevisionContent()
             content.valueType = LabValueType(rawValue: row.string("value_type") ?? "") ?? .absent
@@ -361,7 +537,7 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
                 occurrence: occurrence, basis: basis, title: title,
                 detail: detailParts.isEmpty ? nil : detailParts.joined(separator: " · "),
                 value: content.presentation,
-                lifecycle: row.string("lifecycle")))
+                lifecycle: row.string("lifecycle"), rangeFit: fit))
         }
         return entries
     }

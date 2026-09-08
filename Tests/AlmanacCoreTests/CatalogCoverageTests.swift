@@ -79,6 +79,54 @@ final class CatalogCoverageTests: XCTestCase {
         }
     }
 
+    // Not every entry in a vitamin family measures the vitamin. Classifying
+    // them is what stops "24 vitamin forms" from being a false claim.
+    func testVitaminEntriesAreClassifiedByWhatTheyMeasure() throws {
+        let (db, _) = try seeded()
+        func role(_ id: String) throws -> String? {
+            try db.query("SELECT measurement_role FROM lab_catalog_analyte WHERE id = ?;",
+                         [.text(id)]).first?.string("measurement_role")
+        }
+        XCTAssertEqual(try role("almanac:lab.vitamin-b12.methylmalonic-acid"), "metabolic_marker",
+                       "MMA is a metabolite that rises when B12 is short, not a B12 measurement")
+        XCTAssertEqual(try role("almanac:lab.vitamin-b2.egrac"), "functional_marker",
+                       "EGRAC is an enzyme activation coefficient, not an amount of riboflavin")
+        XCTAssertEqual(try role("almanac:lab.vitamin-k.pivka-ii"), "functional_marker",
+                       "PIVKA-II is under-carboxylated prothrombin, not vitamin K")
+        XCTAssertEqual(try role("almanac:lab.vitamin-a.beta-carotene"), "precursor",
+                       "beta-carotene is converted to retinol; it is not retinol")
+        XCTAssertEqual(try role("almanac:lab.vitamin-d.25oh-total"), "direct")
+        XCTAssertEqual(try role("almanac:lab.vitamin-b12.holotranscobalamin"), "direct",
+                       "the active B12 fraction is still a B12 measurement")
+    }
+
+    func testTheVitaminCountIsNotOverstated() throws {
+        let (_, catalog) = try seeded()
+        XCTAssertEqual(try catalog.analyteIDs(family: "vitamin").count, 24,
+                       "24 catalog entries in vitamin families")
+        XCTAssertEqual(try catalog.directAnalyteIDs(family: "vitamin").count, 20,
+                       "of which 20 are direct measurements — not 24 vitamin forms")
+        XCTAssertEqual(LabCatalogSeed.vitaminRoleCounts[.precursor], 1)
+        XCTAssertEqual(LabCatalogSeed.vitaminRoleCounts[.functionalMarker], 2)
+        XCTAssertEqual(LabCatalogSeed.vitaminRoleCounts[.metabolicMarker], 1)
+        XCTAssertFalse(MeasurementRole.functionalMarker.reportsAmountOfTheSubstance)
+        XCTAssertTrue(MeasurementRole.direct.reportsAmountOfTheSubstance)
+    }
+
+    // A four-analyte "complete blood count" was not complete.
+    func testCBCPanelIsComplete() throws {
+        let (_, catalog) = try seeded()
+        let members = try catalog.panelMembers("almanac:panel.cbc")
+        XCTAssertEqual(members.count, 15)
+        for suffix in ["rbc", "haemoglobin", "haematocrit", "mcv", "mch", "mchc", "rdw",
+                       "platelets", "mpv", "wbc", "neutrophils-absolute",
+                       "lymphocytes-absolute", "monocytes-absolute",
+                       "eosinophils-absolute", "basophils-absolute"] {
+            XCTAssertTrue(members.contains("almanac:lab.haematology.\(suffix)"),
+                          "CBC is missing \(suffix)")
+        }
+    }
+
     func testNoAliasIsSharedByTwoAnalytes() throws {
         let (db, _) = try seeded()
         let clashes = try db.query("""

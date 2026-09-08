@@ -12,11 +12,17 @@ public struct CatalogAnalyte: Sendable, Hashable {
     /// "25-OH D3" and "1,25-dihydroxy D" are different analytes, not one.
     public let form: String?
     public let defaultValueType: LabValueType
+    /// What the entry measures: the substance, a precursor of it, or a marker
+    /// of its status. Not every entry in a vitamin family is a vitamin
+    /// measurement, and the difference decides what may be trended together.
+    public let measurementRole: MeasurementRole
     public let notes: String?
 
     public init(id: String, canonicalName: String, family: String,
                 subfamily: String? = nil, form: String? = nil,
-                defaultValueType: LabValueType = .quantitative, notes: String? = nil) {
+                defaultValueType: LabValueType = .quantitative,
+                measurementRole: MeasurementRole = .direct, notes: String? = nil) {
+        self.measurementRole = measurementRole
         self.id = id
         self.canonicalName = canonicalName
         self.family = family
@@ -47,20 +53,23 @@ public struct LabCatalogStore: Sendable {
     public func upsert(_ analyte: CatalogAnalyte) throws {
         try db.run("""
         INSERT INTO lab_catalog_analyte
-            (id, canonical_name, family, subfamily, form, default_value_type, notes, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (id, canonical_name, family, subfamily, form, default_value_type,
+             measurement_role, notes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             canonical_name = excluded.canonical_name,
             family = excluded.family,
             subfamily = excluded.subfamily,
             form = excluded.form,
             default_value_type = excluded.default_value_type,
+            measurement_role = excluded.measurement_role,
             notes = excluded.notes;
         """, [
             .text(analyte.id), .text(analyte.canonicalName), .text(analyte.family),
             analyte.subfamily.map { SQLValue.text($0) } ?? .null,
             analyte.form.map { SQLValue.text($0) } ?? .null,
             .text(analyte.defaultValueType.rawValue),
+            .text(analyte.measurementRole.rawValue),
             analyte.notes.map { SQLValue.text($0) } ?? .null,
             .text(nowText)
         ])
@@ -136,7 +145,8 @@ public struct LabCatalogStore: Sendable {
 
     public func analyte(_ id: String) throws -> CatalogAnalyte? {
         guard let row = try db.query("""
-            SELECT id, canonical_name, family, subfamily, form, default_value_type, notes
+            SELECT id, canonical_name, family, subfamily, form, default_value_type,
+                   measurement_role, notes
             FROM lab_catalog_analyte WHERE id = ?;
             """, [.text(id)]).first,
             let rid = row.string("id"), let name = row.string("canonical_name"),
@@ -146,7 +156,24 @@ public struct LabCatalogStore: Sendable {
             subfamily: row.string("subfamily"), form: row.string("form"),
             defaultValueType: LabValueType(rawValue: row.string("default_value_type") ?? "")
                 ?? .quantitative,
+            measurementRole: MeasurementRole(rawValue: row.string("measurement_role") ?? "")
+                ?? .direct,
             notes: row.string("notes"))
+    }
+
+    /// Ids in a family whose entries actually measure the substance, excluding
+    /// precursors and status markers.
+    public func directAnalyteIDs(family: String) throws -> [String] {
+        try db.query("""
+        SELECT id FROM lab_catalog_analyte
+        WHERE family = ? AND measurement_role = 'direct' ORDER BY id;
+        """, [.text(family)]).compactMap { $0.string("id") }
+    }
+
+    public func measurementRole(of analyteID: String) throws -> MeasurementRole? {
+        try db.query("SELECT measurement_role FROM lab_catalog_analyte WHERE id = ?;",
+                     [.text(analyteID)]).first?.string("measurement_role")
+            .flatMap(MeasurementRole.init(rawValue:))
     }
 
     public func analyteIDs(family: String? = nil) throws -> [String] {

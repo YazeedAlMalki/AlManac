@@ -124,6 +124,47 @@ final class TimelineTests: XCTestCase {
         XCTAssertEqual(history.map(\.isCurrent), [false, true])
     }
 
+    // A month-precision record must not vanish from a range that starts inside
+    // that month. Prefix comparison placed it at 1 March and dropped it; span
+    // comparison keeps it and says the membership is potential, not certain.
+    func testCoarseMonthObservationSurvivesARangeStartingInsideIt() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let clock = FixedClock(Date(timeIntervalSince1970: 1_772_000_000))
+        try LabCatalogSeed.seed(into: LabCatalogStore(db: db, clock: clock))
+        let lab = LabStore(db: db, clock: clock)
+
+        var content = LabRevisionContent()
+        content.valueType = .quantitative
+        content.numericValue = 18
+        content.sourceAnalyteText = "Vitamin D"
+        content.sourceValueText = "18"
+        content.contentOrigin = .userTranscription
+        var draft = LabObservationDraft()
+        draft.collectedAt = PartialDateTime(text: "2019-03", precision: .month)
+        try lab.record(draft, content: content)
+
+        let startingMidMonth = try lab.entries(from: "2019-03-15", to: "2019-04-01")
+        XCTAssertEqual(startingMidMonth.count, 1, "a month-precision record must not disappear")
+        XCTAssertEqual(startingMidMonth[0].rangeFit, .potential)
+        XCTAssertEqual(startingMidMonth[0].occurrence.text, "2019-03",
+                       "storage still holds the month; no day was invented")
+
+        let wholeMonth = try lab.entries(from: "2019-03-01", to: "2019-04-01")
+        XCTAssertEqual(wholeMonth.count, 1)
+        XCTAssertEqual(wholeMonth[0].rangeFit, .definite)
+
+        let differentMonth = try lab.entries(from: "2019-05-01", to: "2019-06-01")
+        XCTAssertEqual(differentMonth.count, 0, "no overlap at all means excluded")
+
+        // The same for a year, and for a range ending inside the span.
+        let yearValue = PartialDateTime(text: "2019", precision: .year)
+        let range = try XCTUnwrap(DateRange(from: "2019-07-01", to: "2020-01-01"))
+        XCTAssertEqual(yearValue.fit(in: range), .potential)
+        let exact = try XCTUnwrap(DateRange(from: "2019-01-01", to: "2020-01-01"))
+        XCTAssertEqual(yearValue.fit(in: exact), .definite)
+    }
+
     func testCoarsePrecisionSortsAtTheStartOfItsSpan() throws {
         let year = PartialDateTime(text: "2019", precision: .year)
         let month = PartialDateTime(text: "2019-03", precision: .month)

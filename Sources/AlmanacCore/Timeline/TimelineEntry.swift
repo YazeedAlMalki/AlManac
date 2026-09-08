@@ -37,11 +37,16 @@ public struct TimelineEntry: Sendable, Hashable {
     public let detail: String?
     public let value: ValuePresentation
     public let lifecycle: String?
+    /// Whether the record definitely falls in the queried range, or merely
+    /// overlaps it because its date is coarser than the range boundary.
+    /// A `.potential` entry is shown, not hidden — see `RangeFit`.
+    public let rangeFit: RangeFit
 
     public init(domain: String, kind: String, recordTable: String, recordID: String,
                 occurrence: PartialDateTime, basis: TimeBasis, title: String,
                 detail: String? = nil, value: ValuePresentation = .none,
-                lifecycle: String? = nil) {
+                lifecycle: String? = nil, rangeFit: RangeFit = .definite) {
+        self.rangeFit = rangeFit
         self.domain = domain
         self.kind = kind
         self.recordTable = recordTable

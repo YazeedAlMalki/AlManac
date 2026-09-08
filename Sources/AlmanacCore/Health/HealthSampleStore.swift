@@ -106,7 +106,8 @@ public struct HealthSampleStore: HealthSampleWriting, TimelineProviding, @unchec
     }
 
     public func entries(from: String, to: String) throws -> [TimelineEntry] {
-        try db.query("""
+        guard let range = DateRange(from: from, to: to) else { return [] }
+        return try db.query("""
         SELECT id, external_id, start_at, value, unit, source_name
         FROM health_sample
         WHERE source_system = ? AND domain = ? AND deleted_at IS NULL
@@ -114,9 +115,14 @@ public struct HealthSampleStore: HealthSampleWriting, TimelineProviding, @unchec
         ORDER BY start_at;
         """, [.text(sourceSystem), .text(healthDomain.rawValue), .text(from), .text(to)])
         .compactMap { row in
+            // Samples always carry a full instant, so their span is a point and
+            // the fit is always `.definite`. Computed through the same API as
+            // Laboratory so the two domains cannot drift apart on what a range
+            // means.
             guard let id = row.string("id"), let start = row.string("start_at"),
                   let occurrence = PartialDateTime(storedText: start, precision: .instant,
-                                                   zone: .unknown) else { return nil }
+                                                   zone: .unknown),
+                  let fit = occurrence.fit(in: range) else { return nil }
             let value: ValuePresentation
             if let v = row.double("value") {
                 value = .quantity(text: String(v), unit: row.string("unit"))
@@ -127,7 +133,7 @@ public struct HealthSampleStore: HealthSampleWriting, TimelineProviding, @unchec
                 domain: domain, kind: "sample", recordTable: "health_sample", recordID: id,
                 occurrence: occurrence, basis: .occurrence,
                 title: healthDomain.rawValue, detail: row.string("source_name"),
-                value: value, lifecycle: nil)
+                value: value, lifecycle: nil, rangeFit: fit)
         }
     }
 }

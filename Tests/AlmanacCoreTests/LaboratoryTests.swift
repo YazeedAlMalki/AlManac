@@ -288,13 +288,97 @@ final class LaboratoryTests: XCTestCase {
 
     func testPanelsAreReusable() throws {
         let (_, _, catalog) = try fixture()
-        XCTAssertEqual(try catalog.panelMembers("almanac:panel.cbc").count, 4)
+        // 15, not 4: the CBC now carries red indices, platelet indices and a
+        // five-part differential. `CatalogCoverageTests.testCBCPanelIsComplete`
+        // pins the membership itself.
+        XCTAssertEqual(try catalog.panelMembers("almanac:panel.cbc").count, 15)
         try catalog.createPanel(id: "almanac:panel.my-quarterly", name: "Quarterly bloods",
                                 origin: "user",
                                 analyteIDs: ["almanac:lab.iron.ferritin",
                                              "almanac:lab.vitamin-d.25oh-total"])
         XCTAssertEqual(try catalog.panelMembers("almanac:panel.my-quarterly"),
                        ["almanac:lab.iron.ferritin", "almanac:lab.vitamin-d.25oh-total"])
+    }
+
+    // Specimen is optional, preserved as printed, and never merged across
+    // materials.
+    func testSpecimenIsOptionalAndBloodAndUrineDoNotMerge() throws {
+        let (db, store, _) = try fixture()
+
+        // Says nothing about the specimen, and still saves.
+        let silent = try store.record(LabObservationDraft(),
+                                      content: quantitative("Ferritin", "42", 42, unit: "ng/mL"))
+        XCTAssertEqual(try store.specimenKind(of: silent.observationID), .unknown)
+
+        var serum = LabObservationDraft()
+        serum.specimenKind = .serum
+        serum.specimenText = "SERUM"
+        var urine = LabObservationDraft()
+        urine.specimenKind = .urine
+        urine.specimenText = "Urine, random"
+
+        let inSerum = try store.record(serum, content: quantitative("Ferritin", "44", 44, unit: "ng/mL"))
+        let inUrine = try store.record(urine, content: quantitative("Ferritin", "9", 9, unit: "ng/mL"))
+
+        let groups = try store.observationsBySpecimen(analyteID: "almanac:lab.iron.ferritin")
+        XCTAssertEqual(groups[.serum], [inSerum.observationID])
+        XCTAssertEqual(groups[.urine], [inUrine.observationID])
+        XCTAssertEqual(groups[.unknown], [silent.observationID],
+                       "an unstated specimen is its own group, not folded into a stated one")
+        XCTAssertEqual(try store.observationIDs(analyteID: "almanac:lab.iron.ferritin",
+                                                specimenKind: .serum),
+                       [inSerum.observationID])
+
+        XCTAssertFalse(SpecimenKind.directlyComparable(.serum, .urine))
+        XCTAssertTrue(SpecimenKind.knownDifferentMaterial(.serum, .urine))
+        XCTAssertFalse(SpecimenKind.directlyComparable(.serum, .plasma),
+                       "different fractions, different reference intervals")
+        XCTAssertFalse(SpecimenKind.directlyComparable(.unknown, .unknown),
+                       "two unstated specimens are not evidence that they match")
+        XCTAssertFalse(SpecimenKind.knownDifferentMaterial(.serum, .unknown),
+                       "unstated is not knowledge of a difference")
+
+        // The source's own wording survives the classification.
+        let text = try db.query("SELECT specimen_text FROM lab_observation WHERE id = ?;",
+                                [.text(inSerum.observationID)]).first?.string("specimen_text")
+        XCTAssertEqual(text, "SERUM")
+    }
+
+    // A reissued report with a corrected date or name must not be dropped on
+    // the floor by find-or-create.
+    func testReportMetadataCorrectionIsPreservedNotDiscarded() throws {
+        let (db, store, _) = try fixture()
+        var report = LabReportDraft()
+        report.sourceSystem = "lab-a"
+        report.sourceReportID = "R-1"
+        report.laboratoryNameText = "Al Borg"
+        report.reportedAt = PartialDateTime(text: "2026-02-20", precision: .day)
+
+        guard case .created(let reportID) = try store.upsertReport(report) else {
+            return XCTFail("expected a new report")
+        }
+        XCTAssertEqual(try store.upsertReport(report), .unchanged(reportID: reportID),
+                       "identical metadata is a no-op")
+
+        var corrected = report
+        corrected.laboratoryNameText = "Al Borg Laboratories"
+        corrected.reportedAt = PartialDateTime(text: "2026-02-21", precision: .day)
+        guard case .updated(let sameID, _, let number) = try store.upsertReport(corrected) else {
+            return XCTFail("expected the correction to be recorded")
+        }
+        XCTAssertEqual(sameID, reportID)
+        XCTAssertEqual(number, 1)
+
+        let live = try XCTUnwrap(db.query("""
+            SELECT laboratory_name_text, reported_at FROM lab_report WHERE id = ?;
+            """, [.text(reportID)]).first)
+        XCTAssertEqual(live.string("laboratory_name_text"), "Al Borg Laboratories")
+        XCTAssertEqual(live.string("reported_at"), "2026-02-21")
+
+        let history = try store.reportRevisions(of: reportID)
+        XCTAssertEqual(history.count, 1)
+        XCTAssertEqual(history[0].laboratoryNameText, "Al Borg")
+        XCTAssertEqual(history[0].reportedAtText, "2026-02-20")
     }
 
     func testUnitCompatibilityRefusesDimensionlessBlanketPermission() throws {
