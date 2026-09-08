@@ -56,8 +56,22 @@ no global intervals, medical interpretation or automatic conversion were added.
 
 ## Interface status
 
-Native manual-entry screens are the next part of this authorized pass.
-Core tests establish persistence behavior, not an interactive UI.
+Native manual-entry code is authored in `Native/Almanac`, with an iOS 17+
+Xcode app target and shared scheme in `Native/Almanac.xcodeproj`. It uses the
+existing local `AlmanacCore` package.
+
+Implemented screens: report list/create/edit/detail; result entry/editing with
+canonical and alias search; longitudinal test history and source-report links;
+separate content/metadata revision history; and report-conflict accept/reject.
+Original units, source text, comparators, laboratory ranges, specimens and
+unknown/partial dates remain visible and editable. Saving a correction requires
+a reason and uses the atomic core edit API.
+
+Linux Swift parsing passes for all four UI source files. Project references,
+local package path and shared-scheme XML pass consistency checks. This does not
+establish SwiftUI type correctness or a usable running Apple application.
+See `Native/README.md` for the Apple build command and outstanding interactive
+acceptance steps. No screenshots or runtime verification are claimed.
 
 ## Remaining boundaries
 
