@@ -7,7 +7,7 @@ final class ImportOrderingTests: XCTestCase {
 
     private let clock = FixedClock(Date(timeIntervalSince1970: 1_772_000_000))
 
-    private func fixture(policy: UnrankedImportPolicy = .applyAndFlag) throws -> (Database, LabStore) {
+    private func fixture(policy: UnrankedImportPolicy = .holdAsConflict) throws -> (Database, LabStore) {
         let db = try Database.inMemory()
         try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
         return (db, LabStore(db: db, clock: clock, unrankedImports: policy))
@@ -28,8 +28,8 @@ final class ImportOrderingTests: XCTestCase {
     /// The required case: A, then correction B, then A arrives again.
     func testStaleReimportDoesNotBecomeCurrent() throws {
         let (_, lab) = try fixture()
-        let a = version("Al Borg", "2026-02-20")
-        let b = version("Al Borg Laboratories", "2026-02-21")
+        let a = version("Al Borg", "2026-02-20", ordering: .sequence(1))
+        let b = version("Al Borg Laboratories", "2026-02-21", ordering: .sequence(2))
 
         guard case .created(let reportID) = try lab.upsertReport(a) else {
             return XCTFail("expected a new report")
@@ -42,7 +42,7 @@ final class ImportOrderingTests: XCTestCase {
         // A comes back. It is already in this report's history, so it is a
         // re-send, not a correction back to it.
         let replay = try lab.upsertReport(a)
-        guard case .replayIgnored(let sameID, _) = replay else {
+        guard case .staleIgnored(let sameID) = replay else {
             return XCTFail("expected the replay to be ignored, got \(replay)")
         }
         XCTAssertEqual(sameID, reportID)
@@ -100,7 +100,7 @@ final class ImportOrderingTests: XCTestCase {
     /// all — a sequence number cannot be compared with an issue date.
     func testOrderingKindsMustMatchToRank() throws {
         XCTAssertEqual(SourceOrdering.sequence(2).compare(to: .sequence(1)), .orderedDescending)
-        XCTAssertEqual(SourceOrdering.issuedAt("2026-02-21").compare(to: .issuedAt("2026-02-20")),
+        XCTAssertEqual(SourceOrdering.issuedAt("2026-02-23").compare(to: .issuedAt("2026-02-20")),
                        .orderedDescending)
         XCTAssertNil(SourceOrdering.sequence(2).compare(to: .issuedAt("2026-02-20")))
         XCTAssertNil(SourceOrdering.unavailable.compare(to: .sequence(1)))
@@ -135,8 +135,8 @@ final class ImportOrderingTests: XCTestCase {
 
     /// Under the default policy the change is applied, but the revision records
     /// that nothing ranked it — the assumption is visible, not implied.
-    func testUnrankedChangeUnderTheDefaultPolicyIsRecordedAsUnranked() throws {
-        let (_, lab) = try fixture()
+    func testExplicitApplyAndFlagOptInIsRecordedAsUnranked() throws {
+        let (_, lab) = try fixture(policy: .applyAndFlag)
         guard case .created(let reportID) = try lab.upsertReport(version("Al Borg", "2026-02-20")) else {
             return XCTFail("expected a new report")
         }

@@ -59,15 +59,16 @@ extension PartialDateTime {
     }
 
     static func inferPrecision(_ s: String) -> TimePrecision? {
-        switch s.count {
-        case 0:              return .unknown
-        case 4:              return .year
-        case 7:              return .month
-        case 10:             return .day
-        case 13:             return .hour
-        case 16:             return .minute
+        let local = PartialDateTime.localText(s)
+        switch local.count {
+        case 0: return .unknown
+        case 4: return .year
+        case 7: return .month
+        case 10: return .day
+        case 13: return .hour
+        case 16: return .minute
         case let n where n >= 19: return .instant
-        default:             return nil
+        default: return nil
         }
     }
 
@@ -83,18 +84,25 @@ extension PartialDateTime {
     /// out at its edges, which is why such a record reports `.potential` rather
     /// than `.definite` near a boundary.
     public var span: (start: Date, end: Date)? {
-        guard isKnown else { return nil }
+        guard isKnown, Self.shapeMatches(text, precision) else { return nil }
 
         if precision == .instant {
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime]
-            guard let instant = formatter.date(from: text)
-                    ?? PartialDateTime.fractionalFormatter.date(from: text) else { return nil }
+            let parsedText: String
+            if Self.explicitOffset(text) != nil { parsedText = text.uppercased() }
+            else {
+                let offset = zone.offsetMinutes ?? 0
+                let suffix = String(format: "%@%02d:%02d", offset < 0 ? "-" : "+", abs(offset) / 60, abs(offset) % 60)
+                parsedText = text + suffix
+            }
+            guard let instant = formatter.date(from: parsedText)
+                    ?? PartialDateTime.fractionalFormatter.date(from: parsedText) else { return nil }
             return (instant, instant.addingTimeInterval(1))
         }
 
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: (zone.offsetMinutes ?? 0) * 60)
+        calendar.timeZone = TimeZone(secondsFromGMT: (Self.explicitOffset(text) ?? zone.offsetMinutes ?? 0) * 60)
             ?? TimeZone(secondsFromGMT: 0)!
 
         let characters = Array(text)
@@ -144,21 +152,22 @@ extension PartialDateTime {
     /// `.potential` instead of being dropped, because dropping it would assert
     /// that it happened outside the range — which the record does not say.
     public func fit(in range: DateRange) -> RangeFit? {
-        guard let span else { return nil }
-
         // With no offset the span was resolved in UTC, which is a convenience,
         // not a fact. The true instant can be up to 14 hours either side, so
         // the overlap test widens by that much — never wrongly excluding — and
         // the answer can never be `.definite`, because definite membership is
         // exactly the claim an unknown offset cannot support.
-        let known = hasKnownOffset
-        let lower = known ? span.start : span.start.addingTimeInterval(-PartialDateTime.maxOffset)
-        let upper = known ? span.end : span.end.addingTimeInterval(PartialDateTime.maxOffset)
-
-        if upper <= range.start || lower >= range.end { return nil }
-        guard known else { return .potential }
-        if span.start >= range.start && span.end <= range.end { return .definite }
+        guard let possible = possibleSpan else { return nil }
+        if possible.end <= range.start || possible.start >= range.end { return nil }
+        if hasKnownOffset && possible.start >= range.start && possible.end <= range.end { return .definite }
         return .potential
+    }
+
+    /// Bounds of uncertainty, not invented occurrence times.
+    var possibleSpan: (start: Date, end: Date)? {
+        guard let span else { return nil }
+        let margin = hasKnownOffset ? 0 : Self.maxOffset
+        return (span.start.addingTimeInterval(-margin), span.end.addingTimeInterval(margin))
     }
 
     /// The widest real UTC offset, used only to widen an uncertain span.
@@ -171,14 +180,25 @@ extension PartialDateTime {
     /// `"2019-03"` or `"2019-03-14T08:10"` with no recorded zone — those name a
     /// wall-clock reading whose instant depends on where the person was.
     public var hasKnownOffset: Bool {
-        if zone.offsetMinutes != nil { return true }
-        guard isKnown, !text.isEmpty else { return false }
-        if text.hasSuffix("Z") || text.hasSuffix("z") { return true }
-        // ±hh:mm or ±hhmm at the end, after the time part.
-        let tail = text.suffix(6)
-        if tail.count == 6, let sign = tail.first, sign == "+" || sign == "-" { return true }
-        let short = text.suffix(5)
-        if short.count == 5, let sign = short.first, sign == "+" || sign == "-" { return true }
-        return false
+        guard isKnown, Self.shapeMatches(text, precision) else { return false }
+        if Self.explicitOffset(text) != nil { return true }
+        return zone.offsetMinutes.map { abs($0) <= 14 * 60 } ?? false
+    }
+
+    static func explicitOffset(_ text: String) -> Int? {
+        guard text.contains("T") else { return nil }
+        if text.hasSuffix("Z") || text.hasSuffix("z") { return 0 }
+        guard let range = text.range(of: #"[+-][0-9]{2}:?[0-9]{2}$"#, options: .regularExpression) else { return nil }
+        let suffix = String(text[range]).replacingOccurrences(of: ":", with: "")
+        guard let h = Int(suffix.dropFirst().prefix(2)), let m = Int(suffix.suffix(2)),
+              h <= 14, m < 60, h != 14 || m == 0 else { return nil }
+        return (suffix.first == "-" ? -1 : 1) * (h * 60 + m)
+    }
+
+    static func localText(_ text: String) -> String {
+        guard explicitOffset(text) != nil else { return text }
+        if text.hasSuffix("Z") || text.hasSuffix("z") { return String(text.dropLast()) }
+        let suffixLength = text.suffix(6).contains(":") ? 6 : 5
+        return String(text.dropLast(suffixLength))
     }
 }

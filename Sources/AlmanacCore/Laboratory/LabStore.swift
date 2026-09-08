@@ -83,6 +83,12 @@ public struct LabReportRevision: Sendable, Hashable {
     /// `superseded` · `superseded_unranked` · `conflict`. A conflict is not a
     /// past version of the live row; it is a version that was never applied.
     public let kind: String
+    public let headerText: String?
+    public let actor: String
+    public let sourceOrdering: SourceOrdering
+    public let resolvedAt: String?
+    public let resolvedBy: String?
+    public let resolutionReason: String?
 }
 
 public enum LabRecordOutcome: Sendable, Hashable {
@@ -120,7 +126,7 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
 
     public init(db: Database, clock: any Clock = SystemClock(),
                 zone: ZoneContext = ZoneContext(TimeZone.current),
-                unrankedImports: UnrankedImportPolicy = .applyAndFlag) {
+                unrankedImports: UnrankedImportPolicy = .holdAsConflict) {
         self.db = db
         self.clock = clock
         self.catalog = LabCatalogStore(db: db, clock: clock)
@@ -171,11 +177,21 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
                 zoneID: draft.reportedAt.zone.identifier,
                 header: draft.headerText)
 
-            if stored == incoming { return .unchanged(reportID: reportID) }
-
             let held = SourceOrdering.from(kind: existing.string("source_ordering_kind"),
                                            value: existing.string("source_ordering_text"))
             let ranking = draft.sourceOrdering.compare(to: held)
+
+            // Even unchanged content can advance the source's authoritative version.
+            if stored == incoming {
+                if ranking == .orderedDescending || (held == .unavailable && draft.sourceOrdering != .unavailable) {
+                    return try supersedeReport(reportID: reportID, existing: existing,
+                        storedFingerprint: stored, draft: draft, kind: "ordering_advanced")
+                }
+                return .unchanged(reportID: reportID)
+            }
+            if ranking == .orderedSame {
+                return try recordReportConflict(reportID: reportID, draft: draft, fingerprint: incoming)
+            }
 
             // Ordering first, history second. A source that explicitly ranks
             // this version above the one held is correcting the record, and it
@@ -187,7 +203,7 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
                                            storedFingerprint: stored, draft: draft,
                                            kind: "superseded")
             }
-            if ranking == .orderedAscending || ranking == .orderedSame {
+            if ranking == .orderedAscending {
                 return .staleIgnored(reportID: reportID)
             }
 
@@ -244,8 +260,8 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
     /// Moves the held values into the history and puts the draft's on the live
     /// row. `kind` records whether the source ranked this change or not.
     private func supersedeReport(reportID: String, existing: Row, storedFingerprint: String,
-                                 draft: LabReportDraft, kind: String) throws -> LabReportOutcome {
-        try db.transaction {
+                                 draft: LabReportDraft, kind: String, withinTransaction: Bool = false) throws -> LabReportOutcome {
+        let operation = { () throws -> LabReportOutcome in
             let number = try nextReportRevisionNumber(reportID)
             let revisionID = UUID().uuidString
             try db.run("""
@@ -292,11 +308,24 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
             return .updated(reportID: reportID, supersededRevisionID: revisionID,
                             revisionNumber: number)
         }
+        return try withinTransaction ? operation() : db.transaction(operation)
     }
 
     /// Records the *incoming* version without touching what is current.
     private func recordReportConflict(reportID: String, draft: LabReportDraft,
                                       fingerprint: String) throws -> LabReportOutcome {
+        // Replaying the same resolved proposal must not reopen it. A different
+        // ordering marker is a new proposal, even when the content is identical.
+        if let resolved = try db.query("""
+            SELECT id FROM lab_report_revision
+            WHERE report_id = ? AND content_fingerprint = ?
+              AND kind IN ('conflict_accepted', 'conflict_rejected')
+              AND source_ordering_kind IS ? AND source_ordering_text IS ? LIMIT 1;
+            """, [.text(reportID), .text(fingerprint),
+                   draft.sourceOrdering.kindText.map(SQLValue.text) ?? .null,
+                   draft.sourceOrdering.valueText.map(SQLValue.text) ?? .null]).first?.string("id") {
+            return .replayIgnored(reportID: reportID, matchedRevisionID: resolved)
+        }
         // A conflict already logged for this exact content is not logged twice.
         if let existing = try db.query("""
             SELECT id FROM lab_report_revision
@@ -330,6 +359,40 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
         }
     }
 
+    /// Explicit user decision. Resolving and changing current metadata are atomic.
+    public func resolveReportConflict(id: String, accept: Bool, actor: String, reason: String) throws {
+        guard !actor.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw LabError.invalidResolution
+        }
+        try db.transaction {
+            guard let conflict = try db.query("SELECT * FROM lab_report_revision WHERE id = ? AND kind = 'conflict';", [.text(id)]).first,
+                  let reportID = conflict.string("report_id"),
+                  let current = try db.query("SELECT * FROM lab_report WHERE id = ?;", [.text(reportID)]).first else {
+                throw LabError.conflictNotFound(id)
+            }
+            if accept {
+                var draft = LabReportDraft()
+                draft.laboratoryNameText = conflict.string("laboratory_name_text")
+                draft.headerText = conflict.string("header_text")
+                draft.reportedAt = PartialDateTime(storedText: conflict.string("reported_at") ?? "",
+                    precision: TimePrecision(rawValue: conflict.string("reported_precision") ?? "") ?? .unknown,
+                    zone: ZoneContext(offsetMinutes: conflict.int("reported_tz_offset_minutes").map(Int.init),
+                                      identifier: conflict.string("reported_tz_id"))) ?? .unknown
+                draft.entryOrigin = actor
+                draft.sourceOrdering = SourceOrdering.from(kind: conflict.string("source_ordering_kind"), value: conflict.string("source_ordering_text"))
+                let fingerprint = Self.reportFingerprint(laboratoryName: current.string("laboratory_name_text"),
+                    reportedAt: current.string("reported_at"), precision: current.string("reported_precision") ?? "unknown",
+                    offsetMinutes: current.int("reported_tz_offset_minutes").map(Int.init), zoneID: current.string("reported_tz_id"),
+                    header: current.string("header_text"))
+                _ = try supersedeReport(reportID: reportID, existing: current, storedFingerprint: fingerprint,
+                    draft: draft, kind: "superseded", withinTransaction: true)
+            }
+            try db.run("UPDATE lab_report_revision SET kind = ?, resolved_at = ?, resolved_by = ?, resolution_reason = ? WHERE id = ?;",
+                [.text(accept ? "conflict_accepted" : "conflict_rejected"), .text(nowText), .text(actor), .text(reason), .text(id)])
+        }
+    }
+
     private func nextReportRevisionNumber(_ reportID: String) throws -> Int {
         Int(try db.query("""
             SELECT COALESCE(MAX(revision_number), 0) AS n
@@ -350,7 +413,8 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
     public func reportRevisions(of reportID: String) throws -> [LabReportRevision] {
         try db.query("""
         SELECT id, report_id, revision_number, laboratory_name_text, reported_at,
-               superseded_at, kind
+               superseded_at, kind, header_text, actor, source_ordering_kind,
+               source_ordering_text, resolved_at, resolved_by, resolution_reason
         FROM lab_report_revision WHERE report_id = ? ORDER BY revision_number;
         """, [.text(reportID)]).compactMap { row in
             guard let id = row.string("id"), let reportID = row.string("report_id"),
@@ -360,7 +424,11 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
                 laboratoryNameText: row.string("laboratory_name_text"),
                 reportedAtText: row.string("reported_at"),
                 supersededAt: row.string("superseded_at") ?? "",
-                kind: row.string("kind") ?? "superseded")
+                kind: row.string("kind") ?? "superseded",
+                headerText: row.string("header_text"), actor: row.string("actor") ?? "unknown",
+                sourceOrdering: SourceOrdering.from(kind: row.string("source_ordering_kind"), value: row.string("source_ordering_text")),
+                resolvedAt: row.string("resolved_at"), resolvedBy: row.string("resolved_by"),
+                resolutionReason: row.string("resolution_reason"))
         }
     }
 
@@ -430,18 +498,34 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
     /// revision. Nothing about this needs an external observation id, which is
     /// what makes a manually entered result editable at all.
     @discardableResult
-    public func reviseObservation(id observationID: String,
-                                  content rawContent: LabRevisionContent) throws -> LabRecordOutcome {
+    public func reviseObservation(id: String, content: LabRevisionContent) throws -> LabRecordOutcome {
+        try reviseObservationImpl(id: id, content: content)
+    }
+
+    public func updateObservationMetadata(id: String, _ edit: LabObservationMetadataEdit) throws -> LabMetadataOutcome {
+        try updateObservationMetadataImpl(id: id, edit)
+    }
+
+    /// One editor Save commits value and metadata together or neither.
+    public func saveManualEdit(id: String, content: LabRevisionContent, metadata: LabObservationMetadataEdit) throws {
+        try db.transaction {
+            _ = try reviseObservationImpl(id: id, content: content, withinTransaction: true)
+            _ = try updateObservationMetadataImpl(id: id, metadata, withinTransaction: true)
+        }
+    }
+
+    private func reviseObservationImpl(id observationID: String,
+                                  content rawContent: LabRevisionContent, withinTransaction: Bool = false) throws -> LabRecordOutcome {
         let content = try rawContent.validated()
         guard try db.query("SELECT id FROM lab_observation WHERE id = ?;",
                            [.text(observationID)]).first != nil else {
             throw LabError.observationNotFound(observationID)
         }
-        return try db.transaction {
+        let operation = { () throws -> LabRecordOutcome in
             let fingerprint = content.fingerprint
             if let held = try db.query("""
                 SELECT id FROM lab_observation_revision
-                WHERE observation_id = ? AND content_fingerprint = ?;
+                WHERE observation_id = ? AND content_fingerprint = ? AND is_current = 1;
                 """, [.text(observationID), .text(fingerprint)]).first?.string("id") {
                 return .unchanged(observationID: observationID, revisionID: held)
             }
@@ -457,6 +541,7 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
             return .revised(observationID: observationID, revisionID: revisionID,
                             revisionNumber: next)
         }
+        return try withinTransaction ? operation() : db.transaction(operation)
     }
 
     /// Corrects an observation's **metadata** — what it measured, in what, and
@@ -468,8 +553,8 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
     /// `lab_observation_metadata_revision` with the actor, the reason and the
     /// list of fields touched.
     @discardableResult
-    public func updateObservationMetadata(
-        id observationID: String, _ edit: LabObservationMetadataEdit
+    private func updateObservationMetadataImpl(
+        id observationID: String, _ edit: LabObservationMetadataEdit, withinTransaction: Bool = false
     ) throws -> LabMetadataOutcome {
         guard let existing = try db.query("""
             SELECT id, report_id, catalog_analyte_id, match_origin, match_confidence,
@@ -508,7 +593,7 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
         if newCollectedAt != oldCollectedAt { changed.append("collected_at") }
         guard !changed.isEmpty else { return .unchanged(observationID: observationID) }
 
-        return try db.transaction {
+        let operation = { () throws -> LabMetadataOutcome in
             let number = Int(try db.query("""
                 SELECT COALESCE(MAX(revision_number), 0) AS n
                 FROM lab_observation_metadata_revision WHERE observation_id = ?;
@@ -571,6 +656,7 @@ public struct LabStore: TimelineProviding, @unchecked Sendable {
             return .updated(observationID: observationID, revisionID: revisionID,
                             revisionNumber: number, changedFields: changed)
         }
+        return try withinTransaction ? operation() : db.transaction(operation)
     }
 
     /// Previous metadata for an observation, oldest first.

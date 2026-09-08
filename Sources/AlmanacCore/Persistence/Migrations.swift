@@ -54,7 +54,8 @@ public enum AlmanacMigrations {
         Migration003_LaboratoryRecords.self,
         Migration004_HealthSamples.self,
         Migration005_SpecimenAndCatalogSemantics.self,
-        Migration006_EditingAndSourceOrdering.self
+        Migration006_EditingAndSourceOrdering.self,
+        Migration007_ConflictResolution.self
         // The Technical Spec v1.0 48-table schema is still unavailable and is
         // still not authored from inference. Numbering for it is settled per
         // docs/architecture/health-data-foundation.md §11, and renumbering

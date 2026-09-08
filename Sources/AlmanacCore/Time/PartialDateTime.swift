@@ -93,16 +93,28 @@ public struct PartialDateTime: Codable, Sendable, Hashable, Comparable, CustomSt
     }
 
     static func shapeMatches(_ s: String, _ p: TimePrecision) -> Bool {
-        func digits(_ t: Substring) -> Bool { t.allSatisfy(\.isNumber) }
-        switch p {
-        case .unknown: return s.isEmpty
-        case .year:    return s.count == 4 && digits(s[...])
-        case .month:   return s.count == 7 && s.dropFirst(4).first == "-"
-        case .day:     return s.count == 10 && s.dropFirst(7).first == "-"
-        case .hour:    return s.count == 13 && s.contains("T")
-        case .minute:  return s.count == 16 && s.contains("T")
-        case .instant: return s.count >= 19 && s.contains("T")
+        let local = localText(s)
+        let patterns: [TimePrecision: String] = [
+            .year: #"[0-9]{4}"#,
+            .month: #"[0-9]{4}-(0[1-9]|1[0-2])"#,
+            .day: #"[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])"#,
+            .hour: #"[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3])"#,
+            .minute: #"[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]"#,
+            .instant: #"[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?"#
+        ]
+        if p == .unknown { return s.isEmpty }
+        guard let pattern = patterns[p], local.range(of: "^" + pattern + "$", options: .regularExpression) != nil else { return false }
+        // Reject calendar rollover (for example February 30).
+        if p.rank >= TimePrecision.day.rank {
+            let y = Int(local.prefix(4))!, m = Int(local.dropFirst(5).prefix(2))!, d = Int(local.dropFirst(8).prefix(2))!
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+            guard let date = calendar.date(from: DateComponents(year: y, month: m, day: d)),
+                  calendar.component(.year, from: date) == y,
+                  calendar.component(.month, from: date) == m,
+                  calendar.component(.day, from: date) == d else { return false }
         }
+        return true
     }
 
     /// The `yyyy-MM-dd` prefix when the value is at least day-precise.

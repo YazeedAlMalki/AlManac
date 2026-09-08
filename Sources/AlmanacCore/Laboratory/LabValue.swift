@@ -69,6 +69,8 @@ public enum LabContentOrigin: String, Codable, Sendable, CaseIterable, Hashable 
 }
 
 public enum LabError: Error, CustomStringConvertible, Sendable {
+    case invalidResolution
+    case conflictNotFound(String)
     case missingReasonRequired
     case missingReasonNotAllowed(LabValueType)
     case observationNotFound(String)
@@ -77,6 +79,8 @@ public enum LabError: Error, CustomStringConvertible, Sendable {
 
     public var description: String {
         switch self {
+        case .invalidResolution: return "Resolution requires an actor and reason."
+        case .conflictNotFound(let id): return "No unresolved conflict with id \(id)."
         case .missingReasonRequired:
             return "value_type 'absent' requires a missing reason; use .unknown rather than none."
         case .missingReasonNotAllowed(let t):

@@ -2,12 +2,8 @@ import Foundation
 
 /// What to do with an import that carries new content the source did not rank.
 ///
-/// Neither answer is free. Refusing every unranked change makes a source that
-/// never states a version — most PDFs — permanently uncorrectable. Applying it
-/// silently makes arrival order into authority, which is the thing that lets a
-/// replayed queue revert a corrected result. So the choice is explicit, the
-/// default applies the change *and records that it was unranked*, and a source
-/// that must never do this can be given the strict policy.
+/// Unordered changes are held by default. A person can explicitly accept or
+/// reject them; arrival order does not establish source authority.
 public enum UnrankedImportPolicy: Sendable, Hashable {
     /// Apply it, and mark the stored revision `superseded_unranked` so the
     /// assumption is visible in the history rather than implied by its absence.
@@ -70,12 +66,15 @@ public enum SourceOrdering: Sendable, Hashable {
         case (.sequence(let a), .sequence(let b)):
             return a == b ? .orderedSame : (a < b ? .orderedAscending : .orderedDescending)
         case (.issuedAt(let a), .issuedAt(let b)):
-            guard let left = PartialDateTime(inferringPrecisionFrom: a)?.span?.start,
-                  let right = PartialDateTime(inferringPrecisionFrom: b)?.span?.start else {
-                return nil
+            guard let l = PartialDateTime(inferringPrecisionFrom: a),
+                  let r = PartialDateTime(inferringPrecisionFrom: b),
+                  let left = l.possibleSpan, let right = r.possibleSpan else { return nil }
+            if l.precision == .instant && r.precision == .instant && l.hasKnownOffset && r.hasKnownOffset {
+                return left.start == right.start ? .orderedSame : (left.start < right.start ? .orderedAscending : .orderedDescending)
             }
-            return left == right ? .orderedSame
-                : (left < right ? .orderedAscending : .orderedDescending)
+            if left.end <= right.start { return .orderedAscending }
+            if right.end <= left.start { return .orderedDescending }
+            return nil // overlapping uncertainty cannot establish source ordering
         default:
             return nil
         }

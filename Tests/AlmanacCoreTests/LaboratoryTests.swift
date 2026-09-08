@@ -355,6 +355,7 @@ final class LaboratoryTests: XCTestCase {
         var report = LabReportDraft()
         report.sourceSystem = "lab-a"
         report.sourceReportID = "R-1"
+        report.sourceOrdering = .sequence(1)
         report.laboratoryNameText = "Al Borg"
         report.reportedAt = PartialDateTime(text: "2026-02-20", precision: .day)
 
@@ -365,6 +366,7 @@ final class LaboratoryTests: XCTestCase {
                        "identical metadata is a no-op")
 
         var corrected = report
+        corrected.sourceOrdering = .sequence(2)
         corrected.laboratoryNameText = "Al Borg Laboratories"
         corrected.reportedAt = PartialDateTime(text: "2026-02-21", precision: .day)
         guard case .updated(let sameID, _, let number) = try store.upsertReport(corrected) else {
