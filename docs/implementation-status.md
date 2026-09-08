@@ -1,6 +1,8 @@
 # Almanac — Implementation status
 
 **Date:** 2026-09-08
+**Commits:** `9b7e0f8` (slice checkpoint), `e55080b` (correctness pass). Local
+only; nothing pushed.
 **Slice:** first bounded implementation slice — Laboratory persistence, one
 HealthProvider sample type, a shared timeline over module-provided queries, and
 a recorded document-storage decision.
@@ -14,7 +16,7 @@ the Laboratory UI, and it does not complete the Almanac application.
 **Environment:** Swift 6.0.3 (`swift-6.0.3-RELEASE`, ubuntu24.04 toolchain),
 x86_64 Linux, in the session's cloud container. **Not** `yamal`'s Swift 6.3.3.
 
-**Result:** `swift build` clean; `swift test` → **56 tests, 0 failures.**
+**Result:** `swift build` clean; `swift test` → **62 tests, 0 failures.**
 
 Commands as run:
 
@@ -144,6 +146,104 @@ first: `MigrationRunner` refuses a version behind the applied head
 renumber 002-004, not to edit 001.
 
 Numbering freezes the moment an app target creates its first durable database.
+
+---
+
+## 4a. Correctness pass (commit `e55080b`)
+
+| Fix | What was wrong | Where | Verified by |
+|---|---|---|---|
+| Coarse-date range queries | A partial date was filtered as though its span start were an exact occurrence, so a month-precision record vanished from any range starting later in that month | `Time/PartialDateTimeSpan.swift`, `LabStore.entries` | `testCoarseMonthObservationSurvivesARangeStartingInsideIt` |
+| Specimen | No specimen field at all — a blood result and a urine result were indistinguishable | migration 005, `Laboratory/LabSpecimen.swift` | `testSpecimenIsOptionalAndBloodAndUrineDoNotMerge` |
+| Catalog semantics | MMA, EGRAC and PIVKA-II were catalogued as vitamin measurements; beta-carotene as vitamin A | `measurement_role`, seed | `testVitaminEntriesAreClassifiedByWhatTheyMeasure` |
+| Overstated count | "24 vitamin forms" — 24 entries, of which 20 are direct measurements | coverage doc, seed | `testTheVitaminCountIsNotOverstated` |
+| CBC | A four-analyte "complete blood count" | seed, `almanac:panel.cbc` now 15 members | `testCBCPanelIsComplete` |
+| Report metadata | Re-import silently discarded a corrected report date or laboratory name | `upsertReport`, `lab_report_revision` | `testReportMetadataCorrectionIsPreservedNotDiscarded` |
+
+`RangeFit` is the new distinction that makes the first fix honest: `.definite`
+means every instant the record could denote lies inside the range; `.potential`
+means it overlaps and may belong. A `.potential` entry is shown and labelled,
+never dropped, and storage still holds `"2019-03"` — no day or time is invented
+to make the query easier.
+
+All existing catalog ids and panel ids were preserved. Migrations 001-004 were
+not edited; 005 is appended, on the rule that a committed migration is treated
+the same as an applied one.
+
+### Snapshot verification
+
+All **43** build and test inputs — everything under `Sources/` and `Tests/`,
+plus `Package.swift` and the vendored SQLite amalgamation — were compared by
+`md5sum` between the tested container copy and this working tree, and are
+byte-identical. `Package.swift` declares no resource bundles, and there are no
+non-source files under `Sources/` or `Tests/`.
+
+### Toolchain, precisely
+
+| | |
+|---|---|
+| Ran on | Swift 6.0.3 (`swift-6.0.3-RELEASE`, ubuntu24.04 build), x86_64 Linux, cloud container |
+| Commands | `swift build` then `swift test` |
+| Result | build clean, 62 tests, 0 failures |
+| **Not** run on | the project's Swift 6.3.3 |
+
+The 6.3.3 attempt and why it failed, so this is not repeated: access to
+`~/.local/swift` and `~/.local/swiftdeps` was granted and the toolchain was
+reached, but running it produced
+`swift: /lib/x86_64-linux-gnu/libc.so.6: version 'GLIBC_2.38' not found`. The
+sandbox that can reach this repository is **Ubuntu 22.04 with glibc 2.35**;
+the toolchain needs 2.38 or newer. It cannot be relocated to the container
+either — 3.3 GB across 2026 files, against a 50-file, 500 MB transfer limit.
+
+**Outstanding, for Yazeed:**
+
+    cd ~/projects/almanac && source env.sh && swift build && swift test
+
+Expected: 62 tests, 0 failures. Any difference is a 6.3.3-specific finding.
+
+---
+
+## 4b. The native manual-entry flow — smallest next step
+
+**There is no usable interface today.** 62 passing tests exercise a library.
+No person can create a report, type a result, or look at anything: there is no
+app target, no binary, and no screen. Core tests do not establish otherwise.
+
+The flow *create report → add results → save → view history → reopen report*
+needs two things, in this order.
+
+### Core work first — small, and testable on Linux today
+
+| Missing | Why the flow needs it |
+|---|---|
+| `LabStore.reports(limit:offset:)` and `report(id:)` | Nothing can list or reopen a report; only `observationIDs(inReport:)` exists |
+| `LabCatalogStore.search(prefix:)` | Analyte pick-list. Matching today is exact-fold only, which is right for import and useless for typing |
+
+Both are ordinary additions to existing types, both are unit-testable without
+a Mac, and doing them first means the app target starts against a complete API.
+
+### Then the app target — what it actually requires
+
+| Requirement | Detail | Needed for this flow? |
+|---|---|---|
+| A Mac | Xcode is macOS-only; there is no supported way to build or sign an iOS app on Linux. Options: Apple silicon hardware, a rented cloud Mac (MacStadium, Scaleway, AWS EC2 mac), or GitHub Actions macOS runners for CI only — runners cannot do interactive UI work | **Yes. This is the blocker, unchanged since 2026-09-05** |
+| Xcode + iOS SDK | The package declares `.iOS(.v17)` / `.macOS(.v14)`, so any current Xcode covers it | Yes |
+| An app target | The repo has none — no `.xcodeproj`, no `.xcworkspace`, no `Info.plist`. Add an Xcode App target that depends on this package as a local SwiftPM dependency | Yes |
+| Bundle identifier and a signing team | e.g. `com.<yours>.almanac` | Simulator: no. Device: yes |
+| Apple Developer Program, $99/yr | A free personal team can sign for a device with 7-day certificates | **No** — the Simulator needs neither, and a personal team is enough for a first device install |
+| HealthKit capability, entitlement, and the two `Info.plist` usage strings | `NSHealthShareUsageDescription`, `NSHealthUpdateUsageDescription` | **No** — deliberately. The manual-entry flow touches no HealthKit code, so the first app target can skip the entitlement entirely and stay simple |
+| A database location | The app creates the SQLite file in Application Support and runs `AlmanacMigrations.all` at launch | Yes — **and this is the moment migration numbering freezes** (§4) |
+
+### Scope of the first app target
+
+One SwiftUI target, no HealthKit, no import, no documents, no timeline screen.
+Four views over the existing store: a report list, a report editor (laboratory
+name optional, date with a precision picker), a result editor (analyte search,
+value, unit, comparator, specimen optional), and a report detail that lists
+results and opens one result's revision history.
+
+Everything that flow needs from persistence already exists and is tested,
+except the two read APIs above.
 
 ---
 
