@@ -3,11 +3,20 @@ import XCTest
 
 final class ProvenanceTests: XCTestCase {
 
-    func testOnlyGroupsAAndBShip() {
+    func testOnlyGroupsABAndNShip() {
         XCTAssertTrue(LicenceGroup.permissive.isShippable)
         XCTAssertTrue(LicenceGroup.attribution.isShippable)
+        XCTAssertTrue(LicenceGroup.native.isShippable)
         XCTAssertFalse(LicenceGroup.shareAlike.isShippable)
         XCTAssertFalse(LicenceGroup.restricted.isShippable)
+    }
+
+    // Handoff 2026-09-13: Almanac-native rows are Almanac's own IP, group N, and always ship.
+    func testAlmanacNativeRowsAreGroupNAndPassTheBundleGuard() {
+        XCTAssertEqual(LicenceGroup(rawValue: "N"), .native)
+        XCTAssertEqual(SourceIdentifier.Namespace.almanac.licenceGroup, .native)
+        XCTAssertNoThrow(try BundleGuard.assertShippable(
+            [(identifier: "almanac:kabsa", group: LicenceGroup.native)]))
     }
 
     func testBundleGuardFailsLoudlyOnRestrictedRow() {

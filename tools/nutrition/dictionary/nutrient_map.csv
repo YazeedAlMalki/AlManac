@@ -1,0 +1,29 @@
+source,source_nutrient_id,source_nutrient_name,source_unit,nutrient_id,priority,unit_conversion,numeric_qualifier_override,notes
+usda,1008,Energy,KCAL,energy_kcal,1,,calculated_factor,
+usda,2048,Energy (Atwater Specific Factors),KCAL,energy_kcal,2,,calculated_factor,"Used when 1008 is absent; most Foundation Foods publish 2047/2048 instead of 1008."
+usda,2047,Energy (Atwater General Factors),KCAL,energy_general_atwater_kcal,1,,calculated_factor,
+usda,1003,Protein,G,protein,1,,,
+usda,1004,Total lipid (fat),G,fat_total,1,,,"1085 Total fat (NLEA) is a sum of fatty acids as triglycerides, a different quantity; not mapped."
+usda,1005,"Carbohydrate, by difference",G,carbohydrate_by_difference,1,,,
+usda,1050,"Carbohydrate, by summation",G,carbohydrate_available,1,,,
+usda,1079,"Fiber, total dietary",G,fibre_total_dietary,1,,,
+usda,2033,Total dietary fiber (AOAC 2011.25),G,fibre_total_dietary,2,,,"Used when 1079 is absent."
+usda,1018,"Alcohol, ethyl",G,alcohol,1,,,
+ciqual,328,"Energy, Regulation EU No 1169/2011 (kcal/100g)",kcal,energy_kcal,1,,calculated_factor,"EU factors: protein 4, fat 9, available carbohydrate 4, polyols 2.4, fibre 2, alcohol 7, organic acids 3."
+ciqual,25000,Protein (g/100g),g,protein,1,,,"Jones' factor. 25003 (crude, N x 6.25) is not mapped."
+ciqual,40000,Fat (g/100g),g,fat_total,1,,,
+ciqual,31000,Carbohydrate (g/100g),g,carbohydrate_available,1,,,"INFOODS CHOAVL; the EU 1169/2011 definition, which includes polyols (sugar-free sweets: carbohydrate is almost all polyol)."
+ciqual,34100,Fibres (g/100g),g,fibre_total_dietary,1,,,"INFOODS FIB- (method unspecified in the tag)."
+ciqual,60000,Alcohol (g/100g),g,alcohol,1,,,
+cofid,KCALS,Energy (kcal),kcal,energy_kcal,1,,calculated_factor,"UK factors: protein 4, fat 9, available carbohydrate as monosaccharide 3.75, alcohol 7 (user guide p.10)."
+cofid,PROT,Protein (g),g,protein,1,,,
+cofid,FAT,Fat (g),g,fat_total,1,,,
+cofid,CHO,Carbohydrate (g),g,carbohydrate_available_monosaccharide,1,,,"Available carbohydrate as monosaccharide equivalents, not by difference (user guide p.10)."
+cofid,AOACFIB,AOAC fibre (g),g,fibre_total_dietary,1,,,"ENGFIB (NSP, Englyst) is a different quantity; not mapped."
+cofid,ALCO,Alcohol (g),g,alcohol,1,,,
+afcd,"Energy with dietary fibre, equated (kJ)","Energy with dietary fibre, equated",kJ,energy_kcal,1,kj_to_kcal,calculated_factor,"FSANZ factors incl. fibre 8 kJ/g; converted at 4.184 kJ/kcal."
+afcd,Protein (g),Protein,g,protein,1,,,
+afcd,"Fat, total (g)","Fat, total",g,fat_total,1,,,
+afcd,"Available carbohydrate, with sugar alcohols (g)","Available carbohydrate, with sugar alcohols",g,carbohydrate_available,1,,,"With sugar alcohols, to match CIQUAL's EU definition and the by-difference total general Atwater assumes."
+afcd,Total dietary fibre (g),Total dietary fibre,g,fibre_total_dietary,1,,,
+afcd,Alcohol (g),Alcohol,g,alcohol,1,,,

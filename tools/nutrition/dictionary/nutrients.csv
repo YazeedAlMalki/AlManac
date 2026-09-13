@@ -1,0 +1,10 @@
+nutrient_id,infoods_tag,name,unit,description
+energy_kcal,ENERC_KCAL,"Energy, as published",kcal,"The publisher's headline energy value, calculated by the publisher with its own conversion factors (USDA Energy or Atwater specific; CIQUAL EU 1169/2011; CoFID UK factors 4/9/3.75/7; AFCD equated with fibre). Not comparable across publishers."
+energy_general_atwater_kcal,ENERC_KCAL,"Energy, general Atwater factors, as published",kcal,"Energy calculated by the publisher with general Atwater factors (4/4/9/7 kcal/g on total carbohydrate by difference). Published by USDA only (nutrient 2047)."
+protein,PROCNT,Protein,g,"Protein: total nitrogen multiplied by the publisher's nitrogen conversion factor."
+fat_total,FAT,"Fat, total",g,"Total fat (total lipid) by the publisher's extraction method. USDA 'Total fat (NLEA)', a sum of fatty acids as triglycerides, is a different quantity and is not mapped."
+carbohydrate_by_difference,CHOCDF,"Carbohydrate, total, by difference",g,"100 minus water, protein, fat, ash and alcohol. Includes dietary fibre."
+carbohydrate_available,CHOAVL,"Carbohydrate, available",g,"Available carbohydrate by weight as EU Regulation 1169/2011 defines carbohydrate: sugars, starch and, where present, oligosaccharides, dextrins, glycogen and sugar alcohols (polyols). Excludes dietary fibre."
+carbohydrate_available_monosaccharide,CHOAVLM,"Carbohydrate, available, as monosaccharide equivalents",g,"Available carbohydrate expressed as monosaccharide equivalents (CoFID convention): starch and disaccharides carry hydration factors of about 1.10 and 1.05 relative to carbohydrate_available."
+fibre_total_dietary,FIBTG,"Dietary fibre, total",g,"Total dietary fibre by AOAC methods, including resistant starch and lignin. Englyst non-starch polysaccharide is a different quantity and is not mapped."
+alcohol,ALC,Alcohol,g,"Ethyl alcohol."

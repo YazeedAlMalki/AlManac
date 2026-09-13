@@ -1,0 +1,88 @@
+source,code,qualifier,meaning
+usda,,measured,No derivation code published. Foundation Foods are analytical by definition.
+usda,A,measured,Analytical
+usda,AI,measured,Analytical data; from the literature or government; incomplete documentation
+usda,AR,measured,Analytical data; derived by linear regression
+usda,AS,measured,Summed
+usda,BD,borrowed,Based on same food; Drained solids from solids and liquids or vice versa (canned fruits and vegetables)
+usda,BFAN,borrowed,Based on another form of the food or similar food; Concentration adjustment; Ash; Retention factors not used
+usda,BFAY,borrowed,Based on another form of the food or similar food; Concentration adjustment; Ash; Retention factors used
+usda,BFCN,borrowed,Based on another form of the food or similar food; Concentration adjustment; Carbohydrate; Retention factors not used
+usda,BFCY,borrowed,Based on another form of the food or similar food; Concentration adjustment; Carbohydrate; Retention factors used
+usda,BFFN,borrowed,Based on another form of the food or similar food; Concentration adjustment; Fat; Retention factors not used
+usda,BFFY,borrowed,Based on another form of the food or similar food; Concentration adjustment; Fat; Retention factors used
+usda,BFNN,borrowed,Based on another form of the food or similar food; Concentration adjustment; Non-fat solids; Retention factors not used
+usda,BFNY,borrowed,Based on another form of the food or similar food; Concentration adjustment; Non-fat solids; Retentions factors used
+usda,BFPN,borrowed,Based on another form of the food or similar food; Concentration adjustment; Protein; Retention factors not used
+usda,BFPY,borrowed,Based on another form of the food or similar food; Concentration adjustment; Protein; Retention factors used
+usda,BFSN,borrowed,Based on another form of the food or similar food; Concentration adjustment; Solids; Retention factors not used
+usda,BFSY,borrowed,Based on another form of the food or similar food; Concentration adjustment; Solids; Retention factors used
+usda,BFYN,borrowed,Based on another form of the food or similar food; Concentration adjustment; Yield; Retention factors not used
+usda,BFYY,borrowed,Based on another form of the food or similar food; Concentration adjustment; Yield; Retention factors used
+usda,BFZN,borrowed,Based on another form of the food or similar food; Concentration adjustment; No adjustment; Retention factors not used
+usda,BFZY,borrowed,Based on another form of the food or similar food; Concentration adjustment; No adjustment; Retention factors used
+usda,BNA,borrowed,Based on another form of the same food or similar food: constituents normalized to total; vitamin A
+usda,CAAN,borrowed,Calculated from different food; From average values for food category; Ash; Retention factors not used
+usda,CAAY,borrowed,Calculated from different food; From average values for food category; Ash; Retention factors used
+usda,CACN,borrowed,Calculated from different food; From average values for food category; Carbohydrate; Retention factors not used
+usda,CACY,borrowed,Calculated from different food; From average values for food category; Carbohydrate; Retention factors used
+usda,CAFN,borrowed,Calculated from different food; From average values for food category; Fat; Retention factors not used
+usda,CAFY,borrowed,Calculated from different food; From average values for food category; Fat; Retention factors used
+usda,CANN,borrowed,Calculated from different food; From average values for food category; Non-fat solids; Retention factors not used
+usda,CANY,borrowed,Calculated from different food; From average values for food category; Non-fat solids; Retention factors used
+usda,CAPN,borrowed,Calculated from different food; From average values for food category; Protein; Retention factors not used
+usda,CAPY,borrowed,Calculated from different food; From average values for food category; Protein; Retention factors used
+usda,CASN,borrowed,Calculated from different food; From average values for food category; Solids; Retention factors not used
+usda,CASY,borrowed,Calculated from different food; From average values for food category; Solids; Retention factors used
+usda,CAZN,borrowed,Calculated from different food; From average values for food category; No adjustment; Retention factors not used
+usda,CAZY,borrowed,Calculated from different food; From average values for food category; No adjustment; Retention factors used
+usda,DA,calculated_factor,Concentration adjustment using factor; derived from analytical data
+usda,DI,calculated_factor,Concentration adjustment using factor; derived from imputed data
+usda,FLA,calculated_recipe,Estimated formulation based on ingredient list; Linear program used to estimate ingredients; Analytical data
+usda,FLC,calculated_recipe,Estimated formulation based on ingredient list; Linear program used to estimate ingredients; Claim on label/serving
+usda,FLM,calculated_recipe,Estimated formulation based on ingredient list; Linear program used to estimate ingredients; Manuf. Calc. data/100
+usda,JA,measured,Aggregated data involving combinations of data with only source codes 1 and 12 and/or 13
+usda,JO,borrowed,"Aggregated data involving combinations of data with different source codes when at least one code is not 1, 6, 12, or 13"
+usda,LC,borrowed,Label claim (back calculated from label by NDL staff; Calculated from label claim/serving (g or %RDI)
+usda,LCGS,borrowed,Label Claim Global Synchronization
+usda,MA,borrowed,"Manufacturer supplied(industry or trade association), Analytical data, incomplete documentation"
+usda,MC,borrowed,Manufacturer supplied; Calculated by manufacturer or unknown if analytical or calculated
+usda,ML,borrowed,Manufacturer supplied; Value upon which manufacturer based label claim for fortified/enriched nutrient
+usda,NC,calculated_factor,Calculated
+usda,NP,calculated_factor,Nutrient that is based on other nutrient/s; calculated by difference or summed (with or without activity factors) Ex. Proximate component other than CHO by difference. Vitamin A calculated from components when one of the component values is not source code 1 or 7
+usda,NR,calculated_factor,"Nutrient that is based on other nutrient/s; value used directly, ex. Nut.#204 from Nut.#298"
+usda,O,borrowed,Other procedure used from imputing
+usda,PAE,calculated_recipe,Based on physical composition; Derived from analytical data; Estimated physical composition
+usda,PAK,calculated_recipe,Based on physical composition; Derived from analytical data; Known physical composition
+usda,PIE,calculated_recipe,Based on physical composition; Derived from imputed data; Estimated physical composition
+usda,PIK,calculated_recipe,Based on physical composition; Derived from imputed data; Known physical composition
+usda,RA,calculated_recipe,Recipe; Approximate ingredient proportions (ex. combination of several recipes)
+usda,RC,calculated_recipe,Recipe; Cookbook
+usda,RF,calculated_recipe,Recipe; Formulary of standard products (formulary or standards of identity)
+usda,RK,calculated_recipe,Recipe; Known formulation (dissection data or proprietary formulation)
+usda,RKA,calculated_recipe,"Recipe; Known formulation; No adjustments applied, combination of source codes 1, 12, and/or 6."
+usda,RKI,calculated_recipe,"Recipe;Known formulation;No adjustments applied, combination of source codes which includes codes other than 1,12,or 6"
+usda,RP,calculated_recipe,"Recipe; Per package directions (ex. refrigerated dough, toast, cake mix)"
+usda,RPA,calculated_recipe,"Recipe; Per package directions; No adjustments applied, combination of source codes 1, 12, and/or 6."
+usda,RPI,calculated_recipe,"Recipe;Per package directions;No adjustments applied, combination of source codes which incl codes other than 1,12,or 6"
+usda,S,borrowed,"Product standard, such as enrichment level specified in CFR or AMS commodity standard"
+usda,T,borrowed,Taken from another source--other tables of food composition
+usda,Z,zero_reported,"Assumed zero (Insignificant amount or not naturally occurring in a food, such as fiber in meat)"
+usda,LCBF,borrowed,Label Claim Branded Food Products
+usda,LCCS,borrowed,Calculated from value per serving size measure
+usda,LCSA,borrowed,Calculated from an approximate value per serving size measure
+usda,LCSE,borrowed,Calculated from an exact value per serving size measure
+usda,LCSL,below_loq,Calculated from a less than value per serving size measure
+usda,LCSG,borrowed,Calculated from a greater than value per serving size measure
+usda,LCCD,borrowed,Calculated from a daily value percentage per serving size measure
+usda,LCGP,borrowed,Given by information provider as a value per 100 unit measure
+usda,LCGE,borrowed,Given by information provider as an exact value per 100 unit measure
+usda,LCGA,borrowed,Given by information provider as an approximate value per 100 unit measure
+usda,LCGL,below_loq,Given by information provider as a less than value per 100 unit measure
+usda,LCGG,borrowed,Given by information provider as a greater than value per 100 unit measure
+afcd,Analysed,measured,Food-level derivation: data generated by laboratory analysis. Individual nutrients may differ; see Sampling Details.
+afcd,Recipe,calculated_recipe,Food-level derivation: calculated from ingredient proportions.
+afcd,Borrowed,borrowed,Food-level derivation: from international food composition databases.
+afcd,Imputed,borrowed,Food-level derivation: based on a similar food with minor changes.
+afcd,Label Data,borrowed,Food-level derivation: from product nutrition information panels and ingredient lists.
+afcd,Estimated,borrowed,Food-level derivation used in the data but not defined in the Release 3 contents sheet; treated as not directly observed.

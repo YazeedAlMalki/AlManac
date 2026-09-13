@@ -1,0 +1,9 @@
+qualifier,has_quantity,directly_observed,amount_rule,description
+measured,true,true,required,"A number the source reports as determined for this food."
+trace,true,false,null,"Present in trace amounts. No source publishes a number for a trace, so amount is empty; it is never 0. Arithmetic may treat it as negligible, and must say so."
+not_analysed,false,false,null,"No usable number: not analysed, missing (CIQUAL '-'), or present in significant quantities with no reliable amount (CoFID 'N'). Amount is empty; it is never 0."
+below_loq,true,false,required,"Below a limit the source states; amount is that limit, an upper bound (CIQUAL '< x')."
+borrowed,true,false,required,"Taken from another food or another database, or from a label or manufacturer (USDA B*/C*/T/LC*/M* codes; AFCD Borrowed, Imputed, Label Data, Estimated)."
+calculated_recipe,true,false,required,"Calculated from a recipe or from the food's physical composition."
+calculated_factor,true,false,required,"Calculated from other components with conversion factors, by difference or by concentration adjustment. Every published energy value."
+zero_reported,true,true,required,"The source published an explicit zero. Distinct from trace and from not_analysed."

@@ -1,18 +1,58 @@
 # Almanac implementation status
 
-Updated 2026-09-08. Work continues from `f62aa0e`; all preceding commits are
-preserved. Changes are local on `codex/manual-entry`. Nothing pushed.
+Updated 2026-09-13. Work continues from `8836166` on `codex/manual-entry`; all
+preceding commits are preserved. The nutrition work below is uncommitted in the
+working tree. Nothing pushed.
 
 ## Verified core
 
-Swift 6.0.3 on x86_64 Linux: **85 XCTest tests, zero failures**.
-Command: `swift test -j 1 -Xswiftc -disable-batch-mode`.
-This builds and tests the actual working tree, not a separately copied snapshot.
-The single-job option avoids a compiler crash encountered with the default
-parallel build in this container. It is not an application failure.
+Swift 6.3.3 on x86_64 Linux (`yamal`, `source env.sh`): **115 XCTest tests —
+114 pass, 1 opt-in test skipped, zero failures.** Plain `swift build && swift
+test`; the default parallel build works on this machine. The skipped test
+imports the real bundle, and passes when enabled:
 
-The supplied user log verifies the earlier 79-test revision on Swift 6.3.3.
-The changes in this branch have not been run on 6.3.3 or any Apple platform.
+```sh
+ALMANAC_NUTRITION_BUNDLE=~/ALManac-food-data/build/almanac.sqlite \
+    swift test --filter NutritionRealBundleTests
+```
+
+Python 3.14, `tools/nutrition`: **101 unittest tests, zero failures**, including
+the real-lake integration tests:
+
+```sh
+cd tools/nutrition && ALMANAC_NUTRITION_INTEGRATION=1 python3 -m unittest discover -s tests -t .
+```
+
+Earlier records: 85 tests on Swift 6.0.3 in the 2026-09-08 session container
+(`-j 1 -Xswiftc -disable-batch-mode`); 79 on Swift 6.3.3 per the user log. No
+change has been run on an Apple platform.
+
+## Nutrition module (2026-09-13)
+
+The 2026-09-13 handoff's build order, steps 1–6:
+
+1. Nutrient dictionary and qualifier vocabulary as data: `tools/nutrition/dictionary/`.
+2. USDA Foundation Foods extracted, and 3. canonicalised (395 foods).
+4. Bundle step with the failing licence assertion (`A`, `B`, `N` or the build
+   fails), built while USDA was the only source.
+5. CIQUAL 2025, CoFID 2021 and AFCD R3 extracted and canonicalised; union; the
+   bundle holds 8,354 foods and 49,036 values. `qa` re-reads every mapped raw
+   cell with independent readers: passed, 0 tokens coerced.
+6. AlmanacCore: `LicenceGroup.native` (`N`, ships; the `almanac` namespace moved
+   from `A` to `N`); `NutrientValue.basis`; migration 008 (`nutrition_*`
+   reference tables with licence and qualifier CHECKs);
+   `NutritionReferenceImporter` (re-runs the licence assertion against Swift's
+   own registry before copying anything, in one transaction); `NutritionCatalog`
+   (food, values, bases, calories, folded search); `GeneralAtwater` and
+   `EnergyEstimate` (4/4/9/7 on total carbohydrate, publisher's figure as a
+   labelled fallback).
+
+Details: `docs/features/nutrition.md`. Pipeline contract:
+`tools/nutrition/README.md`. Findings in the data:
+`~/ALManac-food-data/PROCESSING-LOG-2026-09-13.md`.
+
+Not done: Almanac-native dish data (blocked on Yazeed); wiring the bundle
+import into the app target (needs the Apple toolchain); food logging and portions.
 
 ## Targeted corrections
 

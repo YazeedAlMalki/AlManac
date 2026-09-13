@@ -17,8 +17,10 @@ public enum NutrientQualifier: String, Codable, Sendable, CaseIterable, Hashable
     case calculatedFactor = "calculated_factor"
     case zeroReported = "zero_reported"
 
-    /// True when `amount` carries a number the UI may display as a quantity.
-    /// `notAnalysed` is the only case with no defensible numeric reading.
+    /// True when the value has a defensible numeric reading. For `trace` that
+    /// reading is "negligible": no source publishes a number for a trace, so its
+    /// `amount` is nil, and arithmetic takes it as zero and says so
+    /// (`EnergyEstimate.inputsTakenAsZero`). `notAnalysed` has no reading at all.
     public var hasQuantity: Bool { self != .notAnalysed }
 
     /// True when the value is known rather than inferred or absent.
@@ -42,6 +44,7 @@ public struct NutrientValue: Codable, Sendable, Hashable {
     public let sourceNutrientID: String
     public let sourceUnit: String
     public let licenceGroup: LicenceGroup
+    public let basis: NutritionBasis
 
     public init(
         foodRef: SourceIdentifier,
@@ -52,7 +55,8 @@ public struct NutrientValue: Codable, Sendable, Hashable {
         sourceValue: String,
         sourceNutrientID: String,
         sourceUnit: String,
-        licenceGroup: LicenceGroup
+        licenceGroup: LicenceGroup,
+        basis: NutritionBasis = .per100g
     ) {
         self.foodRef = foodRef
         self.nutrientID = nutrientID
@@ -63,5 +67,6 @@ public struct NutrientValue: Codable, Sendable, Hashable {
         self.sourceNutrientID = sourceNutrientID
         self.sourceUnit = sourceUnit
         self.licenceGroup = licenceGroup
+        self.basis = basis
     }
 }

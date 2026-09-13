@@ -1,0 +1,6 @@
+licence_group,name,shippable,description
+A,Permissive core,true,"Public domain / CC0. USDA FoodData Central."
+B,Attribution required,true,"CC BY 4.0, OGL v3.0, Etalab 2.0. CIQUAL, CoFID, AFCD, Frida, Oman FCT 2024. Attribution travels with the rows."
+C,Share-alike,false,"ODbL (Open Food Facts). Share-alike would attach to the shipped database. Never enters the bundle."
+D,Restricted or unconfirmed,false,"Rights restricted or unconfirmed: SFDA, NEVO, TBCA, IFCT, FAO/INFOODS, Bahrain, Tunisia, INNTA, Lebanon. Quarantined."
+N,Almanac-native,true,"Rows Almanac authors and owns outright. Always ships. Quantities are independently sourced; no SFDA value is ever stored verbatim."

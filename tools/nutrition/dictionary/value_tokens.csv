@@ -1,0 +1,5 @@
+source,token,qualifier,meaning
+cofid,Tr,trace,"Trace (CoFID 2021 user guide, p.7)."
+cofid,N,not_analysed,"Present in significant quantities but no reliable information on the amount (CoFID 2021 user guide, p.7)."
+ciqual,traces,trace,"Trace."
+ciqual,-,not_analysed,"Missing value; published with no confidence code and no source."

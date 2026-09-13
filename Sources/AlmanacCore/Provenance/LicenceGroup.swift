@@ -14,6 +14,9 @@ public enum LicenceGroup: String, Codable, Sendable, CaseIterable, Hashable {
     case shareAlike = "C"
     /// Restricted or unconfirmed rights. Quarantined.
     case restricted = "D"
+    /// Rows Almanac authors and owns outright (the `almanac:` namespace).
+    /// Quantities are sourced independently; no SFDA value is stored verbatim.
+    case native = "N"
 
     /// Whether rows in this group may be redistributed inside the app bundle.
     ///
@@ -21,7 +24,7 @@ public enum LicenceGroup: String, Codable, Sendable, CaseIterable, Hashable {
     /// it to every installing user, commercially, in a form they keep.
     public var isShippable: Bool {
         switch self {
-        case .permissive, .attribution: return true
+        case .permissive, .attribution, .native: return true
         case .shareAlike, .restricted: return false
         }
     }

@@ -21,7 +21,8 @@ public struct SourceIdentifier: Codable, Sendable, Hashable, CustomStringConvert
 
         public var licenceGroup: LicenceGroup {
             switch self {
-            case .usda, .almanac: return .permissive
+            case .usda: return .permissive
+            case .almanac: return .native
             case .ciqual, .cofid, .afcd, .frida: return .attribution
             case .openFoodFacts: return .shareAlike
             case .sfda: return .restricted
