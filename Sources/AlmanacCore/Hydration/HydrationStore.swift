@@ -2,7 +2,7 @@ import Foundation
 
 /// Store for persisting and retrieving hydration data
 public final class HydrationStore: Sendable {
-    private let db: Database
+    public let db: Database  // Made public for integration with CalorieIntegration
 
     public init(database: Database) {
         self.db = database

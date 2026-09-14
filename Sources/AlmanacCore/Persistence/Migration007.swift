@@ -116,5 +116,72 @@ public enum Migration007_HydrationTracking: Migration {
         CREATE INDEX idx_hydration_trend_period
             ON hydration_trend (period_start, period_type);
         """)
+
+        // Hydration settings — per-user feature configuration
+        try db.execute("""
+        CREATE TABLE hydration_settings (
+            user_id                         TEXT        PRIMARY KEY,
+            calorie_tracking_enabled       INTEGER     NOT NULL DEFAULT 0,
+            double_track_warning_enabled   INTEGER     NOT NULL DEFAULT 1,
+            auto_log_from_health           INTEGER     NOT NULL DEFAULT 0,
+            reminders_enabled              INTEGER     NOT NULL DEFAULT 1,
+            reminder_interval_minutes      INTEGER     NOT NULL DEFAULT 60,
+            daily_goal_ml                  REAL,
+            track_sodium                   INTEGER     NOT NULL DEFAULT 1,
+            track_sugar                    INTEGER     NOT NULL DEFAULT 1,
+            updated_at                     TEXT        NOT NULL
+        );
+        """)
+
+        // Calorie entries — track calories from drinks
+        try db.execute("""
+        CREATE TABLE hydration_calorie_entry (
+            id                          TEXT        PRIMARY KEY,
+            hydration_sample_id         TEXT        NOT NULL
+                                                    REFERENCES hydration_sample(id) ON DELETE CASCADE,
+            drink_id                    TEXT        NOT NULL,
+            drink_name                  TEXT        NOT NULL,
+            calories_kcal               REAL        NOT NULL,
+            sugar_grams                 REAL,
+            timestamp                   TEXT        NOT NULL,
+            double_track_warning        INTEGER     NOT NULL DEFAULT 0,
+            recorded_at                 TEXT        NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+        try db.execute("""
+        CREATE INDEX idx_hydration_calorie_entry_timestamp
+            ON hydration_calorie_entry (timestamp DESC);
+        """)
+        try db.execute("""
+        CREATE INDEX idx_hydration_calorie_entry_date
+            ON hydration_calorie_entry (DATE(timestamp));
+        """)
+        try db.execute("""
+        CREATE INDEX idx_hydration_calorie_entry_sample
+            ON hydration_calorie_entry (hydration_sample_id);
+        """)
+
+        // Custom drinks — user-defined beverages
+        try db.execute("""
+        CREATE TABLE hydration_custom_drink (
+            id                  TEXT        PRIMARY KEY,
+            user_id             TEXT        NOT NULL,
+            name                TEXT        NOT NULL,
+            liquid_type         TEXT        NOT NULL,
+            volume_ml           REAL        NOT NULL,
+            calories_kcal       REAL        NOT NULL,
+            sodium_mg           REAL        NOT NULL,
+            sugar_grams         REAL,
+            created_at          TEXT        NOT NULL
+        );
+        """)
+        try db.execute("""
+        CREATE INDEX idx_hydration_custom_drink_user
+            ON hydration_custom_drink (user_id, created_at DESC);
+        """)
+        try db.execute("""
+        CREATE INDEX idx_hydration_custom_drink_name
+            ON hydration_custom_drink (user_id, name);
+        """)
     }
 }
