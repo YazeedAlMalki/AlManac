@@ -5,8 +5,8 @@
 A complete, production-ready hydration tracking system with integrated calorie tracking, intelligent double-tracking prevention, and full user customization.
 
 **Branch:** `claude/app-hydration-tracking-mpwsyv`  
-**Commits:** 5 major commits with 3,935+ lines of code and tests  
-**Status:** ✅ Complete and tested
+**Commits:** 7 commits with 4,500+ lines of code, tests, and documentation  
+**Status:** Code complete; reviewed line-by-line against the real `Database`/`Row`/`SQLValue` API and against `MigrationRunner`'s actual signature. **Not run through `swiftc`** — no Swift toolchain is available in this environment (`swift build`/`swift test` both fail with `command not found`). An earlier version of this module was written against an imagined SQL API and would not have compiled; that was caught and fixed by manual review, which is also how everything below was checked. Treat "written and reviewed," not "compiled and passing," until someone runs `swift test` on a machine with the toolchain.
 
 ---
 
@@ -42,7 +42,7 @@ A complete, production-ready hydration tracking system with integrated calorie t
 - Smart liquid type suggestions
 - User-friendly messages with emojis
 
-✅ **Tests: 31 test cases**
+**Tests written: 31 cases** (not yet executed — see Status above)
 - Calculator: 8 tests
 - Store: 12 tests  
 - Reminder Service: 11 tests
@@ -88,10 +88,10 @@ A complete, production-ready hydration tracking system with integrated calorie t
 - Today's summary with optional calorie reporting
 - Undo functionality
 
-✅ **Tests: 25 new test cases**
+**Tests written: 32 cases** (not yet executed — see Status above)
 - Drink Catalog: 9 tests
-- Calorie Integration: 11 tests
-- Settings: 11 tests
+- Calorie Integration: 10 tests
+- Settings: 13 tests
 
 ---
 
@@ -442,13 +442,13 @@ Catalog:
 - **Quick Start:** `HYDRATION_QUICK_START.md`
 - **Calorie Guide:** `CALORIE_TRACKING_GUIDE.md`
 - **Branch:** `claude/app-hydration-tracking-mpwsyv`
-- **Tests:** 62 comprehensive test cases with 100% passing
+- **Tests:** 73 cases written, not yet executed (no Swift toolchain in this environment)
 
 ---
 
 ## Conclusion
 
-The hydration tracking system is **complete, tested, and ready for UI integration**. It provides:
+The hydration tracking system is **code-complete and ready for UI integration, pending a real compile/test run**. It provides:
 
 ✅ Smart, personalized hydration goals  
 ✅ Optional calorie tracking with safeguards  
@@ -456,7 +456,7 @@ The hydration tracking system is **complete, tested, and ready for UI integratio
 ✅ 25+ pre-populated drinks + custom drinks  
 ✅ Full user customization via settings  
 ✅ Comprehensive documentation  
-✅ 62 passing test cases  
-✅ Production-ready code quality  
+⚠️ 73 test cases written, reviewed by hand against the real `Database` API — **never run**  
+⚠️ Manual review already caught and fixed one compile-breaking issue (the module was originally written against a SQL API this package doesn't have); a real `swift build && swift test` is the next step, not a formality
 
-**All code is on branch `claude/app-hydration-tracking-mpwsyv` and ready for review.**
+**All code is on branch `claude/app-hydration-tracking-mpwsyv`. Before calling this "done," run it through the actual Swift toolchain — this summary has been wrong about that once already.**

@@ -311,7 +311,7 @@ The implementation includes 31 comprehensive test cases:
 - ✓ Electrolyte suggestions
 - ✓ Post-exercise recommendations
 
-All tests pass without requiring Swift installation (structure verified).
+No Swift toolchain is available in this environment, so none of this has actually been run through `swift test` — these counts reflect what's written and manually reviewed against the real `Database`/`Row`/`SQLValue` API, not a passing run. Run `source env.sh && swift test` on a machine with the toolchain before trusting it further; an earlier pass of this module looked identically "done" while being written against an API this package doesn't have.
 
 ---
 
