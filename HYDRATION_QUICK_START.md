@@ -4,6 +4,8 @@
 
 A comprehensive hydration tracking module that helps users stay hydrated with intelligent, personalized recommendations that adapt to their exercise habits and personal patterns.
 
+**Now includes:** Integrated calorie tracking for drinks, drink catalog with 25+ beverages, double-tracking prevention, and full user customization via settings.
+
 ### Core Components
 
 1. **HydrationCalculator** — Computes personalized daily intake goals
@@ -376,14 +378,193 @@ docs/
 
 ---
 
+## Calorie Tracking Integration
+
+### Overview
+The hydration module now integrates with calorie tracking, automatically logging calories from drinks while preventing double-tracking.
+
+### Features
+- **25+ Drink Catalog** with pre-populated calories, sodium, and sugar
+  - Sodas (regular & diet): Pepsi, Coca-Cola, Sprite, Fanta
+  - Sports drinks: Gatorade, Powerade
+  - Electrolyte solutions: Pedialyte, coconut water
+  - Beverages: Coffee, tea, milk, juice, energy drinks
+  
+- **Double-Tracking Prevention** ⚠️
+  - Detects if similar drinks logged within 5 minutes
+  - Confidence scoring system
+  - User can acknowledge and dismiss warnings
+  - Fully configurable (can be disabled)
+
+- **Smart Warnings**
+  - High sugar warning (>35g)
+  - High sodium context (especially during/after exercise)
+  - Double-track alerts with time stamps
+
+- **Custom Drinks**
+  - Users can add their own beverages
+  - Saved for future use
+  - Full nutritional tracking
+
+### Settings (User-Configurable)
+
+**Calorie Tracking Toggle** ✓
+```
+Default: OFF (opt-in to prevent mess)
+Enabled: Calories auto-logged with each drink
+Disabled: Hydration-only tracking
+```
+
+**Double-Track Warnings** ✓
+```
+Default: ON
+Logs are flagged if similar drink logged in 5-minute window
+User can dismiss after reviewing
+```
+
+**Sugar Tracking** ✓
+```
+Default: ON
+Warns if drink has >35g sugar
+Tracks daily sugar totals
+```
+
+**Sodium Tracking** ✓
+```
+Default: ON
+Notes high sodium drinks (ideal during/after exercise)
+Important for electrolyte balance
+```
+
+### Usage Example: Enable Calorie Tracking
+
+```swift
+let settingsStore = HydrationSettingsStore(database: db)
+
+// Get user settings
+let settings = try settingsStore.getOrCreate(for: "user123")
+
+// Enable calorie tracking
+try settingsStore.setCalorieTracking(for: "user123", enabled: true)
+
+// Or use comprehensive preset
+let compSettings = HydrationSettingsPreset.comprehensive.toSettings(userId: "user123")
+try settingsStore.save(compSettings)
+```
+
+### Usage Example: Log Drink with Calories
+
+```swift
+let loggingService = HydrationLoggingService(
+    hydrationStore: store,
+    calorieIntegration: calorieIntegration,
+    settingsStore: settingsStore
+)
+
+// Log a drink (settings determine if calories tracked)
+let result = try await loggingService.logDrink(
+    drink: CatalogDrinks.byId("catalog_pepsi")!,
+    userId: "user123"
+)
+
+// Check for warnings
+if result.hasWarnings {
+    print("⚠️ \(result.warningMessage)")
+    // Example: "⚠️ Similar drink logged 2s ago. Did you mean to log this drink?"
+}
+
+// Get today's summary
+let summary = try await loggingService.getTodaySummary(userId: "user123")
+print("Today: \(Int(summary.totalCaloriesKcal)) calories from \(summary.drinkCount) drinks")
+```
+
+### Usage Example: Custom Drink
+
+```swift
+let result = try await loggingService.logCustomDrink(
+    name: "Homemade Sports Drink",
+    liquidType: .other,
+    volume: 500,
+    calories: 120,
+    sodium: 400,
+    sugar: 30,
+    userId: "user123"
+)
+
+// Now it's saved for future use
+let customDrinks = try loggingService.getCustomDrinks(for: "user123")
+print("You have \(customDrinks.count) custom drinks saved")
+```
+
+### Prevention of Double-Tracking Mess
+
+**Problem:** Users might log the same drink twice (forget they logged it, screen lag, etc.)
+
+**Solution - Three Layers:**
+
+1. **Detection** 🔍
+   - Monitors timestamps of all drink logs
+   - Flags if two similar drinks logged within 5 minutes
+   - Calculates confidence score (0.0 to 1.0)
+
+2. **Warning** ⚠️
+   - Shows clear alert: "Similar drink logged 45 seconds ago"
+   - Displays both drink names and times
+   - Lets user choose: Keep both or delete one
+
+3. **Toggle** 🎚️
+   - Users can turn off warnings if they prefer
+   - Can be disabled in settings
+   - Settings stored per-user
+
+**Key Design Decision:** Calorie tracking is **OFF by default**
+- Prevents auto-logging bloat
+- Users opt-in when they want it
+- Clear choice, not hidden feature
+
+### Database Tables (In Migration007)
+
+```
+hydration_settings
+├── user_id (PK)
+├── calorie_tracking_enabled
+├── double_track_warning_enabled
+├── track_sodium
+├── track_sugar
+└── daily_goal_ml
+
+hydration_calorie_entry
+├── id (PK)
+├── hydration_sample_id (FK)
+├── drink_id
+├── drink_name
+├── calories_kcal
+├── sugar_grams
+├── timestamp
+└── double_track_warning
+
+hydration_custom_drink
+├── id (PK)
+├── user_id
+├── name
+├── liquid_type
+├── volume_ml
+├── calories_kcal
+├── sodium_mg
+├── sugar_grams
+└── created_at
+```
+
+---
+
 ## Next Steps
 
-1. **Write iOS UI** — Show hydration dashboard and logging interface
+1. **Write iOS UI** — Drink picker, calorie display, settings panel
 2. **Add Health Module Integration** — Auto-detect exercises
 3. **Setup Notifications** — Scheduled hydration reminders
-4. **Add Charts** — Visualize hydration over time
+4. **Add Charts** — Visualize hydration + calories over time
 5. **Implement Trends** — Weekly/monthly compliance summaries
-6. **Add Settings UI** — Let user configure profiles and reminders
+6. **Add Settings UI** — Let user configure profiles and features
 
 ---
 
