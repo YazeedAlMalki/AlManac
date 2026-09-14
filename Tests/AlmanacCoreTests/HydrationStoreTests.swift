@@ -16,6 +16,7 @@ final class HydrationStoreTests: XCTestCase {
     func testSaveSample() throws {
         let sample = HydrationSample(
             id: "sample1",
+            userId: "test_user",
             timestamp: Date(),
             volumeMilliliters: 250,
             liquidType: .water
@@ -24,7 +25,7 @@ final class HydrationStoreTests: XCTestCase {
         try store.save(sample)
 
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try store.fetchSamples(from: today, to: Date())
+        let samples = try store.fetchSamples(userId: "test_user", from: today, to: Date())
 
         XCTAssertEqual(samples.count, 1)
         XCTAssertEqual(samples.first?.id, "sample1")
@@ -33,16 +34,16 @@ final class HydrationStoreTests: XCTestCase {
     }
 
     func testSaveMultipleSamples() throws {
-        let sample1 = HydrationSample(id: "s1", timestamp: Date(), volumeMilliliters: 250, liquidType: .water)
-        let sample2 = HydrationSample(id: "s2", timestamp: Date(), volumeMilliliters: 300, liquidType: .sportsDrink, sodiumMilligrams: 250)
-        let sample3 = HydrationSample(id: "s3", timestamp: Date(), volumeMilliliters: 200, liquidType: .coconutWater)
+        let sample1 = HydrationSample(id: "s1", userId: "test_user", timestamp: Date(), volumeMilliliters: 250, liquidType: .water)
+        let sample2 = HydrationSample(id: "s2", userId: "test_user", timestamp: Date(), volumeMilliliters: 300, liquidType: .sportsDrink, sodiumMilligrams: 250)
+        let sample3 = HydrationSample(id: "s3", userId: "test_user", timestamp: Date(), volumeMilliliters: 200, liquidType: .coconutWater)
 
         try store.save(sample1)
         try store.save(sample2)
         try store.save(sample3)
 
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try store.fetchSamples(from: today, to: Date())
+        let samples = try store.fetchSamples(userId: "test_user", from: today, to: Date())
 
         XCTAssertEqual(samples.count, 3)
         XCTAssertEqual(samples[0].liquidType, .coconutWater)  // Most recent first
@@ -50,13 +51,13 @@ final class HydrationStoreTests: XCTestCase {
     }
 
     func testDeleteSample() throws {
-        let sample = HydrationSample(id: "del1", timestamp: Date(), volumeMilliliters: 250, liquidType: .water)
+        let sample = HydrationSample(id: "del1", userId: "test_user", timestamp: Date(), volumeMilliliters: 250, liquidType: .water)
         try store.save(sample)
 
         try store.deleteSample("del1")
 
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try store.fetchSamples(from: today, to: Date())
+        let samples = try store.fetchSamples(userId: "test_user", from: today, to: Date())
 
         XCTAssertEqual(samples.count, 0)
     }
@@ -132,9 +133,9 @@ final class HydrationStoreTests: XCTestCase {
         let yesterday = today.addingTimeInterval(-86400)
         let twoDaysAgo = today.addingTimeInterval(-172800)
 
-        let s1 = HydrationSample(id: "s1", timestamp: twoDaysAgo, volumeMilliliters: 250, liquidType: .water)
-        let s2 = HydrationSample(id: "s2", timestamp: yesterday, volumeMilliliters: 300, liquidType: .water)
-        let s3 = HydrationSample(id: "s3", timestamp: today, volumeMilliliters: 200, liquidType: .water)
+        let s1 = HydrationSample(id: "s1", userId: "test_user", timestamp: twoDaysAgo, volumeMilliliters: 250, liquidType: .water)
+        let s2 = HydrationSample(id: "s2", userId: "test_user", timestamp: yesterday, volumeMilliliters: 300, liquidType: .water)
+        let s3 = HydrationSample(id: "s3", userId: "test_user", timestamp: today, volumeMilliliters: 200, liquidType: .water)
 
         try store.save(s1)
         try store.save(s2)
@@ -143,7 +144,7 @@ final class HydrationStoreTests: XCTestCase {
         let startOfYesterday = Calendar.current.startOfDay(for: yesterday)
         let startOfToday = Calendar.current.startOfDay(for: today)
 
-        let samples = try store.fetchSamples(from: startOfYesterday, to: today)
+        let samples = try store.fetchSamples(userId: "test_user", from: startOfYesterday, to: today)
 
         XCTAssertEqual(samples.count, 2)
         XCTAssertTrue(samples.allSatisfy { $0.timestamp >= startOfYesterday && $0.timestamp <= today })
@@ -155,13 +156,13 @@ final class HydrationStoreTests: XCTestCase {
 
         try store.save(profile)
 
-        let s1 = HydrationSample(id: "s1", timestamp: Date(), volumeMilliliters: 500, liquidType: .water)
-        let s2 = HydrationSample(id: "s2", timestamp: Date(), volumeMilliliters: 300, liquidType: .sportsDrink, sodiumMilligrams: 250)
+        let s1 = HydrationSample(id: "s1", userId: "user1", timestamp: Date(), volumeMilliliters: 500, liquidType: .water)
+        let s2 = HydrationSample(id: "s2", userId: "user1", timestamp: Date(), volumeMilliliters: 300, liquidType: .sportsDrink, sodiumMilligrams: 250)
 
         try store.save(s1)
         try store.save(s2)
 
-        let metrics = try store.calculateTodayMetrics(calculator: calculator, profile: profile)
+        let metrics = try store.calculateTodayMetrics(userId: "user1", calculator: calculator, profile: profile)
 
         XCTAssertEqual(metrics.totalVolumeMilliliters, 800)
         XCTAssertEqual(metrics.totalSodiumMilligrams, 250)
@@ -174,6 +175,7 @@ final class HydrationStoreTests: XCTestCase {
         for (index, type) in liquidTypes.enumerated() {
             let sample = HydrationSample(
                 id: "s\(index)",
+                userId: "test_user",
                 timestamp: Date(),
                 volumeMilliliters: Double(100 + index),
                 liquidType: type
@@ -182,7 +184,7 @@ final class HydrationStoreTests: XCTestCase {
         }
 
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try store.fetchSamples(from: today, to: Date())
+        let samples = try store.fetchSamples(userId: "test_user", from: today, to: Date())
 
         XCTAssertEqual(samples.count, liquidTypes.count)
         let fetchedTypes = Set(samples.map { $0.liquidType })

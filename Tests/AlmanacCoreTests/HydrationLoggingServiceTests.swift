@@ -34,7 +34,7 @@ final class HydrationLoggingServiceTests: XCTestCase {
         XCTAssertNil(result.calorieAmount)
 
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try hydrationStore.fetchSamples(from: today, to: Date())
+        let samples = try hydrationStore.fetchSamples(userId: "user1", from: today, to: Date())
         XCTAssertEqual(samples.count, 1)
         XCTAssertEqual(samples.first?.volumeMilliliters, drink.volumeMilliliters)
     }
@@ -180,7 +180,7 @@ final class HydrationLoggingServiceTests: XCTestCase {
         try loggingService.deleteLoggedDrink(result.hydrationSampleId)
 
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try hydrationStore.fetchSamples(from: today, to: Date())
+        let samples = try hydrationStore.fetchSamples(userId: "user11", from: today, to: Date())
         let entries = try calorieIntegration.fetchCalories(from: today, to: Date())
 
         XCTAssertTrue(samples.isEmpty)
@@ -191,11 +191,11 @@ final class HydrationLoggingServiceTests: XCTestCase {
         let water = CatalogDrinks.byId("catalog_water")!
         let result = try await loggingService.logDrink(drink: water, userId: "user12")
 
-        let undoneId = try loggingService.undoLastDrink()
+        let undoneId = try loggingService.undoLastDrink(userId: "user12")
 
         XCTAssertEqual(undoneId, result.hydrationSampleId)
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try hydrationStore.fetchSamples(from: today, to: Date())
+        let samples = try hydrationStore.fetchSamples(userId: "user12", from: today, to: Date())
         XCTAssertTrue(samples.isEmpty)
     }
 

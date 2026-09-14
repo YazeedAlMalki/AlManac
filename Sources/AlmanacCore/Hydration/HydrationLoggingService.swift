@@ -236,7 +236,7 @@ public final class HydrationLoggingService: Sendable {
     public func getTodaySummary(userId: String) async throws -> DrinkLoggingSummary {
         let settings = try settingsStore.getOrCreate(for: userId)
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try hydrationStore.fetchSamples(from: today, to: Date())
+        let samples = try hydrationStore.fetchSamples(userId: userId, from: today, to: Date())
 
         var totalCalories = 0.0
         var totalSugar = 0.0
@@ -260,9 +260,9 @@ public final class HydrationLoggingService: Sendable {
     }
 
     /// Undo last drink log
-    public func undoLastDrink() throws -> String? {
+    public func undoLastDrink(userId: String) throws -> String? {
         let today = Calendar.current.startOfDay(for: Date())
-        let samples = try hydrationStore.fetchSamples(from: today, to: Date())
+        let samples = try hydrationStore.fetchSamples(userId: userId, from: today, to: Date())
 
         guard let lastSample = samples.first else {
             return nil

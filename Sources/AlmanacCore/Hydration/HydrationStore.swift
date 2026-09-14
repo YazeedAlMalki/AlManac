@@ -238,23 +238,37 @@ public final class HydrationStore: Sendable {
     ///   today's workout minutes. Pass `nil` to compute without exercise data
     ///   (the exercise boost is then simply not applied).
     public func calculateTodayMetrics(
+        userId: String,
         calculator: HydrationCalculator,
         profile: HydrationProfile,
+        settings: HydrationSettings? = nil,
         healthBridge: HydrationHealthBridge? = nil
     ) throws -> HydrationMetrics {
         let now = Date()
-        let today = Calendar.current.startOfDay(for: now)
-        let samples = try fetchSamples(from: today, to: now)
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: now)
+        let samples = try fetchSamples(userId: userId, from: today, to: now)
 
         let totalVolume = samples.reduce(0) { $0 + $1.volumeMilliliters }
         let totalSodium = samples.reduce(0) { $0 + ($1.sodiumMilligrams ?? 0) }
 
         let exerciseMinutes = try healthBridge?.exerciseMinutes(on: today)
 
-        let recommendedIntake = calculator.recommendedDailyIntake(
-            profile: profile,
-            exerciseMinutes: exerciseMinutes ?? 0
-        )
+        // Use custom daily goal if set, otherwise calculate from profile
+        let recommendedIntake: Double
+        if let settings = settings, settings.dailyGoalMilliliters > 0 {
+            // Start with custom goal
+            recommendedIntake = settings.dailyGoalMilliliters
+            // Still add exercise boost on top
+            let exerciseBoost = (exerciseMinutes ?? 0) > 0 ? (exerciseMinutes! / 30) * 500 : 0
+            recommendedIntake = recommendedIntake + exerciseBoost
+        } else {
+            // Fall back to calculated profile target
+            recommendedIntake = calculator.recommendedDailyIntake(
+                profile: profile,
+                exerciseMinutes: exerciseMinutes ?? 0
+            )
+        }
 
         return HydrationMetrics(
             date: today,
@@ -270,19 +284,20 @@ public final class HydrationStore: Sendable {
 
     /// `hydration_metrics.date` is a logical-day key, not an instant — stored
     /// as `yyyy-MM-dd` so equality and range comparisons are exact regardless
-    /// of what time of day the row was written.
+    /// of what time of day the row was written. Uses the device's local calendar
+    /// and timezone to match the calendar used by startOfDay().
     private func dayKey(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.calendar = Calendar.current
+        formatter.timeZone = TimeZone.current
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)
     }
 
     private func dayDate(from key: String) -> Date? {
         let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.calendar = Calendar.current
+        formatter.timeZone = TimeZone.current
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.date(from: key)
     }

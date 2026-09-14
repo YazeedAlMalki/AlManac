@@ -41,7 +41,7 @@ public final class HydrationReminderService: Sendable {
 
         // Get the last hydration sample
         let today = calendar.startOfDay(for: now)
-        let samples = try store.fetchSamples(from: today, to: now)
+        let samples = try store.fetchSamples(userId: profile.userId, from: today, to: now)
         let lastSample = samples.first
 
         let timeSinceLastDrink: Int

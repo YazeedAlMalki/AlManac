@@ -21,6 +21,7 @@ import Foundation
 /// // Log hydration
 /// let sample = HydrationSample(
 ///     id: UUID().uuidString,
+///     userId: "user123",
 ///     timestamp: Date(),
 ///     volumeMilliliters: 250,
 ///     liquidType: .water
@@ -28,7 +29,11 @@ import Foundation
 /// try store.save(sample)
 ///
 /// // Get recommendation
-/// let metrics = try store.calculateTodayMetrics(calculator: calculator, profile: profile)
+/// let metrics = try store.calculateTodayMetrics(
+///     userId: "user123",
+///     calculator: calculator,
+///     profile: profile
+/// )
 /// let recommendation = calculator.currentRecommendation(
 ///     timeSinceLastDrinkMinutes: 30,
 ///     exerciseActive: false,
