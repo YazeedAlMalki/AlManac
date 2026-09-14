@@ -3,6 +3,7 @@ import Foundation
 /// Manages calorie tracking integration with hydration logging
 public final class CalorieIntegration: Sendable {
     private let db: Database
+    private var iso: ISO8601DateFormatter { ISO8601DateFormatter() }
 
     public init(database: Database) {
         self.db = database
@@ -16,6 +17,7 @@ public final class CalorieIntegration: Sendable {
     ///   - drink: The drink that was consumed
     ///   - calorieAmount: Calculated calories (may differ from drink default if custom volume)
     /// - Returns: Calorie entry ID
+    @discardableResult
     public func logCalories(
         hydrationSampleId: String,
         drink: Drink,
@@ -23,50 +25,44 @@ public final class CalorieIntegration: Sendable {
     ) throws -> String {
         let entryId = UUID().uuidString
 
-        try db.execute("""
+        try db.run("""
         INSERT INTO hydration_calorie_entry (
             id, hydration_sample_id, drink_id, drink_name, calories_kcal,
             sugar_grams, timestamp, double_track_warning
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, [
-            entryId,
-            hydrationSampleId,
-            drink.id,
-            drink.name,
-            calorieAmount,
-            drink.sugarGrams as Any,
-            ISO8601DateFormatter().string(from: Date()),
-            0  // Will be set if double-tracking detected
+            .text(entryId),
+            .text(hydrationSampleId),
+            .text(drink.id),
+            .text(drink.name),
+            .real(calorieAmount),
+            drink.sugarGrams.map { SQLValue.real($0) } ?? .null,
+            .text(iso.string(from: Date())),
+            .integer(0)  // Set by a later detectDoubleTracking pass if suspicious.
         ])
 
         return entryId
     }
 
     /// Fetch calorie entries for a date range
-    public func fetchCalories(
-        from startDate: Date,
-        to endDate: Date
-    ) throws -> [CalorieEntry] {
-        let startISO = ISO8601DateFormatter().string(from: startDate)
-        let endISO = ISO8601DateFormatter().string(from: endDate)
-
+    public func fetchCalories(from startDate: Date, to endDate: Date) throws -> [CalorieEntry] {
         let rows = try db.query("""
         SELECT id, hydration_sample_id, drink_id, drink_name, calories_kcal,
                sugar_grams, timestamp, double_track_warning
         FROM hydration_calorie_entry
         WHERE timestamp >= ? AND timestamp <= ?
         ORDER BY timestamp DESC
-        """, [startISO, endISO])
+        """, [.text(iso.string(from: startDate)), .text(iso.string(from: endDate))])
 
         return rows.compactMap { row in
-            guard let id = row["id"] as? String,
-                  let sampleId = row["hydration_sample_id"] as? String,
-                  let drinkId = row["drink_id"] as? String,
-                  let drinkName = row["drink_name"] as? String,
-                  let calories = row["calories_kcal"] as? Double,
-                  let timestampStr = row["timestamp"] as? String,
-                  let timestamp = ISO8601DateFormatter().date(from: timestampStr),
-                  let doubleTrackWarning = row["double_track_warning"] as? Int
+            guard let id = row.string("id"),
+                  let sampleId = row.string("hydration_sample_id"),
+                  let drinkId = row.string("drink_id"),
+                  let drinkName = row.string("drink_name"),
+                  let calories = row.double("calories_kcal"),
+                  let timestampStr = row.string("timestamp"),
+                  let timestamp = iso.date(from: timestampStr),
+                  let doubleTrackWarning = row.int("double_track_warning")
             else { return nil }
 
             return CalorieEntry(
@@ -75,7 +71,7 @@ public final class CalorieIntegration: Sendable {
                 drinkId: drinkId,
                 drinkName: drinkName,
                 caloriesKcal: calories,
-                sugarGrams: row["sugar_grams"] as? Double,
+                sugarGrams: row.double("sugar_grams"),
                 timestamp: timestamp,
                 hasDoubleTrackWarning: doubleTrackWarning != 0
             )
@@ -104,44 +100,62 @@ public final class CalorieIntegration: Sendable {
 
     // MARK: - Double-Track Detection
 
-    /// Detect potential double-tracking
-    /// - Returns: List of suspicious entries with warnings
+    /// Detect potential double-tracking among recent entries and persist the
+    /// warning flag onto both sides of each suspicious pair so `fetchCalories`
+    /// reflects it without a second pass.
+    /// - Returns: List of suspicious entries with confidence scores
+    @discardableResult
     public func detectDoubleTracking(
         userId: String,
         timeWindowMinutes: Int = 5
     ) throws -> [DoubleTrackingSuspicion] {
         let rows = try db.query("""
-        SELECT id, timestamp FROM hydration_calorie_entry
+        SELECT id, drink_id, timestamp FROM hydration_calorie_entry
         ORDER BY timestamp DESC
         LIMIT 100
-        """, [])
+        """)
+
+        struct Entry { let id: String; let drinkId: String; let timestamp: Date }
+        let entries: [Entry] = rows.compactMap { row in
+            guard let id = row.string("id"),
+                  let drinkId = row.string("drink_id"),
+                  let timestampStr = row.string("timestamp"),
+                  let timestamp = iso.date(from: timestampStr)
+            else { return nil }
+            return Entry(id: id, drinkId: drinkId, timestamp: timestamp)
+        }
 
         var suspicions: [DoubleTrackingSuspicion] = []
+        let windowSeconds = Double(timeWindowMinutes) * 60
 
-        for (index, row) in rows.enumerated() {
-            guard let id = row["id"] as? String,
-                  let timestampStr = row["timestamp"] as? String,
-                  let timestamp = ISO8601DateFormatter().date(from: timestampStr)
-            else { continue }
+        for i in entries.indices {
+            for j in entries.indices where j > i {
+                // Same drink only — a Pepsi and a coffee three minutes apart
+                // are two real drinks, not a duplicate.
+                guard entries[i].drinkId == entries[j].drinkId else { continue }
 
-            // Check against nearby entries
-            for otherRow in rows.suffix(from: index + 1) {
-                guard let otherId = otherRow["id"] as? String,
-                      let otherTimestampStr = otherRow["timestamp"] as? String,
-                      let otherTimestamp = ISO8601DateFormatter().date(from: otherTimestampStr)
-                else { continue }
+                let diffSeconds = abs(entries[i].timestamp.timeIntervalSince(entries[j].timestamp))
+                guard diffSeconds <= windowSeconds else { continue }
 
-                let timeDiff = abs(timestamp.timeIntervalSince(otherTimestamp)) / 60
+                let confidence = 1.0 - (diffSeconds / windowSeconds)
+                suspicions.append(
+                    DoubleTrackingSuspicion(
+                        entryId: entries[i].id,
+                        suspiciousWithId: entries[j].id,
+                        timeDifferenceSeconds: Int(diffSeconds),
+                        confidence: confidence
+                    )
+                )
+            }
+        }
 
-                // Flag if within time window and possibly same drink
-                if timeDiff <= Double(timeWindowMinutes) {
-                    suspicions.append(
-                        DoubleTrackingSuspicion(
-                            entryId: id,
-                            suspiciousWithId: otherId,
-                            timeDifferenceSeconds: Int(abs(timestamp.timeIntervalSince(otherTimestamp))),
-                            confidence: confidenceScore(timeDiff: timeDiff, timeWindow: timeWindowMinutes)
-                        )
+        if !suspicions.isEmpty {
+            let flaggedIds = Set(suspicions.flatMap { [$0.entryId, $0.suspiciousWithId] })
+            try db.transaction {
+                for id in flaggedIds {
+                    try db.run(
+                        "UPDATE hydration_calorie_entry SET double_track_warning = 1 WHERE id = ?",
+                        [.text(id)]
                     )
                 }
             }
@@ -152,23 +166,15 @@ public final class CalorieIntegration: Sendable {
 
     /// Delete a calorie entry
     public func deleteEntry(_ id: String) throws {
-        try db.execute("DELETE FROM hydration_calorie_entry WHERE id = ?", [id])
+        try db.run("DELETE FROM hydration_calorie_entry WHERE id = ?", [.text(id)])
     }
 
     /// Mark an entry as reviewed (double-track warning acknowledged)
     public func markAsReviewed(_ id: String) throws {
-        try db.execute(
+        try db.run(
             "UPDATE hydration_calorie_entry SET double_track_warning = 0 WHERE id = ?",
-            [id]
+            [.text(id)]
         )
-    }
-
-    // MARK: - Private Helpers
-
-    private func confidenceScore(timeDiff: Double, timeWindow: Int) -> Double {
-        // Higher confidence if entries are very close in time
-        let windowDouble = Double(timeWindow)
-        return 1.0 - (timeDiff / windowDouble)
     }
 }
 

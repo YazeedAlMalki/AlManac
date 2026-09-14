@@ -7,13 +7,11 @@ final class HydrationReminderServiceTests: XCTestCase {
     var store: HydrationStore!
     var calculator: HydrationCalculator!
     var reminderService: HydrationReminderService!
-    var runner: MigrationRunner!
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         db = try Database.inMemory()
-        runner = MigrationRunner(database: db)
-        try await runner.run(AlmanacMigrations.all)
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
 
         store = HydrationStore(database: db)
         calculator = HydrationCalculator()

@@ -5,15 +5,18 @@ public final class HydrationReminderService: Sendable {
     private let store: HydrationStore
     private let calculator: HydrationCalculator
     private let clock: Clock
+    private let healthBridge: HydrationHealthBridge?
 
     public init(
         store: HydrationStore,
         calculator: HydrationCalculator = HydrationCalculator(),
-        clock: Clock = SystemClock()
+        clock: Clock = SystemClock(),
+        healthBridge: HydrationHealthBridge? = nil
     ) {
         self.store = store
         self.calculator = calculator
         self.clock = clock
+        self.healthBridge = healthBridge
     }
 
     /// Check if a reminder should be triggered now
@@ -55,9 +58,15 @@ public final class HydrationReminderService: Sendable {
         }
 
         // Generate recommendation
+        let exerciseActive: Bool
+        if let healthBridge {
+            exerciseActive = (try? healthBridge.isExerciseActive(at: now)) ?? false
+        } else {
+            exerciseActive = false
+        }
         return calculator.currentRecommendation(
             timeSinceLastDrinkMinutes: timeSinceLastDrink,
-            exerciseActive: false,  // Would be updated from Health module
+            exerciseActive: exerciseActive,
             metrics: currentMetrics,
             profile: profile
         )

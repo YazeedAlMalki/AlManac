@@ -5,13 +5,11 @@ import XCTest
 final class HydrationStoreTests: XCTestCase {
     var db: Database!
     var store: HydrationStore!
-    var runner: MigrationRunner!
 
-    override func setUp() async throws {
-        try await super.setUp()
+    override func setUpWithError() throws {
+        try super.setUpWithError()
         db = try Database.inMemory()
-        runner = MigrationRunner(database: db)
-        try await runner.run(AlmanacMigrations.all)
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
         store = HydrationStore(database: db)
     }
 

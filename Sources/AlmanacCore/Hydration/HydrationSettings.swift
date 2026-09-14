@@ -41,6 +41,7 @@ public struct HydrationSettings: Sendable, Hashable {
 /// Manages hydration settings persistence
 public final class HydrationSettingsStore: Sendable {
     private let db: Database
+    private var iso: ISO8601DateFormatter { ISO8601DateFormatter() }
 
     public init(database: Database) {
         self.db = database
@@ -48,31 +49,39 @@ public final class HydrationSettingsStore: Sendable {
 
     /// Save or update settings
     public func save(_ settings: HydrationSettings) throws {
-        try db.execute("""
-        INSERT OR REPLACE INTO hydration_settings (
+        try db.run("""
+        INSERT INTO hydration_settings (
             user_id, calorie_tracking_enabled, double_track_warning_enabled,
             auto_log_from_health, reminders_enabled, reminder_interval_minutes,
             daily_goal_ml, track_sodium, track_sugar, updated_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET
+            calorie_tracking_enabled     = excluded.calorie_tracking_enabled,
+            double_track_warning_enabled = excluded.double_track_warning_enabled,
+            auto_log_from_health         = excluded.auto_log_from_health,
+            reminders_enabled            = excluded.reminders_enabled,
+            reminder_interval_minutes    = excluded.reminder_interval_minutes,
+            daily_goal_ml                = excluded.daily_goal_ml,
+            track_sodium                 = excluded.track_sodium,
+            track_sugar                  = excluded.track_sugar,
+            updated_at                   = excluded.updated_at;
         """, [
-            settings.userId,
-            settings.isCalorieTrackingEnabled ? 1 : 0,
-            settings.isDoubleTrackWarningEnabled ? 1 : 0,
-            settings.autoLogDrinksFromHealth ? 1 : 0,
-            settings.showHydrationReminders ? 1 : 0,
-            settings.preferredReminderInterval,
-            settings.dailyGoalMilliliters as Any,
-            settings.trackSodium ? 1 : 0,
-            settings.trackSugar ? 1 : 0,
-            ISO8601DateFormatter().string(from: settings.updatedAt)
+            .text(settings.userId),
+            .integer(settings.isCalorieTrackingEnabled ? 1 : 0),
+            .integer(settings.isDoubleTrackWarningEnabled ? 1 : 0),
+            .integer(settings.autoLogDrinksFromHealth ? 1 : 0),
+            .integer(settings.showHydrationReminders ? 1 : 0),
+            .integer(Int64(settings.preferredReminderInterval)),
+            settings.dailyGoalMilliliters.map { SQLValue.real($0) } ?? .null,
+            .integer(settings.trackSodium ? 1 : 0),
+            .integer(settings.trackSugar ? 1 : 0),
+            .text(iso.string(from: settings.updatedAt))
         ])
     }
 
     /// Fetch settings for a user
     public func fetch(for userId: String) throws -> HydrationSettings? {
-        let rows = try db.query("""
-        SELECT * FROM hydration_settings WHERE user_id = ?
-        """, [userId])
+        let rows = try db.query("SELECT * FROM hydration_settings WHERE user_id = ?", [.text(userId)])
 
         guard let row = rows.first else {
             return nil
@@ -160,16 +169,16 @@ public final class HydrationSettingsStore: Sendable {
 
     // MARK: - Private Helpers
 
-    private func parseSettings(from row: [String: Any], userId: String) -> HydrationSettings? {
-        guard let calorieTrackingInt = row["calorie_tracking_enabled"] as? Int,
-              let doubleTrackWarningInt = row["double_track_warning_enabled"] as? Int,
-              let autoLogInt = row["auto_log_from_health"] as? Int,
-              let remindersInt = row["reminders_enabled"] as? Int,
-              let reminderInterval = row["reminder_interval_minutes"] as? Int,
-              let trackSodiumInt = row["track_sodium"] as? Int,
-              let trackSugarInt = row["track_sugar"] as? Int,
-              let updatedAtStr = row["updated_at"] as? String,
-              let updatedAt = ISO8601DateFormatter().date(from: updatedAtStr)
+    private func parseSettings(from row: Row, userId: String) -> HydrationSettings? {
+        guard let calorieTrackingInt = row.int("calorie_tracking_enabled"),
+              let doubleTrackWarningInt = row.int("double_track_warning_enabled"),
+              let autoLogInt = row.int("auto_log_from_health"),
+              let remindersInt = row.int("reminders_enabled"),
+              let reminderInterval = row.int("reminder_interval_minutes"),
+              let trackSodiumInt = row.int("track_sodium"),
+              let trackSugarInt = row.int("track_sugar"),
+              let updatedAtStr = row.string("updated_at"),
+              let updatedAt = iso.date(from: updatedAtStr)
         else { return nil }
 
         return HydrationSettings(
@@ -178,8 +187,8 @@ public final class HydrationSettingsStore: Sendable {
             isDoubleTrackWarningEnabled: doubleTrackWarningInt != 0,
             autoLogDrinksFromHealth: autoLogInt != 0,
             showHydrationReminders: remindersInt != 0,
-            preferredReminderInterval: reminderInterval,
-            dailyGoalMilliliters: row["daily_goal_ml"] as? Double,
+            preferredReminderInterval: Int(reminderInterval),
+            dailyGoalMilliliters: row.double("daily_goal_ml"),
             trackSodium: trackSodiumInt != 0,
             trackSugar: trackSugarInt != 0,
             updatedAt: updatedAt
