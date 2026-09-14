@@ -16,12 +16,14 @@ public final class CalorieIntegration: Sendable {
     ///   - hydrationSampleId: The hydration sample that generated the calories
     ///   - drink: The drink that was consumed
     ///   - calorieAmount: Calculated calories (may differ from drink default if custom volume)
+    ///   - sugarAmount: Calculated sugar (may differ from drink default if custom volume)
     /// - Returns: Calorie entry ID
     @discardableResult
     public func logCalories(
         hydrationSampleId: String,
         drink: Drink,
-        calorieAmount: Double
+        calorieAmount: Double,
+        sugarAmount: Double?
     ) throws -> String {
         let entryId = UUID().uuidString
 
@@ -36,7 +38,7 @@ public final class CalorieIntegration: Sendable {
             .text(drink.id),
             .text(drink.name),
             .real(calorieAmount),
-            drink.sugarGrams.map { SQLValue.real($0) } ?? .null,
+            sugarAmount.map { SQLValue.real($0) } ?? .null,
             .text(iso.string(from: Date())),
             .integer(0)  // Set by a later detectDoubleTracking pass if suspicious.
         ])
@@ -100,13 +102,17 @@ public final class CalorieIntegration: Sendable {
 
     // MARK: - Double-Track Detection
 
-    /// Detect potential double-tracking among recent entries and persist the
-    /// warning flag onto both sides of each suspicious pair so `fetchCalories`
-    /// reflects it without a second pass.
-    /// - Returns: List of suspicious entries with confidence scores
+    /// Detect potential double-tracking for a specific entry among recent entries.
+    /// Only returns suspicions involving the given entryId.
+    /// - Parameters:
+    ///   - userId: User ID (for context, though not strictly needed for detection)
+    ///   - entryId: The newly logged entry ID to check for duplicates
+    ///   - timeWindowMinutes: Minutes to look back for duplicates
+    /// - Returns: List of suspicious entries with confidence scores involving this entry
     @discardableResult
     public func detectDoubleTracking(
         userId: String,
+        entryId: String,
         timeWindowMinutes: Int = 5
     ) throws -> [DoubleTrackingSuspicion] {
         let rows = try db.query("""
@@ -125,28 +131,30 @@ public final class CalorieIntegration: Sendable {
             return Entry(id: id, drinkId: drinkId, timestamp: timestamp)
         }
 
+        guard let newEntry = entries.first(where: { $0.id == entryId }) else {
+            return []
+        }
+
         var suspicions: [DoubleTrackingSuspicion] = []
         let windowSeconds = Double(timeWindowMinutes) * 60
 
-        for i in entries.indices {
-            for j in entries.indices where j > i {
-                // Same drink only — a Pepsi and a coffee three minutes apart
-                // are two real drinks, not a duplicate.
-                guard entries[i].drinkId == entries[j].drinkId else { continue }
+        for entry in entries where entry.id != newEntry.id {
+            // Same drink only — a Pepsi and a coffee three minutes apart
+            // are two real drinks, not a duplicate.
+            guard entry.drinkId == newEntry.drinkId else { continue }
 
-                let diffSeconds = abs(entries[i].timestamp.timeIntervalSince(entries[j].timestamp))
-                guard diffSeconds <= windowSeconds else { continue }
+            let diffSeconds = abs(newEntry.timestamp.timeIntervalSince(entry.timestamp))
+            guard diffSeconds <= windowSeconds else { continue }
 
-                let confidence = 1.0 - (diffSeconds / windowSeconds)
-                suspicions.append(
-                    DoubleTrackingSuspicion(
-                        entryId: entries[i].id,
-                        suspiciousWithId: entries[j].id,
-                        timeDifferenceSeconds: Int(diffSeconds),
-                        confidence: confidence
-                    )
+            let confidence = 1.0 - (diffSeconds / windowSeconds)
+            suspicions.append(
+                DoubleTrackingSuspicion(
+                    entryId: newEntry.id,
+                    suspiciousWithId: entry.id,
+                    timeDifferenceSeconds: Int(diffSeconds),
+                    confidence: confidence
                 )
-            }
+            )
         }
 
         if !suspicions.isEmpty {

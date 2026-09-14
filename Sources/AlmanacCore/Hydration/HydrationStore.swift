@@ -18,8 +18,8 @@ public final class HydrationStore: Sendable {
     public func save(_ sample: HydrationSample) throws {
         try db.run("""
         INSERT INTO hydration_sample (
-            id, timestamp, volume_ml, liquid_type, sodium_mg, calories_kcal, source_name
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            id, user_id, timestamp, volume_ml, liquid_type, sodium_mg, calories_kcal, source_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             timestamp     = excluded.timestamp,
             volume_ml     = excluded.volume_ml,
@@ -29,6 +29,7 @@ public final class HydrationStore: Sendable {
             source_name   = excluded.source_name;
         """, [
             .text(sample.id),
+            .text(sample.userId),
             .text(iso.string(from: sample.timestamp)),
             .real(sample.volumeMilliliters),
             .text(sample.liquidType.rawValue),
@@ -38,16 +39,17 @@ public final class HydrationStore: Sendable {
         ])
     }
 
-    public func fetchSamples(from startDate: Date, to endDate: Date) throws -> [HydrationSample] {
+    public func fetchSamples(userId: String, from startDate: Date, to endDate: Date) throws -> [HydrationSample] {
         let rows = try db.query("""
-        SELECT id, timestamp, volume_ml, liquid_type, sodium_mg, calories_kcal, source_name
+        SELECT id, user_id, timestamp, volume_ml, liquid_type, sodium_mg, calories_kcal, source_name
         FROM hydration_sample
-        WHERE timestamp >= ? AND timestamp <= ?
+        WHERE user_id = ? AND timestamp >= ? AND timestamp <= ?
         ORDER BY timestamp DESC
-        """, [.text(iso.string(from: startDate)), .text(iso.string(from: endDate))])
+        """, [.text(userId), .text(iso.string(from: startDate)), .text(iso.string(from: endDate))])
 
         return rows.compactMap { row in
             guard let id = row.string("id"),
+                  let userId = row.string("user_id"),
                   let timestampStr = row.string("timestamp"),
                   let timestamp = iso.date(from: timestampStr),
                   let volumeMl = row.double("volume_ml"),
@@ -57,6 +59,7 @@ public final class HydrationStore: Sendable {
 
             return HydrationSample(
                 id: id,
+                userId: userId,
                 timestamp: timestamp,
                 volumeMilliliters: volumeMl,
                 liquidType: liquidType,

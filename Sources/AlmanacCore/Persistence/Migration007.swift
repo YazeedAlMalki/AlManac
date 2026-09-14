@@ -17,6 +17,7 @@ public enum Migration007_HydrationTracking: Migration {
         try db.execute("""
         CREATE TABLE hydration_sample (
             id              TEXT        PRIMARY KEY,
+            user_id         TEXT        NOT NULL,
             timestamp       TEXT        NOT NULL,
             volume_ml       REAL        NOT NULL,
             liquid_type     TEXT        NOT NULL,
@@ -27,12 +28,12 @@ public enum Migration007_HydrationTracking: Migration {
         );
         """)
         try db.execute("""
-        CREATE INDEX idx_hydration_sample_timestamp
-            ON hydration_sample (timestamp DESC);
+        CREATE INDEX idx_hydration_sample_user_timestamp
+            ON hydration_sample (user_id, timestamp DESC);
         """)
         try db.execute("""
-        CREATE INDEX idx_hydration_sample_date
-            ON hydration_sample (DATE(timestamp));
+        CREATE INDEX idx_hydration_sample_user_date
+            ON hydration_sample (user_id, DATE(timestamp));
         """)
 
         // Hydration metrics — daily aggregated data

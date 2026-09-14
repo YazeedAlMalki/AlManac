@@ -80,21 +80,23 @@ public final class HydrationReminderService: Sendable {
         guard reminder.isEnabled else { return nil }
 
         let calendar = Calendar.current
-        var components = calendar.dateComponents([.year, .month, .day], from: Date())
-        components.hour = reminder.startHour
-        components.minute = 0
-        components.second = 0
-
-        guard let startOfReminders = calendar.date(from: components) else {
-            return nil
-        }
-
         let now = Date()
-        if now < startOfReminders {
-            return startOfReminders
+        let currentHour = calendar.component(.hour, from: now)
+
+        // If we're outside the reminder window, schedule for tomorrow's start
+        if currentHour >= reminder.endHour || currentHour < reminder.startHour {
+            var components = calendar.dateComponents([.year, .month, .day], from: now)
+            // If after end hour, move to tomorrow
+            if currentHour >= reminder.endHour {
+                components.day = (components.day ?? 0) + 1
+            }
+            components.hour = reminder.startHour
+            components.minute = 0
+            components.second = 0
+            return calendar.date(from: components)
         }
 
-        // Find next reminder time
+        // We're within the window, find next reminder time
         let intervalSeconds = reminder.intervalMinutes * 60
         var nextTime = now.addingTimeInterval(TimeInterval(intervalSeconds))
 

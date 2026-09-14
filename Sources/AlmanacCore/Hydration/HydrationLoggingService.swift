@@ -61,13 +61,15 @@ public final class HydrationLoggingService: Sendable {
             calorieEntryId = try calorieIntegration.logCalories(
                 hydrationSampleId: sample.id,
                 drink: drink,
-                calorieAmount: scaledCalories
+                calorieAmount: scaledCalories,
+                sugarAmount: scaledSugar
             )
 
             // Check for double-tracking if warnings enabled
             if settings.isDoubleTrackWarningEnabled {
                 let suspicions = try calorieIntegration.detectDoubleTracking(
                     userId: userId,
+                    entryId: calorieEntryId!,
                     timeWindowMinutes: 5
                 )
 

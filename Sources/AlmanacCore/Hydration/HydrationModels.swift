@@ -3,6 +3,7 @@ import Foundation
 /// Represents a single hydration event (drinking water or other liquids)
 public struct HydrationSample: Sendable, Hashable {
     public let id: String
+    public let userId: String
     public let timestamp: Date
     public let volumeMilliliters: Double
     public let liquidType: LiquidType
@@ -12,6 +13,7 @@ public struct HydrationSample: Sendable, Hashable {
 
     public init(
         id: String,
+        userId: String,
         timestamp: Date,
         volumeMilliliters: Double,
         liquidType: LiquidType,
@@ -20,6 +22,7 @@ public struct HydrationSample: Sendable, Hashable {
         sourceName: String? = nil
     ) {
         self.id = id
+        self.userId = userId
         self.timestamp = timestamp
         self.volumeMilliliters = volumeMilliliters
         self.liquidType = liquidType
