@@ -5,11 +5,25 @@ import AlmanacCore
 @MainActor
 struct AlmanacApp: App {
     @StateObject private var model = LaboratoryModel()
+    @StateObject private var hydrationModel = HydrationModel()
     var body: some Scene {
         WindowGroup {
             Group {
                 if model.store != nil {
-                    ReportListView(model: model)
+                    TabView {
+                        ReportListView(model: model)
+                            .tabItem { Label("Laboratory", systemImage: "cross.case") }
+                        HydrationDashboardView(model: hydrationModel)
+                            .tabItem { Label("Hydration", systemImage: "drop") }
+                        SettingsView(model: hydrationModel)
+                            .tabItem { Label("Settings", systemImage: "gear") }
+                    }
+                    // The database is opened synchronously in LaboratoryModel.open(),
+                    // so `model.db` is already set by the time this branch first
+                    // renders. Configuring here (rather than at hydrationModel's own
+                    // init) keeps both models sharing one connection instead of
+                    // HydrationModel opening a second one to the same file.
+                    .onAppear { hydrationModel.configure(db: model.db) }
                 } else {
                     ContentUnavailableView {
                         Label("Almanac could not open", systemImage: "externaldrive.badge.exclamationmark")
@@ -31,6 +45,9 @@ struct AlmanacApp: App {
 final class LaboratoryModel: ObservableObject {
     @Published private(set) var store: LabStore?
     @Published private(set) var catalog: LabCatalogStore?
+    /// Exposed so other models (`HydrationModel`) can share this connection
+    /// instead of opening a second one to the same SQLite file.
+    @Published private(set) var db: Database?
     @Published private(set) var generation = 0
     @Published private(set) var startupError: String?
 
@@ -47,6 +64,7 @@ final class LaboratoryModel: ObservableObject {
             let catalog = LabCatalogStore(db: db)
             try LabCatalogSeed.seed(into: catalog)
             self.catalog = catalog
+            self.db = db
             store = LabStore(db: db)
             startupError = nil
         } catch {

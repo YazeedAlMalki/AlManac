@@ -15,7 +15,7 @@ from ..canonical_io import CanonicalError, write_canonical
 from ..dictionary import Dictionary
 from ..lake import (Lake, read_csv, read_json, sha256_file, staged_directory, tool_revision,
                     utc_now, write_json)
-from ..model import Food, FoodName, Value
+from ..model import Food, FoodName, Portion, Value
 from ..values import NegativeAmount, UnrecognisedValue, convert, qualify, select
 
 NAMESPACE = "usda"
@@ -27,7 +27,8 @@ SCOPED_TABLES = ("food.csv", "food_nutrient.csv", "food_portion.csv")
 WHOLE_TABLES = ("foundation_food.csv", "nutrient.csv", "food_nutrient_derivation.csv",
                 "food_category.csv", "measure_unit.csv")
 CANONICAL_INPUTS = ("food.csv", "foundation_food.csv", "food_nutrient.csv", "nutrient.csv",
-                    "food_nutrient_derivation.csv", "food_category.csv")
+                    "food_nutrient_derivation.csv", "food_category.csv", "food_portion.csv",
+                    "measure_unit.csv")
 
 
 def _filter_rows(src: Path, dst: Path, keep) -> int:
@@ -94,6 +95,7 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
     categories = {r["id"]: r for r in read_csv(ext / "food_category.csv")}
     derivation_codes = {r["id"]: r["code"] for r in read_csv(ext / "food_nutrient_derivation.csv")}
     units = {r["id"]: r["unit_name"] for r in read_csv(ext / "nutrient.csv")}
+    measure_units = {r["id"]: r["name"] for r in read_csv(ext / "measure_unit.csv")}
     mappings = dictionary.mappings_for(NAMESPACE)
     for maps in mappings.values():
         for m in maps:
@@ -178,8 +180,28 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
                                 code, row["amount"].strip(), m.source_nutrient_id,
                                 units[m.source_nutrient_id], group))
 
+    # Portions (README "Units — two traps"): food_portion maps fdc_id + measure_unit -> gram_weight
+    # directly, CC0, so household measures are solved for USDA without the FAO density database.
+    portions: list[Portion] = []
+    for row in read_csv(ext / "food_portion.csv"):
+        if row["fdc_id"] not in kept or not row["gram_weight"].strip():
+            continue
+        unit_name = measure_units.get(row["measure_unit_id"])
+        if unit_name is None:
+            raise CanonicalError(f"usda:{row['fdc_id']} food_portion.csv id={row['id']}: measure_unit_id "
+                                 f"{row['measure_unit_id']!r} is not in measure_unit.csv")
+        try:
+            qualified = qualify(row["gram_weight"], tokens={})
+            amount = float(row["amount"].strip())
+        except (UnrecognisedValue, ValueError) as error:
+            raise CanonicalError(f"usda:{row['fdc_id']} food_portion.csv id={row['id']}: {error}") from error
+        portions.append(Portion(f"usda:{row['fdc_id']}", "household_measure", unit_name, amount,
+                                qualified.amount, qualified.qualifier, row["data_points"].strip(),
+                                row["gram_weight"].strip(), "g", row["portion_description"].strip(),
+                                row["modifier"].strip(), f"food_portion.csv id={row['id']}", group))
+
     return write_canonical(lake.canonical(NAMESPACE), namespace=NAMESPACE, foods=foods, names=names,
-                           values=values, dictionary=dictionary, inputs=inputs,
+                           values=values, portions=portions, dictionary=dictionary, inputs=inputs,
                            notes={"data_types": list(DATA_TYPES), "excluded": excluded,
                                   "rejected_values": rejected,
                                   "unmapped_duplicates": unmapped_duplicates})

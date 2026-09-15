@@ -79,20 +79,73 @@ public struct NutritionReferenceImporter: @unchecked Sendable {
             """)
         let namespaces = try db.query("SELECT namespace FROM bundle.nutrition_source ORDER BY namespace;")
             .compactMap { $0.string("namespace").flatMap(SourceIdentifier.Namespace.init(rawValue:)) }
+        let namespacePlaceholders = namespaces.map { _ in "?" }.joined(separator: ", ")
+        let namespaceValues: [SQLValue] = namespaces.map { .text($0.rawValue) }
 
         return try db.transaction {
+            // Every food is replaced wholesale — that is what "removing a
+            // whole source stays one step" (§3) means, and it is how a source
+            // dropped from the next bundle disappears here too — *except* an
+            // `almanac:` row a person authored on this device through
+            // `NutritionDishEditor`, which the pipeline knows nothing about
+            // and must not erase on the next reimport. The pipeline does ship
+            // its own `almanac:` rows (curated native foods, once there are
+            // any) and those are ordinary reference data, replaced like any
+            // other row; `nutrition_dish` is what tells the two apart, since
+            // only a device-authored dish ever gets a row there. Deleting
+            // children before parents, in FK order, is what lets the parent
+            // tables use a plain DELETE at all.
             try db.execute("""
-            DELETE FROM nutrition_value;
-            DELETE FROM nutrition_food_name;
-            DELETE FROM nutrition_food;
-            DELETE FROM nutrition_nutrient;
-            DELETE FROM nutrition_source;
-            INSERT INTO nutrition_source (namespace, dataset_id, name, release, licence, licence_group,
-                                          attribution, url)
-                SELECT namespace, dataset_id, name, release, licence, licence_group, attribution, url
-                FROM bundle.nutrition_source;
-            INSERT INTO nutrition_nutrient (nutrient_id, infoods_tag, name, unit, description)
-                SELECT nutrient_id, infoods_tag, name, unit, description FROM bundle.nutrition_nutrient;
+                DELETE FROM nutrition_value WHERE food_ref IN (
+                    SELECT food_ref FROM nutrition_food
+                    WHERE food_ref NOT IN (SELECT food_ref FROM nutrition_dish)
+                );
+                DELETE FROM nutrition_food_name WHERE food_ref IN (
+                    SELECT food_ref FROM nutrition_food
+                    WHERE food_ref NOT IN (SELECT food_ref FROM nutrition_dish)
+                );
+                DELETE FROM nutrition_food
+                    WHERE food_ref NOT IN (SELECT food_ref FROM nutrition_dish);
+                """)
+            // Now safe: no surviving row references a withdrawn source.
+            try db.run("""
+                DELETE FROM nutrition_source
+                WHERE namespace <> 'almanac' AND namespace NOT IN (\(namespacePlaceholders));
+                """, namespaceValues)
+            // Upserted, not replaced: a preserved `almanac:` value still
+            // references `nutrition_nutrient` and its own `nutrition_source`
+            // row, and deleting either out from under it — even for one
+            // statement inside this same transaction — is a foreign-key
+            // violation, not a reordering problem a later INSERT undoes.
+            // Row by row rather than `INSERT ... SELECT ... ON CONFLICT`:
+            // SQLite's upsert clause is not accepted after a SELECT source,
+            // only after VALUES.
+            for row in try db.query("SELECT * FROM bundle.nutrition_source;") {
+                try db.run("""
+                INSERT INTO nutrition_source
+                    (namespace, dataset_id, name, release, licence, licence_group, attribution, url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (namespace) DO UPDATE SET
+                    dataset_id = excluded.dataset_id, name = excluded.name, release = excluded.release,
+                    licence = excluded.licence, licence_group = excluded.licence_group,
+                    attribution = excluded.attribution, url = excluded.url;
+                """, [.text(row.string("namespace") ?? ""), .text(row.string("dataset_id") ?? ""),
+                      .text(row.string("name") ?? ""), .text(row.string("release") ?? ""),
+                      .text(row.string("licence") ?? ""), .text(row.string("licence_group") ?? ""),
+                      .text(row.string("attribution") ?? ""), .text(row.string("url") ?? "")])
+            }
+            for row in try db.query("SELECT * FROM bundle.nutrition_nutrient;") {
+                try db.run("""
+                INSERT INTO nutrition_nutrient (nutrient_id, infoods_tag, name, unit, description)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (nutrient_id) DO UPDATE SET
+                    infoods_tag = excluded.infoods_tag, name = excluded.name, unit = excluded.unit,
+                    description = excluded.description;
+                """, [.text(row.string("nutrient_id") ?? ""), .text(row.string("infoods_tag") ?? ""),
+                      .text(row.string("name") ?? ""), .text(row.string("unit") ?? ""),
+                      .text(row.string("description") ?? "")])
+            }
+            try db.execute("""
             INSERT INTO nutrition_food (food_ref, namespace, local_id, licence_group, food_group_code,
                                         food_group_name, source_record)
                 SELECT food_ref, namespace, local_id, licence_group, food_group_code, food_group_name,

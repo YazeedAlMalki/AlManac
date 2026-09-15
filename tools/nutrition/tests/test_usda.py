@@ -65,7 +65,7 @@ def fixture_lake(case, extra_nutrient_rows=(), derivations=None):
 
 
 def values_of(lake):
-    _, _, values, manifest = read_canonical(lake.canonical("usda"))
+    _, _, values, _, manifest = read_canonical(lake.canonical("usda"))
     return {(v.food_ref, v.nutrient_id): v for v in values}, manifest
 
 
@@ -97,7 +97,7 @@ class Canonicalise(unittest.TestCase):
         self.values, self.manifest = values_of(self.lake)
 
     def test_only_listed_foundation_foods_and_the_rest_are_recorded(self):
-        foods, names, _, _ = read_canonical(self.lake.canonical("usda"))
+        foods, names, _, _, _ = read_canonical(self.lake.canonical("usda"))
         self.assertEqual([f.food_ref for f in foods], ["usda:1001", "usda:1004"])
         self.assertEqual([e["fdc_id"] for e in self.manifest["notes"]["excluded"]], ["1002"])
         self.assertEqual(names[0].name, "Oats, raw")

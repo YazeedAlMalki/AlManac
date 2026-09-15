@@ -154,6 +154,96 @@ def raw_afcd(lake: Lake, dictionary: Dictionary) -> tuple[set[str], Cells]:
 READERS = {"usda": raw_usda, "ciqual": raw_ciqual, "cofid": raw_cofid, "afcd": raw_afcd}
 
 
+# --- Portions: independent re-read of USDA food_portion and CoFID "1.2 Factors" ------------
+
+def raw_usda_portions(lake: Lake) -> dict[tuple[str, str, str], tuple[str, str]]:
+    """(food_ref, 'household_measure', source_record) -> (gram_weight text, amount text)."""
+    base = lake.source_dir("usda") / "FoodData_Central_csv_2026-04-30"
+    with open(base / "foundation_food.csv", newline="", encoding="utf-8-sig") as f:
+        listed = {r["fdc_id"] for r in csv.DictReader(f)}
+    with open(base / "food.csv", newline="", encoding="utf-8-sig") as f:
+        foods = {r["fdc_id"] for r in csv.DictReader(f)
+                 if r["data_type"] == "foundation_food" and r["fdc_id"] in listed}
+    cells: dict[tuple[str, str, str], tuple[str, str]] = {}
+    with open(base / "food_portion.csv", newline="", encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f):
+            if r["fdc_id"] not in foods:
+                continue
+            key = (f"usda:{r['fdc_id']}", "household_measure", f"food_portion.csv id={r['id']}")
+            cells[key] = (r["gram_weight"].strip(), r["amount"].strip())
+    return cells
+
+
+def raw_cofid_factors(lake: Lake) -> dict[tuple[str, str, str], str]:
+    """(food_ref, kind, source_record) -> raw cell text, for Edible proportion and Specific gravity."""
+    rows = _sheet(lake.source_dir("cofid") / "McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021.xlsx",
+                  "1.2 Factors")
+    headings = rows[0]
+    code_at = headings.index("Food Code")
+    ep_at = headings.index("Edible proportion")
+    sg_at = headings.index("Specific gravity")
+    body = [(n, row) for n, row in enumerate(rows[3:], start=4) if _at(row, code_at)]
+    repeats = Counter(_at(row, code_at) for _, row in body)
+    cells: dict[tuple[str, str, str], str] = {}
+    for n, row in body:
+        code = _at(row, code_at)
+        ref = f"cofid:{code}" if repeats[code] == 1 else f"cofid:{code}@row{n}"
+        if text := _at(row, ep_at):
+            cells[(ref, "edible_proportion", f"1.2 Factors!row {n}")] = text
+        if text := _at(row, sg_at):
+            cells[(ref, "specific_gravity", f"1.2 Factors!row {n}")] = text
+    return cells
+
+
+def portion_fidelity(lake: Lake, portions) -> dict:
+    """Re-reads USDA food_portion and CoFID Factors independently and compares with canonical."""
+    problems: list[str] = []
+    by_key = {(p.food_ref, p.kind, p.source_record): p for p in portions}
+    kinds: Counter[str] = Counter()
+
+    for key, (gram_text, amount_text) in raw_usda_portions(lake).items():
+        kinds["household_measure"] += 1
+        where = "/".join(key)
+        p = by_key.get(key)
+        if p is None:
+            problems.append(f"{where}: raw portion has no canonical row")
+            continue
+        if p.source_value != gram_text:
+            problems.append(f"{where}: canonical source_value {p.source_value!r}, raw {gram_text!r}")
+        wanted_value, wanted_amount = _number(gram_text), _number(amount_text)
+        if p.value is None or wanted_value is None or not math.isclose(p.value, wanted_value, rel_tol=1e-9):
+            problems.append(f"{where}: value {p.value!r}, raw gives {wanted_value!r}")
+        if p.amount is None or wanted_amount is None or not math.isclose(p.amount, wanted_amount, rel_tol=1e-9):
+            problems.append(f"{where}: amount {p.amount!r}, raw gives {wanted_amount!r}")
+
+    for key, text in raw_cofid_factors(lake).items():
+        kinds[key[1]] += 1
+        where = "/".join(key)
+        p = by_key.get(key)
+        if p is None:
+            problems.append(f"{where}: raw portion has no canonical row")
+            continue
+        if p.source_value != text:
+            problems.append(f"{where}: canonical source_value {p.source_value!r}, raw {text!r}")
+        if text == "N":
+            if p.value is not None or p.qualifier != "not_analysed":
+                problems.append(f"{where}: raw token 'N' became {p.qualifier} {p.value!r}")
+            continue
+        wanted = _number(text)
+        if wanted is None:
+            problems.append(f"{where}: raw cell {text!r} is unreadable but became {p.qualifier}")
+            continue
+        if p.value is None or not math.isclose(p.value, wanted, rel_tol=1e-9):
+            problems.append(f"{where}: value {p.value!r}, raw gives {wanted!r}")
+
+    raw_keys = set(raw_usda_portions(lake)) | set(raw_cofid_factors(lake))
+    for key in sorted(set(by_key) - raw_keys):
+        problems.append(f"{'/'.join(key)}: canonical portion with no raw cell")
+
+    return {"raw_cells": sum(kinds.values()), "raw_cells_by_kind": dict(sorted(kinds.items())),
+            "canonical_portions": len(portions), "problems": len(problems), "examples": problems[:EXAMPLES]}
+
+
 # --- Hard checks --------------------------------------------------------------------------
 
 def expectation(source: str, text: str) -> tuple[str, float | None]:
@@ -331,10 +421,10 @@ def energy_and_plausibility(names, values) -> tuple[dict, dict]:
 # --- Report -------------------------------------------------------------------------------
 
 def run(lake: Lake, dictionary: Dictionary) -> dict:
-    union_foods, union_names, union_values, _ = read_canonical(lake.union)
+    union_foods, union_names, union_values, union_portions, _ = read_canonical(lake.union)
     report: dict = {"generated_at": utc_now(), "dictionary_sha256": dictionary.sha256, "sources": {}}
     for ns in sorted(p.name for p in lake.canonical_root.iterdir() if p.is_dir() and not p.name.startswith(".")):
-        foods, _, values, manifest = read_canonical(lake.canonical(ns))
+        foods, _, values, _, manifest = read_canonical(lake.canonical(ns))
         entry = {"foods": len(foods), "values": len(values),
                  "qualifiers": dict(sorted(Counter(v.qualifier for v in values).items()))}
         if ns in READERS:
@@ -345,8 +435,10 @@ def run(lake: Lake, dictionary: Dictionary) -> dict:
     report["tokens"] = token_invariants(union_values)
     report["licence"] = licence(dictionary, union_foods, union_values, lake.bundle)
     report["energy"], report["plausibility"] = energy_and_plausibility(union_names, union_values)
+    report["portion_fidelity"] = portion_fidelity(lake, union_portions)
     report["passed"] = (all(e["fidelity"]["problems"] == 0 for e in report["sources"].values())
-                        and report["tokens"]["problems"] == 0 and report["licence"]["problems"] == 0)
+                        and report["tokens"]["problems"] == 0 and report["licence"]["problems"] == 0
+                        and report["portion_fidelity"]["problems"] == 0)
     with staged_directory(lake.root / "processed" / "qa") as scratch:
         write_json(scratch / "report.json", report)
         (scratch / "report.md").write_text(render(report), encoding="utf-8")
@@ -362,10 +454,14 @@ def render(report: dict) -> str:
     for ns, e in report["sources"].items():
         lines.append(f"| {ns} | {e['foods']:,} | {e['values']:,} | {e['fidelity'].get('raw_cells', 0):,} | "
                      f"{e['fidelity']['problems']} |")
-    t, lic = report["tokens"], report["licence"]
+    t, lic, pf = report["tokens"], report["licence"], report["portion_fidelity"]
     lines += ["", f"- Token rows: {t['token_rows']}. With an amount: **{t['tokens_with_amounts']}**. "
               f"Zeros without a raw zero: **{t['zeros_without_a_raw_zero']}**.",
-              f"- Licence problems: **{lic['problems']}**. Groups in the bundle: {lic['groups_in_bundle']}."]
+              f"- Licence problems: **{lic['problems']}**. Groups in the bundle: {lic['groups_in_bundle']}.",
+              f"- Portions: {pf['raw_cells']:,} raw cells re-read ({pf['raw_cells_by_kind']}), "
+              f"{pf['canonical_portions']:,} canonical rows, **{pf['problems']}** fidelity problems."]
+    for example in pf["examples"]:
+        lines.append(f"  - portion: {example}")
     for ns, e in report["sources"].items():
         for example in e["fidelity"].get("examples", []):
             lines.append(f"  - {ns}: {example}")
@@ -397,5 +493,6 @@ def render(report: dict) -> str:
 def summary(report: dict) -> str:
     fidelity_problems = sum(e["fidelity"]["problems"] for e in report["sources"].values())
     return (f"qa {'PASSED' if report['passed'] else 'FAILED'}: fidelity problems {fidelity_problems}, "
-            f"token problems {report['tokens']['problems']}, licence problems {report['licence']['problems']}; "
+            f"token problems {report['tokens']['problems']}, licence problems {report['licence']['problems']}, "
+            f"portion fidelity problems {report['portion_fidelity']['problems']}; "
             f"implausible {report['plausibility']['over_105_g']}; report in processed/qa/report.md")

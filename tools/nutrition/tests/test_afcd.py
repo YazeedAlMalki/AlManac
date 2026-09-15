@@ -59,7 +59,7 @@ def fixture_lake(case, grams=GRAMS, millilitres=MILLILITRES):
 
 
 def canonical(lake):
-    foods, names, values, manifest = read_canonical(lake.canonical("afcd"))
+    foods, names, values, portions, manifest = read_canonical(lake.canonical("afcd"))
     return foods, names, {(v.food_ref, v.nutrient_id, v.basis): v for v in values}, manifest
 
 

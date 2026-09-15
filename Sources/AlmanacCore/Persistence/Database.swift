@@ -53,6 +53,9 @@ public final class Database: @unchecked Sendable {
     /// Internal escape hatch for C APIs that need the raw connection.
     var rawHandle: OpaquePointer? { handle }
     public let path: String
+    /// Held for the whole of `transaction`. Recursive, so the same thread can
+    /// nest; another thread waits rather than joining the open transaction.
+    private let transactionLock = NSRecursiveLock()
 
     public init(path: String) throws {
         self.path = path
@@ -165,7 +168,33 @@ public final class Database: @unchecked Sendable {
     }
 
     /// Runs `body` inside a transaction, rolling back on any thrown error.
+    ///
+    /// **Nests.** `BEGIN` inside an open transaction is an error in SQLite, so
+    /// a call made while one is already running uses a SAVEPOINT instead: the
+    /// inner scope rolls back on its own without discarding the outer one, and
+    /// nothing commits until the outermost scope does. That is what lets a
+    /// store compose two writes that each own their own consistency — a recipe
+    /// and the values derived from it, or a whole source's rows — without
+    /// either having to know whether it is the outer call.
+    ///
+    /// Whether a transaction is open is asked of SQLite rather than tracked
+    /// here, so there is no Swift-side counter that can drift out of step with
+    /// the connection. Savepoints of the same name are last-in-first-out, which
+    /// is exactly how these scopes close.
+    ///
+    /// **Nesting is per thread, which the lock is what makes true.** SQLite
+    /// reports an open transaction for the *connection*, not for the caller, so
+    /// without the lock a second thread arriving mid-transaction would read
+    /// "already open" and quietly attach its savepoint to work it has nothing
+    /// to do with — two unrelated units of work committing or rolling back
+    /// together. `SQLITE_OPEN_FULLMUTEX` serialises statements, not the spans
+    /// between them, so it does not cover this. Holding the lock for the whole
+    /// scope means another thread waits and then gets a genuine outer
+    /// transaction of its own.
     public func transaction<T>(_ body: () throws -> T) throws -> T {
+        transactionLock.lock()
+        defer { transactionLock.unlock() }
+        guard sqlite3_get_autocommit(handle) != 0 else { return try savepoint(body) }
         try execute("BEGIN IMMEDIATE;")
         do {
             let result = try body()
@@ -173,6 +202,21 @@ public final class Database: @unchecked Sendable {
             return result
         } catch {
             try? execute("ROLLBACK;")
+            throw error
+        }
+    }
+
+    private func savepoint<T>(_ body: () throws -> T) throws -> T {
+        try execute("SAVEPOINT almanac_nested;")
+        do {
+            let result = try body()
+            try execute("RELEASE almanac_nested;")
+            return result
+        } catch {
+            // Rolling back to a savepoint does not release it, so both
+            // statements are needed to leave the enclosing scope as it was.
+            try? execute("ROLLBACK TO almanac_nested;")
+            try? execute("RELEASE almanac_nested;")
             throw error
         }
     }

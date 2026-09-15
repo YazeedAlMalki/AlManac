@@ -1,7 +1,11 @@
 # Nutrition — calorie reference database, v1
 
-**Status:** built 2026-09-13. Reference data and calorie calculation only; no
-food logging, portions or UI yet.
+**Status:** reference data and calorie calculation built 2026-09-13. Pipeline-side
+portions (household measures, specific gravity, edible proportion) built
+2026-09-15 (§8) — not yet imported into AlmanacCore; see §8 for why. No food
+logging or UI yet as of this pipeline slice (a concurrent, uncommitted branch
+was independently building both at time of writing — check current state
+before assuming either is still missing).
 **Decisions it implements:** the 2026-09-13 handoff (licence group N; general
 Atwater 4/4/9/7; calorie-only canonical set; Branded Foods held out; SFDA never
 stored) and Processing Design v0.1 in the food-data lake.
@@ -119,11 +123,66 @@ primary name. Names are folded once, at import.
 
 ## 7. Not done
 
-- **Almanac-native foods** — the pipeline slot and group N exist; the Saudi/Gulf
-  dish data does not.
+- **Almanac-native foods** — the pipeline slot and group N exist, and §9
+  authoring is built; the Saudi/Gulf dish data itself does not exist.
 - **App wiring** — the app target must ship `almanac.sqlite` as a resource and
   call `importBundle(at:)` on first launch and after an update. Not done here:
   no Apple toolchain in this environment.
-- **Food logging, portions and household measures** (USDA `food_portion`, CoFID
-  specific gravity), SR Legacy, FNDDS, Branded Foods, Frida, Oman FCT 2024.
+- **Reconciling pipeline portions into AlmanacCore** (§8) — the bundle carries
+  them; nothing imports them yet.
+- SR Legacy, FNDDS, Branded Foods, Frida, Oman FCT 2024.
 - **Per-food Atwater factors** (v2).
+
+## 8. Portions (pipeline side, 2026-09-15)
+
+`tools/nutrition/README.md` "Canonical format" and "Source rules" are the
+contract; this is the summary. A fourth canonical file, `portions.csv`,
+carries household-measure-to-gram conversion (Processing Design v0.1 §4),
+validated independently of `values.csv` (`model.validate_portions`) so a
+source with none is unaffected:
+
+| Kind | Source | What it says |
+|---|---|---|
+| `household_measure` | USDA `food_portion` | `amount` of a named unit (e.g. "cup") weighs `value` grams |
+| `specific_gravity` | CoFID "1.2 Factors" | the food's density, grams per mL |
+| `edible_proportion` | CoFID "1.2 Factors" | the fraction of a gross weight that is edible |
+
+The bundle's `nutrition_portion` table (schema v1, still version 1 — an
+additive table) carries all three. QA (`portion_fidelity`) independently
+re-reads USDA's `food_portion.csv` and CoFID's Factors sheet and compares
+against canonical, the same discipline as the nutrient fidelity check; on the
+full lake it re-reads 3,064 raw cells (123 household measures, 2,887 edible
+proportions, 54 specific gravities) with 0 problems.
+
+**Why nothing imports it yet.** AlmanacCore independently grew its own
+`nutrition_portion` table (migration 010, uncommitted at the time this was
+written) — household measures only, keyed differently, with
+`edible_proportion` living on a separate `nutrition_dish` table scoped to the
+user's own `almanac:` dishes. CoFID's `edible_proportion`/`specific_gravity`
+are per **reference food** (thousands of CoFID foods, not just dishes), which
+does not fit that slot. Reconciling the two schemas is unstarted; read both
+migration files and this pipeline's `portions.csv` contract before doing it.
+
+## 9. Household measures, native dishes and the food log (AlmanacCore, 2026-09-15)
+
+Migrations 009-011; `Database.transaction` nesting; `NutritionDishEditor`;
+`NutritionLogStore`/`NutritionSummary`. Full account, including the defects
+found and the judgement calls behind them, is in
+`docs/implementation-status.md` under the same date — this is the pointer, not
+a second copy.
+
+In one line each: household measures are stored per food
+(`NutritionCatalog.addPortion`/`portion(of:)`/`grams(of:)`, English-plural
+matching, ambiguity returned rather than guessed); `almanac:` dishes are
+authored and edited through `NutritionDishEditor`, with recipe reduction to
+per-100-g values, cycle detection, and missing-ingredient/unmeasured/unit-
+conflict reporting; what was eaten is recorded in `NutritionLogStore`
+(revision-tracked, timeline-integrated) and totalled against the catalog by
+`NutritionSummary`, joined at read time so a corrected reference value
+corrects every meal already logged against it.
+
+A `nutrition_dish` row is what marks a `nutrition_food` row as
+device-authored, and is the reason a bundle reimport (§8's "not reconciled"
+note) can now tell a person's own dish apart from a curated native food the
+pipeline ships — it does not solve §8's schema question, only that narrower,
+correctness-critical one (a reimport must never silently delete a dish).

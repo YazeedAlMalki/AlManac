@@ -62,6 +62,28 @@ INSERT INTO "nutrition_nutrient" VALUES('carbohydrate_available','CHOAVL','Carbo
 INSERT INTO "nutrition_nutrient" VALUES('carbohydrate_available_monosaccharide','CHOAVLM','Carbohydrate, available, as monosaccharide equivalents','g','Available carbohydrate expressed as monosaccharide equivalents (CoFID convention): starch and disaccharides carry hydration factors of about 1.10 and 1.05 relative to carbohydrate_available.');
 INSERT INTO "nutrition_nutrient" VALUES('fibre_total_dietary','FIBTG','Dietary fibre, total','g','Total dietary fibre by AOAC methods, including resistant starch and lignin. Englyst non-starch polysaccharide is a different quantity and is not mapped.');
 INSERT INTO "nutrition_nutrient" VALUES('alcohol','ALC','Alcohol','g','Ethyl alcohol.');
+CREATE TABLE nutrition_portion (
+    food_ref      TEXT NOT NULL REFERENCES nutrition_food (food_ref),
+    kind          TEXT NOT NULL CHECK (kind IN ('edible_proportion', 'household_measure', 'specific_gravity')),
+    unit          TEXT NOT NULL,
+    amount        REAL CHECK (amount IS NULL OR amount > 0),
+    value         REAL CHECK (value IS NULL OR value >= 0),
+    qualifier     TEXT NOT NULL REFERENCES nutrition_qualifier (qualifier),
+    confidence    TEXT,
+    source_value  TEXT NOT NULL CHECK (source_value <> ''),
+    source_unit   TEXT NOT NULL,
+    description   TEXT NOT NULL,
+    modifier      TEXT NOT NULL,
+    source_record TEXT NOT NULL,
+    licence_group TEXT NOT NULL CHECK (licence_group IN ('A', 'B', 'N')),
+    PRIMARY KEY (food_ref, kind, source_record),
+    CHECK ((qualifier IN ('not_analysed', 'trace')) = (value IS NULL)),
+    CHECK (qualifier <> 'zero_reported' OR value = 0),
+    CHECK (kind = 'household_measure' OR amount IS NULL)
+) STRICT;
+INSERT INTO "nutrition_portion" VALUES('cofid:900-001','edible_proportion','fraction',NULL,0.65,'measured',NULL,'0.65','','','','1.2 Factors!row 4','B');
+INSERT INTO "nutrition_portion" VALUES('usda:900001','household_measure','cup',1.0,156.0,'measured','21','156','g','','','food_portion.csv id=1','A');
+INSERT INTO "nutrition_portion" VALUES('usda:900001','household_measure','tablespoon',2.0,33.9,'measured','21','33.9','g','','chopped','food_portion.csv id=2','A');
 CREATE TABLE nutrition_qualifier (
     qualifier         TEXT PRIMARY KEY,
     has_quantity      INTEGER NOT NULL CHECK (has_quantity IN (0, 1)),

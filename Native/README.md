@@ -1,6 +1,6 @@
-# Native laboratory manual entry
+# Native laboratory manual entry + hydration
 
-This is the first iOS app target for the existing Almanac core. It uses the
+This is the iOS app target for the existing Almanac core. It uses the
 local package at `../Package.swift`; it adds no server, account system or
 separately deployed service. The target supports iPhone and iPad on iOS 17+.
 
@@ -18,6 +18,18 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   a separate revision history including metadata corrections and attribution.
 - Incoming report-conflict review with explicit accept/reject and reason.
   There is no import automation creating these proposals in this app.
+- Hydration: log water (presets or a custom amount, with an optional note),
+  a dashboard of today's total against a settings-configurable daily goal,
+  and delete. Backed by `HydrationLoggingService`/`HydrationStore` in the
+  core; `LaboratoryModel` and `HydrationModel` share one `Database` connection.
+- HealthKit: read and write for the `.water` domain only, via the one file
+  permitted to `import HealthKit` (`HealthKitProvider.swift`). Inbound sync
+  reuses the core's `HealthSyncService` unmodified; outbound uses
+  `HydrationWriteback`, which pushes manually-logged entries not yet marked
+  synced. Authorization is requested from Settings, not on launch.
+- Local notification reminders (fixed times, configurable in Settings) via
+  `NotificationScheduler`. No Info.plist key is required for local
+  notifications; only runtime authorization is requested, from Settings.
 
 The connection is owned on the main actor. Saving an existing result calls the
 core's atomic value/metadata edit API. The application uses
@@ -51,8 +63,13 @@ xcodebuild -project Native/Almanac.xcodeproj -scheme Almanac \
 ```
 
 The target has a provisional bundle identifier `com.almanac.personal`. Configure
-a suitable identifier/team when preparing a physical-device build. This target
-uses no HealthKit capability or document picker.
+a suitable identifier/team when preparing a physical-device build. The target
+now carries the HealthKit capability and `Almanac.entitlements`
+(`com.apple.developer.healthkit`), added by hand-editing `project.pbxproj` —
+**on first open in Xcode, verify via Signing & Capabilities that HealthKit
+shows as added, and let Xcode rewrite the `TargetAttributes`/
+`SystemCapabilities` block if anything looks off** rather than fighting the
+manual edit further. It still uses no document picker.
 
 ## Interactive acceptance checks — outstanding
 
@@ -77,6 +94,21 @@ uses no HealthKit capability or document picker.
    is still accessible in history. Cancel an edit and confirm no save occurs.
 8. Exercise compact/large Dynamic Type, VoiceOver, iPhone keyboard dismissal
    and iPad navigation. These interaction checks require the actual app.
+9. Log water via a preset and via a custom amount; confirm the dashboard total
+   and progress bar update and the entry appears in today's list. Delete an
+   entry and confirm the total drops accordingly.
+10. From Settings, connect HealthKit; confirm the system authorization sheet
+    appears listing only water read/write. Log an entry in Health directly
+    (outside Almanac) and confirm it appears in the dashboard after sync.
+    Delete a HealthKit-sourced entry in Almanac and confirm it does not
+    reappear after a further sync.
+11. Log an entry in Almanac with HealthKit connected; confirm it appears in
+    the Health app's Water record shortly after (outbound writeback runs
+    after connecting and after each manual log's own inbound sync call).
+12. Enable reminders in Settings; confirm the notification-permission prompt
+    appears, then confirm a reminder fires at a configured time
+    (fast-forward the simulator clock or pick a near-future time to verify
+    without waiting).
 
 Report conflict behavior is covered in core tests. To exercise its UI, use a
 development fixture that supplies conflicting reports via `upsertReport`; then

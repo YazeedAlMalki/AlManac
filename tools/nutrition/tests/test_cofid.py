@@ -31,8 +31,21 @@ FOODS = [
     ["19-100", "Meat pie, fixture", "", "MR", None, "ref", None, "50", "10", "15", "N", "N", None, None, "N", None],
 ]
 
+# "1.2 Factors" — same food order as FOODS (portions are matched to foods by row position).
+FACTORS_HEADINGS = ["Food Code", "Food Name", "Description", "Group", "Previous",
+                    "Main data references", "Footnote", "Edible proportion", "Specific gravity",
+                    "Total solids", "Nitrogen conversion factor", "Glycerol conversion factor"]
+FACTORS = [
+    ["13-145", "Ackee, canned, drained", "8 cans", "DG", 554, "MW4", None, "N", None, None, None, None],
+    ["17-752", "Wine, red", "", "QE", None, "ref", None, "1.0", "0.99", None, None, None],
+    ["13-669", "Aubergine, flesh and skin, roasted in rapeseed oil", "", "DG", None, "ref", None,
+     "0.95", None, None, None, None],
+    ["13-669", "Watercress, raw", "", "DG", "13-653", "ref", None, "0.85", None, None, None, None],
+    ["19-100", "Meat pie, fixture", "", "MR", None, "ref", None, "0.9", None, None, None, None],
+]
 
-def fixture_lake(case, foods=FOODS, headings=HEADINGS):
+
+def fixture_lake(case, foods=FOODS, headings=HEADINGS, factors=FACTORS, factors_headings=FACTORS_HEADINGS):
     lake = temp_lake(case)
     base = lake.root / LOCAL
     base.mkdir(parents=True)
@@ -42,6 +55,9 @@ def fixture_lake(case, foods=FOODS, headings=HEADINGS):
     sheet = book.create_sheet(cofid.FOOD_SHEET)
     for row in (headings, CODES, DESCRIPTIONS, *foods):
         sheet.append(row)
+    factors_sheet = book.create_sheet(cofid.FACTORS_SHEET)
+    for row in (factors_headings, [], [], *factors):
+        factors_sheet.append(row)
     book.create_sheet("1.4 Inorganics").append(["Food Code", "Sodium (mg)"])
     book.save(base / cofid.WORKBOOK)
     old = openpyxl.Workbook()
@@ -53,8 +69,8 @@ def fixture_lake(case, foods=FOODS, headings=HEADINGS):
 
 
 def canonical(lake):
-    foods, names, values, manifest = read_canonical(lake.canonical("cofid"))
-    return foods, names, {(v.food_ref, v.nutrient_id): v for v in values}, manifest
+    foods, names, values, portions, manifest = read_canonical(lake.canonical("cofid"))
+    return foods, names, {(v.food_ref, v.nutrient_id): v for v in values}, portions, manifest
 
 
 class Extract(unittest.TestCase):
@@ -69,6 +85,7 @@ class Extract(unittest.TestCase):
         out = cofid.extract(fixture_lake(self))
         self.assertEqual(sorted(p.name for p in out.iterdir() if p.suffix == ".csv"), sorted([
             sheet_file(cofid.WORKBOOK, "List of tables"), sheet_file(cofid.WORKBOOK, cofid.FOOD_SHEET),
+            sheet_file(cofid.WORKBOOK, cofid.FACTORS_SHEET),
             sheet_file(cofid.WORKBOOK, "1.4 Inorganics"), sheet_file(cofid.OLD_FOODS, "Old foods")]))
         lines = (out / sheet_file(cofid.WORKBOOK, cofid.FOOD_SHEET)).read_text().splitlines()
         self.assertEqual(len(lines), 3 + len(FOODS))
@@ -80,7 +97,7 @@ class Canonicalise(unittest.TestCase):
         self.lake = fixture_lake(self)
         cofid.extract(self.lake)
         cofid.canonicalise(self.lake, DICTIONARY)
-        self.foods, self.names, self.values, self.manifest = canonical(self.lake)
+        self.foods, self.names, self.values, self.portions, self.manifest = canonical(self.lake)
 
     def test_tokens_have_no_amount_and_blanks_have_no_row(self):
         watercress = "cofid:13-669@row7"
@@ -125,8 +142,20 @@ class Canonicalise(unittest.TestCase):
     def test_reruns_are_byte_identical_and_the_cli_finds_the_module(self):
         first = self.manifest["outputs"]
         cofid.canonicalise(self.lake, DICTIONARY)
-        self.assertEqual(canonical(self.lake)[3]["outputs"], first)
+        self.assertEqual(canonical(self.lake)[4]["outputs"], first)
         self.assertIs(load_sources()["cofid"], cofid)
+
+    def test_portions_from_1_2_factors(self):
+        by_key = {(p.food_ref, p.kind): p for p in self.portions}
+        ackee = by_key[("cofid:13-145", "edible_proportion")]
+        self.assertEqual((ackee.value, ackee.qualifier, ackee.source_value), (None, "not_analysed", "N"))
+        wine_ep = by_key[("cofid:17-752", "edible_proportion")]
+        self.assertEqual((wine_ep.value, wine_ep.unit, wine_ep.amount), (1.0, "fraction", None))
+        wine_sg = by_key[("cofid:17-752", "specific_gravity")]
+        self.assertEqual((wine_sg.value, wine_sg.unit), (0.99, "g_per_ml"))
+        self.assertNotIn(("cofid:13-145", "specific_gravity"), by_key)  # blank cell: no row
+        watercress = by_key[("cofid:13-669@row7", "edible_proportion")]
+        self.assertEqual(watercress.value, 0.85)
 
 
 class Refusals(unittest.TestCase):
@@ -170,7 +199,7 @@ class AgainstTheRealLake(unittest.TestCase):
             (Path(out) / "raw").symlink_to(REAL_LAKE.root / "raw")
             cofid.extract(scratch)
             manifest = cofid.canonicalise(scratch, DICTIONARY)
-            _, _, values, _ = read_canonical(scratch.canonical("cofid"))
+            _, _, values, _, _ = read_canonical(scratch.canonical("cofid"))
         self.assertEqual(manifest["counts"]["foods"], 2887)
         self.assertEqual(manifest["notes"]["collisions"][0]["local_ids"],
                          ["13-669@row55", "13-669@row2827"])

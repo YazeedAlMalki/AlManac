@@ -17,7 +17,7 @@ from .canonical_io import (CanonicalError, counts, raise_if_invalid, read_canoni
 from .dictionary import Dictionary
 from .lake import Lake, sha256_file, staged_directory, tool_revision, utc_now, write_json
 from .licence import LicenceViolation, assert_shippable
-from .model import BASES, validate
+from .model import BASES, PORTION_KINDS, validate, validate_portions
 
 SCHEMA_VERSION = 1
 
@@ -92,6 +92,25 @@ CREATE TABLE nutrition_value (
     CHECK ((qualifier IN ({no_amount})) = (amount IS NULL)),
     CHECK (qualifier <> 'zero_reported' OR amount = 0)
 ) STRICT;
+CREATE TABLE nutrition_portion (
+    food_ref      TEXT NOT NULL REFERENCES nutrition_food (food_ref),
+    kind          TEXT NOT NULL CHECK (kind IN ({_sql_list(PORTION_KINDS)})),
+    unit          TEXT NOT NULL,
+    amount        REAL CHECK (amount IS NULL OR amount > 0),
+    value         REAL CHECK (value IS NULL OR value >= 0),
+    qualifier     TEXT NOT NULL REFERENCES nutrition_qualifier (qualifier),
+    confidence    TEXT,
+    source_value  TEXT NOT NULL CHECK (source_value <> ''),
+    source_unit   TEXT NOT NULL,
+    description   TEXT NOT NULL,
+    modifier      TEXT NOT NULL,
+    source_record TEXT NOT NULL,
+    licence_group TEXT NOT NULL CHECK (licence_group IN ({groups})),
+    PRIMARY KEY (food_ref, kind, source_record),
+    CHECK ((qualifier IN ({no_amount})) = (value IS NULL)),
+    CHECK (qualifier <> 'zero_reported' OR value = 0),
+    CHECK (kind = 'household_measure' OR amount IS NULL)
+) STRICT;
 """
 
 
@@ -102,24 +121,28 @@ def union(lake: Lake, dictionary: Dictionary) -> dict:
                      if p.is_dir() and not p.name.startswith(".")) if root.is_dir() else []
     if not present:
         raise CanonicalError(f"{root}: no canonical sources to union")
-    foods, names, values, sources = [], [], [], {}
+    foods, names, values, portions, sources = [], [], [], [], {}
     for namespace in present:
         if namespace not in dictionary.sources:
             raise CanonicalError(f"canonical/{namespace}: namespace is not in dictionary/sources.csv")
-        f, n, v, manifest = read_canonical(root / namespace)
+        f, n, v, p, manifest = read_canonical(root / namespace)
         if manifest.get("namespace") != namespace:
             raise CanonicalError(f"canonical/{namespace}: manifest names {manifest.get('namespace')!r}")
         if manifest.get("dictionary_sha256") != dictionary.sha256:
             raise CanonicalError(f"canonical/{namespace} was built against a different dictionary; "
                                  f"re-run `canonicalise {namespace}`")
         raise_if_invalid(validate(f, n, v, dictionary, namespace=namespace), f"canonical/{namespace}")
+        raise_if_invalid(validate_portions(f, p, dictionary, namespace=namespace),
+                         f"canonical/{namespace} portions")
         foods += f
         names += n
         values += v
+        portions += p
         sources[namespace] = {"release": manifest["release"],
                               "manifest_sha256": sha256_file(root / namespace / "manifest.json"),
                               "counts": manifest["counts"]}
     raise_if_invalid(validate(foods, names, values, dictionary), "union")
+    raise_if_invalid(validate_portions(foods, portions, dictionary), "union portions")
     with staged_directory(lake.union) as scratch:
         manifest = {
             "stage": "union",
@@ -127,8 +150,8 @@ def union(lake: Lake, dictionary: Dictionary) -> dict:
             "dictionary_sha256": dictionary.sha256,
             "generated_at": utc_now(),
             "tool_revision": tool_revision(),
-            "outputs": write_rows(scratch, foods, names, values),
-            "counts": counts(foods, names, values),
+            "outputs": write_rows(scratch, foods, names, values, portions),
+            "counts": counts(foods, names, values, portions),
         }
         write_json(scratch / "manifest.json", manifest)
     return manifest
@@ -136,7 +159,7 @@ def union(lake: Lake, dictionary: Dictionary) -> dict:
 
 def _verify_written(con: sqlite3.Connection, shippable: frozenset[str]) -> None:
     """Second assertion, against what is actually in the file."""
-    for table in ("nutrition_source", "nutrition_food", "nutrition_value"):
+    for table in ("nutrition_source", "nutrition_food", "nutrition_value", "nutrition_portion"):
         for (group,) in con.execute(f"SELECT DISTINCT licence_group FROM {table}"):
             if group not in shippable:
                 raise LicenceViolation(f"BUILD FAILURE: {table} contains licence group {group!r}")
@@ -148,16 +171,19 @@ def _verify_written(con: sqlite3.Connection, shippable: frozenset[str]) -> None:
 
 def build(lake: Lake, dictionary: Dictionary, out_path: Path | None = None) -> dict:
     out_path = Path(out_path or lake.bundle)
-    foods, names, values, union_manifest = read_canonical(lake.union)
+    foods, names, values, portions, union_manifest = read_canonical(lake.union)
     if union_manifest.get("dictionary_sha256") != dictionary.sha256:
         raise CanonicalError("processed/union was built against a different dictionary; re-run union")
     raise_if_invalid(validate(foods, names, values, dictionary), "union")
+    raise_if_invalid(validate_portions(foods, portions, dictionary), "union portions")
 
     # The assertion. Nothing has been written yet.
     shippable = dictionary.shippable_groups
     checked = assert_shippable(((f.food_ref, f.licence_group) for f in foods), shippable)
     checked += assert_shippable((("/".join((v.food_ref, v.nutrient_id, v.basis)), v.licence_group)
                                  for v in values), shippable)
+    checked += assert_shippable((("/".join((p.food_ref, p.kind, p.source_record)), p.licence_group)
+                                 for p in portions), shippable)
     namespaces = sorted({f.namespace for f in foods})
     assert_shippable(((ns, dictionary.group_of(ns)) for ns in namespaces), shippable)
 
@@ -203,6 +229,11 @@ def build(lake: Lake, dictionary: Dictionary, out_path: Path | None = None) -> d
                     (v.food_ref, v.nutrient_id, v.basis, v.amount, v.qualifier, v.confidence or None,
                      v.source_value, v.source_nutrient_id, v.source_unit, v.licence_group)
                     for v in sorted(values, key=lambda v: (v.food_ref, v.nutrient_id, v.basis))])
+                con.executemany("INSERT INTO nutrition_portion VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+                    (p.food_ref, p.kind, p.unit, p.amount, p.value, p.qualifier, p.confidence or None,
+                     p.source_value, p.source_unit, p.description, p.modifier, p.source_record,
+                     p.licence_group)
+                    for p in sorted(portions, key=lambda p: (p.food_ref, p.kind, p.source_record))])
             _verify_written(con, shippable)
             con.execute("VACUUM")
         finally:
@@ -218,5 +249,5 @@ def build(lake: Lake, dictionary: Dictionary, out_path: Path | None = None) -> d
         "built_at": built_at,
         "namespaces": namespaces,
         "rows_checked": checked,
-        "counts": counts(foods, names, values),
+        "counts": counts(foods, names, values, portions),
     }

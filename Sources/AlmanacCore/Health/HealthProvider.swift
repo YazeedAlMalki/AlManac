@@ -18,8 +18,11 @@ public protocol HealthProvider: Sendable {
 /// Domains Almanac syncs. Names are Almanac's, not HealthKit's — the mapping
 /// to HKQuantityType/HKCategoryType lives in the iOS adapter, per the spec's
 /// HealthKit map (which is not available here and must not be guessed).
+///
+/// `.water` is the first domain Almanac also *originates* rather than only
+/// reading — see `HealthWriter` below.
 public enum HealthDomain: String, Codable, Sendable, CaseIterable, Hashable {
-    case sleep, workouts, activeEnergy, restingEnergy, steps, heartRate, hrv, bodyMass
+    case sleep, workouts, activeEnergy, restingEnergy, steps, heartRate, hrv, bodyMass, water
 }
 
 public struct HealthSample: Sendable, Hashable {
@@ -58,6 +61,49 @@ public struct HealthChangeSet: Sendable {
 public enum HealthProviderError: Error, Sendable {
     case authorisationDenied(HealthDomain)
     case unavailable
+}
+
+/// The write half of the HealthKit seam.
+///
+/// Kept separate from `HealthProvider` because every other domain here is a
+/// read-only sync from HealthKit; hydration is the first domain Almanac also
+/// originates and needs to push back out. The concrete adapter is the same
+/// iOS-only file that implements `HealthProvider` — this protocol does not
+/// widen where `import HealthKit` may appear.
+public protocol HealthWriter: Sendable {
+    /// Writes a sample and returns the identifier HealthKit assigned it.
+    func write(_ sample: HealthSample) async throws -> String
+}
+
+/// In-memory writer used by tests and by any non-iOS host.
+public final class FakeHealthWriter: HealthWriter, @unchecked Sendable {
+    public struct WriteFailure: Error, Sendable {}
+
+    private let lock = NSLock()
+    private var _written: [HealthSample] = []
+    public var written: [HealthSample] {
+        lock.lock(); defer { lock.unlock() }
+        return _written
+    }
+    /// When set, `write(_:)` throws instead of recording — for exercising
+    /// "a failed push leaves the row pending" behaviour.
+    public var shouldFail = false
+    public var nextID: @Sendable () -> String = { UUID().uuidString }
+
+    public init() {}
+
+    public func write(_ sample: HealthSample) async throws -> String {
+        try record(sample)
+    }
+
+    // The lock is taken only in this synchronous helper, never held across
+    // a suspension — same discipline as FakeHealthProvider below.
+    private func record(_ sample: HealthSample) throws -> String {
+        lock.lock(); defer { lock.unlock() }
+        if shouldFail { throw WriteFailure() }
+        _written.append(sample)
+        return nextID()
+    }
 }
 
 /// In-memory provider used by tests and by any non-iOS host.

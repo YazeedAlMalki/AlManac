@@ -118,6 +118,22 @@ means absent.
   verbatim: USDA derivation code (`A`, `NC`), CIQUAL `code_confiance` (`A`–`D`),
   AFCD food-level derivation (`Analysed`), empty for CoFID.
 
+`portions.csv` — `food_ref, kind, unit, amount, value, qualifier, confidence, source_value, source_unit, description, modifier, source_record, licence_group`
+- Household-measure-to-gram conversion (Processing Design v0.1 §4), independent
+  of `values.csv` and validated separately (`model.validate_portions`) so a
+  source with none is unaffected. `kind` is one of:
+  - `household_measure` (USDA `food_portion`): `amount` of `unit` (a named
+    measure, e.g. `"cup"`) weighs `value` grams. Several rows per food are
+    normal — USDA genuinely carries more than one "1 cup".
+  - `specific_gravity` (CoFID "1.2 Factors"): the food's density, `value` g
+    per mL, `unit` fixed at `"g_per_ml"`. Converts a volume measure to grams
+    for any CoFID food, not just ones with a listed household measure.
+  - `edible_proportion` (CoFID "1.2 Factors"): the fraction of a gross weight
+    that is edible, `unit` fixed at `"fraction"`, `value` in `(0, 1]`.
+  `amount` is only ever present for `household_measure` — the other two kinds
+  are food-level factors, not a quantity of a unit. Unique on
+  `(food_ref, kind, source_record)`.
+
 `manifest.json` — namespace, dataset, release, licence group, dictionary
 SHA-256, inputs with SHA-256, output SHA-256s, counts by nutrient / qualifier /
 basis, and `notes` (exclusions with reasons, collisions, anything a reviewer
@@ -167,6 +183,10 @@ only ever comes from a cell that says 0**.
   listed record — superseded versions). Values per 100 g; qualifier from
   `derivation_id` → code → `derivation_qualifiers.csv`; blank code →
   `measured` (Foundation Foods are analytical); `confidence` = the code.
+- Portions: `food_portion` rows for the 395 listed foods (123 of the 187
+  extracted — the rest belong to the 74 excluded), `measure_unit_id` resolved
+  to its name via `measure_unit.csv`. `kind` `household_measure`;
+  `confidence` = `data_points`.
 
 ### CIQUAL (`sources/ciqual.py`)
 - Inputs: `raw/ciqual/2025/{alim,alim_grp,compo,const,sources}_2025_11_03.xml`
@@ -186,6 +206,11 @@ only ever comes from a cell that says 0**.
   mapped column fails the stage.
 - Basis: `per_100ml` for group codes starting `Q` (alcoholic beverages; user
   guide p.7), otherwise `per_100g`.
+- Portions: `1.2 Factors` `Edible proportion` and `Specific gravity`, matched
+  to foods by row position against `1.3 Proximates` — the two sheets are
+  verified to list foods in the same order before anything is trusted, and
+  the stage fails loudly rather than guess if a future release ever disagrees.
+  `N` (not analysed) reuses the same token as the nutrient values.
 
 ### AFCD (`sources/afcd.py`)
 - Inputs: `raw/ausnut/release-3/*.xlsx` (manifest `ausnut`). Extract every sheet.
@@ -207,9 +232,13 @@ inserted into it by any route.
 
 Bundle schema version 1 (`bundle.schema_sql`): `bundle_meta`,
 `nutrition_source`, `nutrition_nutrient`, `nutrition_qualifier`,
-`nutrition_food`, `nutrition_food_name`, `nutrition_value`. AlmanacCore's
-`NutritionReferenceImporter` reads exactly this and re-asserts the licence
-groups itself.
+`nutrition_food`, `nutrition_food_name`, `nutrition_value`, `nutrition_portion`.
+AlmanacCore's `NutritionReferenceImporter` reads the first seven and
+re-asserts the licence groups itself; `nutrition_portion` is written by the
+bundle (household-measure, specific-gravity and edible-proportion rows, see
+"Canonical format" above) but is not yet imported — AlmanacCore has its own
+`nutrition_portion` table (household measures only, migration 010) that this
+has not been reconciled with.
 
 ## Energy: stored vs calculated
 

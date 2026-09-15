@@ -67,7 +67,7 @@ class CanonicalFiles(unittest.TestCase):
         foods, names, values = canonical_set()
         write_canonical(lake.canonical("cofid"), namespace="cofid", foods=foods, names=names,
                         values=values, dictionary=DICTIONARY, inputs=[])
-        f, n, v, manifest = read_canonical(lake.canonical("cofid"))
+        f, n, v, p, manifest = read_canonical(lake.canonical("cofid"))
         self.assertEqual((sorted(f, key=lambda x: x.food_ref), len(n)), (foods, len(names)))
         self.assertEqual(sorted(v, key=lambda x: (x.food_ref, x.nutrient_id)),
                          sorted(values, key=lambda x: (x.food_ref, x.nutrient_id)))

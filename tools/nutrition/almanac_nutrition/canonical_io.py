@@ -12,14 +12,17 @@ from typing import Iterable, Sequence
 from .dictionary import Dictionary
 from .lake import (read_csv, read_json, sha256_file, staged_directory, tool_revision, utc_now,
                    write_csv, write_json)
-from .model import Food, FoodName, Value, validate
+from .model import Food, FoodName, Portion, Value, validate, validate_portions
 
-ROW_FILES = ("foods.csv", "food_names.csv", "values.csv")
+ROW_FILES = ("foods.csv", "food_names.csv", "values.csv", "portions.csv")
 FOOD_COLUMNS = ["food_ref", "namespace", "local_id", "licence_group", "food_group_code",
                 "food_group_name", "source_record"]
 NAME_COLUMNS = ["food_ref", "language", "name", "is_primary"]
 VALUE_COLUMNS = ["food_ref", "nutrient_id", "basis", "amount", "qualifier", "confidence",
                  "source_value", "source_nutrient_id", "source_unit", "licence_group"]
+PORTION_COLUMNS = ["food_ref", "kind", "unit", "amount", "value", "qualifier", "confidence",
+                   "source_value", "source_unit", "description", "modifier", "source_record",
+                   "licence_group"]
 
 
 class CanonicalError(ValueError):
@@ -41,7 +44,8 @@ def raise_if_invalid(problems: Sequence[str], what: str) -> None:
         raise CanonicalError(f"{what}: {len(problems)} problem(s)\n  {shown}{more}")
 
 
-def counts(foods: Sequence[Food], names: Sequence[FoodName], values: Sequence[Value]) -> dict:
+def counts(foods: Sequence[Food], names: Sequence[FoodName], values: Sequence[Value],
+          portions: Sequence[Portion] = ()) -> dict:
     return {
         "foods": len(foods),
         "names": len(names),
@@ -50,12 +54,14 @@ def counts(foods: Sequence[Food], names: Sequence[FoodName], values: Sequence[Va
         "values_by_qualifier": dict(sorted(Counter(v.qualifier for v in values).items())),
         "values_by_basis": dict(sorted(Counter(v.basis for v in values).items())),
         "foods_without_values": len({f.food_ref for f in foods} - {v.food_ref for v in values}),
+        "portions": len(portions),
+        "portions_by_kind": dict(sorted(Counter(p.kind for p in portions).items())),
     }
 
 
 def write_rows(directory: Path, foods: Iterable[Food], names: Iterable[FoodName],
-               values: Iterable[Value]) -> dict[str, str]:
-    """Writes the three row files in key order; returns their SHA-256s."""
+               values: Iterable[Value], portions: Iterable[Portion] = ()) -> dict[str, str]:
+    """Writes the four row files in key order; returns their SHA-256s."""
     write_csv(directory / "foods.csv", FOOD_COLUMNS, (
         [f.food_ref, f.namespace, f.local_id, f.licence_group, f.food_group_code,
          f.food_group_name, f.source_record]
@@ -67,16 +73,24 @@ def write_rows(directory: Path, foods: Iterable[Food], names: Iterable[FoodName]
         [v.food_ref, v.nutrient_id, v.basis, format_amount(v.amount), v.qualifier, v.confidence,
          v.source_value, v.source_nutrient_id, v.source_unit, v.licence_group]
         for v in sorted(values, key=lambda v: (v.food_ref, v.nutrient_id, v.basis))))
+    write_csv(directory / "portions.csv", PORTION_COLUMNS, (
+        [p.food_ref, p.kind, p.unit, format_amount(p.amount), format_amount(p.value), p.qualifier,
+         p.confidence, p.source_value, p.source_unit, p.description, p.modifier, p.source_record,
+         p.licence_group]
+        for p in sorted(portions, key=lambda p: (p.food_ref, p.kind, p.source_record))))
     return {name: sha256_file(directory / name) for name in ROW_FILES}
 
 
 def write_canonical(out_dir: Path, *, namespace: str, foods: Iterable[Food],
                     names: Iterable[FoodName], values: Iterable[Value], dictionary: Dictionary,
-                    inputs: list[dict], notes: dict | None = None) -> dict:
+                    inputs: list[dict], notes: dict | None = None,
+                    portions: Iterable[Portion] = ()) -> dict:
     """Validates, then replaces `out_dir`. An invalid set leaves the old output untouched."""
-    foods, names, values = list(foods), list(names), list(values)
+    foods, names, values, portions = list(foods), list(names), list(values), list(portions)
     raise_if_invalid(validate(foods, names, values, dictionary, namespace=namespace),
                      f"canonical/{namespace}")
+    raise_if_invalid(validate_portions(foods, portions, dictionary, namespace=namespace),
+                     f"canonical/{namespace} portions")
     source = dictionary.sources[namespace]
     with staged_directory(out_dir) as scratch:
         manifest = {
@@ -89,15 +103,15 @@ def write_canonical(out_dir: Path, *, namespace: str, foods: Iterable[Food],
             "generated_at": utc_now(),
             "tool_revision": tool_revision(),
             "inputs": inputs,
-            "outputs": write_rows(scratch, foods, names, values),
-            "counts": counts(foods, names, values),
+            "outputs": write_rows(scratch, foods, names, values, portions),
+            "counts": counts(foods, names, values, portions),
             "notes": notes or {},
         }
         write_json(scratch / "manifest.json", manifest)
     return manifest
 
 
-def read_rows(directory: Path) -> tuple[list[Food], list[FoodName], list[Value]]:
+def read_rows(directory: Path) -> tuple[list[Food], list[FoodName], list[Value], list[Portion]]:
     foods = []
     for r in read_csv(directory / "foods.csv"):
         food = Food(r["namespace"], r["local_id"], r["licence_group"], r["food_group_code"],
@@ -112,10 +126,15 @@ def read_rows(directory: Path) -> tuple[list[Food], list[FoodName], list[Value]]
                     r["qualifier"], r["confidence"], r["source_value"], r["source_nutrient_id"],
                     r["source_unit"], r["licence_group"])
               for r in read_csv(directory / "values.csv")]
-    return foods, names, values
+    portions = [Portion(r["food_ref"], r["kind"], r["unit"], parse_amount(r["amount"]),
+                        parse_amount(r["value"]), r["qualifier"], r["confidence"], r["source_value"],
+                        r["source_unit"], r["description"], r["modifier"], r["source_record"],
+                        r["licence_group"])
+                for r in read_csv(directory / "portions.csv")]
+    return foods, names, values, portions
 
 
-def read_canonical(directory: Path) -> tuple[list[Food], list[FoodName], list[Value], dict]:
+def read_canonical(directory: Path) -> tuple[list[Food], list[FoodName], list[Value], list[Portion], dict]:
     """Reads a row set and refuses it if any file changed after its manifest was written."""
     directory = Path(directory)
     manifest = read_json(directory / "manifest.json")

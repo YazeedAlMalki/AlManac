@@ -1,0 +1,52 @@
+# Builds and tests AlmanacCore on Linux.
+#
+# This exists because the sessions that write this package cannot always run
+# Swift: the toolchain lives outside the connected folder on `yamal`, and the
+# cloud containers have no toolchain at all and cannot fetch one
+# (download.swift.org is refused by their network policy). Everything under
+# docs/implementation-status.md §4d-§4g was therefore verified against SQLite
+# and by reading, never compiled. This is the check that closes that gap, and
+# it runs on every push rather than when someone remembers.
+#
+# Pinned to a Swift image rather than `latest`, so a toolchain release cannot
+# turn a green branch red on its own. `yamal` runs 6.3.3; a difference between
+# the two is a real finding either way, and the version is stated so it is
+# obvious which one reported what.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: swift build && swift test
+    runs-on: ubuntu-latest
+    container: swift:6.0.3-jammy
+    steps:
+      - uses: actions/checkout@v5
+
+      # The vendored SQLite amalgamation is ~8 MB of C and dominates a cold
+      # build; .build is safe to cache because Package.swift pins no remote
+      # dependencies at all.
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-swift-6.0.3-${{ hashFiles('Package.swift', 'Sources/CSQLite/sqlite3.c') }}
+          restore-keys: ${{ runner.os }}-swift-6.0.3-
+
+      - name: Version
+        run: swift --version
+
+      - name: Build
+        run: swift build --build-tests
+
+      - name: Test
+        run: swift test --skip-build

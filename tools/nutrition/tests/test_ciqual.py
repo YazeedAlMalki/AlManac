@@ -77,7 +77,7 @@ def fixture_lake(case, compo_rows=COMPO, const=CONST):
 
 
 def canonical(lake):
-    foods, names, values, manifest = read_canonical(lake.canonical("ciqual"))
+    foods, names, values, portions, manifest = read_canonical(lake.canonical("ciqual"))
     return foods, names, {(v.food_ref, v.nutrient_id): v for v in values}, manifest
 
 
@@ -177,7 +177,7 @@ class AgainstTheRealLake(unittest.TestCase):
             (Path(out) / "raw").symlink_to(REAL_LAKE.root / "raw")
             ciqual.extract(scratch)
             manifest = ciqual.canonicalise(scratch, DICTIONARY)
-            _, _, values, _ = read_canonical(scratch.canonical("ciqual"))
+            _, _, values, _, _ = read_canonical(scratch.canonical("ciqual"))
         self.assertEqual(manifest["counts"]["foods"], 3484)
         self.assertEqual(manifest["counts"]["values"], 3484 * 6)
         self.assertFalse([v for v in values if v.amount == 0 and v.source_value.strip() in ("traces", "-")])

@@ -2,7 +2,7 @@
 
 README "Source rules": `extract` writes every sheet of both workbooks to CSV,
 cell for cell, all three header rows kept; `canonicalise` reads
-`1.3 Proximates` only and applies dictionary/ and nothing else.
+`1.3 Proximates` and `1.2 Factors` and applies dictionary/ and nothing else.
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from pathlib import Path
 from ..canonical_io import CanonicalError, write_canonical
 from ..dictionary import Dictionary
 from ..lake import Lake, read_json, sha256_file, staged_directory, tool_revision, utc_now, write_json
-from ..model import Food, FoodName, Value
+from ..model import Food, FoodName, Portion, Value
 from ..values import NegativeAmount, UnrecognisedValue, convert, qualify, select
 from ..xlsx import cell, extract_workbooks, read_sheet
 
@@ -22,6 +22,7 @@ WORKBOOK = "McCance_Widdowsons_Composition_of_Foods_Integrated_Dataset_2021.xlsx
 OLD_FOODS = "CoFID_oldFoods.xlsx"  # superseded analyses (fibre fractions, Southgate fibre, sulphur): extracted only
 INPUTS = (WORKBOOK, OLD_FOODS)
 FOOD_SHEET = "1.3 Proximates"
+FACTORS_SHEET = "1.2 Factors"  # Processing Design v0.1 §4: Edible proportion, Specific gravity
 HEADER_ROWS = 3  # row 1 heading, row 2 nutrient code, row 3 description; foods from row 4
 CODE_ROW = 2
 FOOD_CODE, FOOD_NAME, GROUP = "Food Code", "Food Name", "Group"
@@ -112,16 +113,17 @@ def extract(lake: Lake) -> Path:
     return out
 
 
-def _column(cells: list[str], text: str, where: str) -> int:
+def _column(cells: list[str], text: str, where: str, *, sheet: str = FOOD_SHEET) -> int:
     found = [i for i, c in enumerate(cells) if c.strip() == text]
     if len(found) != 1:
-        raise CanonicalError(f"{FOOD_SHEET} {where}: {text!r} is in {len(found)} columns, expected 1")
+        raise CanonicalError(f"{sheet} {where}: {text!r} is in {len(found)} columns, expected 1")
     return found[0]
 
 
 def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
     ext = lake.extracted(NAMESPACE)
-    rows, food_input = read_sheet(ext, read_json(ext / "manifest.json"), WORKBOOK, FOOD_SHEET)
+    manifest = read_json(ext / "manifest.json")
+    rows, food_input = read_sheet(ext, manifest, WORKBOOK, FOOD_SHEET)
     if len(rows) < HEADER_ROWS:
         raise CanonicalError(f"{FOOD_SHEET}: {len(rows)} rows, fewer than its {HEADER_ROWS} header rows")
     headings, codes = rows[0], rows[CODE_ROW - 1]
@@ -199,10 +201,49 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
                                 convert(qualified.amount, m.unit_conversion), qualified.qualifier,
                                 "", source_value, m.source_nutrient_id, m.source_unit, group))
 
+    # Portions (README "Units — two traps"): 1.2 Factors carries food-level density and edible-
+    # fraction, verified below against 1.3 Proximates' own food list before anything is trusted.
+    factor_rows, factor_input = read_sheet(ext, manifest, WORKBOOK, FACTORS_SHEET)
+    factor_headings = factor_rows[0]
+    factor_code_col = _column(factor_headings, FOOD_CODE, "row 1", sheet=FACTORS_SHEET)
+    ep_col = _column(factor_headings, "Edible proportion", "row 1", sheet=FACTORS_SHEET)
+    sg_col = _column(factor_headings, "Specific gravity", "row 1", sheet=FACTORS_SHEET)
+    factor_body = [(n, row) for n, row in enumerate(factor_rows[HEADER_ROWS:], start=HEADER_ROWS + 1)
+                  if cell(row, factor_code_col).strip()]
+    factor_codes = [cell(row, factor_code_col).strip() for _, row in factor_body]
+    proximates_codes = [cell(row, code_col).strip() for _, row in coded]
+    if factor_codes != proximates_codes:
+        raise CanonicalError(f"{FACTORS_SHEET} and {FOOD_SHEET} do not list foods in the same order; "
+                             "portions cannot be matched to foods by row position")
+    factor_occurrences = Counter(factor_codes)
+
+    portions: list[Portion] = []
+    rejected_portions: list[dict] = []
+    for n, row in factor_body:
+        code = cell(row, factor_code_col).strip()
+        local_id = f"{code}@row{n}" if factor_occurrences[code] > 1 else code
+        food_ref = f"{NAMESPACE}:{local_id}"
+        for kind, col, unit in (("edible_proportion", ep_col, "fraction"),
+                                ("specific_gravity", sg_col, "g_per_ml")):
+            text = cell(row, col).strip()
+            if not text:
+                continue  # blank: CoFID says nothing, so there is no row
+            try:
+                qualified = qualify(text, tokens=tokens)
+            except NegativeAmount:
+                rejected_portions.append({"food_ref": food_ref, "kind": kind, "source_value": text,
+                                          "reason": "negative amount"})
+                continue
+            except UnrecognisedValue as error:
+                raise CanonicalError(f"{food_ref} ({FACTORS_SHEET}!row {n}) {kind}: {error}") from error
+            portions.append(Portion(food_ref, kind, unit, None, qualified.amount, qualified.qualifier,
+                                    "", text, "", "", "", f"{FACTORS_SHEET}!row {n}", group))
+
     by_ref = {food.food_ref: (food, names[i].name) for i, (food, _, _) in enumerate(foods)}
     notes = {
         "sheet": FOOD_SHEET,
-        "not_canonicalised": [f"{WORKBOOK}: every sheet but {FOOD_SHEET}",
+        "not_canonicalised": [f"{WORKBOOK}: every sheet but {FOOD_SHEET} and (Edible proportion, "
+                              f"Specific gravity of) {FACTORS_SHEET}",
                               f"{OLD_FOODS}: every sheet (superseded analyses)"],
         "basis_rule": f"per_100ml for food groups starting {ALCOHOLIC_GROUP_PREFIX!r} (alcoholic "
                       "beverages: user guide p.7, sheet 1.1 Notes); per_100g for every other food",
@@ -220,7 +261,9 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
         "collisions": list(collisions.values()),
         "excluded": excluded,
         "rejected_values": rejected,
+        "rejected_portions": rejected_portions,
     }
     return write_canonical(lake.canonical(NAMESPACE), namespace=NAMESPACE,
                            foods=[food for food, _, _ in foods], names=names, values=values,
-                           dictionary=dictionary, inputs=[food_input], notes=notes)
+                           portions=portions, dictionary=dictionary, inputs=[food_input, factor_input],
+                           notes=notes)
