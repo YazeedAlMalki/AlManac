@@ -617,3 +617,68 @@ backdating case than a fresh `record` call, not attempted this pass.
 **Verified:** XCTest 262/262, Swift Testing 125/125 (was 121; 4 new tests,
 zero regressions).
 
+---
+
+## 2026-09-17 — Slice 2 UI: readiness dashboard, mood/soreness check-in, feedback
+
+The Slice 2 UI build order assumed `ReadinessCycleStore` and a persisted
+`ReadinessRecord` already existed ("stores are already built, just wire
+them"). Neither did — `readiness_cycle`/`readiness_record` were schema-only
+(Migration014), and `ReadinessEngine.evaluate` was a pure function nothing
+had ever called against real inputs. Built as prerequisites, TDD:
+
+- **`ReadinessCycleStore`** (Migration023 adds a unique index enabling the
+  companion store's upsert) — read/create `readiness_cycle` rows.
+  Deliberately does not derive a cycle from `SleepEpisodeStore`'s primary
+  episode; determining the primary episode and closing the previous cycle
+  (§8.4) is a separate, not-yet-built task. `ensureCycle` makes a bare cycle
+  from whatever timestamp the caller has. 6 tests.
+- **`ReadinessRecordStore`** — persists a `ReadinessOutcome` into
+  `readiness_record`, upserting by `readinessCycleId` (one row per cycle,
+  not a history of re-evaluations through the day). Separately handles
+  §9.10 feedback (`feedbackValue`, a string — `"thumbs_up"`/`"thumbs_down"`,
+  not a `Bool`) and `latestUnratedRecord(before:)`, which finds a past,
+  already-scored, unrated cycle for a feedback prompt shown at the start of
+  the *next* cycle. 7 tests.
+
+### Added — the UI itself (`Native/Almanac/`, new "Today" tab, first in the app)
+
+- **`ReadinessModel`**: the one place assembling `ReadinessInputs`/
+  `ReadinessContext` from Profile/Vitals/Mood/Soreness/SleepEpisode/Injury
+  and calling `ReadinessEngine.evaluate`. Computes a naive 28-day RHR/HRV
+  baseline on the fly (no `readiness_baseline`-backed store exists, §9.8);
+  wires only `InjuryNoteStore.injuriesAffectingTraining()` into
+  `ReadinessContext` (§9.6 precedence rule 1) since it's the one real store
+  behind that struct's fields — manual recovery/rest/deload/religious-fast/
+  shift-transition context and §9.7 calibration-day counting stay at their
+  defaults, documented inline, pending Training/Fasting's religious half/
+  Circadian.
+- **`ReadinessDashboardView`**: score, colour, band text + recommendation,
+  confidence tier, and which inputs were actually used (missing ones say so
+  rather than being silently omitted).
+- **`MoodSorenessCheckInView`**: one combined sheet, not two separate
+  screens — spec §17's own screen map (`MoodSorenessScreen: 1-10 sliders +
+  body area tagging`) treats mood and soreness as a single check-in against
+  the same cycle. `MoodCheckInView`/`SorenessCheckInView` are its two
+  composable halves. Soreness is overall score + which body areas, not a
+  score per area — `soreness_log` (Migration014) has no column for that, and
+  neither does the spec's own screen map.
+- **`FeedbackPromptView`**: asks about a *previous* cycle's outcome, never
+  today's — §9.10 explicitly forbids the 👍/👎 prompt appearing right under
+  the score that produced it.
+
+### Not verified here
+
+`Native/Almanac` is an Xcode target (SwiftUI, iOS 17+) with no SwiftPM
+presence — nothing under it compiles or runs on this Linux machine.
+`swift build`/`swift test` cover only `AlmanacCore` (138/138 green,
+unchanged by the UI commit). `project.pbxproj`'s six new file entries were
+added by hand, matching the existing entries' shape; unverified until opened
+in Xcode. No UI tests — matching every other `Native/Almanac` screen in this
+repo (Hydration, Nutrition have none either), and there is no simulator or
+Xcode on this machine to write or run any against.
+
+**Verified (AlmanacCore only):** XCTest 262/262, Swift Testing 138/138 (was
+125; 13 new tests — `ReadinessCycleStoreTests`, `ReadinessRecordStoreTests`
+— zero regressions).
+
