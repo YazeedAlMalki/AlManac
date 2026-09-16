@@ -19,7 +19,15 @@ final class CoreDailySchemaTests: XCTestCase {
         let db = try Database.inMemory()
         let runner = try MigrationRunner(migrations: AlmanacMigrations.all)
         let applied = try runner.migrate(db)
-        XCTAssertEqual(applied, Array(1...15))
+        // Derived from AlmanacMigrations.all rather than a literal range: this
+        // hardcoded a fixed upper bound twice before (once at 14, again at 15)
+        // and silently failed each time a migration shipped without this test
+        // being remembered. Versions must still be exactly 1...count, in
+        // order — that invariant is what's actually being asserted.
+        let expectedVersions = AlmanacMigrations.all.map { $0.version }.sorted()
+        XCTAssertEqual(applied, expectedVersions)
+        XCTAssertEqual(applied, Array(1...expectedVersions.count),
+                        "migration versions must be contiguous starting at 1")
     }
 
     func testSliceTwoTablesExist() throws {
