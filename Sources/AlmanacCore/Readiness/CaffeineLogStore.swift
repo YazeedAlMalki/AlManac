@@ -183,7 +183,8 @@ public struct CaffeineLogStore: @unchecked Sendable {
     }
 
     /// Compute hoursBeforeIntendedSleep and caffeineContext.
-    /// Per BRD §6.2: early (<6h before), normal (6-3h), late (3-1h), very_late (<1h).
+    /// Per BRD §6.2: early (>=6h before sleep), normal (3-6h), late (1-3h), very_late (<1h).
+    /// Lower bound of each band is inclusive (e.g. exactly 6h is early, exactly 3h is normal).
     private func computeContext(from drinkTime: Date, to sleepTime: Date?) -> (hours: Double?, context: String?) {
         guard let sleepTime = sleepTime else { return (nil, nil) }
         
