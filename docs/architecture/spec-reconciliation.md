@@ -1,7 +1,9 @@
 # Spec reconciliation — Technical Specification v1.0 vs. this repository
 
-**Status:** collisions resolved 2026-09-16 (commit `c83e88c`, migration 015).
-The naming split (§3) remains open by design — deferred, not blocking.
+**Status:** four collisions resolved 2026-09-16 (commit `c83e88c`, migration
+015). Training (§6) and `vitals_record`/body-composition (§7) are two further
+divergences found since, both decided but not yet built. The naming split
+(§3) remains open by design — deferred, not blocking.
 **Date:** 2026-09-15 (updated 2026-09-16)
 
 ## 1. The spec was not lost
@@ -188,3 +190,33 @@ specs disagreeing before either is code. The Slice 4 execution instructions
 §5.17's. Recorded here so a future reader of migration 016 isn't left
 wondering why it doesn't match §5.17 — same transparency principle as the
 four collisions above, not a new decision made by this doc.
+
+## 7. `vitals_record` vs. `body_composition_measurement` — a sixth divergence, found designing Slice 7
+
+Found 2026-09-16 while designing Slice 7 (Body Composition,
+`docs/features/body-composition.md`), not decided anywhere before now.
+
+`VitalsRecordHealthBridge` (built during Slice 2's HealthKit-bridge work)
+writes HealthKit `bodyMass` samples into `vitals_record` as `metric =
+'weight'`, and also writes `restingEnergy` there. Spec §5.19's own comment
+scopes `vitals_record.metric` to `rhr | hrv_sdnn | steps |
+active_energy_kcal` only — no weight, no resting energy. There's no `CHECK`
+enforcing the enum (Swift-level convention, not schema-level), so nothing is
+broken, but `vitals_record` has no `conditions` (fasted/non-fasted) or a
+`source` vocabulary wide enough for InBody/smart-scale — it cannot express
+what §5.18's `body_composition_measurement` needs to express for weight.
+
+Unlike §4.2/§4.4, this is not "implementation exceeds spec" — there's no
+richer body-composition model hiding in `vitals_record`, just a domain
+slotted into the nearest existing table during a sprint that predated Slice
+7's design.
+
+**Decided (`docs/features/body-composition.md` §3, 2026-09-16):**
+`body_composition_measurement` is the sole home for `weight`, `body_fat_pct`,
+`lean_mass_kg`, `skeletal_muscle_kg`, `visceral_rating`. As part of building
+Slice 7's migration: remove `.bodyMass` from
+`VitalsRecordHealthBridge.metricMap`; add a `BodyCompositionMeasurementHealthBridge`
+owning `.bodyMass`/`.bodyFatPercentage`/`.leanBodyMass`. `restingEnergy`
+stays in `vitals_record` as-is — it doesn't collide with anything §5.18/§5.20
+claims. No data migration needed: no durable database exists yet (§11 of
+`docs/architecture/health-data-foundation.md`).

@@ -82,7 +82,10 @@ struct VitalsRecordHealthBridgeTests {
         // Delete it
         let changeSet2 = HealthChangeSet(added: [], deletedExternalIDs: ["hk-rhr-001"], nextAnchor: nil)
         let counts = try bridge.apply(changeSet2, in: db)
-        
+
         #expect(counts.deleted == 1)
+
+        let store = VitalsRecordStore(db: db)
+        #expect(try store.latestValue(for: "rhr") == nil)
     }
 }

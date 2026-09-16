@@ -5,20 +5,26 @@ import Foundation
 /// Handles inbound sync for heart rate metrics: RHR (resting heart rate),
 /// HRV (heart rate variability), and active energy and steps. Performs idempotent
 /// upsert with deduplication by (source, healthKitUUID).
+///
+/// `.bodyMass` deliberately does NOT go through this bridge — weight lives in
+/// `body_composition_measurement` via `BodyCompositionMeasurementHealthBridge`,
+/// not here. See `docs/architecture/spec-reconciliation.md` §7: this bridge
+/// used to write bodyMass into vitals_record as `metric = 'weight'`, which
+/// collided with §5.18's dedicated table (no `conditions`/InBody-source
+/// support). `restingEnergy` stays here — it doesn't collide with anything.
 public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable {
     let db: Database
     private let clock: any Clock
     private let zone: ZoneContext
     private let sourceSystem = "healthkit"
-    
+
     // Map HealthDomain to metric name and unit for vitals_record
     private let metricMap: [HealthDomain: (metric: String, unit: String)] = [
         .heartRate: ("rhr", "bpm"),
         .hrv: ("hrv", "ms"),
         .steps: ("steps", "count"),
         .activeEnergy: ("activeEnergy", "kcal"),
-        .restingEnergy: ("restingEnergy", "kcal"),
-        .bodyMass: ("weight", "kg")
+        .restingEnergy: ("restingEnergy", "kcal")
     ]
 
     public init(db: Database, clock: any Clock = SystemClock(),
@@ -76,12 +82,13 @@ public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable
             if existingId == nil { inserted += 1 } else { updated += 1 }
         }
 
-        // Soft delete
+        // Soft delete. `deletedAt` (Migration020) — not `createdAt`, which is
+        // NOT NULL and cannot double as a deletion flag; see that migration.
         for externalID in changeSet.deletedExternalIDs {
             deleted += try db.run("""
-                UPDATE vitals_record SET createdAt = NULL
-                WHERE source = ? AND healthKitUUID = ? AND createdAt IS NOT NULL;
-                """, [.text(sourceSystem), .text(externalID)])
+                UPDATE vitals_record SET deletedAt = ?
+                WHERE source = ? AND healthKitUUID = ? AND deletedAt IS NULL;
+                """, [.text(nowText), .text(sourceSystem), .text(externalID)])
         }
 
         return HealthApplyCounts(inserted: inserted, updated: updated, deleted: deleted)

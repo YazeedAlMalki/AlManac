@@ -113,29 +113,30 @@ public struct VitalsRecordStore: @unchecked Sendable {
         """, [.integer(id)]).first.flatMap(rowToRecord)
     }
 
-    /// Fetch all vitals for a given logical day.
+    /// Fetch all vitals for a given logical day. Excludes soft-deleted entries.
     public func records(for logicalDay: String) throws -> [VitalsRecord] {
         return try db.query("""
         SELECT id, metric, value, unit, timestamp, logicalDay, source, healthKitUUID, createdAt
-        FROM vitals_record WHERE logicalDay = ?
+        FROM vitals_record WHERE logicalDay = ? AND deletedAt IS NULL
         ORDER BY timestamp;
         """, [.text(logicalDay)]).compactMap(rowToRecord)
     }
 
-    /// Fetch all records for a specific metric.
+    /// Fetch all records for a specific metric. Excludes soft-deleted entries.
     public func records(metric: String, from: String, to: String) throws -> [VitalsRecord] {
         return try db.query("""
         SELECT id, metric, value, unit, timestamp, logicalDay, source, healthKitUUID, createdAt
-        FROM vitals_record WHERE metric = ? AND logicalDay >= ? AND logicalDay < ?
+        FROM vitals_record WHERE metric = ? AND logicalDay >= ? AND logicalDay < ? AND deletedAt IS NULL
         ORDER BY timestamp;
         """, [.text(metric), .text(from), .text(to)]).compactMap(rowToRecord)
     }
 
-    /// Fetch the latest value for a specific metric.
+    /// Fetch the latest value for a specific metric. Excludes soft-deleted
+    /// (e.g. HealthKit-retracted) entries.
     public func latestValue(for metric: String) throws -> VitalsRecord? {
         return try db.query("""
         SELECT id, metric, value, unit, timestamp, logicalDay, source, healthKitUUID, createdAt
-        FROM vitals_record WHERE metric = ?
+        FROM vitals_record WHERE metric = ? AND deletedAt IS NULL
         ORDER BY timestamp DESC LIMIT 1;
         """, [.text(metric)]).first.flatMap(rowToRecord)
     }
