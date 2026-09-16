@@ -76,7 +76,8 @@ public enum AlmanacMigrations {
         Migration020_VitalsRecordSoftDeleteColumn.self,
         Migration021_SyncAnchorLastErrorColumn.self,
         Migration022_FastingSchema.self,
-        Migration023_ReadinessRecordUniqueCycle.self
+        Migration023_ReadinessRecordUniqueCycle.self,
+        Migration024_ReligiousFastingAndPrayerSchema.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with
