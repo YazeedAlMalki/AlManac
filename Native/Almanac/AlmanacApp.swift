@@ -5,6 +5,7 @@ import AlmanacCore
 @MainActor
 struct AlmanacApp: App {
     @StateObject private var model = LaboratoryModel()
+    @StateObject private var readinessModel = ReadinessModel()
     @StateObject private var hydrationModel = HydrationModel()
     @StateObject private var nutritionModel = NutritionModel()
     var body: some Scene {
@@ -12,6 +13,8 @@ struct AlmanacApp: App {
             Group {
                 if model.store != nil {
                     TabView {
+                        ReadinessDashboardView(model: readinessModel)
+                            .tabItem { Label("Today", systemImage: "gauge.with.dots.needle.67percent") }
                         ReportListView(model: model)
                             .tabItem { Label("Laboratory", systemImage: "cross.case") }
                         HydrationDashboardView(model: hydrationModel)
@@ -27,6 +30,7 @@ struct AlmanacApp: App {
                     // init) keeps both models sharing one connection instead of
                     // HydrationModel opening a second one to the same file.
                     .onAppear {
+                        readinessModel.configure(db: model.db)
                         hydrationModel.configure(db: model.db)
                         nutritionModel.configure(db: model.db)
                     }
