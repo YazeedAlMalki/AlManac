@@ -26,7 +26,16 @@ let package = Package(
                 .define("SQLITE_OMIT_DEPRECATED")
             ]
         ),
-        .target(name: "AlmanacCore", dependencies: ["CSQLite"], path: "Sources/AlmanacCore"),
+        // Vendored batoulapps/adhan-swift (MIT) — prayer-time astronomical
+        // calculations. Vendored as source rather than an SPM dependency,
+        // same reasoning as CSQLite above. See Sources/Adhan/VENDORED.md for
+        // the exact commit and files.
+        .target(
+            name: "Adhan",
+            path: "Sources/Adhan",
+            exclude: ["LICENSE", "VENDORED.md"]
+        ),
+        .target(name: "AlmanacCore", dependencies: ["CSQLite", "Adhan"], path: "Sources/AlmanacCore"),
         .testTarget(name: "AlmanacCoreTests", dependencies: ["AlmanacCore"], path: "Tests/AlmanacCoreTests")
     ]
 )
