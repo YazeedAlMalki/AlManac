@@ -325,6 +325,54 @@ final class NutritionLogTests: XCTestCase {
     /// holds no foreign key into it. Removing a source — which
     /// `SourceIdentifier` exists to keep to a one-line delete — must not erase
     /// what the user recorded eating.
+    // MARK: - Meal type
+
+    /// Not stated is the default and a real state, same as `grams` — a meal
+    /// logged before this field existed reads back this way, not as an error.
+    func testAMealWithNoStatedTypeReadsBackNil() throws {
+        let (_, log) = try open()
+        let id = try log.record(lunch(150)).logID
+        XCTAssertNil(try XCTUnwrap(try log.entry(id: id)).mealType)
+    }
+
+    func testAMealTypeIsRecordedAndReadBack() throws {
+        let (_, log) = try open()
+        var draft = lunch(150)
+        draft.mealType = .lunch
+        let id = try log.record(draft).logID
+        XCTAssertEqual(try XCTUnwrap(try log.entry(id: id)).mealType, .lunch)
+    }
+
+    func testCorrectingTheMealTypeIsTrackedLikeAnyOtherField() throws {
+        let (_, log) = try open()
+        var draft = lunch(150)
+        draft.mealType = .breakfast
+        let id = try log.record(draft).logID
+
+        var edit = NutritionLogEdit()
+        edit.mealType = .set(.snack)
+        let outcome = try log.update(id: id, edit)
+        guard case .revised(_, _, _, let changed) = outcome else {
+            return XCTFail("expected a revision, got \(outcome)")
+        }
+        XCTAssertEqual(changed, ["meal_type"])
+        XCTAssertEqual(try XCTUnwrap(try log.entry(id: id)).mealType, .snack)
+        XCTAssertEqual(try log.revisions(of: id)[0].mealType, .breakfast,
+                       "the revision holds what the meal type *was*")
+    }
+
+    func testClearingTheMealTypeIsDistinctFromLeavingItAlone() throws {
+        let (_, log) = try open()
+        var draft = lunch(150)
+        draft.mealType = .dinner
+        let id = try log.record(draft).logID
+
+        var clear = NutritionLogEdit()
+        clear.mealType = .clear
+        XCTAssertEqual(try log.update(id: id, clear).changedFields, ["meal_type"])
+        XCTAssertNil(try XCTUnwrap(try log.entry(id: id)).mealType)
+    }
+
     func testRemovingAReferenceSourceDoesNotEraseTheUsersMeals() throws {
         let (db, log) = try open()
         let id = try log.record(lunch(150)).logID

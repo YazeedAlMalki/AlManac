@@ -2,6 +2,22 @@ import Foundation
 
 // MARK: - Values
 
+/// A closed set, enforced here rather than by a SQL CHECK (see Migration017's
+/// header). Nil at the call site means "not stated" — the same distinction
+/// `grams` already draws — not "none of these".
+public enum NutritionMealType: String, Sendable, Hashable, CaseIterable {
+    case breakfast, lunch, dinner, snack
+
+    public var displayName: String {
+        switch self {
+        case .breakfast: return "Breakfast"
+        case .lunch: return "Lunch"
+        case .dinner: return "Dinner"
+        case .snack: return "Snack"
+        }
+    }
+}
+
 public enum NutritionLogError: Error, CustomStringConvertible, Sendable {
     case entryNotFound(String)
     case invalidGrams(Double)
@@ -39,6 +55,7 @@ public struct NutritionLogDraft: Sendable, Hashable {
     public var grams: Double?
     public var quantityText: String?
     public var eatenAt: PartialDateTime
+    public var mealType: NutritionMealType?
 
     public init(foodRef: SourceIdentifier,
                 grams: Double? = nil,
@@ -46,7 +63,8 @@ public struct NutritionLogDraft: Sendable, Hashable {
                 foodNameText: String? = nil,
                 quantityText: String? = nil,
                 sourceSystem: String = "manual",
-                externalID: String? = nil) {
+                externalID: String? = nil,
+                mealType: NutritionMealType? = nil) {
         self.foodRef = foodRef
         self.grams = grams
         self.eatenAt = eatenAt
@@ -54,6 +72,7 @@ public struct NutritionLogDraft: Sendable, Hashable {
         self.quantityText = quantityText
         self.sourceSystem = sourceSystem
         self.externalID = externalID
+        self.mealType = mealType
     }
 }
 
@@ -66,6 +85,7 @@ public struct NutritionLogEdit: Sendable, Hashable {
     public var grams: FieldEdit<Double> = .leaveUnchanged
     public var quantityText: FieldEdit<String> = .leaveUnchanged
     public var eatenAt: FieldEdit<PartialDateTime> = .leaveUnchanged
+    public var mealType: FieldEdit<NutritionMealType> = .leaveUnchanged
 
     public var actor: String = "user"
     public var reasonText: String? = nil
@@ -74,7 +94,7 @@ public struct NutritionLogEdit: Sendable, Hashable {
 
     public var touchesAnything: Bool {
         foodRef.isChange || foodNameText.isChange || grams.isChange
-            || quantityText.isChange || eatenAt.isChange
+            || quantityText.isChange || eatenAt.isChange || mealType.isChange
     }
 }
 
@@ -105,6 +125,7 @@ public struct NutritionLogEntry: Sendable, Hashable {
     public let grams: Double?
     public let quantityText: String?
     public let eatenAt: PartialDateTime
+    public let mealType: NutritionMealType?
     public let recordedAt: String
     public let deletedAt: String?
 
@@ -121,6 +142,7 @@ public struct NutritionLogRevision: Sendable, Hashable {
     public let grams: Double?
     public let quantityText: String?
     public let eatenAt: PartialDateTime
+    public let mealType: NutritionMealType?
     /// Which fields this revision is the *previous* value of.
     public let changedFields: [String]
     public let actor: String
@@ -184,6 +206,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
                 edit.grams = draft.grams.map { FieldEdit<Double>.set($0) } ?? .clear
                 edit.quantityText = draft.quantityText.map { FieldEdit<String>.set($0) } ?? .clear
                 edit.eatenAt = .set(draft.eatenAt)
+                edit.mealType = draft.mealType.map { FieldEdit<NutritionMealType>.set($0) } ?? .clear
                 let outcome = try applyEdit(to: held, edit)
                 // A source re-sending an entry it had withdrawn is asserting it
                 // again. Matches HealthSampleStore's revival on re-arrival.
@@ -199,8 +222,8 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
             INSERT INTO nutrition_log
                 (id, source_system, external_id, food_ref, food_name_text, grams,
                  quantity_text, eaten_at, eaten_precision, eaten_tz_offset_minutes,
-                 eaten_tz_id, recorded_at, recorded_tz_offset_minutes, deleted_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL);
+                 eaten_tz_id, recorded_at, recorded_tz_offset_minutes, deleted_at, meal_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?);
             """, [
                 .text(id), .text(draft.sourceSystem),
                 draft.externalID.map { SQLValue.text($0) } ?? .null,
@@ -213,7 +236,8 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
                 draft.eatenAt.zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
                 draft.eatenAt.zone.identifier.map { SQLValue.text($0) } ?? .null,
                 .text(nowText),
-                zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null
+                zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
+                draft.mealType.map { SQLValue.text($0.rawValue) } ?? .null
             ])
             return .inserted(logID: id)
         }
@@ -250,6 +274,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
         let grams = edit.grams.resolve(held.grams)
         let quantityText = edit.quantityText.resolve(held.quantityText)
         let eatenAt = edit.eatenAt.resolve(held.eatenAt, cleared: .unknown)
+        let mealType = edit.mealType.resolve(held.mealType)
         try NutritionLogStore.validate(grams: grams)
 
         var changed: [String] = []
@@ -258,6 +283,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
         if grams != held.grams { changed.append("grams") }
         if quantityText != held.quantityText { changed.append("quantity_text") }
         if eatenAt != held.eatenAt { changed.append("eaten_at") }
+        if mealType != held.mealType { changed.append("meal_type") }
         guard !changed.isEmpty else { return .unchanged(logID: held.id) }
 
         let next = Int(try db.query("""
@@ -269,8 +295,8 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
         INSERT INTO nutrition_log_revision
             (id, log_id, revision_number, food_ref, food_name_text, grams, quantity_text,
              eaten_at, eaten_precision, eaten_tz_offset_minutes, eaten_tz_id,
-             changed_fields, actor, reason_text, recorded_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+             changed_fields, actor, reason_text, recorded_at, meal_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(revisionID), .text(held.id), .integer(Int64(next)),
             .text(held.foodRef.description),
@@ -282,13 +308,15 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
             held.eatenAt.zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
             held.eatenAt.zone.identifier.map { SQLValue.text($0) } ?? .null,
             .text(changed.joined(separator: ",")), .text(edit.actor),
-            edit.reasonText.map { SQLValue.text($0) } ?? .null, .text(nowText)
+            edit.reasonText.map { SQLValue.text($0) } ?? .null, .text(nowText),
+            held.mealType.map { SQLValue.text($0.rawValue) } ?? .null
         ])
 
         try db.run("""
         UPDATE nutrition_log SET
             food_ref = ?, food_name_text = ?, grams = ?, quantity_text = ?,
-            eaten_at = ?, eaten_precision = ?, eaten_tz_offset_minutes = ?, eaten_tz_id = ?
+            eaten_at = ?, eaten_precision = ?, eaten_tz_offset_minutes = ?, eaten_tz_id = ?,
+            meal_type = ?
         WHERE id = ?;
         """, [
             .text(foodRef.description),
@@ -299,6 +327,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
             .text(eatenAt.precision.rawValue),
             eatenAt.zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
             eatenAt.zone.identifier.map { SQLValue.text($0) } ?? .null,
+            mealType.map { SQLValue.text($0.rawValue) } ?? .null,
             .text(held.id)
         ])
         return .revised(logID: held.id, revisionID: revisionID,
@@ -310,7 +339,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
     private static let columns = """
         id, source_system, external_id, food_ref, food_name_text, grams, quantity_text,
         eaten_at, eaten_precision, eaten_tz_offset_minutes, eaten_tz_id,
-        recorded_at, deleted_at
+        recorded_at, deleted_at, meal_type
         """
 
     public func entry(id logID: String) throws -> NutritionLogEntry? {
@@ -334,7 +363,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
         try db.query("""
             SELECT id, log_id, revision_number, food_ref, food_name_text, grams,
                    quantity_text, eaten_at, eaten_precision, eaten_tz_offset_minutes,
-                   eaten_tz_id, changed_fields, actor, reason_text, recorded_at
+                   eaten_tz_id, changed_fields, actor, reason_text, recorded_at, meal_type
             FROM nutrition_log_revision WHERE log_id = ? ORDER BY revision_number;
             """, [.text(logID)]).compactMap { row in
             guard let id = row.string("id"), let rowLogID = row.string("log_id"),
@@ -346,6 +375,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
                 foodRef: ref, foodNameText: row.string("food_name_text"),
                 grams: row.double("grams"), quantityText: row.string("quantity_text"),
                 eatenAt: eaten,
+                mealType: row.string("meal_type").flatMap(NutritionMealType.init(rawValue:)),
                 changedFields: (row.string("changed_fields") ?? "")
                     .split(separator: ",").map(String.init),
                 actor: row.string("actor") ?? "", reasonText: row.string("reason_text"),
@@ -370,6 +400,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
             externalID: row.string("external_id"), foodRef: ref,
             foodNameText: row.string("food_name_text"), grams: row.double("grams"),
             quantityText: row.string("quantity_text"), eatenAt: eaten,
+            mealType: row.string("meal_type").flatMap(NutritionMealType.init(rawValue:)),
             recordedAt: row.string("recorded_at") ?? "",
             deletedAt: row.string("deleted_at"))
     }

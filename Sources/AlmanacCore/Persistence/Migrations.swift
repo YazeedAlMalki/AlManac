@@ -69,7 +69,8 @@ public enum AlmanacMigrations {
         Migration013_HydrationFeatures.self,
         Migration014_CoreDailySchema.self,
         Migration015_SchemaCollisionResolution.self,
-        Migration016_TrainingSchema.self
+        Migration016_TrainingSchema.self,
+        Migration017_NutritionMealType.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with

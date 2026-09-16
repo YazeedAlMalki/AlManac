@@ -13,14 +13,48 @@ struct NutritionQuickEntryView: View {
     @State private var selectedName = ""
     @State private var gramsText = ""
     @State private var quantityText = ""
+    @State private var mealType: NutritionMealType?
     @State private var showingSearch = false
     @State private var showingSavedMeals = false
     @State private var error: String?
 
+    /// Breakfast/lunch/dinner/snack, in the order a day runs, then whatever
+    /// has no meal type at all — grouped last, not dropped, since "logged
+    /// this, didn't say which meal" is a real entry (`NutritionMealType`'s
+    /// header).
+    private static let mealTypeOrder: [NutritionMealType?] =
+        NutritionMealType.allCases.map { $0 } + [nil]
+
+    private struct MealGroup: Identifiable {
+        let id: String
+        let type: NutritionMealType?
+        let foods: [LoggedFood]
+    }
+
+    private var mealGroups: [MealGroup] {
+        let grouped = Dictionary(grouping: model.todaysFoods, by: { $0.entry.mealType })
+        return NutritionQuickEntryView.mealTypeOrder.compactMap { type in
+            guard let foods = grouped[type], !foods.isEmpty else { return nil }
+            return MealGroup(id: type?.rawValue ?? "unspecified", type: type, foods: foods)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
-                todaySection
+                totalsSection
+                ForEach(mealGroups) { group in
+                    Section(group.type?.displayName ?? "Other") {
+                        ForEach(group.foods, id: \.entry.id) { logged in
+                            foodRow(logged)
+                                .swipeActions {
+                                    Button("Delete", role: .destructive) {
+                                        deleteEntry(logged.entry.id)
+                                    }
+                                }
+                        }
+                    }
+                }
                 logSection
             }
             .navigationTitle("Nutrition")
@@ -47,7 +81,7 @@ struct NutritionQuickEntryView: View {
         }
     }
 
-    private var todaySection: some View {
+    private var totalsSection: some View {
         Section("Today") {
             if let totals = model.todaysTotals, totals.mealsCounted > 0 {
                 LabeledContent("Total", value: "\(Int(totals.kcal.rounded())) kcal")
@@ -58,21 +92,21 @@ struct NutritionQuickEntryView: View {
             } else {
                 Text("Nothing logged yet today.").foregroundStyle(.secondary)
             }
-            ForEach(model.todaysFoods, id: \.entry.id) { logged in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(logged.entry.foodNameText ?? logged.food?.primaryName ?? logged.entry.foodRef.description)
-                        if let quantity = logged.entry.quantityText {
-                            Text(quantity).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer()
-                    if let kcal = logged.energy?.kilocalories {
-                        Text("\(Int(kcal.rounded())) kcal").font(.caption).foregroundStyle(.secondary)
-                    }
+        }
+    }
+
+    private func foodRow(_ logged: LoggedFood) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(logged.entry.foodNameText ?? logged.food?.primaryName ?? logged.entry.foodRef.description)
+                if let quantity = logged.entry.quantityText {
+                    Text(quantity).font(.caption).foregroundStyle(.secondary)
                 }
             }
-            .onDelete(perform: deleteToday)
+            Spacer()
+            if let kcal = logged.energy?.kilocalories {
+                Text("\(Int(kcal.rounded())) kcal").font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -87,20 +121,22 @@ struct NutritionQuickEntryView: View {
                     LabeledContent("Food", value: selectedName)
                 }
             }
-            if selectedRef != nil {
-                TextField("Amount, in grams", text: $gramsText)
-                    .keyboardType(.decimalPad)
-                TextField("Quantity as you'd say it (e.g. \"2 cups\")", text: $quantityText)
+            if let ref = selectedRef {
+                Picker("Meal", selection: $mealType) {
+                    Text("Not specified").tag(NutritionMealType?.none)
+                    ForEach(NutritionMealType.allCases, id: \.self) { type in
+                        Text(type.displayName).tag(NutritionMealType?.some(type))
+                    }
+                }
+                NutritionPortionPickerView(model: model, foodRef: ref,
+                                           gramsText: $gramsText, quantityText: $quantityText)
                 Button("Log", action: save)
             }
         }
     }
 
-    private func deleteToday(at offsets: IndexSet) {
-        for index in offsets {
-            let id = model.todaysFoods[index].entry.id
-            do { try model.delete(id: id) } catch { self.error = String(describing: error) }
-        }
+    private func deleteEntry(_ id: String) {
+        do { try model.delete(id: id) } catch { self.error = String(describing: error) }
     }
 
     private func save() {
@@ -117,8 +153,8 @@ struct NutritionQuickEntryView: View {
                 throw EditorFailure(message: "Enter a gram amount greater than zero, or leave it blank.")
             }
             try model.log(foodRef: ref, foodName: selectedName, grams: grams,
-                          quantityText: optionalText(quantityText))
-            selectedRef = nil; selectedName = ""; gramsText = ""; quantityText = ""
+                          quantityText: optionalText(quantityText), mealType: mealType)
+            selectedRef = nil; selectedName = ""; gramsText = ""; quantityText = ""; mealType = nil
         } catch {
             self.error = String(describing: error)
         }
