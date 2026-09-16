@@ -88,7 +88,7 @@ public struct InjuryNoteStore: @unchecked Sendable {
         
         // Fetch the last inserted rowid
         if let row = try db.query("SELECT last_insert_rowid() as id;").first,
-           let fetchedID = row.int64("id") {
+           let fetchedID = row.int("id") {
             id = fetchedID
         }
         return id
@@ -154,7 +154,7 @@ public struct InjuryNoteStore: @unchecked Sendable {
     // MARK: - Private
 
     private func rowToNote(_ row: Row) -> InjuryNote? {
-        guard let id = row.int64("id"),
+        guard let id = row.int("id"),
               let startDate = row.string("startDate"),
               let bodyArea = row.string("bodyArea"),
               let description = row.string("description") else { return nil }

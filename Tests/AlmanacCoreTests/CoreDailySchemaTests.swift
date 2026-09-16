@@ -19,7 +19,7 @@ final class CoreDailySchemaTests: XCTestCase {
         let db = try Database.inMemory()
         let runner = try MigrationRunner(migrations: AlmanacMigrations.all)
         let applied = try runner.migrate(db)
-        XCTAssertEqual(applied, Array(1...14))
+        XCTAssertEqual(applied, Array(1...15))
     }
 
     func testSliceTwoTablesExist() throws {

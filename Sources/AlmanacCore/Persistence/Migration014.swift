@@ -164,7 +164,7 @@ public enum Migration014_CoreDailySchema: Migration {
         CREATE TABLE vitals_record (
             id              INTEGER PRIMARY KEY,
             timestamp       TEXT NOT NULL,
-            timezoneOffset  TEXT NOT NULL,
+            timezoneOffset  TEXT,
             logicalDay      TEXT NOT NULL,
             metric          TEXT NOT NULL,
             value           REAL NOT NULL,
@@ -181,7 +181,7 @@ public enum Migration014_CoreDailySchema: Migration {
         CREATE TABLE mood_log (
             id                  INTEGER PRIMARY KEY,
             timestamp           TEXT NOT NULL,
-            timezoneOffset      TEXT NOT NULL,
+            timezoneOffset      TEXT,
             logicalDay          TEXT NOT NULL,
             score               INTEGER NOT NULL CHECK(score BETWEEN 1 AND 10),
             readinessCycleId    INTEGER REFERENCES readiness_cycle(id),
@@ -194,7 +194,7 @@ public enum Migration014_CoreDailySchema: Migration {
         CREATE TABLE soreness_log (
             id                  INTEGER PRIMARY KEY,
             timestamp           TEXT NOT NULL,
-            timezoneOffset      TEXT NOT NULL,
+            timezoneOffset      TEXT,
             logicalDay          TEXT NOT NULL,
             overallScore        INTEGER NOT NULL CHECK(overallScore BETWEEN 1 AND 10),
             bodyAreas           TEXT NOT NULL DEFAULT '[]',

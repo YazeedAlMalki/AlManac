@@ -51,7 +51,7 @@ public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable
                 WHERE source = ? AND healthKitUUID = ?;
                 """, [.text(sourceSystem), .text(sample.externalID)]).first
             
-            let existingId = existingRow?.int64("id")
+            let existingId = existingRow?.int("id")
 
             try db.run("""
             INSERT INTO vitals_record

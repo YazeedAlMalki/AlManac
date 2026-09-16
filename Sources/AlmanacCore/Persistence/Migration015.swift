@@ -19,10 +19,11 @@ import Foundation
 ///   cost (one re-read per domain).
 /// - nutrition_log and lab_result are recorded as amended to the spec
 ///   (not changed here; see docs/architecture/spec-reconciliation.md).
-struct Migration015_SchemaCollisionResolution: Migration {
-    static let version = 15
+public enum Migration015_SchemaCollisionResolution: Migration {
+    public static let version = 15
+    public static let name = "schema_collision_resolution"
 
-    func run(_ db: Database) throws {
+    public static func up(_ db: Database) throws {
         // Drop old sync_anchor and create new one per spec §5.24.
         try db.execute("DROP TABLE IF EXISTS sync_anchor;")
         try db.execute("""

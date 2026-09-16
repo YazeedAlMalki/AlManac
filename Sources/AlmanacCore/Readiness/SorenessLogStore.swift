@@ -92,7 +92,7 @@ public struct SorenessLogStore: @unchecked Sendable {
         
         // Fetch the last inserted rowid
         if let row = try db.query("SELECT last_insert_rowid() as id;").first,
-           let fetchedID = row.int64("id") {
+           let fetchedID = row.int("id") {
             id = fetchedID
         }
         return id
@@ -159,22 +159,22 @@ public struct SorenessLogStore: @unchecked Sendable {
     // MARK: - Private
 
     private func rowToEntry(_ row: Row) -> SorenessLogEntry? {
-        guard let id = row.int64("id"),
+        guard let id = row.int("id"),
               let score = row.int("overallScore"),
               let timestampText = row.string("timestamp"),
               let logicalDay = row.string("logicalDay"),
               let timestamp = iso8601ToDate(timestampText) else { return nil }
         
-        let bodyAreas = (row.string("bodyAreas") ?? "[]").decodeJSON() ?? []
+        let bodyAreas: [String] = (row.string("bodyAreas") ?? "[]").decodeJSON() ?? []
         
         return SorenessLogEntry(
             id: id,
-            overallScore: score,
+            overallScore: Int(score),
             timestamp: timestamp,
             logicalDay: logicalDay,
             bodyAreas: bodyAreas,
             notes: row.string("notes"),
-            readinessCycleId: row.int64("readinessCycleId"),
+            readinessCycleId: row.int("readinessCycleId"),
             createdAt: row.string("createdAt").flatMap(iso8601ToDate) ?? Date()
         )
     }

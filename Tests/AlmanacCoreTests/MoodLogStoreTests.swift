@@ -49,6 +49,7 @@ struct MoodLogStoreTests {
     @Test("Link mood to readiness cycle")
     func linkToReadinessCycle() throws {
         let id = try store.log(MoodLogDraft(score: 6, timestamp: Date()), logicalDay: "2026-09-16")
+        try db.run("INSERT INTO readiness_cycle (id, anchorDate, createdAt, updatedAt) VALUES (42, '2026-09-16', '2026-09-16T00:00:00Z', '2026-09-16T00:00:00Z');")
         
         try store.linkToReadinessCycle(id: id, cycleId: 42)
         

@@ -4,7 +4,14 @@ import Foundation
 
 @Suite("Readiness Cycle Linking Tests")
 struct ReadinessCycleLinkingTests {
-    let db = try! TestDatabase()
+    let db: Database
+
+    init() throws {
+        db = try TestDatabase()
+        // All three tests below link against readiness_cycle id 1;
+        // readinessCycleId is a real FK (§5.6/§5.7), so it must exist first.
+        try db.run("INSERT INTO readiness_cycle (id, anchorDate, createdAt, updatedAt) VALUES (1, '2026-09-16', '2026-09-16T00:00:00Z', '2026-09-16T00:00:00Z');")
+    }
     
     @Test("Link mood and soreness logs to readiness cycle within time window")
     func linkLogsWithinWindow() throws {

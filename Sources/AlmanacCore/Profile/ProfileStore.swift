@@ -55,8 +55,20 @@ public struct ProfileStore: @unchecked Sendable {
 
     // MARK: - Write
 
+    /// The profile table is a singleton (id always 1), but nothing seeds
+    /// that row at migration time. Every write goes through this first so
+    /// "no profile yet" self-heals instead of the UPDATE silently affecting
+    /// zero rows (found 2026-09-16: every updateX call was a no-op against
+    /// a fresh database).
+    private func ensureRowExists() throws {
+        try db.run("""
+        INSERT OR IGNORE INTO profile (id, createdAt, updatedAt) VALUES (1, ?, ?);
+        """, [.text(nowText), .text(nowText)])
+    }
+
     /// Update the user's display name.
     public func updateDisplayName(_ name: String) throws {
+        try ensureRowExists()
         try db.run("""
         UPDATE profile SET displayName = ?, updatedAt = ? WHERE id = 1;
         """, [.text(name), .text(nowText)])
@@ -64,6 +76,7 @@ public struct ProfileStore: @unchecked Sendable {
 
     /// Update the user's date of birth (YYYY-MM-DD format).
     public func updateDateOfBirth(_ dob: String?) throws {
+        try ensureRowExists()
         try db.run("""
         UPDATE profile SET dateOfBirth = ?, updatedAt = ? WHERE id = 1;
         """, [dob.map { SQLValue.text($0) } ?? .null, .text(nowText)])
@@ -71,6 +84,7 @@ public struct ProfileStore: @unchecked Sendable {
 
     /// Update the user's biological sex.
     public func updateBiologicalSex(_ sex: String?) throws {
+        try ensureRowExists()
         try db.run("""
         UPDATE profile SET biologicalSex = ?, updatedAt = ? WHERE id = 1;
         """, [sex.map { SQLValue.text($0) } ?? .null, .text(nowText)])
@@ -78,6 +92,7 @@ public struct ProfileStore: @unchecked Sendable {
 
     /// Update the user's height in centimeters.
     public func updateHeight(_ cm: Double?) throws {
+        try ensureRowExists()
         try db.run("""
         UPDATE profile SET heightCm = ?, updatedAt = ? WHERE id = 1;
         """, [cm.map { SQLValue.real($0) } ?? .null, .text(nowText)])
@@ -85,6 +100,7 @@ public struct ProfileStore: @unchecked Sendable {
 
     /// Update the list of sports the user participates in (stored as JSON array).
     public func updateSports(_ sports: [String]) throws {
+        try ensureRowExists()
         let jsonData = try JSONEncoder().encode(sports)
         let jsonString = String(data: jsonData, encoding: .utf8) ?? "[]"
         try db.run("""
@@ -95,7 +111,7 @@ public struct ProfileStore: @unchecked Sendable {
     // MARK: - Private
 
     private func rowToProfile(_ row: Row) -> UserProfile {
-        let sports = (row.string("sports") ?? "[]").decodeJSON() ?? []
+        let sports: [String] = (row.string("sports") ?? "[]").decodeJSON() ?? []
         return UserProfile(
             displayName: row.string("displayName") ?? "User",
             dateOfBirth: row.string("dateOfBirth"),

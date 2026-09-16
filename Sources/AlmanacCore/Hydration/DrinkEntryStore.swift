@@ -119,7 +119,7 @@ public struct DrinkEntryStore: @unchecked Sendable {
         
         // Fetch the last inserted rowid
         if let row = try db.query("SELECT last_insert_rowid() as id;").first,
-           let fetchedID = row.int64("id") {
+           let fetchedID = row.int("id") {
             id = fetchedID
         }
         return id
@@ -157,7 +157,7 @@ public struct DrinkEntryStore: @unchecked Sendable {
     // MARK: - Private
 
     private func rowToEntry(_ row: Row) -> DrinkEntry? {
-        guard let id = row.int64("id"),
+        guard let id = row.int("id"),
               let timestamp = row.string("timestamp").flatMap(iso8601ToDate),
               let logicalDay = row.string("logicalDay"),
               let drinkType = row.string("drinkType") else { return nil }
