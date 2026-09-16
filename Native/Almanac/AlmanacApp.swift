@@ -6,6 +6,7 @@ import AlmanacCore
 struct AlmanacApp: App {
     @StateObject private var model = LaboratoryModel()
     @StateObject private var hydrationModel = HydrationModel()
+    @StateObject private var nutritionModel = NutritionModel()
     var body: some Scene {
         WindowGroup {
             Group {
@@ -15,6 +16,8 @@ struct AlmanacApp: App {
                             .tabItem { Label("Laboratory", systemImage: "cross.case") }
                         HydrationDashboardView(model: hydrationModel)
                             .tabItem { Label("Hydration", systemImage: "drop") }
+                        NutritionQuickEntryView(model: nutritionModel)
+                            .tabItem { Label("Nutrition", systemImage: "fork.knife") }
                         SettingsView(model: hydrationModel)
                             .tabItem { Label("Settings", systemImage: "gear") }
                     }
@@ -23,7 +26,10 @@ struct AlmanacApp: App {
                     // renders. Configuring here (rather than at hydrationModel's own
                     // init) keeps both models sharing one connection instead of
                     // HydrationModel opening a second one to the same file.
-                    .onAppear { hydrationModel.configure(db: model.db) }
+                    .onAppear {
+                        hydrationModel.configure(db: model.db)
+                        nutritionModel.configure(db: model.db)
+                    }
                 } else {
                     ContentUnavailableView {
                         Label("Almanac could not open", systemImage: "externaldrive.badge.exclamationmark")

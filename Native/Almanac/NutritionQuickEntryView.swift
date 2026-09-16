@@ -1,0 +1,126 @@
+import SwiftUI
+import AlmanacCore
+
+/// The Nutrition tab's root: today's log at a glance, and the fast path to
+/// add another meal to it. Picking a food — by search or from a saved
+/// meal — and logging it are both done here; `NutritionFoodSearchView` and
+/// `NutritionSavedMealsView` are reached from this screen and hand their
+/// pick straight back into the fields below.
+@MainActor
+struct NutritionQuickEntryView: View {
+    @ObservedObject var model: NutritionModel
+    @State private var selectedRef: SourceIdentifier?
+    @State private var selectedName = ""
+    @State private var gramsText = ""
+    @State private var quantityText = ""
+    @State private var showingSearch = false
+    @State private var showingSavedMeals = false
+    @State private var error: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                todaySection
+                logSection
+            }
+            .navigationTitle("Nutrition")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Saved meals") { showingSavedMeals = true }
+                }
+            }
+            .sheet(isPresented: $showingSearch) {
+                NutritionFoodSearchView(model: model) { food in
+                    selectedRef = food.ref
+                    selectedName = food.primaryName
+                }
+            }
+            .sheet(isPresented: $showingSavedMeals) {
+                NutritionSavedMealsView(model: model) { ref, name, defaultGrams in
+                    selectedRef = ref
+                    selectedName = name
+                    if let defaultGrams { gramsText = String(Int(defaultGrams)) }
+                }
+            }
+            .editorError($error)
+            .onAppear { model.refresh() }
+        }
+    }
+
+    private var todaySection: some View {
+        Section("Today") {
+            if let totals = model.todaysTotals, totals.mealsCounted > 0 {
+                LabeledContent("Total", value: "\(Int(totals.kcal.rounded())) kcal")
+                if !totals.isComplete {
+                    Text("Some logged foods are missing an amount or a reference match, so this total is a floor, not the full picture.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            } else {
+                Text("Nothing logged yet today.").foregroundStyle(.secondary)
+            }
+            ForEach(model.todaysFoods, id: \.entry.id) { logged in
+                HStack {
+                    VStack(alignment: .leading) {
+                        Text(logged.entry.foodNameText ?? logged.food?.primaryName ?? logged.entry.foodRef.description)
+                        if let quantity = logged.entry.quantityText {
+                            Text(quantity).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    if let kcal = logged.energy?.kilocalories {
+                        Text("\(Int(kcal.rounded())) kcal").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .onDelete(perform: deleteToday)
+        }
+    }
+
+    private var logSection: some View {
+        Section("Log a food") {
+            Button {
+                showingSearch = true
+            } label: {
+                if selectedRef == nil {
+                    Text("Select food")
+                } else {
+                    LabeledContent("Food", value: selectedName)
+                }
+            }
+            if selectedRef != nil {
+                TextField("Amount, in grams", text: $gramsText)
+                    .keyboardType(.decimalPad)
+                TextField("Quantity as you'd say it (e.g. \"2 cups\")", text: $quantityText)
+                Button("Log", action: save)
+            }
+        }
+    }
+
+    private func deleteToday(at offsets: IndexSet) {
+        for index in offsets {
+            let id = model.todaysFoods[index].entry.id
+            do { try model.delete(id: id) } catch { self.error = String(describing: error) }
+        }
+    }
+
+    private func save() {
+        do {
+            guard let ref = selectedRef else {
+                throw EditorFailure(message: "Select a food first.")
+            }
+            let grams: Double?
+            if gramsText.isEmpty {
+                grams = nil
+            } else if let value = Double(gramsText), value > 0 {
+                grams = value
+            } else {
+                throw EditorFailure(message: "Enter a gram amount greater than zero, or leave it blank.")
+            }
+            try model.log(foodRef: ref, foodName: selectedName, grams: grams,
+                          quantityText: optionalText(quantityText))
+            selectedRef = nil; selectedName = ""; gramsText = ""; quantityText = ""
+        } catch {
+            self.error = String(describing: error)
+        }
+    }
+}
