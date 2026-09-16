@@ -91,6 +91,27 @@ struct FastingSessionStoreTests {
         let outcome = try store.recordNutritionEntry(calories: 200, at: Date())
         #expect(outcome == .noOp)
     }
+
+    @Test("endScheduled ends a session without touching correctionHistory")
+    func endScheduledIsNotACorrection() throws {
+        let id = try store.start(draft(start: 1_000_000, type: .religious), logicalDay: "2026-09-16")
+
+        let minutes = try store.endScheduled(id: id, at: Date(timeIntervalSince1970: 1_000_000 + 12 * 3600))
+
+        let session = try store.session(id: id)
+        #expect(minutes == 720)
+        #expect(session?.isActive == false)
+        #expect(session?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 12 * 3600))
+        #expect(session?.finalDurationMinutes == 720)
+        #expect(session?.correctionHistory.isEmpty == true)
+    }
+
+    @Test("endScheduled on an unknown id throws rather than silently no-op'ing")
+    func endScheduledUnknownIdThrows() throws {
+        #expect(throws: FastingSessionStoreError.self) {
+            try store.endScheduled(id: 999, at: Date())
+        }
+    }
 }
 
 @Suite("IFSuggestion Tests")

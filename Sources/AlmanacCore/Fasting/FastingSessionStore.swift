@@ -90,6 +90,17 @@ public struct FastingSessionStore: @unchecked Sendable {
         return .noOp
     }
 
+    /// A scheduled, non-break end for a fast — §11.2's "at Maghrib(D), set
+    /// `endTimestamp = Maghrib(D)`, `isActive = 0`." Unlike
+    /// `recordNutritionEntry`'s break/invalidate/shorten decision tree, this
+    /// isn't a correction: no calorie entry is involved, so nothing is
+    /// appended to `correctionHistory`. Used by `ReligiousFastingService`.
+    @discardableResult
+    public func endScheduled(id: Int64, at timestamp: Date) throws -> Int {
+        guard let session = try session(id: id) else { throw FastingSessionStoreError.notFound }
+        return try end(session, at: timestamp)
+    }
+
     // MARK: - Read
 
     public func session(id: Int64) throws -> FastingSession? {
@@ -197,4 +208,5 @@ public struct FastingSessionStore: @unchecked Sendable {
 
 public enum FastingSessionStoreError: Error, Sendable {
     case insertFailed
+    case notFound
 }
