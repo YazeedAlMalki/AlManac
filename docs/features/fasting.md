@@ -2,15 +2,15 @@
 
 **Status:** intermittent fasting core built 2026-09-17 (migration 022, TDD) —
 `fasting_session` table, `FastingSessionStore` (start/break/backdate),
-`IFSuggestion`. 10 tests, green. Religious fasting (`religious_fast_schedule`,
-`prayer_settings`, `prayer_times_cache`, `nutrition_window`) deliberately not
-built yet — all of it depends on the prayer-time engine (§3, vendoring an
-Adhan port), which is a separate, self-contained task with no relation to the
-session-tracking logic below; splitting them avoided doing astronomical-
-calculation vendoring and session-state logic in the same pass. Schema and
-engine logic transcribed verbatim from `../../../almanac-tech-spec-v1.0.md`
-§5.21–5.22, §7.2, §11–14, Appendix B — the recovered, authoritative Technical
-Spec (`docs/architecture/spec-reconciliation.md`).
+`IFSuggestion`. 10 tests, green. The prayer-time calculation itself is also
+built (§3, `AdhanCalculator`, 5 tests) — vendored and verified, but not yet
+wired to any store, schedule, or notification. Religious fasting
+(`religious_fast_schedule`, `prayer_settings`, `prayer_times_cache`,
+`nutrition_window`) remains unbuilt: the calculation existing is only step 2
+of §6's six-step build plan below. Schema and engine logic transcribed
+verbatim from `../../../almanac-tech-spec-v1.0.md` §5.21–5.22, §7.2, §11–14,
+Appendix B — the recovered, authoritative Technical Spec
+(`docs/architecture/spec-reconciliation.md`).
 
 ## 1. Why this doc is short
 
@@ -52,6 +52,25 @@ than hand-writing the solar-position formulas. Candidate: `batoulapps/Adhan`
 used for `Sources/CSQLite`. Concrete port choice and licence-header check is a
 build-time task, not a design one — flag it as the first step whenever this
 slice is picked up.
+
+**Built 2026-09-17:** `batoulapps/adhan-swift` (commit `0bc1000`, 2026-08-21)
+vendored verbatim into `Sources/Adhan/` — see `Sources/Adhan/VENDORED.md` for
+the exact files and re-vendoring instructions.
+`Sources/AlmanacCore/Prayer/AdhanCalculator.swift` wraps it:
+`AdhanCalculator.prayerTimes(latitude:longitude:date:timeZone:method:)` →
+`[PrayerTime]` (`name`/`timestamp` pairs matching `prayer_times_cache`'s own
+column names), with `PrayerCalculationMethod` mapping §5.22's
+`calculationMethod` vocabulary (`umm_al_qura`/`mwl`/`isna`/`egypt`/`karachi`/
+`custom`) onto Adhan's own `CalculationMethod`. Verified for Riyadh
+(24.7136°N, 46.6753°E) on 2026-09-17 against `api.aladhan.com`'s method-4
+(Umm al-Qura) output — Fajr/Sunrise/Dhuhr/Maghrib/Isha matched to the minute,
+Asr within a minute. 5 tests
+(`Tests/AlmanacCoreTests/AdhanCalculatorTests.swift`).
+
+Not built: `PrayerTimeStore`/the 30-day cache, >50 km travel invalidation,
+the bundled 200+-city manual-override JSON, and `PrayerSettingsStore` — all
+of §12 beyond the calculation itself. `AdhanCalculator` is a pure function
+today; nothing calls or persists it yet.
 
 **Hijri calendar source:** use Foundation's built-in
 `Calendar(identifier: .islamicUmmAlQura)` for Ramadan-month and White-Days
@@ -200,9 +219,10 @@ this section.
 1. New migration (next free version number after whatever Body Composition's
    pass lands as) transcribing §4 verbatim, camelCase, following the
    Migration014-onward convention.
-2. Vendor the Adhan port; `PrayerTimeEngine` wrapping it per §12 (30-day
-   cache, >50 km travel invalidation, manual city fallback with the bundled
-   200+-city JSON).
+2. ~~Vendor the Adhan port~~ — done 2026-09-17, `AdhanCalculator` (§3, §5
+   above). Still needed: `PrayerTimeStore`/`PrayerSettingsStore` wrapping it
+   per §12 (30-day cache, >50 km travel invalidation, manual city fallback
+   with the bundled 200+-city JSON).
 3. `FastingSessionStore` + `FastingEngine` (suggestion trigger, break rules,
    backdating correction logic) per §11.1 — this is the module with the most
    genuine logic (timers, midnight-crossing, backdating), highest-value TDD
