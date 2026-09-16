@@ -682,3 +682,71 @@ Xcode on this machine to write or run any against.
 125; 13 new tests — `ReadinessCycleStoreTests`, `ReadinessRecordStoreTests`
 — zero regressions).
 
+---
+
+## 2026-09-17 — Slice 3 polish: vendored Adhan, `AdhanCalculator`
+
+`batoulapps/adhan-swift` (commit `0bc1000`, MIT) vendored verbatim as a new
+`Adhan` SwiftPM target — `docs/architecture` decision already recorded this
+choice in `docs/features/fasting.md` §3; this session executed it.
+`Sources/AlmanacCore/Prayer/AdhanCalculator.swift` wraps it:
+`prayerTimes(latitude:longitude:date:timeZone:method:)`, with
+`PrayerCalculationMethod` mapping `prayer_settings.calculationMethod`'s
+vocabulary onto Adhan's own enum. Verified against a real external
+reference (`api.aladhan.com`, method 4) for Riyadh, 2026-09-17: matched to
+the minute on five of six prayers, one minute off on Asr. 5 tests.
+
+**Verified:** Swift Testing 143/143 (was 138; 5 new, zero regressions).
+
+---
+
+## 2026-09-17 — Slice 6 (Fasting + Prayer): religious fasting and prayer infrastructure
+
+Migration024: `religious_fast_schedule`, `prayer_settings`,
+`prayer_times_cache`, `nutrition_window` (§5.11, §5.21–5.22), the four
+tables the intermittent-fasting-only Migration022 deliberately left out.
+Deliberately not touched: no `nutritionWindowId` column added to
+`nutrition_log`/`hydration_log` — that's a separate cross-module task
+(§6 of `docs/features/fasting.md`).
+
+- **`PrayerSettingsStore`**: the `prayer_settings` singleton, self-healing
+  like `ProfileStore`. 5 tests.
+- **`PrayerTimeCacheStore`**: plain CRUD over `prayer_times_cache`, upsert
+  by date. `deleteFuture(after:)` never removes an `isManualOverride` row.
+  6 tests.
+- **`PrayerTimeEngine`** (§12.3/§12.4): `recalculateCache` (30 days,
+  applying per-prayer offsets, skipping manual overrides),
+  `ensureCache` (the "fewer than 7 days cached" trigger), and
+  `applyLocationUpdate` — a real haversine distance check, not a stub: ~6km
+  within Riyadh is ignored, ~845km to Jeddah triggers the full
+  update-settings/invalidate-future/recalculate flow, and past cached dates
+  are never touched. 8 tests.
+- **`ReligiousFastScheduleStore`** (§11.2): Ramadan matches a stored
+  Gregorian range (from the new `ramadanRange(hijriYear:)` helper); Mon/Thu
+  and White Days are matched live via
+  `Calendar(identifier: .islamicUmmAlQura)` — confirmed working correctly
+  on Linux/Swift 6.3.3 (a real risk with an ICU-backed exotic calendar,
+  checked rather than assumed). A manual correction always overrides the
+  calculated result, either direction. 9 tests.
+- **`NutritionWindowStore`** (§7.2): `window(containing:)` matches by
+  timestamp range, not calendar-date string — confirmed against the spec's
+  own defining example, a 03:50 suhoor entry on calendar day D+1 correctly
+  resolving to D's night window. 5 tests.
+- **`FastingSessionStore.endScheduled(id:at:)`**: a scheduled, non-break end
+  for §11.2's "at Maghrib(D)" auto-end — doesn't touch `correctionHistory`
+  the way `recordNutritionEntry`'s outcomes do. 2 tests.
+- **`ReligiousFastingService.ensureDay`**: composes all of the above —
+  creates a religious `FastingSession` (dry, starting at Fajr) plus its
+  night window if none exists for a fast day, or ends the existing one past
+  Maghrib. Idempotent, pull-based (no scheduler exists), same pattern as
+  `ReadinessCycleStore.ensureCycle`. 7 tests.
+
+42 new tests this session (143 → 185). Not built: the 200+-city manual-fallback
+JSON (§12.2), `nutritionWindowId` wiring into Nutrition/Hydration, and
+Appendix B notification suppression (blocked on Slice 11) — all recorded in
+`docs/features/fasting.md` §6. Nothing in the app calls any of this yet;
+every surface here is pull-based, waiting on UI/dashboard integration.
+
+**Verified:** full clean rebuild (`rm -rf .build && swift build`) plus
+Swift Testing 185/185 (was 143; 42 new tests, zero regressions).
+

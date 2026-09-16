@@ -1,16 +1,19 @@
 # Fasting — Slice 6 design, v1
 
-**Status:** intermittent fasting core built 2026-09-17 (migration 022, TDD) —
-`fasting_session` table, `FastingSessionStore` (start/break/backdate),
-`IFSuggestion`. 10 tests, green. The prayer-time calculation itself is also
-built (§3, `AdhanCalculator`, 5 tests) — vendored and verified, but not yet
-wired to any store, schedule, or notification. Religious fasting
-(`religious_fast_schedule`, `prayer_settings`, `prayer_times_cache`,
-`nutrition_window`) remains unbuilt: the calculation existing is only step 2
-of §6's six-step build plan below. Schema and engine logic transcribed
-verbatim from `../../../almanac-tech-spec-v1.0.md` §5.21–5.22, §7.2, §11–14,
-Appendix B — the recovered, authoritative Technical Spec
-(`docs/architecture/spec-reconciliation.md`).
+**Status:** all of §6's build plan is done except notification suppression
+(step 6, blocked on Slice 11) and the `nutritionWindowId` cross-module wiring
+(step 5's second half). Intermittent fasting core (migration 022):
+`fasting_session`, `FastingSessionStore`, `IFSuggestion`. Prayer-time
+calculation: vendored `Adhan`, `AdhanCalculator`. Religious fasting +
+prayer infrastructure (migration 024): `religious_fast_schedule` +
+`ReligiousFastScheduleStore`, `prayer_settings` + `PrayerSettingsStore`,
+`prayer_times_cache` + `PrayerTimeCacheStore` + `PrayerTimeEngine`,
+`nutrition_window` + `NutritionWindowStore`, and `ReligiousFastingService`
+tying the auto-create/auto-end flow together. 67 tests across this slice,
+green. Nothing calls any of it yet — see §6's closing note. Schema and
+engine logic transcribed verbatim from `../../../almanac-tech-spec-v1.0.md`
+§5.21–5.22, §7.2, §11–14, Appendix B — the recovered, authoritative Technical
+Spec (`docs/architecture/spec-reconciliation.md`).
 
 ## 1. Why this doc is short
 
@@ -216,25 +219,43 @@ this section.
 
 ## 6. Build plan (religious fasting + prayer-time engine, next)
 
-1. New migration (next free version number after whatever Body Composition's
-   pass lands as) transcribing §4 verbatim, camelCase, following the
-   Migration014-onward convention.
+1. ~~New migration~~ — done 2026-09-17, Migration024, all four tables (§4
+   above) transcribed verbatim.
 2. ~~Vendor the Adhan port~~ — done 2026-09-17, `AdhanCalculator` (§3, §5
-   above). Still needed: `PrayerTimeStore`/`PrayerSettingsStore` wrapping it
-   per §12 (30-day cache, >50 km travel invalidation, manual city fallback
-   with the bundled 200+-city JSON).
-3. `FastingSessionStore` + `FastingEngine` (suggestion trigger, break rules,
-   backdating correction logic) per §11.1 — this is the module with the most
-   genuine logic (timers, midnight-crossing, backdating), highest-value TDD
-   target.
-4. `ReligiousFastScheduleStore` + auto-creation/auto-end per §11.2, using
-   `Calendar(identifier: .islamicUmmAlQura)`.
-5. `NutritionWindowStore` for the night-nutrition window, wired to existing
-   `NutritionLogStore`/`HydrationLog` via `nutritionWindowId`.
+   above). ~~`PrayerTimeStore`/`PrayerSettingsStore`~~ — also done, as
+   `PrayerSettingsStore` + `PrayerTimeCacheStore` + `PrayerTimeEngine` (§12:
+   30-day cache, >50 km travel invalidation via a real haversine check, a
+   per-day `isManualOverride` flag protecting a corrected day from both).
+   Not built: the bundled 200+-city manual-fallback JSON (§12.2's third
+   coordinate-sourcing priority) — `PrayerSettingsStore.updateLocation`
+   takes any city's coordinates a caller already has; nothing bundles or
+   searches a city list yet.
+3. ~~`FastingSessionStore` + `FastingEngine`~~ — done in the intermittent-
+   fasting pass above (§5).
+4. ~~`ReligiousFastScheduleStore` + auto-creation/auto-end~~ — done
+   2026-09-17. `ReligiousFastScheduleStore` (fast-day detection: Ramadan
+   against a stored range from the new `ramadanRange(hijriYear:)` helper,
+   Mon/Thu and White Days matched live via
+   `Calendar(identifier: .islamicUmmAlQura)` — confirmed correct on
+   Linux/Swift 6.3.3, not just assumed) plus `ReligiousFastingService`
+   (composes it with `FastingSessionStore`/`NutritionWindowStore` for the
+   actual auto-create-at-Fajr/auto-end-at-Maghrib flow, §11.2).
+5. ~~`NutritionWindowStore`~~ — done 2026-09-17: creation + timestamp-range
+   lookup (`window(containing:)`, correctly handling a 03:50 suhoor entry on
+   calendar day D+1 belonging to D's window). **Not done:** the
+   `nutritionWindowId` wiring into `NutritionLogStore`/`HydrationLog` — that
+   needs its own migration adding the column to each table, and touches two
+   slices (Nutrition, Hydration) that don't currently know Fasting exists.
+   Deliberately left as its own task rather than folded into this pass.
 6. Notification suppression (Appendix B) — depends on whatever
    `NotificationScheduler` design Slice 11 (Advanced notifications) settles;
    flag as a cross-slice dependency rather than duplicating scheduling logic
    here.
 
-Seam confirmation (per `mattpocock-skills:tdd`) is deferred until this slice
-is actually picked up — no tests are proposed yet.
+**What calls any of this — nothing yet.** Every store/service above is a
+pull-based, idempotent surface (`ensureDay`, `ensureCache`,
+`applyLocationUpdate`) a caller is expected to invoke explicitly, the same
+pattern `ReadinessModel.refresh()` uses. No UI, no app-launch wiring, and no
+background scheduling exist to actually call them day to day yet — that's
+Slice 2 UI's dashboard-integration territory (fasting status/prayer times on
+the readiness dashboard) or a dedicated Fasting screen, neither built.
