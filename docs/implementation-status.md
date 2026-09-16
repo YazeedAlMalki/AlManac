@@ -323,3 +323,297 @@ confirmation that matters.
 - HealthKit sleep and vitals import (the `.water`-only provider is the pattern).
 - Check-in UI and dashboard.
 
+---
+
+## 2026-09-16 — Slice 7 (Body Composition) design + first TDD pass; two pre-existing bugs fixed, two more flagged
+
+Design docs first: `docs/features/body-composition.md` (Slice 7) and
+`docs/features/fasting.md` (Slice 6) — most of both slices turned out to
+already be specified verbatim in the recovered tech spec, so the design pass
+was mostly citation plus a handful of real owner decisions (Ramadan
+auto-detect with manual correction; vendor an Adhan port for prayer times;
+progress photos deferred to a later update). Owner chose to build Body
+Composition first.
+
+### Added (migration 018, TDD red/green)
+
+- **`body_composition_measurement`, `custom_measurement_definition`,
+  `custom_measurement_log`, `supplement_plan`, `supplement_log`,
+  `context_event`** — transcribed from spec §5.18/§5.20, minus
+  `progress_photo` (deferred) and `lab_result` (superseded by the existing
+  laboratory module). `body_composition_measurement` adds `deletedAt` and a
+  `(source, healthKitUUID)` partial unique index beyond the spec's literal
+  text — needed for a working upsert/soft-delete, see below.
+- **`BodyCompositionMeasurementStore`** — log/read by id, latest-per-metric,
+  ranged history for charting. 4 tests.
+- **`BodyCompositionMeasurementHealthBridge`** — inbound HealthKit sync for
+  `bodyMass`/`bodyFatPercentage`/`leanBodyMass` (Appendix C's only
+  bi-directional body-composition types), following
+  `VitalsRecordHealthBridge`'s upsert-by-`(source, healthKitUUID)` shape.
+  5 tests.
+- Two new `HealthDomain` cases: `bodyFatPercentage`, `leanBodyMass`.
+
+### Fixed — a real schema collision, found designing this slice
+
+`VitalsRecordHealthBridge` (Slice 2) was writing HealthKit `bodyMass` into
+`vitals_record` as `metric = 'weight'`, colliding with §5.18's dedicated
+table (no `conditions`/InBody-source support in `vitals_record`). Recorded as
+a sixth spec/repo divergence in `docs/architecture/spec-reconciliation.md`
+§7. Fixed: `.bodyMass` removed from `VitalsRecordHealthBridge.metricMap`;
+weight now exclusively goes through the new bridge/table. No data migration
+needed — no durable database exists yet.
+
+### Fixed — two pre-existing bugs, found and repaired while building this slice
+
+Both confirmed pre-existing (git-clean files, untouched by this session)
+before being fixed:
+
+1. **`vitals_record`'s upsert always threw.**
+   `VitalsRecordHealthBridge.apply`'s `ON CONFLICT(source, healthKitUUID)
+   WHERE healthKitUUID IS NOT NULL` had no matching index — Migration014 only
+   gave the table a single-column `healthKitUUID UNIQUE`. Every update threw
+   `SQLite error 1: ON CONFLICT clause does not match any PRIMARY KEY or
+   UNIQUE constraint`. Fixed in Migration019 (adds the matching partial
+   unique index).
+2. **`vitals_record`'s soft-delete always threw.** The same bridge's delete
+   path set `createdAt = NULL` to mark a retracted sample, but `createdAt` is
+   `NOT NULL` — `SQLite error 19: NOT NULL constraint failed`. Fixed in
+   Migration020 (adds a proper `deletedAt` column); `VitalsRecordStore`'s
+   read methods now exclude soft-deleted rows.
+3. **`sleep_episode` was also missing `deletedAt`** — same shape as #2,
+   found by running the full suite afterward. Migration021 adds the column.
+   **This alone does not fix `SleepEpisodeHealthBridgeTests`** — see below.
+
+Confirmed by running `VitalsRecordHealthBridgeTests` before Migration019/020
+existed: 4 of 5 cases failed with exactly these two errors. `297 tests, all
+green` (2026-09-16 project status doc, commit `c83e88c`) evidently did not
+include this suite passing against a real upsert/delete path.
+
+### Flagged, not fixed — two larger pre-existing defects found running the full suite
+
+Both confirmed pre-existing and unrelated to Slice 7 (git-clean files before
+this session touched anything nearby):
+
+1. **`SleepEpisodeHealthBridge` is not just missing a column — it's built
+   against the wrong table shape entirely.** Its INSERT references
+   `startTime`, `endTime`, `recordedAt`, `recordedTzOffset`; the real
+   `sleep_episode` (Migration014, §5.6) has `startTimestamp`, `endTimestamp`,
+   `timezoneOffset`, `createdAt`, plus required `durationMinutes`,
+   `episodeType`, `logicalDay`, `updatedAt` the bridge never sets. 4 tests
+   fail on `no such column`. This needs a real rewrite against the actual
+   schema, not a migration — flagged in `Migration021`'s doc comment rather
+   than attempted here.
+2. **`SyncAnchorStore` still queries `sync_anchor` by the old `domain`-keyed
+   shape.** `spec-reconciliation.md` §4.1 records that Migration015 already
+   moved this table to the spec's `sampleType`-keyed shape (2026-09-16,
+   commit `c83e88c`) — but `SyncAnchorStore.swift` was never updated to
+   match. Every call fails with `no such column: domain`. This cascades into
+   18 XCTest failures across `HealthSyncTests`, `HydrationSyncTests`,
+   `SyncAnchorStoreTests`, `BackupServiceTests`, and `TimelineTests` — the
+   collision doc's own "resolved" status is only half true: the schema
+   moved, the consuming code didn't. Needs `SyncAnchorStore` rewritten
+   against `sampleType`, which is a real task, not a line fix — not
+   attempted here.
+
+### Verified
+
+`swift build && swift test` on Swift 6.3.3 (`yamal`, `source env.sh`): new
+Slice 7 work (9 tests, `BodyCompositionMeasurementStoreTests` +
+`BodyCompositionMeasurementHealthBridgeTests`) and the two fixed
+`vitals_record` bugs all green. The two flagged defects above are the only
+failures left in the suite; both predate this session.
+
+### Added — remaining Slice 7 seams (same session, continued)
+
+The other three seams from `docs/features/body-composition.md` §6, same
+migration 018, same TDD pattern:
+
+- **`CustomMeasurementStore`** — owner-defined circumference measurements
+  (definition CRUD, unique names, log/history per definition). 5 tests.
+- **`SupplementPlanStore`** (create/deactivate/active-list, soft-state like
+  `InjuryNoteStore`) + **`SupplementLogStore`** (adherence logging, per-day
+  and per-plan-range reads). 5 + 3 tests.
+- **`ContextEventStore`** — tag logging/read-by-date, reusing
+  `SorenessLogStore`'s JSON-array-tags pattern. 3 tests.
+
+**Slice 7 status after this session:** all six §5.18/§5.20 stores this
+design doc scoped are built and green (23 tests across 6 suites, migration
+018 unchanged). Not built: any UI, progress photos (deferred), supplement
+reminders (blocked on Slice 11's notification scheduler, not yet built).
+
+### Fixed — the `SyncAnchorStore` defect flagged above (same session, continued)
+
+Rewrote `SyncAnchorStore` (`Sources/AlmanacCore/Sync/SyncAnchorStore.swift`)
+to query `sync_anchor` by its actual Migration015 shape
+(`sampleType`/`anchorData`/`lastSyncTimestamp`) instead of the pre-Migration015
+one (`domain`/`anchor_token`/`last_synced`). Public API unchanged — every
+caller (`HealthSyncService`, `BackupServiceTests`) already says `domain` as
+its own vocabulary; only the SQL underneath was wrong. Spec §5.24 has no
+error column at all, but `testFailureKeepsLastGoodAnchor` requires one (real
+behavior — a failed sync must stay visible without losing the last good
+anchor), so `lastError` is added beyond the spec's literal text, same
+treatment as `deletedAt` earlier in this session. Migration022.
+
+No new tests written — the existing ones (`SyncAnchorStoreTests`,
+`HealthSyncTests`, `HydrationSyncTests`, `BackupServiceTests`) already pinned
+the required behavior; they were the red this fix turns green.
+
+### Deleted, not fixed — `SleepEpisodeHealthBridge` (same session, continued)
+
+Fixing it would have meant matching its INSERT to `sleep_episode`'s real
+columns, but that table holds *merged, classified* episodes (spec §8's
+30-minute merge rule) — one row per night, not one row per raw HealthKit
+sample. The bridge wrote exactly the latter: idempotent upsert of one
+`HealthSample` into one row, no merge logic at all. Correcting the column
+names would have shipped something that still produces a spurious "episode"
+per stage transition (`inBed`/`asleepCore`/`asleepDeep`/`asleepREM`/`awake`
+each arrive as separate HealthKit samples).
+
+That raw-sample-upsert behavior — insert/update/soft-delete/never-resurrect,
+keyed by `(source, externalID)` — already exists, generically, and already
+works: `HealthSampleStore` (`Sources/AlmanacCore/Health/HealthSampleStore.swift`),
+proven via `.bodyMass` in `HealthSyncTests`/`HydrationSyncTests`, with zero
+domain-specific branching (`healthDomain` is a stored filter value, not a
+switch). `SleepEpisodeHealthBridge` was a wrong-shaped duplicate of it, not
+a variant with real reasons to differ.
+
+**Deleted:** `SleepEpisodeHealthBridge.swift`, `SleepEpisodeHealthBridgeTests.swift`,
+and the `sleep_episode.deletedAt` migration that existed only to serve the
+deleted bridge (nothing else writes to `sleep_episode`, confirmed by
+grep — `SleepClassifier` is a pure in-memory classifier with no persistence
+of its own; wiring classified `SleepEpisode`s into `sleep_episode` is a
+real, separate task, still "not started" per Slice 2's own list above).
+The migration that had been `Migration022` (`SyncAnchorLastErrorColumn`)
+was renumbered down to `021` to close the gap — free, since nothing has
+shipped yet.
+
+No new test written: reusing `.sleep` through `HealthSampleStore` exercises
+the same code path already covered by `.bodyMass`'s tests, with no new
+branching to pin.
+
+### Added — `SleepEpisodeStore`, wiring `SleepClassifier`'s output (same session, continued)
+
+`SleepClassifier` (§8) is pure and stateless by design — its own doc comment
+says persistence is the caller's job, and until now nothing was that caller.
+**`SleepEpisodeStore`** (`Sources/AlmanacCore/Sleep/SleepEpisodeStore.swift`)
+is it: `upsert(_:timezoneOffset:logicalDay:)` writes a classified
+`SleepEpisode` into `sleep_episode`, plus `episode(id:)` and
+`episodes(for:)` reads. 5 tests, all green on the first pass.
+
+Identity for idempotent re-classification is `healthKitUUID` alone — no new
+migration needed. Every episode the classifier produces has
+`source = .healthkit` (`groupIntoEpisodes` hardcodes it), and the column
+already carries a genuine single-column `UNIQUE` (Migration014) — the
+composite-index problem `vitals_record`/`body_composition_measurement` had
+doesn't apply here. `healthKitUUIDs.first` stands in for the whole merged
+group: reprocessing the same raw samples regroups them identically
+(`groupIntoEpisodes` sorts by start first), so the first UUID is stable
+across runs.
+
+Deliberately not built: converting raw `health_sample` rows (via
+`HealthSampleStore(healthDomain: .sleep)`, wired last session) into
+`SleepStageSample`s for the classifier to consume — HealthKit's sleep
+category value (an Int) needs mapping to `SleepStage`, which is a distinct,
+separately-scoped task. Also not built: triggering readiness-cycle creation
+from a newly-stored primary episode (Slice 2's own long-standing gap, "not
+built" above — unrelated to this fix, not widened here) and a
+`correctType` mutation for a user override (`userCorrectedAt` has no source
+in `SleepEpisode` yet; `upsert` writes `userCorrectedType` when already set
+but nothing sets it today).
+
+### Verified
+
+`swift build && swift test`: **XCTest suite 262 tests, 0 failures. Swift
+Testing suite 105 tests in 23 suites, 0 failures.** Every defect found this
+session — the sixth spec/repo collision, two `vitals_record` bugs, the
+`sleep_episode` non-fix (deleted instead), `SyncAnchorStore`'s stale column
+names — is fixed, deliberately resolved by deletion, or wired up properly
+instead of patched. Nothing outstanding from this session remains red.
+
+---
+
+## 2026-09-17 — Slice 6 (Fasting): intermittent fasting core
+
+Migration022, TDD. `docs/features/fasting.md` has the full picture; summary:
+
+- **`fasting_session`** (spec §5.21, `protocol`/`isDryFast`/`correctionHistory`
+  transcribed verbatim) — the only Slice 6 table built this pass.
+  `religious_fast_schedule`/`prayer_settings`/`prayer_times_cache`/
+  `nutrition_window` are still design-only: all four depend on the
+  prayer-time engine (vendoring an Adhan port), a separate, self-contained
+  task deliberately not mixed into this pass.
+- **`FastingSessionStore`** (`Sources/AlmanacCore/Fasting/`) — `start`,
+  and `recordNutritionEntry(calories:at:)` implementing §11.1's
+  break/invalidate/shorten decision tree exactly: zero calories never
+  breaks a fast; a calorie entry ends the active session; a backdated entry
+  before a session's start invalidates it (and clears `isActive`, so a new
+  session isn't blocked); a backdated entry inside an already-ended
+  session's span shortens it and recomputes duration; both corrections are
+  appended to `correctionHistory`. 7 tests.
+- **`IFSuggestion.shouldSuggest`** — the 14-hour (configurable) trigger, a
+  pure function mirroring `SleepClassifier`'s "pure and synchronous, caller
+  handles persistence" shape. 3 tests.
+- **`idx_fasting_session_one_active`** — a partial unique index enforcing
+  "only one active session at a time" at the schema level, beyond the
+  spec's literal text — added because the break/backdate logic assumes
+  exactly one active session exists.
+
+Scope line drawn deliberately: backdating reconciles only against the
+active session or the single most-recently-started ended session, not
+arbitrary session history — every example in spec §11.1 only needs that
+much.
+
+Not built: wiring the suggestion trigger to `NutritionLogStore` (needs
+"hours since last calorie entry," a small integration nothing calls yet),
+and all of religious fasting / the prayer-time engine (`docs/features/fasting.md`
+§6).
+
+**Verified:** `swift build && swift test` — XCTest 262/262, Swift Testing
+115/115 (was 105; 10 new tests, zero regressions).
+
+### Added — `IFSuggestionService`, wiring the trigger to `NutritionLogStore` (same session, continued)
+
+`IFSuggestionService` (`Sources/AlmanacCore/Fasting/IFSuggestionService.swift`):
+`shouldSuggestFast(at:thresholdHours:)` end to end, `hoursSinceLastCalorieEntry(before:lookbackHours:)`
+exposed separately for a UI that wants to show the actual gap. 6 tests.
+
+`ponytail:` "a calorie entry" is approximated as *a food log entry with a
+stated amount* rather than a real computed kcal figure — a precise number
+needs `NutritionCatalog`/`EnergyEstimate` (what `NutritionSummary` does, at
+real fixture cost: no existing test seeds a full nutrient-value fixture for
+this, `NutritionSummary` itself has zero test coverage today). Since this is
+only a prompt (a false positive costs one wrong suggestion, not a state
+change), the coarse signal was judged good enough; the actual
+session-breaking path (`FastingSessionStore.recordNutritionEntry`) still
+takes a real `calories` number, because that one changes stored state.
+
+**Verified:** XCTest 262/262, Swift Testing 121/121 (was 115; 6 new tests,
+zero regressions).
+
+### Added — `FastingAwareNutritionLog`, wiring break detection to `NutritionLogStore.record` (same session, continued)
+
+`FastingAwareNutritionLog` (`Sources/AlmanacCore/Fasting/FastingAwareNutritionLog.swift`):
+`record(_:)` calls `NutritionLogStore.record`, computes the entry's *real*
+energy via `NutritionCatalog`/`EnergyEstimate` (unlike `IFSuggestionService`'s
+coarser approximation — this one changes stored state, ending/shortening/
+invalidating a session, so it earns the real kcal figure), and calls
+`FastingSessionStore.recordNutritionEntry` with it. The timestamp is the
+draft's own `eatenAt`, not "now" — a backdated meal is exactly what the
+break logic reconciles. 4 tests, including the first real Atwater/
+publisher-energy fixture in the test suite (seeded `nutrition_source`/
+`nutrition_nutrient`/`nutrition_food`/`nutrition_value` rows directly, the
+same pattern `NutritionLogTests` already uses for a bare food-exists
+fixture, extended with an actual energy value).
+
+Architecture note: this lives in the Fasting module, not folded into
+`NutritionLogStore` — Nutrition "holds nothing, stores nothing" beyond the
+food log and must not know a higher-level feature exists on top of it, same
+dependency direction as `IFSuggestionService`.
+
+Not built: the same wiring for `NutritionLogStore.update` — editing an
+existing meal's timestamp or amount is arguably the *more* central
+backdating case than a fresh `record` call, not attempted this pass.
+
+**Verified:** XCTest 262/262, Swift Testing 125/125 (was 121; 4 new tests,
+zero regressions).
+
