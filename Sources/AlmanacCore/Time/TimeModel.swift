@@ -13,16 +13,22 @@ public struct LogicalDay: Codable, Sendable, Hashable, Comparable, CustomStringC
 
 /// Where a logical day starts.
 ///
-/// The Technical Spec defines Almanac's actual rule; that text is unavailable,
-/// so the rule is **injected rather than assumed**. `.midnight` is a neutral
-/// placeholder, not a decision. `.wakeOffset` is here because a sleep-tracking
-/// product almost always needs a boundary in the small hours — an entry at
-/// 01:30 usually belongs to the night before, not to the new date.
+/// **Almanac's rule is 04:00** — Technical Specification v1.0 §7.1, recovered
+/// 2026-09-15. It is the default below, so a caller that says nothing gets the
+/// product's actual boundary rather than a placeholder. An entry at 01:30
+/// belongs to the night before, not to the new date.
+///
+/// The rule stays injectable because calendar arithmetic still needs to be
+/// testable at midnight, and because the boundary is a product decision that
+/// should be visible in a signature rather than buried in a constant.
 public enum DayBoundary: Sendable, Hashable {
     case midnight
     /// Day starts this many hours after midnight. 4 means 03:59 belongs to the
     /// previous logical day and 04:00 starts a new one.
     case wakeOffset(hours: Int)
+
+    /// The boundary Almanac itself uses: 04:00 local (spec §7.1).
+    public static let almanac = DayBoundary.wakeOffset(hours: 4)
 
     var offsetHours: Int {
         switch self {
@@ -42,7 +48,7 @@ public struct TimeModel: Sendable {
     public let boundary: DayBoundary
     private let calendar: Calendar
 
-    public init(timeZone: TimeZone, boundary: DayBoundary = .midnight) {
+    public init(timeZone: TimeZone, boundary: DayBoundary = .almanac) {
         self.timeZone = timeZone
         self.boundary = boundary
         var cal = Calendar(identifier: .gregorian)
@@ -93,7 +99,7 @@ public struct TimeModel: Sendable {
     }
 
     /// Riyadh: UTC+3, no DST. The project's home timezone.
-    public static func riyadh(boundary: DayBoundary = .midnight) -> TimeModel {
+    public static func riyadh(boundary: DayBoundary = .almanac) -> TimeModel {
         TimeModel(timeZone: TimeZone(identifier: "Asia/Riyadh") ?? TimeZone(secondsFromGMT: 3 * 3600)!,
                   boundary: boundary)
     }

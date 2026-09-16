@@ -248,7 +248,10 @@ acceptance steps. No screenshots or runtime verification are claimed.
   account boundary or server authorization layer; do not claim cross-user RLS.
 - Timeline filtering still runs in Swift over current records.
 - No automatic unit conversion, OCR, AI interpretation or new tracker.
-- The separate Technical Spec / BRD is not present in this checkout.
+- The Technical Spec is not in this checkout, but it is not lost: the full
+  2026-08-05 original is one directory above the repository root at
+  `../almanac-tech-spec-v1.0.md`. See
+  `docs/architecture/spec-reconciliation.md`.
 
 To verify the modified core on yamal after importing this branch:
 
@@ -258,3 +261,65 @@ source env.sh
 swift build
 swift test
 ```
+
+---
+
+## 2026-09-15 — Technical Spec recovered; Slice 2 (Core Daily) built
+
+**The spec was never lost.** `../almanac-tech-spec-v1.0.md`, 96 KB, dated
+2026-08-05: the 48-table schema, readiness formula v1.0, sleep classification,
+circadian and fasting engines, notification suppression matrix, HealthKit
+permission map. Everything this codebase has been declining to infer.
+`docs/architecture/spec-reconciliation.md` records what that changes.
+
+### Added
+
+- **Migration 014 — `core_daily_schema`.** Fourteen §5 tables transcribed
+  verbatim: `profile`, `day_record`, `circadian_context`, `shift_schedule`,
+  `shift_occurrence`, `shift_recurrence_pattern`, `sleep_episode`,
+  `readiness_cycle`, `vitals_record`, `mood_log`, `soreness_log`,
+  `injury_note`, `readiness_record`, `readiness_baseline`. Column names are
+  the spec's camelCase, which does not match migrations 001-013 — deliberate,
+  see the reconciliation doc.
+- **`Sources/AlmanacCore/Sleep/`** — §8 episode detection (30-minute merge
+  rule), primary-sleep determination (user correction → shift-aware →
+  post-shift elevation → general 26-hour window → none), episode typing,
+  multi-source priority with no duration summing.
+- **`Sources/AlmanacCore/Readiness/`** — §9 and Appendix A: five input
+  scorers, provisional (capped at 90) and final weights, proportional
+  redistribution of missing inputs, confidence tiers, colour grades, text
+  bands with context suffixes, recommendation precedence, calibration and
+  baseline rules.
+- **`Sources/AlmanacCore/Circadian/`** — §13 context determination.
+
+### Corrected
+
+- **`TimeModel`'s default boundary is 04:00** (§7.1). It was `.midnight`, a
+  documented placeholder chosen while the spec was believed lost, and
+  `Native/Almanac/HydrationModel.swift` had silently taken it — hydration was
+  being grouped by calendar date, not by Almanac's logical day.
+- `Tests/…/TimeModelTests.swift`: the four calendar-arithmetic tests now ask
+  for `.midnight` explicitly instead of relying on the default, and a new test
+  pins the default at 04:00.
+- `Tests/…/HydrationFeatureTests.swift:46`: added `?? 0` to an optional passed
+  to `XCTAssertEqual(_:_:accuracy:)`. It compiles under the 6.3.3 toolchain on
+  `yamal` but not under 6.1.2; the fix is valid on both.
+
+### Verified
+
+Swift 6.1.2 on x86_64 Linux: **258 XCTest tests — 257 pass, 1 opt-in test
+skipped, zero failures.** 54 of those are new (16 sleep, 22 readiness, 9
+circadian, 6 schema, 1 time model).
+
+Note the toolchain: this run used 6.1.2, not the 6.3.3 in `env.sh`, because it
+was executed from a Linux VM that has no access to `~/.local/swift` on the
+host. Re-running `source env.sh && swift test` on `yamal` itself is the
+confirmation that matters.
+
+### Not built yet in Slice 2
+
+- Stores for `profile`, `mood_log`, `soreness_log`, `injury_note`,
+  `vitals_record`, and §8.4 readiness-cycle linking of mood and soreness.
+- HealthKit sleep and vitals import (the `.water`-only provider is the pattern).
+- Check-in UI and dashboard.
+

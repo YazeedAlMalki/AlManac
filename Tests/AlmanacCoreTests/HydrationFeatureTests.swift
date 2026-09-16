@@ -43,7 +43,7 @@ final class HydrationFeatureTests: XCTestCase {
         let result = try service.logDrink(coke, volume: Milliliters(coke.volumeMilliliters / 2))
         let entry = try HydrationStore(db: db).entry(id: result.hydrationLogID)
 
-        XCTAssertEqual(entry?.drink?.caloriesKcal, coke.caloriesKcal / 2, accuracy: 0.001)
+        XCTAssertEqual(entry?.drink?.caloriesKcal ?? 0, coke.caloriesKcal / 2, accuracy: 0.001)
         XCTAssertEqual(entry?.drink?.sugarG ?? 0, coke.sugarGrams! / 2, accuracy: 0.001)
     }
 

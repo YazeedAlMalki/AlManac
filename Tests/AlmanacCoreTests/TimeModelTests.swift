@@ -9,8 +9,11 @@ final class TimeModelTests: XCTestCase {
         return f.date(from: iso)!
     }
 
+    // Midnight is no longer Almanac's boundary (spec §7.1 fixes it at 04:00),
+    // but it is still a boundary the model must compute correctly, so this
+    // asks for it explicitly rather than relying on the default.
     func testRiyadhMidnightBoundary() {
-        let tm = TimeModel.riyadh()
+        let tm = TimeModel.riyadh(boundary: .midnight)
         // 20:59 UTC is 23:59 Riyadh — still the 4th.
         XCTAssertEqual(tm.logicalDay(instant("2026-09-04T20:59:00Z")).value, "2026-09-04")
         // 21:00 UTC is 00:00 Riyadh — the 5th.
@@ -39,13 +42,13 @@ final class TimeModelTests: XCTestCase {
 
     // The reason bounds() adds a calendar day instead of 86,400 seconds.
     func testDSTSpringForwardDayIsShorterThan24Hours() {
-        let tm = TimeModel(timeZone: TimeZone(identifier: "Europe/London")!)
+        let tm = TimeModel(timeZone: TimeZone(identifier: "Europe/London")!, boundary: .midnight)
         let b = tm.bounds(of: LogicalDay("2026-03-29"))!   // BST begins
         XCTAssertEqual(b.end.timeIntervalSince(b.start), 23 * 3600, accuracy: 1)
     }
 
     func testDSTFallBackDayIsLongerThan24Hours() {
-        let tm = TimeModel(timeZone: TimeZone(identifier: "Europe/London")!)
+        let tm = TimeModel(timeZone: TimeZone(identifier: "Europe/London")!, boundary: .midnight)
         let b = tm.bounds(of: LogicalDay("2026-10-25"))!   // BST ends
         XCTAssertEqual(b.end.timeIntervalSince(b.start), 25 * 3600, accuracy: 1)
     }
@@ -95,7 +98,7 @@ final class TimeModelTests: XCTestCase {
     // hour — a boundary computed by truncating to whole hours would be wrong
     // by 30 minutes here.
     func testHalfHourOffsetZoneAsiaKolkata() {
-        let tm = TimeModel(timeZone: TimeZone(identifier: "Asia/Kolkata")!)
+        let tm = TimeModel(timeZone: TimeZone(identifier: "Asia/Kolkata")!, boundary: .midnight)
         // 18:29 UTC is 23:59 IST — still the 4th.
         XCTAssertEqual(tm.logicalDay(instant("2026-09-04T18:29:00Z")).value, "2026-09-04")
         // 18:30 UTC is 00:00 IST — the 5th.
@@ -110,12 +113,25 @@ final class TimeModelTests: XCTestCase {
     // reversed calendar dates: Sydney's day-length flips (23h/25h) land in
     // October/April, not March/October.
     func testSouthernHemisphereDSTAustraliaSydney() {
-        let tm = TimeModel(timeZone: TimeZone(identifier: "Australia/Sydney")!)
+        let tm = TimeModel(timeZone: TimeZone(identifier: "Australia/Sydney")!, boundary: .midnight)
         // Clocks spring forward on the first Sunday of October.
         let springForward = tm.bounds(of: LogicalDay("2026-10-04"))!
         XCTAssertEqual(springForward.end.timeIntervalSince(springForward.start), 23 * 3600, accuracy: 1)
         // Clocks fall back on the first Sunday of April.
         let fallBack = tm.bounds(of: LogicalDay("2026-04-05"))!
         XCTAssertEqual(fallBack.end.timeIntervalSince(fallBack.start), 25 * 3600, accuracy: 1)
+    }
+
+    // Spec §7.1 fixes the boundary at 04:00. Before the spec was recovered the
+    // default was midnight as an explicit placeholder, and Native's hydration
+    // model silently took it — which is exactly the failure this test exists
+    // to catch if the default ever drifts back.
+    func testDefaultBoundaryIsAlmanacFourAM() {
+        let tm = TimeModel.riyadh()
+        XCTAssertEqual(tm.boundary, .wakeOffset(hours: 4))
+        // 03:59 Riyadh on the 5th still belongs to the 4th.
+        XCTAssertEqual(tm.logicalDay(instant("2026-09-05T00:59:00Z")).value, "2026-09-04")
+        // 04:00 Riyadh starts the 5th.
+        XCTAssertEqual(tm.logicalDay(instant("2026-09-05T01:00:00Z")).value, "2026-09-05")
     }
 }

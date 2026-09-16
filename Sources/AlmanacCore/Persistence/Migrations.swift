@@ -4,12 +4,17 @@ import Foundation
 ///
 /// IMPORTANT, READ BEFORE ADDING TABLES HERE.
 ///
-/// Technical Specification v1.0 defines a 48-table domain schema. That text is
-/// not available to this package, so **none of those 48 tables are invented
-/// here**. This migration creates only the tables AlmanacCore itself owns and
-/// can define from first principles: the sync anchor store and the backup
-/// manifest. The domain schema belongs in migration 002 and must be
-/// transcribed from the spec, not reconstructed.
+/// Technical Specification v1.0 defines a 48-table domain schema. When this
+/// migration was written that text was believed lost, so it creates only the
+/// tables AlmanacCore itself owns and could define from first principles: the
+/// sync anchor store and the backup manifest.
+///
+/// **The spec has since been recovered** (2026-09-15). Its own `sync_anchor`
+/// (§5.24) is a different table from the one below — keyed on `sampleType`
+/// with base64 `anchorData`, where this one is keyed on `domain` with an
+/// `anchor_token` BLOB. Both cannot exist. That collision is unresolved and
+/// recorded in docs/architecture/spec-reconciliation.md; until it is settled,
+/// this table stands and the spec's is not created.
 ///
 /// If the spec's own build order names the 48-table migration "Migration_001",
 /// renumber this one to 000 or fold it into 001 at that point — nothing has
@@ -61,10 +66,14 @@ public enum AlmanacMigrations {
         Migration010_NutritionPortionsAndDishes.self,
         Migration011_PortionIdentity.self,
         Migration012_HydrationLog.self,
-        Migration013_HydrationFeatures.self
-        // The Technical Spec v1.0 48-table schema is still unavailable and is
-        // still not authored from inference. Numbering for it is settled per
-        // docs/architecture/health-data-foundation.md §11, and renumbering
-        // 002-004 stays free until a durable database exists.
+        Migration013_HydrationFeatures.self,
+        Migration014_CoreDailySchema.self
+        // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
+        // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
+        // collide with nothing already here. Four spec tables DO collide with
+        // 001-013 — sync_anchor, nutrition_log, hydration_log, lab_result —
+        // and are deliberately not in 014; docs/architecture/spec-reconciliation.md
+        // holds that decision. Renumbering 001-014 to match the spec's own
+        // ordering stays free until a durable database exists.
     ]
 }
