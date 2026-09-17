@@ -1,0 +1,8 @@
+ALManac-food-data/raw/
+ALManac-food-data/FoodData Central United States/
+*.zip
+*.xlsx
+*.csv
+*.pdf
+node_modules/
+.DS_Store

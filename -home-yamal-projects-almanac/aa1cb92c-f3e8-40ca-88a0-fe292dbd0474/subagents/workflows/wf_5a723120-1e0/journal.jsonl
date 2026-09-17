@@ -1,0 +1,7 @@
+{"type":"launched"}
+{"type":"started","key":"v2:512c659dd8a698f9fe716f50ce1750927742bb24b291bcc4bc1a7fdcda18d30e","agentId":"a946551626998ceab","label":"implement:cofid","phase":"Implement"}
+{"type":"started","key":"v2:9151e15fb3a72690ecb63facfe7d6029b518676bffc9e08483aafbbc23213f68","agentId":"a605b9e0a0a8dbd83","label":"implement:ciqual","phase":"Implement"}
+{"type":"started","key":"v2:e845b74f2dc71c5b4558469fb3a7d5da0fcfc032f1c2b72ec4f7f56f2a4e0a43","agentId":"ac308a607e465b913","label":"implement:afcd","phase":"Implement"}
+{"type":"failed","key":"v2:512c659dd8a698f9fe716f50ce1750927742bb24b291bcc4bc1a7fdcda18d30e","agentId":"a946551626998ceab"}
+{"type":"failed","key":"v2:9151e15fb3a72690ecb63facfe7d6029b518676bffc9e08483aafbbc23213f68","agentId":"a605b9e0a0a8dbd83"}
+{"type":"failed","key":"v2:e845b74f2dc71c5b4558469fb3a7d5da0fcfc032f1c2b72ec4f7f56f2a4e0a43","agentId":"ac308a607e465b913"}

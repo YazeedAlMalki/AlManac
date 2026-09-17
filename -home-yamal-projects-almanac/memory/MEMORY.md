@@ -1,0 +1,4 @@
+- [Build, don't re-plan](build-not-replan.md) — execute handoff defaults; ask only about items the handoff names as blocked
+- [Almanac doc locations](almanac-doc-locations.md) — real paths behind the almanac/*.md names cited in handoffs
+- [SFDA licence still unclear](sfda-licence-still-unclear.md) — SDAIA Open Data License lead checked 2026-09-14, doesn't cover SFCT specifically, still Group D
+- [Concurrent sessions, shared tree](concurrent-sessions-shared-tree.md) — other sessions edit this working dir live; docs carry cross-session handoff notes
