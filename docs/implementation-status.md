@@ -750,3 +750,56 @@ every surface here is pull-based, waiting on UI/dashboard integration.
 **Verified:** full clean rebuild (`rm -rf .build && swift build`) plus
 Swift Testing 185/185 (was 143; 42 new tests, zero regressions).
 
+---
+
+## 2026-09-16 (backfilled 2026-09-17) — Slice 4 (Training/Exercise): schema and stores
+
+Never logged here despite existing in code with earlier filesystem
+timestamps than every "Slice 6"/"Slice 7" entry above — discovered and
+backfilled while starting the Slice 4 continuation session. Full account
+now lives in `docs/features/training.md` (also backfilled this session,
+since Training never got a design doc at all — the source design,
+`prescription-model-v0.1.md`, was never committed to this repo; only its
+effects survive in code comments). Summary:
+
+Migration016: `exerciseCatalog`, `prescribedWorkout`, `workoutSession`,
+`workoutBout` — a 12-prescription-type/10-container-type model, deliberately
+built instead of the tech spec's own §5.17 sets/reps/load tables (recorded
+as a fifth spec/repo divergence in `docs/architecture/spec-reconciliation.md`
+§6). `ExerciseCatalogStore`, `PrescribedWorkoutStore`, `WorkoutSessionStore`,
+`WorkoutBoutStore` — full CRUD, idempotent soft delete. `WgerCC0Seed` — 21
+real CC0-licensed wger exercises (fetched live from wger's API, correcting
+an earlier illustrative "squat/deadlift/bench" list that turned out to be
+CC-BY-SA 4 in wger's actual catalog, not CC0). 33 tests.
+
+**Not built then, still not built:** any HealthKit bridge, any UI, any
+calorie-burn computation (blocked on unresolved Compendium/MET licensing).
+See `docs/features/training.md` §5 for the full account of why the obvious
+HealthKit-bridge approach (modeled on `BodyCompositionMeasurementHealthBridge`)
+is the wrong shape here, for the same reason `SleepEpisodeHealthBridge` was
+deleted.
+
+---
+
+## 2026-09-17 — Slice 4 continuation: WorkloadComputer
+
+`WorkloadComputer` (`Sources/AlmanacCore/Training/`): turns a session's
+bouts into one `WorkoutLoadSummary` (tonnage, distance, duration, reps,
+rounds, average RPE). Deliberately partial — `interval`/`quality_reps`/
+`hold_stretch`/`release`/`session_only` aren't modeled, matching the "start
+simple" instruction this was reconstructed from (the source spec for exact
+per-type formulas doesn't exist on disk — see `docs/features/training.md`
+§1). 13 tests.
+
+Caught in passing: `nutrition_window` (added by Migration024, Slice 6, in
+the previous session) matches `NutritionReferenceTests`' `nutrition_%` LIKE
+assertion and broke it — a real regression from that session, missed
+because only the Swift Testing summary line was checked, not the separate
+XCTest summary below it. Fixed by excluding `nutrition_window` from that
+query with a comment explaining the naming collision (spec §5.11 names it
+that way even though Fasting, not Nutrition, owns it).
+
+**Verified:** XCTest 262 tests, 1 skipped, 0 failures (was 1 failure — the
+`nutrition_window` regression above — before the fix). Swift Testing
+198/198 (was 185; 13 new tests).
+
