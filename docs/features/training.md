@@ -2,7 +2,9 @@
 
 **Status:** schema (migration 016) and full CRUD store layer built
 2026-09-16, TDD, 33 tests, green. `WorkloadComputer` (session-level load
-aggregation) added 2026-09-17. No HealthKit bridge, no UI, and no
+aggregation) and a quick-add UI (Training tab + a section on the readiness
+dashboard) both added 2026-09-17. Still not built: any HealthKit bridge, and
+any UI for `PrescribedWorkoutStore`'s templates/containers. No
 `docs/features/training.md` existed until this entry — this doc is a
 backfill, written after the code, not before it. See §1 for why that
 matters more here than it did for Fasting or Body Composition.
@@ -183,8 +185,14 @@ expected → build schema/stores/UI on yamal; iMac wiring catches up later").
 missing — see §2's "why one wide table" reasoning. Revisit only if the "5 of
 12 types have zero source content" premise changes.
 
-**UI.** No training/exercise/workout screen exists anywhere in
-`Native/Almanac/`. Same status as HealthKit: not started.
+**UI — built 2026-09-17.** `TrainingModel`, `TrainingDashboardView`,
+`ExercisePickerView`, `LogBoutView` (`Native/Almanac/`), plus a "Training"
+section on `ReadinessDashboardView` when today has a summary. Deliberately
+scoped down from the fuller picture in §6.2 below: quick-add only, against
+one ad-hoc "today's session" — no `PrescribedWorkout` template picker, no
+container selection, no bout editing (only delete). `WgerCC0Seed.seed` is
+now called from `LaboratoryModel.open()` (it never was before — the catalog
+would have been empty at every launch until this).
 
 **Calorie burn from training load.** No MET or Compendium-derived
 calorie-burn code exists anywhere in this repo (confirmed absent by grep,
@@ -210,11 +218,13 @@ an absence in the design itself.
    table, not a guess), (d) the bridge itself, one `workoutSession` per
    `HKWorkout` (matching the granularity that actually exists on both
    sides), with unmatched/unstructured workouts landing as `session_only`.
-2. UI: a session log entry form, a bout detail view, a session review
-   (aggregate via `WorkloadComputer`), and training-load integration on the
-   readiness dashboard (`Native/Almanac/ReadinessDashboardView.swift`
-   already has a "Today" tab and an established pattern —
-   `ReadinessModel.refresh()` — for pulling a store's state in without
-   inventing a new one).
+2. ~~UI~~ — done 2026-09-17 (§5 above), scoped to quick-add against an
+   ad-hoc daily session, using `WorkloadComputer` for the aggregate shown
+   both on the Training tab and (when today has one) as a section on
+   `ReadinessDashboardView`. Still open: a bout detail/edit view (today's
+   screen only deletes), a session review screen for past days (today's
+   screen only shows today), and any UI for `PrescribedWorkoutStore`'s
+   templates/containers — that store exists in `AlmanacCore` since the
+   schema pass and still isn't reachable from anywhere in the app.
 3. Calorie burn — blocked on the Compendium/MET licensing question; not
    scheduled.

@@ -4,6 +4,7 @@ import AlmanacCore
 @MainActor
 struct ReadinessDashboardView: View {
     @ObservedObject var model: ReadinessModel
+    @ObservedObject var trainingModel: TrainingModel
     @State private var checkingIn = false
 
     var body: some View {
@@ -26,6 +27,12 @@ struct ReadinessDashboardView: View {
                     }
                 }
 
+                if let training = trainingModel.todaysSummary {
+                    Section("Training") {
+                        trainingRows(training)
+                    }
+                }
+
                 Section {
                     Button {
                         checkingIn = true
@@ -38,8 +45,8 @@ struct ReadinessDashboardView: View {
             }
             .navigationTitle("Hi, \(model.displayName)")
             .sheet(isPresented: $checkingIn) { MoodSorenessCheckInView(model: model) }
-            .task { model.refresh() }
-            .refreshable { model.refresh() }
+            .task { model.refresh(); trainingModel.refresh() }
+            .refreshable { model.refresh(); trainingModel.refresh() }
         }
     }
 
@@ -96,6 +103,22 @@ struct ReadinessDashboardView: View {
             inputRow("Soreness", value: "\(soreness)/10", missing: false)
         } else {
             inputRow("Soreness", value: "Not logged yet", missing: true)
+        }
+    }
+
+    @ViewBuilder
+    private func trainingRows(_ summary: WorkoutLoadSummary) -> some View {
+        if let tonnage = summary.totalTonnageKg {
+            inputRow("Tonnage", value: "\(Int(tonnage.rounded())) kg", missing: false)
+        }
+        if let distance = summary.totalDistanceMeters {
+            inputRow("Distance", value: "\(Int(distance.rounded())) m", missing: false)
+        }
+        if let rounds = summary.totalRounds {
+            inputRow("Rounds", value: "\(rounds)", missing: false)
+        }
+        if let rpe = summary.averageRPE {
+            inputRow("Average RPE", value: String(format: "%.1f/10", rpe), missing: false)
         }
     }
 

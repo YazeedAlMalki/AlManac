@@ -803,3 +803,33 @@ that way even though Fasting, not Nutrition, owns it).
 `nutrition_window` regression above — before the fix). Swift Testing
 198/198 (was 185; 13 new tests).
 
+---
+
+## 2026-09-17 — Slice 4 continuation: quick-add Training UI
+
+`Native/Almanac/`: `TrainingModel` (owns today's ad-hoc session + bouts,
+same `configure(db:)`/`refresh()` pattern as `HydrationModel`/
+`ReadinessModel`), `TrainingDashboardView` (new "Training" tab: today's
+`WorkloadComputer` summary + bout list + delete), `ExercisePickerView`
+(searchable catalog list), `LogBoutView` (the quick-add sheet — fields shown
+depend entirely on the picked exercise's `prescriptionType`, per
+`docs/features/training.md` §2). `ReadinessDashboardView` gained a
+"Training" section (today's summary, shown only when non-empty) and now
+takes a second `trainingModel` parameter.
+
+Also fixed: `WgerCC0Seed.seed` was never actually called anywhere — the 21
+CC0 wger exercises built 2026-09-16 would have sat unseeded at every real
+app launch. Now called from `LaboratoryModel.open()`, same place/pattern as
+`LabCatalogSeed.seed`.
+
+Scoped down deliberately: quick-add against one ad-hoc daily session only —
+no `PrescribedWorkoutStore` template/container UI (that store has existed
+in `AlmanacCore` since the schema pass and still isn't reachable from the
+app), no bout editing (delete only), no past-day session review.
+
+Not verified by a build here, same caveat as every other `Native/Almanac`
+UI change: no SwiftPM presence, Xcode-only, nothing to compile on this
+Linux machine. `AlmanacCore` itself is unaffected (this session touched no
+`Sources/AlmanacCore` files) — Swift Testing 198/198, XCTest 262 (1
+skipped), unchanged from the prior entry.
+

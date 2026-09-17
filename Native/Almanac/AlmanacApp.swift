@@ -8,13 +8,16 @@ struct AlmanacApp: App {
     @StateObject private var readinessModel = ReadinessModel()
     @StateObject private var hydrationModel = HydrationModel()
     @StateObject private var nutritionModel = NutritionModel()
+    @StateObject private var trainingModel = TrainingModel()
     var body: some Scene {
         WindowGroup {
             Group {
                 if model.store != nil {
                     TabView {
-                        ReadinessDashboardView(model: readinessModel)
+                        ReadinessDashboardView(model: readinessModel, trainingModel: trainingModel)
                             .tabItem { Label("Today", systemImage: "gauge.with.dots.needle.67percent") }
+                        TrainingDashboardView(model: trainingModel)
+                            .tabItem { Label("Training", systemImage: "dumbbell") }
                         ReportListView(model: model)
                             .tabItem { Label("Laboratory", systemImage: "cross.case") }
                         HydrationDashboardView(model: hydrationModel)
@@ -33,6 +36,7 @@ struct AlmanacApp: App {
                         readinessModel.configure(db: model.db)
                         hydrationModel.configure(db: model.db)
                         nutritionModel.configure(db: model.db)
+                        trainingModel.configure(db: model.db)
                     }
                 } else {
                     ContentUnavailableView {
@@ -73,6 +77,7 @@ final class LaboratoryModel: ObservableObject {
             try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
             let catalog = LabCatalogStore(db: db)
             try LabCatalogSeed.seed(into: catalog)
+            try WgerCC0Seed.seed(into: ExerciseCatalogStore(db: db))
             self.catalog = catalog
             self.db = db
             store = LabStore(db: db)
