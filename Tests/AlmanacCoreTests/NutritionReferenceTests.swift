@@ -36,8 +36,14 @@ final class NutritionReferenceTests: XCTestCase {
 
     func testMigration008AddsModulePrefixedReferenceTables() throws {
         let db = try migrated()
+        // Excludes nutrition_window: Migration024 (Slice 6, Fasting) owns
+        // that table — spec §5.11 names it that way even though Fasting,
+        // not Nutrition, is its only writer (docs/features/fasting.md §4) —
+        // so it matches this LIKE pattern without being one of the tables
+        // migrations 008-011 actually left behind.
         let tables = Set(try db.query("""
-            SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'nutrition!_%' ESCAPE '!';
+            SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'nutrition!_%' ESCAPE '!'
+                AND name != 'nutrition_window';
             """).compactMap { $0.string("name") })
         // Migrations 009-011 (food log, portions and native dishes, portion
         // identity) are module-prefixed the same way; this asserts the full
