@@ -5,8 +5,10 @@ import AlmanacCore
 struct SettingsView: View {
     @ObservedObject var model: HydrationModel
     @AppStorage("hydrationDailyGoalML") private var dailyGoal: Double = 2000
-    @AppStorage("hydrationRemindersEnabled") private var remindersEnabled = false
-    @State private var reminderTimes: [Date] = SettingsView.defaultReminderTimes
+    @State private var remindersEnabled = false
+    @State private var reminderIntervalMinutes = 60
+    @State private var reminderStartHour = 7
+    @State private var reminderEndHour = 22
     @State private var healthKitStatus: String?
     @State private var error: String?
 
@@ -26,29 +28,26 @@ struct SettingsView: View {
                 }
                 Section("Reminders") {
                     Toggle("Remind me to drink water", isOn: $remindersEnabled)
-                        .onChange(of: remindersEnabled) { _, enabled in
-                            Task { await applyReminderSchedule(enabled: enabled) }
-                        }
+                        .onChange(of: remindersEnabled) { _, _ in Task { await applyReminderSchedule() } }
                     if remindersEnabled {
-                        ForEach(reminderTimes.indices, id: \.self) { index in
-                            DatePicker("Reminder \(index + 1)", selection: Binding(
-                                get: { reminderTimes[index] },
-                                set: { reminderTimes[index] = $0; Task { await applyReminderSchedule(enabled: true) } }
-                            ), displayedComponents: .hourAndMinute)
-                        }
+                        Stepper("Every \(reminderIntervalMinutes) min", value: $reminderIntervalMinutes, in: 15...240, step: 15)
+                            .onChange(of: reminderIntervalMinutes) { _, _ in Task { await applyReminderSchedule() } }
+                        Stepper("From \(reminderStartHour):00", value: $reminderStartHour, in: 0...23)
+                            .onChange(of: reminderStartHour) { _, _ in Task { await applyReminderSchedule() } }
+                        Stepper("Until \(reminderEndHour):00", value: $reminderEndHour, in: 0...23)
+                            .onChange(of: reminderEndHour) { _, _ in Task { await applyReminderSchedule() } }
                     }
                 }
             }
             .navigationTitle("Settings")
             .editorError($error)
-        }
-    }
-
-    private static var defaultReminderTimes: [Date] {
-        var calendar = Calendar.current
-        calendar.timeZone = .current
-        return [9, 13, 17].compactMap { hour in
-            calendar.date(bySettingHour: hour, minute: 0, second: 0, of: Date())
+            .task {
+                guard let settings = model.hydrationSettings else { return }
+                remindersEnabled = settings.remindersEnabled
+                reminderIntervalMinutes = settings.reminderIntervalMinutes
+                reminderStartHour = settings.reminderStartHour
+                reminderEndHour = settings.reminderEndHour
+            }
         }
     }
 
@@ -67,25 +66,48 @@ struct SettingsView: View {
         }
     }
 
-    private func applyReminderSchedule(enabled: Bool) async {
-        if enabled {
-            do {
-                guard try await scheduler.requestAuthorization() else {
-                    remindersEnabled = false
-                    error = "Notifications were not authorized."
-                    return
-                }
-                let calendar = Calendar.current
-                let components = reminderTimes.map {
-                    calendar.dateComponents([.hour, .minute], from: $0)
-                }
-                await scheduler.scheduleReminders(times: components)
-            } catch {
-                remindersEnabled = false
-                self.error = String(describing: error)
-            }
-        } else {
+    /// Persists the current reminder fields to `hydration_settings` (the
+    /// same store `HydrationReminderService` reads), then applies the
+    /// schedule to the OS. `HydrationSettingsStore` is the single source of
+    /// truth now — nothing here reads or writes `@AppStorage`.
+    private func applyReminderSchedule() async {
+        do {
+            try model.saveReminderSettings(enabled: remindersEnabled, intervalMinutes: reminderIntervalMinutes,
+                                            startHour: reminderStartHour, endHour: reminderEndHour)
+        } catch {
+            self.error = String(describing: error)
+            return
+        }
+
+        guard remindersEnabled else {
             await scheduler.cancelAll()
+            return
+        }
+
+        do {
+            guard try await scheduler.requestAuthorization() else {
+                remindersEnabled = false
+                error = "Notifications were not authorized."
+                try? model.saveReminderSettings(enabled: false, intervalMinutes: reminderIntervalMinutes,
+                                                 startHour: reminderStartHour, endHour: reminderEndHour)
+                return
+            }
+            await scheduler.scheduleReminders(times: reminderFireTimes())
+        } catch {
+            remindersEnabled = false
+            self.error = String(describing: error)
+        }
+    }
+
+    /// Expands the interval/window pair into one `DateComponents` per fire,
+    /// starting at `reminderStartHour` and stepping by `reminderIntervalMinutes`
+    /// up to (not including) `reminderEndHour` — the same window
+    /// `HydrationReminderService.checkReminder` enforces server-side.
+    private func reminderFireTimes() -> [DateComponents] {
+        guard reminderIntervalMinutes > 0, reminderStartHour < reminderEndHour else { return [] }
+        let windowMinutes = (reminderEndHour - reminderStartHour) * 60
+        return stride(from: 0, to: windowMinutes, by: reminderIntervalMinutes).map { offset in
+            DateComponents(hour: reminderStartHour + offset / 60, minute: offset % 60)
         }
     }
 }
