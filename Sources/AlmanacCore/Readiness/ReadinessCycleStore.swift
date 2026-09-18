@@ -26,9 +26,9 @@ public struct ReadinessCycleRecord: Sendable, Hashable, Identifiable {
 /// episode is ever persisted. Tying a stored primary episode to this table,
 /// closing out the cycle before it, and re-linking wellness logs to both is
 /// `ReadinessCyclePrimaryLinkingService`'s job — this store only exposes
-/// the write primitives that service needs. `circadianContextId` remains
-/// nil regardless; wiring it up is a distinct, still-unstarted task this
-/// doesn't touch.
+/// the write primitives that service needs, including attaching a
+/// precomputed `circadianContextId` (Migration028) when the caller has
+/// one; this store never computes one itself.
 public struct ReadinessCycleStore: @unchecked Sendable {
     let db: Database
     private let clock: any Clock
@@ -51,17 +51,19 @@ public struct ReadinessCycleStore: @unchecked Sendable {
     public func createCycle(anchorDate: String,
                              primaryWakeTimestamp: Date? = nil,
                              cycleStartTimestamp: Date? = nil,
-                             primarySleepEpisodeId: Int64? = nil) throws -> Int64 {
+                             primarySleepEpisodeId: Int64? = nil,
+                             circadianContextId: Int64? = nil) throws -> Int64 {
         let createdAt = nowText
         try db.run("""
         INSERT INTO readiness_cycle
-            (anchorDate, primaryWakeTimestamp, cycleStartTimestamp, primarySleepEpisodeId, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?);
+            (anchorDate, primaryWakeTimestamp, cycleStartTimestamp, primarySleepEpisodeId, circadianContextId, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(anchorDate),
             primaryWakeTimestamp.map { SQLValue.text(iso($0)) } ?? .null,
             cycleStartTimestamp.map { SQLValue.text(iso($0)) } ?? .null,
             primarySleepEpisodeId.map { SQLValue.integer($0) } ?? .null,
+            circadianContextId.map { SQLValue.integer($0) } ?? .null,
             .text(createdAt),
             .text(createdAt)
         ])
@@ -92,15 +94,18 @@ public struct ReadinessCycleStore: @unchecked Sendable {
     /// wake vs. the *next* cycle's wake, per §7.3).
     @discardableResult
     public func linkPrimaryEpisode(id: Int64, primarySleepEpisodeId: Int64,
-                                    primaryWakeTimestamp: Date, cycleStartTimestamp: Date) throws -> Bool {
+                                    primaryWakeTimestamp: Date, cycleStartTimestamp: Date,
+                                    circadianContextId: Int64? = nil) throws -> Bool {
         let affected = try db.run("""
         UPDATE readiness_cycle
-        SET primarySleepEpisodeId = ?, primaryWakeTimestamp = ?, cycleStartTimestamp = ?, updatedAt = ?
+        SET primarySleepEpisodeId = ?, primaryWakeTimestamp = ?, cycleStartTimestamp = ?,
+            circadianContextId = ?, updatedAt = ?
         WHERE id = ?;
         """, [
             .integer(primarySleepEpisodeId),
             .text(iso(primaryWakeTimestamp)),
             .text(iso(cycleStartTimestamp)),
+            circadianContextId.map { SQLValue.integer($0) } ?? .null,
             .text(nowText),
             .integer(id)
         ])
@@ -109,12 +114,19 @@ public struct ReadinessCycleStore: @unchecked Sendable {
 
     /// §7.3 — "cycleEndTimestamp = start of NEXT primary sleep episode's end
     /// (the next wake)". Called once the *next* cycle's wake time is known,
-    /// on whichever cycle was open before it.
+    /// on whichever cycle was open before it. `cycleEndTimestamp: nil`
+    /// reopens a cycle — needed when a correction moves a formerly-adjacent
+    /// cycle's wake time away, so the cycle it used to close against is no
+    /// longer bounded by anything.
     @discardableResult
-    public func closeCycle(id: Int64, cycleEndTimestamp: Date) throws -> Bool {
+    public func closeCycle(id: Int64, cycleEndTimestamp: Date?) throws -> Bool {
         let affected = try db.run("""
         UPDATE readiness_cycle SET cycleEndTimestamp = ?, updatedAt = ? WHERE id = ?;
-        """, [.text(iso(cycleEndTimestamp)), .text(nowText), .integer(id)])
+        """, [
+            cycleEndTimestamp.map { SQLValue.text(iso($0)) } ?? .null,
+            .text(nowText),
+            .integer(id)
+        ])
         return affected > 0
     }
 
@@ -150,6 +162,23 @@ public struct ReadinessCycleStore: @unchecked Sendable {
         FROM readiness_cycle WHERE cycleEndTimestamp IS NULL
         ORDER BY id DESC LIMIT 1;
         """).first.flatMap(rowToRecord)
+    }
+
+    /// Every cycle in the table. `ReadinessCyclePrimaryLinkingService` uses
+    /// this to find a wake time's true chronological neighbors (the cycle
+    /// with the greatest `cycleStartTimestamp` below it, and the one with
+    /// the smallest above it) rather than assuming "whichever cycle is
+    /// currently open" is the right one to touch — the thing that made
+    /// out-of-order backfill and reach-back corrections come out wrong
+    /// before. One row per day in practice, so an unfiltered read here is
+    /// not a real cost; this store does not offer a "neighbors of" query of
+    /// its own.
+    public func allCycles() throws -> [ReadinessCycleRecord] {
+        try db.query("""
+        SELECT id, anchorDate, primaryWakeTimestamp, cycleStartTimestamp, cycleEndTimestamp,
+               primarySleepEpisodeId, circadianContextId, createdAt, updatedAt
+        FROM readiness_cycle;
+        """).compactMap(rowToRecord)
     }
 
     // MARK: - Private

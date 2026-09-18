@@ -166,4 +166,87 @@ struct ReadinessCyclePrimaryLinkingServiceTests {
 
         #expect(try moodStore.entry(id: lateLog)?.readinessCycleId == day2.cycleId)
     }
+
+    @Test("Linking a primary episode computes and attaches a circadian context")
+    func circadianContextIsComputedAndAttached() throws {
+        let wake = utc(7, day: "2026-09-17")
+        try storePrimary(start: utc(23, day: "2026-09-16"), end: wake, logicalDay: "2026-09-17")
+
+        let result = try #require(try service.linkPrimaryEpisode(for: "2026-09-17"))
+
+        let cycle = try #require(try cycleStore.cycle(id: result.cycleId))
+        let contextId = try #require(cycle.circadianContextId)
+        let context = try #require(try CircadianContextStore(db: db).context(for: "2026-09-17"))
+        #expect(context.id == contextId)
+        // No shift schedule at all in this test — the ordinary case §13.1
+        // itself calls out as needing to stay fully supported.
+        #expect(context.contextType == .unknown)
+    }
+
+    @Test("Backfilling an earlier night after a later one already exists fixes both neighbors")
+    func outOfOrderBackfillFixesBothNeighbors() throws {
+        let wake1 = utc(7, day: "2026-09-17")
+        let wake2 = utc(7, day: "2026-09-18")
+        let wake3 = utc(7, day: "2026-09-19")
+        try storePrimary(start: utc(23, day: "2026-09-16"), end: wake1, logicalDay: "2026-09-17")
+        try storePrimary(start: utc(23, day: "2026-09-18"), end: wake3, logicalDay: "2026-09-19")
+
+        let day1 = try #require(try service.linkPrimaryEpisode(for: "2026-09-17"))
+        let day3 = try #require(try service.linkPrimaryEpisode(for: "2026-09-19"))
+        // Day 2 doesn't exist yet, so day1's nearest known successor really
+        // is day3 at this point — correct given what's been processed so far.
+        #expect(try cycleStore.cycle(id: day1.cycleId)?.cycleEndTimestamp == wake3)
+
+        // The missing night now arrives — a backfill import, a late entry.
+        try storePrimary(start: utc(23, day: "2026-09-17"), end: wake2, logicalDay: "2026-09-18")
+        let day2 = try #require(try service.linkPrimaryEpisode(for: "2026-09-18"))
+
+        #expect(try cycleStore.cycle(id: day1.cycleId)?.cycleEndTimestamp == wake2,
+                "day1 must now close against day2's wake, not day3's")
+        #expect(try cycleStore.cycle(id: day2.cycleId)?.cycleEndTimestamp == wake3,
+                "the backfilled cycle must close against day3, the one that comes after it")
+        #expect(try cycleStore.cycle(id: day3.cycleId)?.cycleEndTimestamp == nil,
+                "day3 is still the newest cycle and stays open")
+    }
+
+    @Test("Correcting a cycle's wake time earlier re-closes its true predecessor, not the old one")
+    func correctionMovesPredecessorBoundary() throws {
+        let wakeZ = utc(7, day: "2026-09-16")
+        let wakeA = utc(7, day: "2026-09-17")
+        let wakeB = utc(7, day: "2026-09-18")
+        try storePrimary(start: utc(23, day: "2026-09-15"), end: wakeZ, logicalDay: "2026-09-16")
+        // A carries a healthKitUUID (unlike storePrimary's other calls) so the
+        // correction below upserts onto the same row, mirroring HealthKit
+        // reality: a correction re-delivers the same sample under the same
+        // UUID with a revised end time, it doesn't mint a new one.
+        let nightAUUID = "night-2026-09-17-primary"
+        let episodeA = SleepEpisode(start: utc(23, day: "2026-09-16"), end: wakeA, type: .primary,
+                                     source: .healthkit,
+                                     asleepMinutes: Int(wakeA.timeIntervalSince(utc(23, day: "2026-09-16")) / 60),
+                                     healthKitUUIDs: [nightAUUID])
+        let episodeAId = try SleepEpisodeStore(db: db).upsert(episodeA, timezoneOffset: 0, logicalDay: "2026-09-17")
+        try storePrimary(start: utc(23, day: "2026-09-17"), end: wakeB, logicalDay: "2026-09-18")
+
+        let z = try #require(try service.linkPrimaryEpisode(for: "2026-09-16"))
+        _ = try #require(try service.linkPrimaryEpisode(for: "2026-09-17"))
+        let b = try #require(try service.linkPrimaryEpisode(for: "2026-09-18"))
+        #expect(try cycleStore.cycle(id: z.cycleId)?.cycleEndTimestamp == wakeA)
+
+        // Correct A's wake time to be earlier, within the same anchor day.
+        let correctedWakeA = utc(5, day: "2026-09-17")
+        let correction = SleepEpisode(start: utc(23, day: "2026-09-16"), end: correctedWakeA,
+                                       type: .primary, source: .healthkit,
+                                       asleepMinutes: Int(correctedWakeA.timeIntervalSince(utc(23, day: "2026-09-16")) / 60),
+                                       healthKitUUIDs: [nightAUUID])
+        let correctedId = try SleepEpisodeStore(db: db).upsert(correction, timezoneOffset: 0, logicalDay: "2026-09-17")
+        #expect(correctedId == episodeAId, "same night, same row — a correction, not a new episode")
+
+        let recheck = try #require(try service.linkPrimaryEpisode(episodeId: correctedId))
+
+        #expect(try cycleStore.cycle(id: z.cycleId)?.cycleEndTimestamp == correctedWakeA,
+                "Z's true predecessor relationship must follow A's corrected, earlier wake time")
+        #expect(try cycleStore.cycle(id: recheck.cycleId)?.cycleEndTimestamp == wakeB,
+                "A's successor is still B, unaffected by A's own correction")
+        #expect(try cycleStore.cycle(id: b.cycleId)?.cycleEndTimestamp == nil)
+    }
 }

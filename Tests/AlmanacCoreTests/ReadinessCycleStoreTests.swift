@@ -128,4 +128,46 @@ struct ReadinessCycleStoreTests {
         let store = ReadinessCycleStore(db: db)
         #expect(!(try store.closeCycle(id: 999, cycleEndTimestamp: Date())))
     }
+
+    @Test("closeCycle with nil reopens a previously-closed cycle")
+    func closeCycleNilReopens() throws {
+        let store = ReadinessCycleStore(db: db)
+        let wake = Date(timeIntervalSince1970: 1_000_000)
+        let id = try store.createCycle(anchorDate: "2026-09-17", primaryWakeTimestamp: wake,
+                                        cycleStartTimestamp: wake)
+        try store.closeCycle(id: id, cycleEndTimestamp: Date(timeIntervalSince1970: 1_090_000))
+
+        let reopened = try store.closeCycle(id: id, cycleEndTimestamp: nil)
+
+        #expect(reopened)
+        #expect(try store.cycle(id: id)?.cycleEndTimestamp == nil)
+        #expect(try store.openCycle()?.id == id)
+    }
+
+    @Test("createCycle attaches a circadianContextId when given one")
+    func createCycleAttachesCircadianContextId() throws {
+        let store = ReadinessCycleStore(db: db)
+        // circadianContextId is a real FK into circadian_context, same FK
+        // discipline as primarySleepEpisodeId elsewhere in this file.
+        try db.run("""
+        INSERT INTO circadian_context (date, contextType, createdAt) VALUES (?, ?, ?);
+        """, [.text("2026-09-17"), .text("unknown"), .text("2026-09-17T00:00:00Z")])
+        let contextId = try db.query("SELECT last_insert_rowid() as id;").first?.int("id")
+
+        let id = try store.createCycle(anchorDate: "2026-09-17", circadianContextId: contextId)
+
+        #expect(try store.cycle(id: id)?.circadianContextId == contextId)
+    }
+
+    @Test("allCycles returns every row, including bare ones")
+    func allCyclesReturnsEveryRow() throws {
+        let store = ReadinessCycleStore(db: db)
+        _ = try store.createCycle(anchorDate: "2026-09-16")
+        _ = try store.createCycle(anchorDate: "2026-09-17")
+
+        let all = try store.allCycles()
+
+        #expect(all.count == 2)
+        #expect(Set(all.map(\.anchorDate)) == ["2026-09-16", "2026-09-17"])
+    }
 }
