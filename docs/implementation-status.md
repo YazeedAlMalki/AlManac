@@ -1339,7 +1339,7 @@ engine needs.
 
 ## 2026-09-18: Multi-hop cycle reordering — anchor-date reconciliation
 
-### Commit (pending) — `ReadinessCyclePrimaryLinkingService` anchor-date reconciliation
+### Commit `3414294` — `ReadinessCyclePrimaryLinkingService` anchor-date reconciliation
 
 Closes the gap `03de2f2` flagged: a correction that reorders a cycle past
 more than its immediate neighbor.
