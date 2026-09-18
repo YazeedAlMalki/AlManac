@@ -42,6 +42,60 @@ struct SupplementPlanStoreTests {
         let active = try store.activePlans()
         #expect(active.map { $0.id } == [keep])
     }
+
+    // MARK: - §14.2 Supplement Reminders (Migration030)
+
+    @Test("A new plan's reminder defaults to off with no time set")
+    func reminderDefaultsOff() throws {
+        let id = try store.create(SupplementPlanDraft(name: "Magnesium", doseAmount: 400, doseUnit: "mg",
+                                                        frequency: "daily"))
+        let plan = try store.plan(id: id)
+        #expect(plan?.reminderEnabled == false)
+        #expect(plan?.reminderMinuteOfDay == nil)
+    }
+
+    @Test("setReminder turns a plan's reminder on with a time")
+    func setReminderOnWithTime() throws {
+        let id = try store.create(SupplementPlanDraft(name: "Magnesium", doseAmount: 400, doseUnit: "mg",
+                                                        frequency: "daily"))
+        try store.setReminder(id: id, enabled: true, reminderMinuteOfDay: 21 * 60) // 21:00
+
+        let plan = try store.plan(id: id)
+        #expect(plan?.reminderEnabled == true)
+        #expect(plan?.reminderMinuteOfDay == 21 * 60)
+    }
+
+    @Test("setReminder rejects a minute-of-day outside 0..<1440")
+    func setReminderRejectsInvalidMinute() throws {
+        let id = try store.create(SupplementPlanDraft(name: "Magnesium", doseAmount: 400, doseUnit: "mg",
+                                                        frequency: "daily"))
+        #expect(throws: SupplementPlanStoreError.invalidMinuteOfDay(1440)) {
+            try store.setReminder(id: id, enabled: true, reminderMinuteOfDay: 1440)
+        }
+    }
+
+    @Test("activePlansWithReminders excludes plans that are inactive, off, or have no time set")
+    func activePlansWithRemindersFiltering() throws {
+        let onAndTimed = try store.create(SupplementPlanDraft(name: "A", doseAmount: 1, doseUnit: "capsule",
+                                                                frequency: "daily"))
+        try store.setReminder(id: onAndTimed, enabled: true, reminderMinuteOfDay: 480)
+
+        let onNoTime = try store.create(SupplementPlanDraft(name: "B", doseAmount: 1, doseUnit: "capsule",
+                                                              frequency: "daily"))
+        try store.setReminder(id: onNoTime, enabled: true, reminderMinuteOfDay: nil)
+
+        let offButTimed = try store.create(SupplementPlanDraft(name: "C", doseAmount: 1, doseUnit: "capsule",
+                                                                 frequency: "daily"))
+        try store.setReminder(id: offButTimed, enabled: false, reminderMinuteOfDay: 480)
+
+        let deactivated = try store.create(SupplementPlanDraft(name: "D", doseAmount: 1, doseUnit: "capsule",
+                                                                 frequency: "daily"))
+        try store.setReminder(id: deactivated, enabled: true, reminderMinuteOfDay: 480)
+        try store.deactivate(id: deactivated)
+
+        let withReminders = try store.activePlansWithReminders()
+        #expect(withReminders.map { $0.id } == [onAndTimed])
+    }
 }
 
 @Suite("SupplementLogStore Tests")

@@ -8,26 +8,24 @@ import Foundation
 /// primitives from the real ones, mirroring how `NotificationSuppressionMatrix`
 /// and `NotificationSuppressionContextAssembler` divide the suppression side.
 ///
-/// Only the types §14.2 fully specifies from data this repo already
-/// persists are here. Two named types are deliberately absent, flagged
-/// rather than guessed at:
-/// - **Meal** and **Supplement** reminders are plain user-set clock times
-///   (§14.2: "user sets preferred times" / "user sets time per supplement
-///   plan") — there is no trigger *to compute*, so there is nothing for
-///   this type to do for them; scheduling a stored time-of-day is app-layer
-///   work, not core logic.
-/// - **Contextual: Pre-workout Snack Suggestion** needs "planned workout
-///   start" (§14.2), and nothing in this repo yet represents a *future,
-///   scheduled* workout — `PrescribedWorkoutStore` is a reusable template
-///   with no time attached, and `WorkoutSessionStore` only records sessions
-///   that already happened. Building this needs a workout-scheduling
-///   feature that doesn't exist yet, not just wiring.
+/// **Meal** and **Supplement** reminders (§14.2: "user sets preferred
+/// times" / "user sets time per supplement plan") have no function here —
+/// they are plain stored clock times (`MealReminderSettingsStore`,
+/// Migration029; `supplement_plan.reminderMinuteOfDay`, Migration030), and
+/// resolving a stored minute-of-day to a real instant for a given day is
+/// arithmetic simple enough to live directly in
+/// `NotificationTriggerAssembler` (`mealReminderTrigger`,
+/// `supplementReminderTriggers`) — there's no *rule* here to keep pure and
+/// separate the way every other type in this enum has one.
 ///
-/// **Contextual: Pre-meal Hydration Suggestion** *is* built —
-/// `contextualHydrationTrigger(usualMealTime:leadMinutes:)` below — because
-/// its "usual meal time" derivation, once written, is ordinary store-reading
-/// work (`NotificationTriggerAssembler.contextualHydrationTrigger(for:
-/// before:)`), not a missing concept the way the workout-snack type is.
+/// **Contextual: Pre-workout Snack Suggestion** needed "planned workout
+/// start" (§14.2), which nothing in this repo represented before
+/// `PlannedWorkoutStore` (Migration031) — see that migration's doc comment
+/// for why it's a new, deliberately thin table rather than reusing
+/// `PrescribedWorkoutStore` (a template with no time attached) or
+/// `WorkoutSessionStore` (records of sessions already completed).
+/// `shouldSuggestPreWorkoutSnack` below is built now that a planned start
+/// exists to compare against.
 public enum NotificationTriggerTimeComputer {
 
     /// §14.2 — 20 minutes before Fajr, only on a scheduled religious fast day.
@@ -93,5 +91,28 @@ public enum NotificationTriggerTimeComputer {
     /// contextualHydrationTrigger(for:before:)`.
     public static func contextualHydrationTrigger(usualMealTime: Date, leadMinutes: Double = 60) -> Date {
         usualMealTime.addingTimeInterval(-leadMinutes * 60)
+    }
+
+    /// §14.2 — "when gap between last logged meal and planned workout start
+    /// > user's configured threshold (default: 3 hours)... Computed at log
+    /// time and at app launch." Unlike every other function in this enum,
+    /// which each name a future instant to schedule a notification *for*,
+    /// this rule is a live condition re-checked at specific moments (a meal
+    /// gets logged, the app launches) rather than something scheduled ahead
+    /// of time — the spec never gives this suggestion a lead time the way
+    /// it gives hydration's "~60 min before" or bedtime's "30 min before".
+    /// So this returns whether to suggest *right now*, not a `Date`; the
+    /// caller fires the suggestion immediately when it returns `true`.
+    ///
+    /// `false` when there's no last meal to compare against at all (a
+    /// gap needs two points), or when the planned workout isn't actually
+    /// upcoming relative to that meal (`plannedWorkoutStart <= lastMealTime`
+    /// — a workout already covered by, or before, the last meal has no
+    /// "time until" to be short on).
+    public static func shouldSuggestPreWorkoutSnack(lastMealTime: Date?, plannedWorkoutStart: Date,
+                                                     thresholdHours: Double = 3) -> Bool {
+        guard let lastMealTime, plannedWorkoutStart > lastMealTime else { return false }
+        let gapHours = plannedWorkoutStart.timeIntervalSince(lastMealTime) / 3600
+        return gapHours > thresholdHours
     }
 }

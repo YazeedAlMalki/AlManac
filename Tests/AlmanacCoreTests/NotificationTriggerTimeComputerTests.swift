@@ -98,4 +98,44 @@ struct NotificationTriggerTimeComputerTests {
         #expect(NotificationTriggerTimeComputer.contextualHydrationTrigger(usualMealTime: usual, leadMinutes: 30)
                 == usual.addingTimeInterval(-30 * 60))
     }
+
+    @Test("Pre-workout snack suggestion fires when the gap exceeds the default 3-hour threshold")
+    func preWorkoutSnackGapExceedsDefaultThreshold() {
+        let lastMeal = base
+        let workoutStart = base.addingTimeInterval(4 * 3600)
+        #expect(NotificationTriggerTimeComputer.shouldSuggestPreWorkoutSnack(
+            lastMealTime: lastMeal, plannedWorkoutStart: workoutStart))
+    }
+
+    @Test("Pre-workout snack suggestion does not fire when the gap is under the threshold")
+    func preWorkoutSnackGapUnderThreshold() {
+        let lastMeal = base
+        let workoutStart = base.addingTimeInterval(2 * 3600)
+        #expect(!NotificationTriggerTimeComputer.shouldSuggestPreWorkoutSnack(
+            lastMealTime: lastMeal, plannedWorkoutStart: workoutStart))
+    }
+
+    @Test("Pre-workout snack suggestion respects a custom threshold")
+    func preWorkoutSnackCustomThreshold() {
+        let lastMeal = base
+        let workoutStart = base.addingTimeInterval(90 * 60) // 1.5 hours
+        #expect(NotificationTriggerTimeComputer.shouldSuggestPreWorkoutSnack(
+            lastMealTime: lastMeal, plannedWorkoutStart: workoutStart, thresholdHours: 1))
+        #expect(!NotificationTriggerTimeComputer.shouldSuggestPreWorkoutSnack(
+            lastMealTime: lastMeal, plannedWorkoutStart: workoutStart, thresholdHours: 2))
+    }
+
+    @Test("Pre-workout snack suggestion is false with no last meal to compare against")
+    func preWorkoutSnackNilWithNoLastMeal() {
+        #expect(!NotificationTriggerTimeComputer.shouldSuggestPreWorkoutSnack(
+            lastMealTime: nil, plannedWorkoutStart: base))
+    }
+
+    @Test("Pre-workout snack suggestion is false when the planned workout is not after the last meal")
+    func preWorkoutSnackFalseWhenWorkoutNotAfterMeal() {
+        let lastMeal = base
+        let workoutStart = base.addingTimeInterval(-3600) // an hour before the meal
+        #expect(!NotificationTriggerTimeComputer.shouldSuggestPreWorkoutSnack(
+            lastMealTime: lastMeal, plannedWorkoutStart: workoutStart))
+    }
 }

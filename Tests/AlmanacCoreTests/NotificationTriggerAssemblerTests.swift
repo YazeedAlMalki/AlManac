@@ -257,4 +257,92 @@ struct NotificationTriggerAssemblerTests {
     func contextualHydrationNilWithNothingLogged() throws {
         #expect(try assembler.contextualHydrationTrigger(for: .breakfast, before: day) == nil)
     }
+
+    // MARK: - Meal reminder
+
+    @Test("Meal reminder resolves the stored minute-of-day onto the given day")
+    func mealReminderResolvesStoredTime() throws {
+        try MealReminderSettingsStore(db: db).setReminder(for: .breakfast, enabled: true,
+                                                            reminderMinuteOfDay: 7 * 60 + 30)
+        #expect(try assembler.mealReminderTrigger(for: .breakfast, on: day) == riyadh(7, 30))
+    }
+
+    @Test("Meal reminder is nil when off, even with a time set")
+    func mealReminderNilWhenOff() throws {
+        try MealReminderSettingsStore(db: db).setReminder(for: .breakfast, enabled: false,
+                                                            reminderMinuteOfDay: 7 * 60)
+        #expect(try assembler.mealReminderTrigger(for: .breakfast, on: day) == nil)
+    }
+
+    @Test("Meal reminder is nil when on but no time has been chosen")
+    func mealReminderNilWhenNoTimeSet() throws {
+        try MealReminderSettingsStore(db: db).setReminder(for: .breakfast, enabled: true,
+                                                            reminderMinuteOfDay: nil)
+        #expect(try assembler.mealReminderTrigger(for: .breakfast, on: day) == nil)
+    }
+
+    @Test("Meal reminder is nil for a meal type with no setting at all")
+    func mealReminderNilWithNoSetting() throws {
+        #expect(try assembler.mealReminderTrigger(for: .snack, on: day) == nil)
+    }
+
+    // MARK: - Supplement reminders
+
+    @Test("Supplement reminders resolve one instant per active, timed, enabled plan")
+    func supplementRemindersResolveActiveTimedPlans() throws {
+        let planStore = SupplementPlanStore(db: db)
+        let onId = try planStore.create(SupplementPlanDraft(name: "Vitamin D", doseAmount: 2000, doseUnit: "iu",
+                                                              frequency: "daily"))
+        try planStore.setReminder(id: onId, enabled: true, reminderMinuteOfDay: 8 * 60)
+
+        let offId = try planStore.create(SupplementPlanDraft(name: "Fish Oil", doseAmount: 1, doseUnit: "capsule",
+                                                               frequency: "daily"))
+        try planStore.setReminder(id: offId, enabled: false, reminderMinuteOfDay: 9 * 60)
+
+        let triggers = try assembler.supplementReminderTriggers(on: day)
+        #expect(triggers.count == 1)
+        #expect(triggers.first?.planId == onId)
+        #expect(triggers.first?.time == riyadh(8, 0))
+    }
+
+    @Test("Supplement reminders are empty with no plans at all")
+    func supplementRemindersEmptyWithNoPlans() throws {
+        #expect(try assembler.supplementReminderTriggers(on: day).isEmpty)
+    }
+
+    // MARK: - Pre-workout snack suggestion
+
+    @Test("Pre-workout snack is suggested when the gap since the last meal exceeds the threshold")
+    func preWorkoutSnackSuggestedWhenGapExceedsThreshold() throws {
+        try logMeal(.lunch, eatenAt: PartialDateTime(
+            text: "2025-09-18T07:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+        let workoutStart = riyadh(12) // 5 hours after the logged meal
+        try PlannedWorkoutStore(db: db).create(PlannedWorkoutDraft(scheduledAt: workoutStart))
+
+        #expect(try assembler.shouldSuggestPreWorkoutSnack(now: riyadh(10)))
+    }
+
+    @Test("Pre-workout snack is not suggested when the gap is under the threshold")
+    func preWorkoutSnackNotSuggestedWhenGapUnderThreshold() throws {
+        try logMeal(.lunch, eatenAt: PartialDateTime(
+            text: "2025-09-18T10:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+        let workoutStart = riyadh(11, 30) // 1.5 hours after the logged meal
+        try PlannedWorkoutStore(db: db).create(PlannedWorkoutDraft(scheduledAt: workoutStart))
+
+        #expect(!(try assembler.shouldSuggestPreWorkoutSnack(now: riyadh(10, 30))))
+    }
+
+    @Test("Pre-workout snack is not suggested with no planned workout upcoming")
+    func preWorkoutSnackNotSuggestedWithNoPlannedWorkout() throws {
+        try logMeal(.lunch, eatenAt: PartialDateTime(
+            text: "2025-09-18T07:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+
+        #expect(!(try assembler.shouldSuggestPreWorkoutSnack(now: riyadh(12))))
+    }
+
+    @Test("Pre-workout snack is not suggested with no last meal logged, even with a distant workout planned")
+    func preWorkoutSnackNotSuggestedWithNoLastMeal() throws {
+        try PlannedWorkoutStore(db: db).create(PlannedWorkoutDraft(scheduledAt: riyadh(18)))
+        #expect(!(try assembler.shouldSuggestPreWorkoutSnack(now: riyadh(10))))
+    }
 }
