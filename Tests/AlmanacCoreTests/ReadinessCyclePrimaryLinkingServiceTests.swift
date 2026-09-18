@@ -249,4 +249,85 @@ struct ReadinessCyclePrimaryLinkingServiceTests {
                 "A's successor is still B, unaffected by A's own correction")
         #expect(try cycleStore.cycle(id: b.cycleId)?.cycleEndTimestamp == nil)
     }
+
+    @Test("Correcting an episode's wake across an anchor-date boundary clears the abandoned row and preserves its old neighbor's boundary")
+    func correctionAcrossAnchorDateClearsOrphanedRow() throws {
+        let wake17 = utc(7, day: "2026-09-17")
+        let wake18 = utc(7, day: "2026-09-18")
+        try storePrimary(start: utc(23, day: "2026-09-16"), end: wake17, logicalDay: "2026-09-17")
+        // Carries a healthKitUUID, like the correction test above, so the later
+        // correction upserts onto this same row instead of minting a new episode.
+        let uuid18 = "night-2026-09-18-primary"
+        let episode18 = SleepEpisode(start: utc(23, day: "2026-09-17"), end: wake18, type: .primary,
+                                      source: .healthkit,
+                                      asleepMinutes: Int(wake18.timeIntervalSince(utc(23, day: "2026-09-17")) / 60),
+                                      healthKitUUIDs: [uuid18])
+        let episode18Id = try SleepEpisodeStore(db: db).upsert(episode18, timezoneOffset: 0, logicalDay: "2026-09-18")
+
+        let day17 = try #require(try service.linkPrimaryEpisode(for: "2026-09-17"))
+        let day18 = try #require(try service.linkPrimaryEpisode(episodeId: episode18Id))
+        #expect(try cycleStore.cycle(id: day17.cycleId)?.cycleEndTimestamp == wake18)
+
+        // A gross correction reveals the night actually belongs to the 25th, not
+        // the 18th (e.g. an ingestion timezone bug caught well after the fact) —
+        // far enough that it lands on a brand-new anchor date rather than merely
+        // shifting the wake time within day18's own anchor window.
+        let correctedWake = utc(7, day: "2026-09-25")
+        let correction = SleepEpisode(start: utc(23, day: "2026-09-24"), end: correctedWake, type: .primary,
+                                       source: .healthkit,
+                                       asleepMinutes: Int(correctedWake.timeIntervalSince(utc(23, day: "2026-09-24")) / 60),
+                                       healthKitUUIDs: [uuid18])
+        let correctedId = try SleepEpisodeStore(db: db).upsert(correction, timezoneOffset: 0, logicalDay: "2026-09-25")
+        #expect(correctedId == episode18Id, "same episode, corrected — not a new one")
+
+        let recheck = try #require(try service.linkPrimaryEpisode(episodeId: correctedId))
+        #expect(recheck.cycleId != day18.cycleId, "the corrected wake lands on a different anchor date's row")
+
+        let staleRow = try #require(try cycleStore.cycle(id: day18.cycleId))
+        #expect(staleRow.primarySleepEpisodeId == nil, "the old row must stop claiming the episode that moved away")
+        #expect(staleRow.cycleStartTimestamp == nil)
+        #expect(staleRow.cycleEndTimestamp == nil)
+
+        #expect(try cycleStore.cycle(id: day17.cycleId)?.cycleEndTimestamp == correctedWake,
+                "day17's true successor is now the corrected cycle, not the abandoned day18 row")
+
+        let claimCount = try db.query(
+            "SELECT COUNT(*) as n FROM readiness_cycle WHERE primarySleepEpisodeId = ?;", [.integer(episode18Id)]
+        ).first?.int("n")
+        #expect(claimCount == 1, "only one row may claim this episode as primary")
+    }
+
+    @Test("Clearing an abandoned row picks its logs back up into the neighbor that now covers that window")
+    func orphanClearingRescopesLogsToTheExtendedNeighbor() throws {
+        let wake17 = utc(7, day: "2026-09-17")
+        let wake18 = utc(7, day: "2026-09-18")
+        try storePrimary(start: utc(23, day: "2026-09-16"), end: wake17, logicalDay: "2026-09-17")
+        let uuid18 = "night-2026-09-18-primary"
+        let episode18 = SleepEpisode(start: utc(23, day: "2026-09-17"), end: wake18, type: .primary,
+                                      source: .healthkit,
+                                      asleepMinutes: Int(wake18.timeIntervalSince(utc(23, day: "2026-09-17")) / 60),
+                                      healthKitUUIDs: [uuid18])
+        let episode18Id = try SleepEpisodeStore(db: db).upsert(episode18, timezoneOffset: 0, logicalDay: "2026-09-18")
+
+        // Logged before day18's cycle is linked — falls inside what day18's
+        // window is about to cover (it's still open, so unbounded above).
+        let moodStore = MoodLogStore(db: db)
+        let mid = try moodStore.log(MoodLogDraft(score: 7, timestamp: utc(9, day: "2026-09-20")),
+                                     logicalDay: "2026-09-20")
+
+        let day17 = try #require(try service.linkPrimaryEpisode(for: "2026-09-17"))
+        let day18 = try #require(try service.linkPrimaryEpisode(episodeId: episode18Id))
+        #expect(try moodStore.entry(id: mid)?.readinessCycleId == day18.cycleId)
+
+        let correctedWake = utc(7, day: "2026-09-25")
+        let correction = SleepEpisode(start: utc(23, day: "2026-09-24"), end: correctedWake, type: .primary,
+                                       source: .healthkit,
+                                       asleepMinutes: Int(correctedWake.timeIntervalSince(utc(23, day: "2026-09-24")) / 60),
+                                       healthKitUUIDs: [uuid18])
+        let correctedId = try SleepEpisodeStore(db: db).upsert(correction, timezoneOffset: 0, logicalDay: "2026-09-25")
+        try service.linkPrimaryEpisode(episodeId: correctedId)
+
+        #expect(try moodStore.entry(id: mid)?.readinessCycleId == day17.cycleId,
+                "the log falls inside day17's newly-extended window, now that day18's row is gone")
+    }
 }

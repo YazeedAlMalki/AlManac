@@ -94,6 +94,16 @@ public struct ReadinessCycleLinkingService {
                                             cycleEndTimestamp: cycleEndTimestamp)
     }
 
+    /// Detaches every log pointed at `cycleId` without relinking them anywhere
+    /// — for a cycle whose own window is being invalidated (its row cleared
+    /// back to bare after its primary episode moved to a different anchor
+    /// date), not merely resized. Whatever real cycle now covers that time
+    /// picks these back up the next time its own window is (re)linked.
+    public func unlinkLogsFromCycle(cycleId: Int64) throws {
+        try db.run("UPDATE mood_log SET readinessCycleId = NULL WHERE readinessCycleId = ?;", [.integer(cycleId)])
+        try db.run("UPDATE soreness_log SET readinessCycleId = NULL WHERE readinessCycleId = ?;", [.integer(cycleId)])
+    }
+
     // MARK: - Private
 
     private func iso(_ date: Date) -> String {

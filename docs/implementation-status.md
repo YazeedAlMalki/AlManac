@@ -1331,7 +1331,64 @@ increment changed.
 
 **Still explicitly out of scope**, same as before: `UNUserNotificationCenter`
 wiring itself remains iOS/Xcode-only. Multi-hop cycle reordering (flagged
-above). No UI for any of this session's storage — settings screens for
-meal/supplement reminder times, or a way to actually create a
-`planned_workout` row from the app, are separate work; this increment
-only built the storage and trigger logic the notification engine needs.
+above — closed the next day, see below). No UI for any of this session's
+storage — settings screens for meal/supplement reminder times, or a way to
+actually create a `planned_workout` row from the app, are separate work;
+this increment only built the storage and trigger logic the notification
+engine needs.
+
+## 2026-09-18: Multi-hop cycle reordering — anchor-date reconciliation
+
+### Commit (pending) — `ReadinessCyclePrimaryLinkingService` anchor-date reconciliation
+
+Closes the gap `03de2f2` flagged: a correction that reorders a cycle past
+more than its immediate neighbor.
+
+Traced the actual shape of that gap before building anything: `anchorDate`
+is a monotonic function of wake time under `DayBoundary.almanac` (§7.1's
+fixed 04:00 cutoff), so a correction that *keeps* a cycle's own anchor date
+can never cross a fully-established adjacent day's cycle — there's no
+calendar day between two consecutive ones to land on. The only way a
+correction actually reorders past more than the immediate neighbor is by
+moving the wake far enough to land on a *different* anchor date
+(`upsertManualWake`) — and when that happens, `link()` was computing a
+fresh `anchorDate` and creating/updating a *different* row for it, while
+the old row for the previous anchor date was simply abandoned: still
+listing the same `primarySleepEpisodeId`, now duplicated across two rows,
+and its own neighbor's `cycleEndTimestamp` left stale forever since
+nothing ever revisited it. The "walk every affected cycle's neighbors in
+turn" framing in `03de2f2`'s own doc comment didn't correspond to a
+reachable case — boundary-chain math self-heals in every configuration
+that's actually reachable, since rows are never deleted; the orphaned row
+was the real, reachable bug.
+
+Fix (confirmed with the user before building, given it reframes what
+"multi-hop" actually means here — see `docs/adr/0001-orphaned-readiness-cycle-row-clears-to-bare.md`):
+`ReadinessCycleStore.clearToBare(id:)` reverts a row to the same shape
+`ensureCycle` produces before classification ever runs.
+`ReadinessCycleLinkingService.unlinkLogsFromCycle(cycleId:)` detaches its
+logs without relinking them anywhere. `link()` now, before treating
+`allCycles()` as ground truth: finds any other row still claiming this
+episode as primary under a different anchor date, detaches its logs and
+clears it to bare, then repairs whichever cycle used to close against it
+(finds that former predecessor fresh, since the orphan's `nil`
+`cycleStartTimestamp` now correctly excludes it from `allCycles()`'s
+neighbor-finding, and re-closes/relinks it against its new true
+successor). The existing predecessor/successor logic for the *current*
+cycle's own position is unchanged — it already re-derives neighbors fresh
+from `allCycles()` every call, so it "just works" once the orphan is gone.
+
+2 new tests in `ReadinessCyclePrimaryLinkingServiceTests`: the orphaned
+row gets cleared and its old neighbor's boundary is preserved
+(`correctionAcrossAnchorDateClearsOrphanedRow`); a log inside the
+orphan's old window gets picked back up by the neighbor whose window now
+extends to cover it (`orphanClearingRescopesLogsToTheExtendedNeighbor`).
+
+Verified via `swift:6.0` in local Docker (Docker Desktop won't mount
+`/mnt/kingston` directly — synced the package into a `$HOME`-rooted copy
+and ran there; no SPM dependencies, so a plain copy is self-contained).
+Full suite 332/332 Swift Testing tests pass (330 prior + 2 new), zero
+regressions.
+
+**Still explicitly out of scope**: `UNUserNotificationCenter` wiring and
+settings-screen UI remain iOS/Xcode-only, unchanged from before.

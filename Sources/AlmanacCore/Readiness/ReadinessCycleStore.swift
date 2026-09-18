@@ -130,6 +130,28 @@ public struct ReadinessCycleStore: @unchecked Sendable {
         return affected > 0
     }
 
+    /// Reverts a cycle to bare — no primary episode, no wake, no boundaries —
+    /// the same shape `ensureCycle` produces before classification ever runs.
+    /// For the case a bare row can't reach on its own: a correction moves a
+    /// primary episode's wake across an anchor-date boundary, so `anchorDate`
+    /// recomputes to a *different* row than the one that used to hold this
+    /// episode. That old row would otherwise keep claiming an episode that
+    /// now belongs to a different anchor date — this clears it back to
+    /// nothing so nothing double-claims the episode and the old row drops
+    /// out of `allCycles()`'s neighbor-finding (nil `cycleStartTimestamp`
+    /// sorts as neither a predecessor nor a successor of anything).
+    @discardableResult
+    public func clearToBare(id: Int64) throws -> Bool {
+        let affected = try db.run("""
+        UPDATE readiness_cycle
+        SET primarySleepEpisodeId = NULL, primaryWakeTimestamp = NULL,
+            cycleStartTimestamp = NULL, cycleEndTimestamp = NULL, circadianContextId = NULL,
+            updatedAt = ?
+        WHERE id = ?;
+        """, [.text(nowText), .integer(id)])
+        return affected > 0
+    }
+
     // MARK: - Read
 
     public func cycle(id: Int64) throws -> ReadinessCycleRecord? {

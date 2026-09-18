@@ -17,16 +17,16 @@ import Foundation
 /// "now that we know which episode is primary, what does that mean for
 /// `readiness_cycle` and everything downstream of it" piece.
 ///
-/// It also does not repair a correction that reorders a cycle across more
-/// than one existing neighbor in a single move (e.g. moving a wake time so
-/// far that it jumps past two other cycles at once, not just the one
-/// immediately beside it) — `link` below only ever touches the cycle being
-/// linked and its two immediate chronological neighbors, which is enough
-/// for out-of-order backfill and for a correction that reaches back past an
-/// already-closed boundary (see `link`'s own comment), but a multi-hop
-/// reorder would need to walk every affected cycle's own neighbors in turn.
-/// Nothing in this repo produces that shape of correction yet, so it is
-/// flagged rather than built.
+/// **Multi-hop reorders:** `anchorDate` is a monotonic function of wake time
+/// under `DayBoundary.almanac` (§7.1's fixed 04:00 cutoff), so a correction
+/// that *keeps* a cycle's own anchor date can never cross a fully-established
+/// adjacent day's cycle — there's no calendar day between two consecutive
+/// ones to land on. The only way a correction actually reorders a cycle past
+/// more than its immediate neighbor is by moving its wake far enough to land
+/// on a *different* anchor date, which `link` below handles: it clears
+/// whatever old row used to claim this episode back to bare and repairs
+/// whichever cycle used to close against it, before re-deriving the current
+/// cycle's own neighbors fresh (see `link`'s own comment).
 public struct ReadinessCyclePrimaryLinkingService: @unchecked Sendable {
     let db: Database
     private let timeModel: TimeModel
@@ -96,6 +96,37 @@ public struct ReadinessCyclePrimaryLinkingService: @unchecked Sendable {
         // belongs to.
         let anchorDate = timeModel.logicalDay(wake).value
         let circadianContextId = try linkCircadianContext(anchor: LogicalDay(anchorDate))
+
+        // A correction can move this episode's wake far enough to cross into
+        // a different anchor date than it used to have — landing this call
+        // on a different row below than the one that last claimed it. That
+        // old row would otherwise keep listing an episode that has moved
+        // elsewhere, and the cycle that used to close against it would keep
+        // a stale boundary forever, since nothing else ever revisits it.
+        // Clear the old row back to bare (same shape `ensureCycle` leaves
+        // before classification ever runs) and fix whichever cycle used to
+        // close against it, before `others` below is treated as ground truth.
+        if let orphan = try cycleStore.allCycles().first(where: {
+            $0.primarySleepEpisodeId == episode.id && $0.anchorDate != anchorDate
+        }), let orphanStart = orphan.cycleStartTimestamp {
+            try linkingService.unlinkLogsFromCycle(cycleId: orphan.id)
+            try cycleStore.clearToBare(id: orphan.id)
+
+            let remaining = try cycleStore.allCycles().filter { $0.id != orphan.id }
+            if let formerPredecessor = remaining
+                .filter({ ($0.cycleStartTimestamp ?? .distantFuture) < orphanStart })
+                .max(by: { ($0.cycleStartTimestamp ?? .distantPast) < ($1.cycleStartTimestamp ?? .distantPast) }),
+               let predecessorStart = formerPredecessor.cycleStartTimestamp {
+                let newSuccessor = remaining
+                    .filter { $0.id != formerPredecessor.id }
+                    .filter { ($0.cycleStartTimestamp ?? .distantPast) > predecessorStart }
+                    .min(by: { ($0.cycleStartTimestamp ?? .distantFuture) < ($1.cycleStartTimestamp ?? .distantFuture) })
+                try cycleStore.closeCycle(id: formerPredecessor.id, cycleEndTimestamp: newSuccessor?.cycleStartTimestamp)
+                try linkingService.relinkLogsToReadinessCycle(cycleId: formerPredecessor.id,
+                                                               cycleStartTimestamp: predecessorStart,
+                                                               cycleEndTimestamp: newSuccessor?.cycleStartTimestamp)
+            }
+        }
 
         let existingForAnchor = try cycleStore.cycle(anchorDate: anchorDate)
         let cycleId: Int64
