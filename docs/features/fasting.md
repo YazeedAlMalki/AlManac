@@ -226,10 +226,16 @@ this section.
    `PrayerSettingsStore` + `PrayerTimeCacheStore` + `PrayerTimeEngine` (§12:
    30-day cache, >50 km travel invalidation via a real haversine check, a
    per-day `isManualOverride` flag protecting a corrected day from both).
-   Not built: the bundled 200+-city manual-fallback JSON (§12.2's third
-   coordinate-sourcing priority) — `PrayerSettingsStore.updateLocation`
-   takes any city's coordinates a caller already has; nothing bundles or
-   searches a city list yet.
+   ~~The bundled 200+-city manual-fallback JSON~~ — done 2026-09-19:
+   `Sources/AlmanacCore/Prayer/Resources/manual-cities.json` (230 cities,
+   §12.2's `{ name, country, lat, lon, timezone }` schema verbatim) plus
+   `ManualCityCatalog` (`Sources/AlmanacCore/Prayer/ManualCityCatalog.swift`)
+   for `search(_:)`/`city(named:country:)` lookups. It only resolves a name
+   to coordinates — same pattern as `AdhanCalculator` being a pure function
+   with no store of its own — so a caller still applies the choice through
+   `PrayerSettingsStore.updateLocation(..., manualCityOverride: true)`
+   itself. 12 tests, including one that every bundled timezone identifier
+   actually resolves via `TimeZone(identifier:)`.
 3. ~~`FastingSessionStore` + `FastingEngine`~~ — done in the intermittent-
    fasting pass above (§5).
 4. ~~`ReligiousFastScheduleStore` + auto-creation/auto-end~~ — done
