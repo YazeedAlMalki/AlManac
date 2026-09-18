@@ -89,4 +89,13 @@ struct NotificationTriggerTimeComputerTests {
         #expect(NotificationTriggerTimeComputer.readinessTrigger(
             primarySleepEpisodeEnd: nil, estimatedWakeTime: nil) == nil)
     }
+
+    @Test("Contextual hydration fires the default 60 minutes before the usual meal time, or a given lead time")
+    func contextualHydration() {
+        let usual = base
+        #expect(NotificationTriggerTimeComputer.contextualHydrationTrigger(usualMealTime: usual)
+                == usual.addingTimeInterval(-60 * 60))
+        #expect(NotificationTriggerTimeComputer.contextualHydrationTrigger(usualMealTime: usual, leadMinutes: 30)
+                == usual.addingTimeInterval(-30 * 60))
+    }
 }

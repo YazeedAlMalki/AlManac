@@ -30,6 +30,23 @@ struct NotificationTriggerAssemblerTests {
         return calendar.date(from: comps)!
     }
 
+    /// Fixed inside the contextual-hydration tests' 14-day query window
+    /// (2025-09-04..<2025-09-18), so an entry recorded with `eatenAt: .unknown`
+    /// falls back to a `recordedAt` that the range would actually keep —
+    /// making the "recordedAt fallback is not counted" test below exercise
+    /// the `basis == .occurrence` filter itself, not just a date-range miss.
+    private var nutritionLog: NutritionLogStore {
+        NutritionLogStore(db: db, clock: FixedClock(riyadh(10, day: "2025-09-12")),
+                          zone: ZoneContext(timeModel.timeZone))
+    }
+
+    private let testFood = SourceIdentifier(namespace: .almanac, localID: "test-food")
+
+    @discardableResult
+    private func logMeal(_ mealType: NutritionMealType, eatenAt: PartialDateTime) throws -> NutritionLogOutcome {
+        try nutritionLog.record(NutritionLogDraft(foodRef: testFood, eatenAt: eatenAt, mealType: mealType))
+    }
+
     /// `PrayerTimeCacheStore.upsert` requires all six named prayer times or
     /// it throws `incompleteTimes` — these tests only care about fajr and
     /// maghrib, so the other four are filled with plausible placeholders
@@ -186,5 +203,58 @@ struct NotificationTriggerAssemblerTests {
     @Test("Readiness is nil with no primary episode, no shift, and no history to average")
     func readinessNilWithNothingKnown() throws {
         #expect(try assembler.readinessTrigger(for: day) == nil)
+    }
+
+    // MARK: - Contextual hydration
+
+    @Test("Contextual hydration fires 60 minutes before the 14-day average time for that meal type")
+    func contextualHydrationFromAverage() throws {
+        try logMeal(.breakfast, eatenAt: PartialDateTime(
+            text: "2025-09-11T07:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+        try logMeal(.breakfast, eatenAt: PartialDateTime(
+            text: "2025-09-12T07:30:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+        try logMeal(.breakfast, eatenAt: PartialDateTime(
+            text: "2025-09-13T07:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+
+        // Average of 07:00, 07:30, 07:00 is 07:10; 60 minutes before is 06:10.
+        #expect(try assembler.contextualHydrationTrigger(for: .breakfast, before: day) == riyadh(6, 10))
+    }
+
+    @Test("Entries with coarser-than-minute precision carry no time-of-day and are excluded from the average")
+    func contextualHydrationExcludesCoarsePrecision() throws {
+        try logMeal(.breakfast, eatenAt: PartialDateTime(text: "2025-09-12", precision: .day))
+        try logMeal(.breakfast, eatenAt: PartialDateTime(
+            text: "2025-09-13T07:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+
+        // Only the instant-precision entry counts.
+        #expect(try assembler.contextualHydrationTrigger(for: .breakfast, before: day) == riyadh(6, 0))
+    }
+
+    @Test("An entry with no stated eaten time is placed by when it was recorded, and does not count toward the average")
+    func contextualHydrationExcludesRecordedFallback() throws {
+        try logMeal(.breakfast, eatenAt: .unknown)
+
+        #expect(try assembler.contextualHydrationTrigger(for: .breakfast, before: day) == nil)
+    }
+
+    @Test("Entries logged under a different meal type do not count toward this one's average")
+    func contextualHydrationExcludesOtherMealTypes() throws {
+        try logMeal(.dinner, eatenAt: PartialDateTime(
+            text: "2025-09-12T19:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+
+        #expect(try assembler.contextualHydrationTrigger(for: .breakfast, before: day) == nil)
+    }
+
+    @Test("An entry eaten on day itself does not count toward that same day's prediction")
+    func contextualHydrationExcludesTheDayItself() throws {
+        try logMeal(.breakfast, eatenAt: PartialDateTime(
+            text: "2025-09-18T07:00:00+03:00", precision: .instant, zone: ZoneContext(offsetMinutes: 180)))
+
+        #expect(try assembler.contextualHydrationTrigger(for: .breakfast, before: day) == nil)
+    }
+
+    @Test("Contextual hydration is nil with no meals logged at all")
+    func contextualHydrationNilWithNothingLogged() throws {
+        #expect(try assembler.contextualHydrationTrigger(for: .breakfast, before: day) == nil)
     }
 }

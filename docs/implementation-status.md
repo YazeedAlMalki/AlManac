@@ -1090,3 +1090,50 @@ three flagged-absent trigger types above.
 
 Verified on yamal: `swift test` green, 274 tests (1 skipped —
 `ALMANAC_NUTRITION_BUNDLE` not set), zero regressions.
+
+## 2026-09-18 — Slice 11 continued: contextual pre-meal hydration trigger
+
+Builds one of the three types the trigger-time-computation commit above
+left flagged rather than built. §14.2: "Contextual: Pre-meal Hydration
+Suggestion — Default: OFF. Trigger: ~60 min before usual meal time
+(derived from last 14 days of logged meal timestamps). Suppression:
+suppressDuringDryFast = 1." The other two flagged types are still not
+built, and still can't be without a real product decision: Meal/Supplement
+reminders need an undefined settings question (how many preferred times,
+stored where), and Contextual pre-workout snack needs a "planned workout"
+concept that doesn't exist anywhere in this repo yet.
+
+`NotificationTriggerTimeComputer.contextualHydrationTrigger(usualMealTime:
+leadMinutes:)` (pure) applies the fixed 60-minute lead (default,
+overridable) to an already-resolved usual meal time, mirroring every
+other function in that type.
+
+`NotificationTriggerAssembler.contextualHydrationTrigger(for:before:
+leadMinutes:)` does the actual store-reading: queries
+`NutritionLogStore.logged(from:to:)` over the 14 days strictly before the
+given `LogicalDay` (non-circular — the same `[day-14, day)` pattern the
+7-day wake-time average already established, so a day's own not-yet-eaten
+meals never contribute to predicting that day), filters to entries whose
+`mealType` matches, `basis == .occurrence` (an `eatenAt` that actually
+carries a time of day — excludes both coarser-than-minute precision and
+the `.recorded`-fallback case where the app only knows when the entry was
+logged, not when the meal happened), and averages their seconds-since-
+midnight the same way the wake-time average does. Returns `nil` when
+nothing qualifies, rather than guessing.
+
+7 new tests across `NotificationTriggerTimeComputerTests.swift` (1) and
+`NotificationTriggerAssemblerTests.swift` (6): the pure lead-time
+arithmetic; averaging across several qualifying entries; excluding
+coarse-precision entries; excluding `.recorded`-fallback entries (using
+`FixedClock` to pin the fallback timestamp inside the query window, so
+the test is actually exercising the `.occurrence`-only filter rather than
+passing by accident via a date-range miss); excluding other meal types;
+excluding the day itself; and `nil` when nothing is logged at all.
+
+Verified on yamal: `swift test` green, 281 tests (1 skipped —
+`ALMANAC_NUTRITION_BUNDLE` not set), zero regressions — up from 274,
+matching the 7 new tests exactly.
+
+**Still not built:** Meal/Supplement reminders and Contextual pre-workout
+snack (both need real product/schema decisions, not just wiring), and the
+`UNUserNotificationCenter` wiring itself (iOS-only, needs Xcode).

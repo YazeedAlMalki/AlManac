@@ -9,7 +9,7 @@ import Foundation
 /// and `NotificationSuppressionContextAssembler` divide the suppression side.
 ///
 /// Only the types §14.2 fully specifies from data this repo already
-/// persists are here. Three named types are deliberately absent, flagged
+/// persists are here. Two named types are deliberately absent, flagged
 /// rather than guessed at:
 /// - **Meal** and **Supplement** reminders are plain user-set clock times
 ///   (§14.2: "user sets preferred times" / "user sets time per supplement
@@ -22,12 +22,12 @@ import Foundation
 ///   with no time attached, and `WorkoutSessionStore` only records sessions
 ///   that already happened. Building this needs a workout-scheduling
 ///   feature that doesn't exist yet, not just wiring.
-/// - **Contextual: Pre-meal Hydration Suggestion** needs "usual meal time,
-///   derived from last 14 days of logged meal timestamps" (§14.2).
-///   `NutritionLogStore` records `eatenAt` as a `PartialDateTime`, which can
-///   carry coarser-than-minute precision or be entirely unknown — resolving
-///   "usual time of day" correctly needs its own careful pass, left for a
-///   later slice rather than rushed here.
+///
+/// **Contextual: Pre-meal Hydration Suggestion** *is* built —
+/// `contextualHydrationTrigger(usualMealTime:leadMinutes:)` below — because
+/// its "usual meal time" derivation, once written, is ordinary store-reading
+/// work (`NotificationTriggerAssembler.contextualHydrationTrigger(for:
+/// before:)`), not a missing concept the way the workout-snack type is.
 public enum NotificationTriggerTimeComputer {
 
     /// §14.2 — 20 minutes before Fajr, only on a scheduled religious fast day.
@@ -84,5 +84,14 @@ public enum NotificationTriggerTimeComputer {
     /// episode wins if there is one" precedence.
     public static func readinessTrigger(primarySleepEpisodeEnd: Date?, estimatedWakeTime: Date?) -> Date? {
         primarySleepEpisodeEnd ?? estimatedWakeTime
+    }
+
+    /// §14.2 — `leadMinutes` (default 60, "~60 min before usual meal time")
+    /// before an already-resolved `usualMealTime`. Deriving that usual time
+    /// from 14 days of logged meals is store-reading work the caller has
+    /// already done — see `NotificationTriggerAssembler.
+    /// contextualHydrationTrigger(for:before:)`.
+    public static func contextualHydrationTrigger(usualMealTime: Date, leadMinutes: Double = 60) -> Date {
+        usualMealTime.addingTimeInterval(-leadMinutes * 60)
     }
 }

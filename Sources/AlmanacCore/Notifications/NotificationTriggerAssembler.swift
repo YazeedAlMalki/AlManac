@@ -13,6 +13,7 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
     private let prayerTimes: PrayerTimeCacheStore
     private let religiousFasts: ReligiousFastScheduleStore
     private let sleepEpisodes: SleepEpisodeStore
+    private let nutritionLog: NutritionLogStore
 
     public init(db: Database, timeModel: TimeModel) {
         self.timeModel = timeModel
@@ -20,6 +21,7 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
         self.prayerTimes = PrayerTimeCacheStore(db: db)
         self.religiousFasts = ReligiousFastScheduleStore(db: db)
         self.sleepEpisodes = SleepEpisodeStore(db: db)
+        self.nutritionLog = NutritionLogStore(db: db, zone: ZoneContext(timeModel.timeZone))
     }
 
     /// §14.2 — nil when `day` has no cached prayer times at all; not being a
@@ -72,6 +74,19 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
             primarySleepEpisodeEnd: primaryEnd, estimatedWakeTime: estimated)
     }
 
+    /// §14.2 — "usual [meal] time, derived from last 14 days of logged meal
+    /// timestamps". Only entries strictly before `day` count (never `day`
+    /// itself — the same non-circularity the 7-day wake average keeps:
+    /// today's own, possibly not-yet-logged meal cannot be part of the
+    /// average used to predict it). Nil when the window has no qualifying
+    /// entry for `mealType` at all.
+    public func contextualHydrationTrigger(for mealType: NutritionMealType, before day: LogicalDay,
+                                            leadMinutes: Double = 60) throws -> Date? {
+        guard let usual = try usualMealTime(for: mealType, before: day) else { return nil }
+        return NotificationTriggerTimeComputer.contextualHydrationTrigger(
+            usualMealTime: usual, leadMinutes: leadMinutes)
+    }
+
     // MARK: - Private
 
     private func time(_ name: String, on day: LogicalDay) throws -> Date? {
@@ -121,5 +136,43 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
         comps.year = bits[0]; comps.month = bits[1]; comps.day = bits[2]
         comps.timeZone = timeModel.timeZone
         return calendar.date(from: comps)
+    }
+
+    /// The arithmetic mean of seconds-since-local-midnight of every
+    /// qualifying `mealType` entry logged in `[day - 14, day)`, applied to
+    /// `day`'s own calendar date. "Qualifying" means a *stated* `eatenAt`
+    /// (`basis == .occurrence`, never the `.recorded` fallback `logged`
+    /// uses for entries with no eaten time at all — a log-time says nothing
+    /// about when the user usually eats) at minute-or-finer precision
+    /// (`isOrderableWithinDay`) — a day/month/year-only entry names no
+    /// time-of-day to average in.
+    ///
+    /// Plain mean, not circular: the same limitation the 7-day wake average
+    /// above carries, for the same reason.
+    private func usualMealTime(for mealType: NutritionMealType, before day: LogicalDay) throws -> Date? {
+        guard let dayStart = midnight(of: day) else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeModel.timeZone
+        guard let windowStart = calendar.date(byAdding: .day, value: -14, to: dayStart) else { return nil }
+
+        let entries = try nutritionLog.logged(from: calendarDateString(windowStart), to: day.value)
+        let secondsOfDay: [Double] = entries.compactMap { placed in
+            guard placed.entry.mealType == mealType,
+                  placed.basis == .occurrence,
+                  placed.occurrence.precision.isOrderableWithinDay,
+                  let instant = placed.occurrence.span?.start else { return nil }
+            return secondsSinceLocalMidnight(instant)
+        }
+        guard !secondsOfDay.isEmpty else { return nil }
+        let average = secondsOfDay.reduce(0, +) / Double(secondsOfDay.count)
+        return dayStart.addingTimeInterval(average)
+    }
+
+    private func calendarDateString(_ instant: Date) -> String {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.timeZone = timeModel.timeZone
+        f.dateFormat = "yyyy-MM-dd"
+        return f.string(from: instant)
     }
 }
