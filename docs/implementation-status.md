@@ -867,3 +867,59 @@ stash` to prove this rather than assert it), then fixed
 shift, rest day, shift-end boundary, plus one boundary test split into
 three — zero regressions), XCTest 262 (1 skipped), unchanged.
 
+---
+
+## 2026-09-18 — Ticket 1: readiness-cycle boundary logic (yamal-buildable scope)
+
+Built from `almanac-handoff-2026-09-18.md` (project root, one level up from
+this repo) — the three referenced decision docs
+(`decision-ticket-1-readiness-cycle-2026-09-18.md` etc.) don't exist
+anywhere in either repo, so this was built from the handoff's own summary
+of the decided model, confirmed with the product owner before starting
+rather than guessed at silently.
+
+`ReadinessCycleStore`'s own doc comment already flagged that boundary
+computation — picking a wake time and deriving a cycle window from it — was
+"not yet built anywhere in this repo." This slice builds that piece, plus
+three supporting components, all on real `sleep_episode`/`readiness_cycle`
+tables rather than a parallel schema:
+
+- **`CycleBoundaryCalculator`** (`Sources/AlmanacCore/Readiness/`) — pure,
+  stateless. `.detected`/`.manual` wake sources compute identically (decision
+  1.2: manual is a substitute, not a different rule); `.trackingOff` falls
+  back to a fixed calendar day rolling over at 23:59:00 local (decision 1.3)
+  — deliberately not `TimeModel`'s existing `DayBoundary.wakeOffset`, which
+  only takes whole hours and is about which day a *logged entry* belongs to,
+  a different question from when a readiness cycle itself resets. 5 tests.
+- **`SleepEpisodeStore.upsertManualWake`** (decision 1.2) — a user-entered
+  wake time substituting for a missing sleep entry. Reuses `sleep_episode`
+  (`source = .manual`, already a first-class case) rather than a new table;
+  idempotent per `logicalDay` by querying for an existing manual primary
+  row first, unlike the classifier's `upsert` which can only key off
+  `healthKitUUID`. 4 tests.
+- **`SleepTrackingSettingsStore`** (Migration025, `sleep_tracking_settings`)
+  — the "Track sleep" toggle, a singleton row following `PrayerSettingsStore`'s
+  self-healing pattern. Defaults to `true` with no row yet, matching decision
+  1.1 (wake detection is the default). 3 tests.
+- **`SleepTrackingToggleService.disableTracking`** (decision 1.4) — mid-cycle
+  toggle-off. Deliberately does not touch `readiness_cycle` at all: the open
+  cycle's boundary is preserved simply by not writing to it, and the *next*
+  cycle switches to the calendar-day rule for free, the next time something
+  calls `CycleBoundaryCalculator` with tracking off. The toggle-off instant
+  is recorded as the cycle's sleep-ended time by reusing `upsertManualWake`
+  — the schema has no "in-progress, end not yet known" shape for
+  `sleep_episode` (every row requires both a start and an end), so the
+  manual-wake slot doubles as the pending-confirmation entry. No separate
+  "prompt state" table: the service's return value
+  (`sleepEpisodeIdPendingConfirmation`) is the signal a caller's UI would
+  check — the handoff explicitly scoped the confirm/edit prompt itself as a
+  stub, no copy specified. 3 tests.
+
+**Not built:** anything HealthKit-side (real wake-time detection from
+sleep sessions) — explicitly deferred to iMac per the handoff. No UI beyond
+what the four components above expose as return values; the confirm/edit
+prompt is unbuilt by design.
+
+**Verified:** Swift Testing 216/216 (was 202; 14 new tests, zero
+regressions), XCTest 262 (1 skipped), unchanged.
+

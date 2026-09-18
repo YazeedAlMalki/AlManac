@@ -79,4 +79,47 @@ struct SleepEpisodeStoreTests {
         let episodes = try store.episodes(for: "2026-09-16")
         #expect(episodes.map { $0.healthKitUUID } == ["hk-night-1", "hk-nap"])
     }
+
+    @Test("Recording a manual wake time with no existing sleep entry creates a manual primary episode")
+    func manualWakeCreatesEpisode() throws {
+        let wake = Date(timeIntervalSince1970: 1_028_800)
+
+        let id = try store.upsertManualWake(wakeTime: wake, logicalDay: "2026-09-16")
+        let stored = try store.episode(id: id)
+
+        #expect(stored?.source == .manual)
+        #expect(stored?.episodeType == .primary)
+        #expect(stored?.end == wake)
+        #expect(stored?.logicalDay == "2026-09-16")
+    }
+
+    @Test("Re-entering a manual wake time for the same night updates the same row, not a duplicate")
+    func manualWakeIsIdempotentPerNight() throws {
+        let firstWake = Date(timeIntervalSince1970: 1_028_800)
+        let correctedWake = Date(timeIntervalSince1970: 1_029_400)
+
+        let firstId = try store.upsertManualWake(wakeTime: firstWake, logicalDay: "2026-09-16")
+        let secondId = try store.upsertManualWake(wakeTime: correctedWake, logicalDay: "2026-09-16")
+
+        #expect(firstId == secondId)
+        #expect(try store.episode(id: firstId)?.end == correctedWake)
+
+        let count = try db.query("""
+            SELECT COUNT(*) AS n FROM sleep_episode WHERE logicalDay = '2026-09-16';
+            """).first?.int("n")
+        #expect(count == 1)
+    }
+
+    @Test("A manual wake time does not collide with a HealthKit-sourced episode on the same night")
+    func manualWakeCoexistsWithHealthKitEpisode() throws {
+        let night = episode(uuid: "hk-night-1", start: 1_000_000, end: 1_028_800)
+        try store.upsert(night, timezoneOffset: 180, logicalDay: "2026-09-16")
+
+        let manualId = try store.upsertManualWake(wakeTime: Date(timeIntervalSince1970: 1_029_000),
+                                                    logicalDay: "2026-09-16")
+
+        let episodes = try store.episodes(for: "2026-09-16")
+        #expect(episodes.count == 2)
+        #expect(episodes.contains { $0.id == manualId && $0.source == .manual })
+    }
 }

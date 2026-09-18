@@ -109,6 +109,46 @@ public struct SleepEpisodeStore: @unchecked Sendable {
         return id
     }
 
+    /// Records a user-entered wake time for a night with no sleep entry
+    /// (Ticket 1, decision 1.2). Idempotent per `logicalDay`: re-entering the
+    /// wake time for the same night updates the existing manual episode
+    /// rather than adding a second one — unlike `upsert`, which has no
+    /// identity to key on for a row with no `healthKitUUID`.
+    ///
+    /// Only `end` is known for a manual entry (there's no detected sleep
+    /// start), so `start` is set equal to `end` — a zero-duration marker,
+    /// not a claim that sleep began at wake time.
+    @discardableResult
+    public func upsertManualWake(wakeTime: Date, logicalDay: String, timezoneOffset: Int = 0) throws -> Int64 {
+        let wakeText = iso(wakeTime)
+
+        if let existing = try db.query("""
+            SELECT id FROM sleep_episode
+            WHERE logicalDay = ? AND source = 'manual' AND episodeType = 'primary';
+            """, [.text(logicalDay)]).first, let id = existing.int("id") {
+            try db.run("""
+            UPDATE sleep_episode
+            SET startTimestamp = ?, endTimestamp = ?, timezoneOffset = ?, durationMinutes = 0, updatedAt = ?
+            WHERE id = ?;
+            """, [.text(wakeText), .text(wakeText), .integer(Int64(timezoneOffset)), .text(nowText), .integer(id)])
+            return id
+        }
+
+        let createdAt = nowText
+        try db.run("""
+        INSERT INTO sleep_episode
+            (startTimestamp, endTimestamp, timezoneOffset, durationMinutes, episodeType,
+             source, logicalDay, createdAt, updatedAt)
+        VALUES (?, ?, ?, 0, 'primary', 'manual', ?, ?, ?);
+        """, [.text(wakeText), .text(wakeText), .integer(Int64(timezoneOffset)), .text(logicalDay), .text(createdAt), .text(createdAt)])
+
+        guard let row = try db.query("SELECT last_insert_rowid() as id;").first,
+              let id = row.int("id") else {
+            throw SleepEpisodeStoreError.insertFailed
+        }
+        return id
+    }
+
     public func episode(id: Int64) throws -> StoredSleepEpisode? {
         try db.query("""
         SELECT id, startTimestamp, endTimestamp, durationMinutes, episodeType, source,
