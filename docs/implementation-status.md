@@ -1197,3 +1197,141 @@ boundary are not handled — `link()` always treats the immediately-prior
 open cycle as the one to close, which is correct for the normal forward-
 in-time case this was built for, but not verified against replay/backfill
 scenarios.
+
+## 2026-09-18: circadianContextId wiring, out-of-order/reach-back linking, Slice 11 Meal/Supplement reminders + pre-workout snack trigger
+
+User instruction: the three "still open" items this same session's own
+previous note flagged were quoted back verbatim, followed by "do them" —
+explicit authorization under Auto Mode to also make the two product/schema
+decisions those items had been blocked on (meal/supplement reminder
+settings storage shape; a minimal "planned workout" concept), documented
+inline the same way `decision-ticket-*` docs capture earlier calls, rather
+than asking with nobody there to answer. Landed as two commits.
+
+### Commit `03de2f2` — circadianContextId + out-of-order/reach-back linking
+
+`readiness_cycle.circadianContextId` has been a real column since
+Migration014 but nothing ever wrote it — `CircadianContextEngine` (§13)
+was pure and completely unwired. New `CircadianContextStore` persists its
+output, one row per date, upserted via a new unique index on
+`circadian_context.date` (Migration028 — nothing enforced one-per-date
+before, though nothing had ever written a second row either).
+`ReadinessCyclePrimaryLinkingService.link()` now computes and attaches a
+context id on every link (`linkCircadianContext`), walking a small
+backward shift history through `ShiftScheduleStore.occurrence(for:)`.
+
+`link()` also no longer assumes "whichever cycle is open" is the
+predecessor being closed — the gap flagged in the previous note. It now
+derives true chronological neighbors fresh from
+`ReadinessCycleStore.allCycles()` (new method) on every call: the nearest
+cycle with a `cycleStartTimestamp` below the new wake time (predecessor,
+closed against this wake), and the nearest one above it (successor, this
+cycle's own end). This fixes out-of-order backfill (an earlier night
+processed after a later one already exists) and reach-back corrections
+(a wake time moved earlier, including past an already-closed neighbor's
+boundary) — both previously corrupted a cycle's boundaries, since the old
+code only ever looked at "the" open cycle. `ReadinessCycleStore.closeCycle`
+now takes `cycleEndTimestamp: Date?` (was non-optional) so a correction
+that removes what used to be a cycle's successor can reopen it again.
+
+Explicitly out of scope, flagged in the service's own doc comment rather
+than built: multi-hop reordering — a correction that jumps a cycle past
+more than one existing neighbor in a single move. `link()` only ever
+touches the cycle being linked and its two immediate neighbors, which
+covers every scenario this repo actually produces; a true multi-hop
+reorder would need to walk every affected cycle's own neighbors in turn.
+
+6 new tests: 3 on `ReadinessCycleStore` (`closeCycle` nil-reopens,
+`createCycle` attaches a `circadianContextId`, `allCycles` returns every
+row), 3 on the service (circadian context computed and attached,
+out-of-order backfill fixes both neighbors, a reach-back correction
+re-closes the true predecessor). The correction test needed both the
+original and corrected episode to share a `healthKitUUID` — caught
+before compiling by re-reading `SleepEpisodeStore.upsert`'s own doc
+comment: its upsert conflict target is a **partial** unique index on
+`healthKitUUID` (`WHERE healthKitUUID IS NOT NULL`), so two episodes with
+no UUID never conflict and silently insert as two rows instead of
+correcting one — exactly the failure mode a "same night, corrected"
+test needs to avoid.
+
+Verified on yamal (installed a Swift 6.0.3 toolchain into the cloud
+sandbox to compile and run tests directly, since the device bridge has
+none): `swift build` clean, full suite 299/299 Swift Testing tests
+(6 new), zero regressions. Committed after clearing a stale
+`.git/index.lock` left in the connected folder (needed a delete-
+permission grant for this session, since `device_bash` cannot unlink
+inside a connected folder until that's approved).
+
+### Commit `6496104` — Slice 11: Meal/Supplement reminder storage, pre-workout snack trigger
+
+**Meal Logging Reminder** (§14.2: "Default: OFF. User sets preferred
+times.") — new self-healing `meal_reminder_setting` table, one row per
+`NutritionMealType` (Migration029), same self-healing-singleton pattern
+as `sleep_tracking_settings` but keyed on `mealType` instead of a single
+`id = 1` row. `MealReminderSettingsStore.setReminder`/`setting`/
+`allSettings`; a meal type with no row yet reads back as "off, no time
+set" rather than a separate not-configured case.
+
+**Supplement Reminders** (§14.2: "Default: OFF per supplement. User sets
+time per supplement plan.") — `reminderEnabled`/`reminderMinuteOfDay`
+columns added directly to `supplement_plan` (Migration030), since the
+spec ties the reminder to one specific plan, not a shareable schedule.
+`SupplementPlanStore.setReminder`/`activePlansWithReminders` (active,
+enabled, time-set — exactly what "one notification per active supplement
+at its configured time" needs).
+
+Both store the reminder time as minutes-since-local-midnight (0–1439),
+not a `Date` — a repeating daily reminder has no instant to store.
+Resolving a stored minute-of-day onto a real day is
+`NotificationTriggerAssembler.mealReminderTrigger(for:on:)` /
+`supplementReminderTriggers(on:)`; `NotificationTriggerTimeComputer`
+itself gained no new function for either, since there's no rule to keep
+pure and separate — just arithmetic simple enough to live directly in the
+assembler.
+
+**Contextual: Pre-workout Snack Suggestion** (§14.2: trigger when the gap
+between last logged meal and planned workout start exceeds a threshold,
+default 3 hours) needed "planned workout start," which nothing in this
+repo represented — `PrescribedWorkoutStore` is a reusable template with
+no time attached, `WorkoutSessionStore` only records sessions already
+completed. New `planned_workout` table (Migration031): deliberately thin
+— a scheduled instant plus an optional link to a template, no status or
+recurrence, since the trigger only ever needs "the next planned workout
+after now." Named snake_case/camelCase like the rest of the
+Readiness/Sleep/Notifications domain rather than Training's camelCase
+tables, since it's new scheduling support, not one of §5's original
+tables.
+
+`NotificationTriggerTimeComputer.shouldSuggestPreWorkoutSnack` deliberately
+returns `Bool`, not `Date` like every other function in that enum — the
+spec gives this suggestion no lead time and calls it "computed at log
+time and at app launch," a live condition re-checked at specific moments,
+not something scheduled ahead of a future instant.
+`NotificationTriggerAssembler.shouldSuggestPreWorkoutSnack(now:)` reads
+`PlannedWorkoutStore.nextUpcoming(after:)` and the most recent logged
+meal before `now` (new private `lastLoggedMealTime`, windowed 3 days
+back — needed its own `[from, to)` handling distinct from
+`usualMealTime`'s: today's own meal must count here, where
+`usualMealTime` deliberately excludes it).
+
+31 new tests across `MealReminderSettingsStoreTests` (new, 6),
+`PlannedWorkoutStoreTests` (new, 6), `SupplementStoreTests` (+4 reminder
+tests), `NotificationTriggerTimeComputerTests` (+5 pure-function tests),
+`NotificationTriggerAssemblerTests` (+10: meal reminder resolution,
+supplement reminder filtering, pre-workout snack in all four shapes).
+
+Verified on yamal: `swift build` clean, full suite 330/330 Swift Testing
+tests pass, zero regressions from either commit. The only test failures
+anywhere in the full run (`NutritionBundleImportTests`,
+`NutritionDictionaryContractTests` — 15 XCTest cases, "file doesn't
+exist") are a pre-existing, unrelated fixture-path gap in the sandboxed
+build environment, not caused by this work — confirmed present and
+identical before and after both commits, and untouched by anything this
+increment changed.
+
+**Still explicitly out of scope**, same as before: `UNUserNotificationCenter`
+wiring itself remains iOS/Xcode-only. Multi-hop cycle reordering (flagged
+above). No UI for any of this session's storage — settings screens for
+meal/supplement reminder times, or a way to actually create a
+`planned_workout` row from the app, are separate work; this increment
+only built the storage and trigger logic the notification engine needs.
