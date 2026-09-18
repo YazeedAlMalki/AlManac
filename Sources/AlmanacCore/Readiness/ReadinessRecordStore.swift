@@ -108,6 +108,22 @@ public struct ReadinessRecordStore: @unchecked Sendable {
         """, [.text(value), .text(nowText), .text(nowText), .integer(cycleId)])
     }
 
+    /// Deletes the record for a cycle, if one exists.
+    ///
+    /// Used when `ReadinessCyclePrimaryLinkingService` clears an orphaned
+    /// cycle back to bare (see
+    /// `docs/adr/0001-orphaned-readiness-cycle-row-clears-to-bare.md`): a
+    /// record's `inputSnapshot`/score was computed against a primary episode
+    /// that has since moved to a different anchor date, so it is no longer
+    /// valid data to show on the dashboard or offer for feedback. Deleting
+    /// rather than nulling it out matches the existing invariant that a bare
+    /// cycle may simply have no record yet.
+    @discardableResult
+    public func deleteRecord(cycleId: Int64) throws -> Bool {
+        let affected = try db.run("DELETE FROM readiness_record WHERE readinessCycleId = ?;", [.integer(cycleId)])
+        return affected > 0
+    }
+
     // MARK: - Read
 
     public func record(cycleId: Int64) throws -> StoredReadinessRecord? {

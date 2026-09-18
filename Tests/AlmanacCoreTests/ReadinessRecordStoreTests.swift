@@ -110,4 +110,40 @@ struct ReadinessRecordStoreTests {
 
         #expect(try store.latestUnratedRecord(before: "2026-09-17") == nil)
     }
+
+    @Test("Setting feedback a second time overwrites the first value, not rejected as already-rated")
+    func settingFeedbackTwiceOverwrites() throws {
+        let store = ReadinessRecordStore(db: db)
+        try store.record(outcome(), cycleId: cycleId, anchorDate: "2026-09-17")
+
+        try store.setFeedback(cycleId: cycleId, value: "thumbs_up")
+        let firstTimestamp = try store.record(cycleId: cycleId)?.feedbackTimestamp
+
+        try store.setFeedback(cycleId: cycleId, value: "thumbs_down")
+        let stored = try store.record(cycleId: cycleId)
+
+        #expect(stored?.feedbackValue == "thumbs_down", "changing your mind replaces the earlier vote")
+        #expect(stored?.feedbackTimestamp != nil)
+        #expect(firstTimestamp != nil)
+    }
+
+    @Test("Rating the most recent unrated record surfaces the next-oldest one still waiting")
+    func ratingRevealsNextOldestBacklog() throws {
+        let store = ReadinessRecordStore(db: db)
+        let cycleStore = ReadinessCycleStore(db: db)
+        let twoDaysAgoCycle = try cycleStore.createCycle(anchorDate: "2026-09-15")
+        let yesterdayCycle = try cycleStore.createCycle(anchorDate: "2026-09-16")
+        try store.record(outcome(score: 40), cycleId: twoDaysAgoCycle, anchorDate: "2026-09-15")
+        try store.record(outcome(score: 55), cycleId: yesterdayCycle, anchorDate: "2026-09-16")
+        try store.record(outcome(score: 72), cycleId: cycleId, anchorDate: "2026-09-17")
+
+        let firstPrompt = try store.latestUnratedRecord(before: "2026-09-17")
+        #expect(firstPrompt?.anchorDate == "2026-09-16", "the closer backlog day is asked about first")
+
+        try store.setFeedback(cycleId: yesterdayCycle, value: "thumbs_up")
+
+        let secondPrompt = try store.latestUnratedRecord(before: "2026-09-17")
+        #expect(secondPrompt?.anchorDate == "2026-09-15",
+               "rating the most recent backlog day must surface the next-oldest one still waiting")
+    }
 }

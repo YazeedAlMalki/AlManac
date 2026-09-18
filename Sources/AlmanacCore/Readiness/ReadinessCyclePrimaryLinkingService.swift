@@ -35,6 +35,7 @@ public struct ReadinessCyclePrimaryLinkingService: @unchecked Sendable {
     private let shiftStore: ShiftScheduleStore
     private let circadianContextStore: CircadianContextStore
     private let linkingService: ReadinessCycleLinkingService
+    private let recordStore: ReadinessRecordStore
 
     public init(db: Database, timeModel: TimeModel, clock: any Clock = SystemClock()) {
         self.db = db
@@ -45,6 +46,7 @@ public struct ReadinessCyclePrimaryLinkingService: @unchecked Sendable {
         self.circadianContextStore = CircadianContextStore(db: db, clock: clock)
         self.linkingService = ReadinessCycleLinkingService(db: db, clock: clock,
                                                             zone: ZoneContext(timeModel.timeZone))
+        self.recordStore = ReadinessRecordStore(db: db, clock: clock)
     }
 
     public struct LinkResult: Sendable, Hashable {
@@ -111,6 +113,10 @@ public struct ReadinessCyclePrimaryLinkingService: @unchecked Sendable {
         }), let orphanStart = orphan.cycleStartTimestamp {
             try linkingService.unlinkLogsFromCycle(cycleId: orphan.id)
             try cycleStore.clearToBare(id: orphan.id)
+            // The orphan's own score, if any, was computed against this
+            // episode while it still lived on this anchor date — no longer
+            // valid now that the episode has moved elsewhere.
+            try recordStore.deleteRecord(cycleId: orphan.id)
 
             let remaining = try cycleStore.allCycles().filter { $0.id != orphan.id }
             if let formerPredecessor = remaining

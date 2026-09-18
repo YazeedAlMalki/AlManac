@@ -297,6 +297,49 @@ struct ReadinessCyclePrimaryLinkingServiceTests {
         #expect(claimCount == 1, "only one row may claim this episode as primary")
     }
 
+    @Test("Clearing an abandoned row also deletes its stale readiness_record, not just the cycle fields")
+    func orphanClearingDeletesStaleRecord() throws {
+        let wake17 = utc(7, day: "2026-09-17")
+        let wake18 = utc(7, day: "2026-09-18")
+        try storePrimary(start: utc(23, day: "2026-09-16"), end: wake17, logicalDay: "2026-09-17")
+        let uuid18 = "night-2026-09-18-primary"
+        let episode18 = SleepEpisode(start: utc(23, day: "2026-09-17"), end: wake18, type: .primary,
+                                      source: .healthkit,
+                                      asleepMinutes: Int(wake18.timeIntervalSince(utc(23, day: "2026-09-17")) / 60),
+                                      healthKitUUIDs: [uuid18])
+        let episode18Id = try SleepEpisodeStore(db: db).upsert(episode18, timezoneOffset: 0, logicalDay: "2026-09-18")
+
+        _ = try #require(try service.linkPrimaryEpisode(for: "2026-09-17"))
+        let day18 = try #require(try service.linkPrimaryEpisode(episodeId: episode18Id))
+
+        // A score was already computed and stored for day18 (as
+        // ReadinessModel.refresh() would do) before the correction arrives.
+        let recordStore = ReadinessRecordStore(db: db)
+        let outcome = ReadinessOutcome(
+            state: .final, score: 82, color: .green,
+            textDescription: "Recovery is good — ready for a strong session",
+            confidence: .high, missingInputs: [], formulaVersion: "1.0", inputSnapshot: "{}",
+            recommendation: "Recovery is good — ready for a strong session",
+            precedenceApplied: [], baselineContext: .general)
+        try recordStore.record(outcome, cycleId: day18.cycleId, anchorDate: "2026-09-18")
+        #expect(try recordStore.record(cycleId: day18.cycleId)?.score == 82)
+
+        // The correction reveals the night actually belongs to the 25th, far
+        // enough to land on a brand-new anchor date (see the sibling test above).
+        let correctedWake = utc(7, day: "2026-09-25")
+        let correction = SleepEpisode(start: utc(23, day: "2026-09-24"), end: correctedWake, type: .primary,
+                                       source: .healthkit,
+                                       asleepMinutes: Int(correctedWake.timeIntervalSince(utc(23, day: "2026-09-24")) / 60),
+                                       healthKitUUIDs: [uuid18])
+        let correctedId = try SleepEpisodeStore(db: db).upsert(correction, timezoneOffset: 0, logicalDay: "2026-09-25")
+        try service.linkPrimaryEpisode(episodeId: correctedId)
+
+        #expect(try recordStore.record(cycleId: day18.cycleId) == nil,
+               "a score computed against an episode that has since moved to a different day must not survive")
+        #expect(try recordStore.latestUnratedRecord(before: "2026-09-26") == nil,
+               "the stale, now-deleted record must never be offered for feedback")
+    }
+
     @Test("Clearing an abandoned row picks its logs back up into the neighbor that now covers that window")
     func orphanClearingRescopesLogsToTheExtendedNeighbor() throws {
         let wake17 = utc(7, day: "2026-09-17")
