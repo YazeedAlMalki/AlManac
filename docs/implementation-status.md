@@ -996,3 +996,35 @@ ship inconsistently; this only surfaced once something finally read
 
 Verified on yamal: `swift test` green, Swift Testing 237/237, XCTest 266
 (1 skipped), zero regressions.
+
+## 2026-09-18 — Slice 11 start: notification suppression matrix
+
+The wayfinder's "Ticket 9: suppression matrix" turned out to already be
+fully specified — tech spec §14 and Appendix B, both complete — just not
+built. `NotificationSuppressionMatrix.shouldSuppress(_:in:)` transcribes
+Appendix B's nine notification types × five suppression axes verbatim, pure
+and stateless (`Sources/AlmanacCore/Notifications/`) — no storage, no
+`UNUserNotificationCenter` (Darwin-only, not on Linux, same reason
+`WorkoutHealthKitMatcher` stops at pure matching logic). One cell is
+genuinely confusing in the spec itself: `suhoor`'s "during dry fast" column
+reads "🚫 (send = end of fast approaching)", which doesn't quite make sense
+since suhoor fires *before* the fast starts (§14.2) — transcribed literally
+(🚫 = suppress) rather than silently reinterpreted, flagged in the doc
+comment rather than resolved. 10 tests in
+`NotificationSuppressionMatrixTests.swift`, every documented cell asserted
+both directions (suppress and send).
+
+**Not built:** everything else Slice 11 needs before this is useful —
+per-type trigger-time computation (§14.2: water's interval math, suhoor/
+iftar off `PrayerTimeEngine`, the 14-day "usual meal time" derivation for
+contextual hydration, etc.), a context assembler that reads
+`FastingSessionStore`/shift data/`ReadinessCycleStore`/post-shift-sleep
+detection into a `NotificationSuppressionContext`, and the actual
+`Native/Almanac/NotificationScheduler.swift` wiring (iOS-app-target,
+currently hydration-only) that would call `UNUserNotificationCenter` per
+§14.1's four-step scheduling run. This pass is the suppression-decision
+piece alone, the one part of Slice 11 that was both fully spec'd and
+Linux-buildable.
+
+Verified on yamal: `swift test` green (same run as Ticket 5 above, committed
+separately).
