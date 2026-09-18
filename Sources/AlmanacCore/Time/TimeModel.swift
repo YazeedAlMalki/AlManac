@@ -93,6 +93,18 @@ public struct TimeModel: Sendable {
         return logicalDay(next)
     }
 
+    /// Mirror of `day(after:)`, added for callers that walk a trailing
+    /// window backward (the Notifications module's 7-day wake-time average)
+    /// rather than forward. Goes through the same `calendar.date(byAdding:)`
+    /// day arithmetic as every other method here, so a DST day that is 23 or
+    /// 25 hours is still exactly one calendar day, not a fixed 86,400-second
+    /// jump that could land on the wrong side of the boundary.
+    public func day(before day: LogicalDay) -> LogicalDay? {
+        guard let start = start(of: day),
+              let previous = calendar.date(byAdding: .day, value: -1, to: start) else { return nil }
+        return logicalDay(previous)
+    }
+
     public func contains(_ instant: Date, in day: LogicalDay) -> Bool {
         guard let b = bounds(of: day) else { return false }
         return instant >= b.start && instant < b.end

@@ -1028,3 +1028,65 @@ Linux-buildable.
 
 Verified on yamal: `swift test` green (same run as Ticket 5 above, committed
 separately).
+
+## 2026-09-18 — Slice 11 continued: trigger-time computation and store-reading assemblers
+
+Builds on the suppression matrix above with the two pieces §14.1's actual
+scheduling run needs to produce real fire times, mirroring that same
+pure-logic/store-reading split:
+
+`NotificationTriggerTimeComputer` (pure, `Sources/AlmanacCore/Notifications/`)
+computes each type's trigger instant from already-resolved primitives per
+§14.2: suhoor (-20min before Fajr, fast days only), iftar (at Maghrib, fast
+days only), water reminders (every `intervalMinutes` — default 90 — from
+wake to 2h before the sleep window, spec silent on whether the first
+reminder is at wake itself or one interval later; read here as one interval
+later, flagged not guessed), bedtime (-30min default before the sleep
+window), and readiness (primary sleep episode end, else an estimate the
+caller supplies). Three named types are deliberately absent, each flagged in
+the doc comment rather than half-built: Meal/Supplement reminders are plain
+user-set clock times with nothing to compute (app-layer settings, not core
+logic); Contextual pre-workout snack needs a "planned workout" concept this
+repo doesn't have (`PrescribedWorkoutStore` is a template with no time
+attached, `WorkoutSessionStore` only records what already happened);
+Contextual pre-meal hydration needs a 14-day usual-meal-time derivation off
+`NutritionLogStore.eatenAt`, a `PartialDateTime` that can be coarser than
+minute-precision or fully unknown — left for its own pass.
+
+`NotificationTriggerAssembler` reads `ShiftScheduleStore`,
+`PrayerTimeCacheStore`, `ReligiousFastScheduleStore`, and
+`SleepEpisodeStore` per `LogicalDay` and feeds the pure computer, including
+a 7-day trailing arithmetic-mean-of-wake-time fallback for readiness when
+neither a primary episode nor a shift-derived wake time is available
+(plain mean of seconds-since-midnight, not a circular mean — correct for
+the ordinary case, not attempted for someone whose wake time straddles
+midnight, flagged in the doc comment).
+
+`NotificationSuppressionContextAssembler` closes the gap the suppression
+matrix commit above left open: reads `FastingSessionStore`,
+`ShiftScheduleStore`, `SleepEpisodeStore`, `ReadinessCycleStore`, and
+`ReadinessRecordStore` into a `NotificationSuppressionContext` for the
+matrix to consume. Documented honestly: 3 of its 5 axes
+(`isDryFastActive`, `isConfirmedIFActive`, `isReadinessAlreadyFinal`) can
+only reflect "right now" in the database, not an arbitrary past instant,
+because `FastingSessionStore.activeSession()` and
+`ReadinessCycleStore.openCycle()` have no point-in-time query — justified
+against §14.1's own architecture, which reruns the whole scheduling pass
+(and so this whole assembly) on every log entry, shift change, and app
+launch rather than computing once and trusting a stale answer.
+
+Small addition to `TimeModel`: `day(before:)`, mirroring the existing
+`day(after:)`, needed to walk backward through logical days for the 7-day
+average.
+
+36 new tests across `NotificationTriggerTimeComputerTests.swift`,
+`NotificationTriggerAssemblerTests.swift`, and
+`NotificationSuppressionContextAssemblerTests.swift`.
+
+**Still not built:** the actual `Native/Almanac/NotificationScheduler.swift`
+`UNUserNotificationCenter` wiring (iOS-app-target, Darwin-only, needs
+Xcode) that would call all of this per §14.1's four-step run, plus the
+three flagged-absent trigger types above.
+
+Verified on yamal: `swift test` green, 274 tests (1 skipped —
+`ALMANAC_NUTRITION_BUNDLE` not set), zero regressions.
