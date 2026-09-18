@@ -17,18 +17,18 @@ struct CaffeineLogStoreTests {
         #expect(entry?.caffeineContext == nil)
     }
     
-    @Test("Compute early caffeine context (>6 hours before sleep)")
+    @Test("Compute early caffeine context (>=12 hours before sleep)")
     func earlyContext() throws {
         let drinkTime = Date(timeIntervalSince1970: 1000)
-        let sleepTime = Date(timeIntervalSince1970: 1000 + (7 * 3600))  // 7 hours later
-        
+        let sleepTime = Date(timeIntervalSince1970: 1000 + (13 * 3600))  // 13 hours later
+
         let draft = CaffeineLogDraft(timestamp: drinkTime, drinkType: "coffee_black",
                                       caffeineMg: 95, intendedSleepTimestamp: sleepTime)
         let id = try store.log(draft, logicalDay: "2026-09-16")
-        
+
         let entry = try store.entry(id: id)
         #expect(entry?.caffeineContext == "early")
-        #expect((entry?.hoursBeforeIntendedSleep ?? 0) > 6)
+        #expect((entry?.hoursBeforeIntendedSleep ?? 0) > 12)
     }
     
     @Test("Compute late caffeine context (<1 hour before sleep)")
@@ -63,7 +63,7 @@ struct CaffeineLogStoreTests {
     func entriesByContext() throws {
         let sleepTime = Date(timeIntervalSince1970: 10000)
         
-        let earlyTime = Date(timeIntervalSince1970: 10000 - (8 * 3600))
+        let earlyTime = Date(timeIntervalSince1970: 10000 - (13 * 3600))
         let lateTime = Date(timeIntervalSince1970: 10000 - (30 * 60))
         
         try store.log(CaffeineLogDraft(timestamp: earlyTime, drinkType: "coffee_black",

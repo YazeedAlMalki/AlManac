@@ -833,3 +833,37 @@ Linux machine. `AlmanacCore` itself is unaffected (this session touched no
 `Sources/AlmanacCore` files) — Swift Testing 198/198, XCTest 262 (1
 skipped), unchanged from the prior entry.
 
+---
+
+## 2026-09-18 — Ticket 3: caffeine context validation found and fixed a real threshold bug
+
+Commit `6eeeb06` (2026-09-16) had already added shift-aware tests for
+`CaffeineLogStore.computeContext`, but its own message admitted they were
+checked against "the thresholds actually shipped" rather than an
+independent source — i.e. the expected values were derived the same way
+the code derives them, so the suite could never disagree with the code. No
+file in this repo (`almanac-tech-spec-v1.0.md` §5.14,
+`docs/architecture/spec-reconciliation.md` §4.3) states numeric hour
+boundaries for `early`/`normal`/`late`/`very_late`; BRD §6.2, the actual
+source, isn't in the repo.
+
+Confirmed the real boundaries with the product owner: **early ≥12h,
+normal 8–12h, late 3–8h, very_late <3h** (lower bound inclusive). The
+shipped code had **early ≥6h, normal 3–6h, late 1–3h, very_late <1h** —
+every band off by roughly a factor of two.
+
+Rewrote `ShiftAwareCaffeineContextTests` (13 scenarios: day/night/evening
+workers, no-schedule, occurrence-without-sleep-window, multiple-contexts-
+same-day, the three real boundaries at 12h/8h/3h, a split shift, a rest
+day inside a 4-on-4-off rotation using its own sleep window rather than
+the neighboring night shift's, caffeine logged at the exact instant a
+shift ends, and a recurring rotating pattern) against the confirmed
+thresholds first, confirmed 7 of 13 failed against the old code (46%
+accuracy — temporarily reverted just `CaffeineLogStore.swift` via `git
+stash` to prove this rather than assert it), then fixed
+`computeContext`'s four comparisons and its doc comment. 13/13 pass now.
+
+**Verified:** Swift Testing 202/202 (was 198; 4 new scenarios — split
+shift, rest day, shift-end boundary, plus one boundary test split into
+three — zero regressions), XCTest 262 (1 skipped), unchanged.
+
