@@ -15,18 +15,20 @@ public struct ReadinessCycleRecord: Sendable, Hashable, Identifiable {
 
 /// Reading and creating `readiness_cycle` rows (§5.7, §7.3, §8.4).
 ///
-/// **What this deliberately does not do:** derive a cycle from
-/// `SleepEpisodeStore`'s primary episode. §8.4 says a cycle's
-/// `primaryWakeTimestamp`/`cycleStartTimestamp`/`primarySleepEpisodeId` come
-/// from "primary sleep is determined for a cycle" — that determination
-/// (picking the primary episode out of a night's episodes and closing the
-/// previous cycle's `cycleEndTimestamp` when it does) is its own task, not
-/// yet built anywhere in this repo (`docs/implementation-status.md`,
-/// 2026-09-16 entry). `createCycle`/`ensureCycle` here make a bare cycle row
-/// with whatever timestamps the caller already has — enough for the
-/// dashboard and check-in screens to have a cycle id to link logs against
-/// today — and leave `primarySleepEpisodeId`/`circadianContextId` nil until
-/// that real linking task lands.
+/// `createCycle`/`ensureCycle` make a bare cycle row with whatever
+/// timestamps the caller already has — enough for the dashboard and
+/// check-in screens to have a cycle id to link logs against today, before
+/// any sleep has even been classified yet. `linkPrimaryEpisode`/
+/// `closeCycle` below are the other half: backfilling a bare row (or
+/// updating a real one) once a primary sleep episode is actually known.
+/// Picking *which* episode is primary (§8.2's priority order) is not this
+/// store's job — that happens earlier, inside `SleepClassifier`, before an
+/// episode is ever persisted. Tying a stored primary episode to this table,
+/// closing out the cycle before it, and re-linking wellness logs to both is
+/// `ReadinessCyclePrimaryLinkingService`'s job — this store only exposes
+/// the write primitives that service needs. `circadianContextId` remains
+/// nil regardless; wiring it up is a distinct, still-unstarted task this
+/// doesn't touch.
 public struct ReadinessCycleStore: @unchecked Sendable {
     let db: Database
     private let clock: any Clock
@@ -82,6 +84,40 @@ public struct ReadinessCycleStore: @unchecked Sendable {
                                 cycleStartTimestamp: timestamp)
     }
 
+    /// Backfills a primary sleep episode onto an existing cycle row —
+    /// either a bare one `ensureCycle` made before classification ran, or a
+    /// real one being corrected by reprocessing. Leaves `cycleEndTimestamp`
+    /// untouched; closing a cycle is `closeCycle`'s job, kept separate
+    /// because the two are decided by different events (this cycle's own
+    /// wake vs. the *next* cycle's wake, per §7.3).
+    @discardableResult
+    public func linkPrimaryEpisode(id: Int64, primarySleepEpisodeId: Int64,
+                                    primaryWakeTimestamp: Date, cycleStartTimestamp: Date) throws -> Bool {
+        let affected = try db.run("""
+        UPDATE readiness_cycle
+        SET primarySleepEpisodeId = ?, primaryWakeTimestamp = ?, cycleStartTimestamp = ?, updatedAt = ?
+        WHERE id = ?;
+        """, [
+            .integer(primarySleepEpisodeId),
+            .text(iso(primaryWakeTimestamp)),
+            .text(iso(cycleStartTimestamp)),
+            .text(nowText),
+            .integer(id)
+        ])
+        return affected > 0
+    }
+
+    /// §7.3 — "cycleEndTimestamp = start of NEXT primary sleep episode's end
+    /// (the next wake)". Called once the *next* cycle's wake time is known,
+    /// on whichever cycle was open before it.
+    @discardableResult
+    public func closeCycle(id: Int64, cycleEndTimestamp: Date) throws -> Bool {
+        let affected = try db.run("""
+        UPDATE readiness_cycle SET cycleEndTimestamp = ?, updatedAt = ? WHERE id = ?;
+        """, [.text(iso(cycleEndTimestamp)), .text(nowText), .integer(id)])
+        return affected > 0
+    }
+
     // MARK: - Read
 
     public func cycle(id: Int64) throws -> ReadinessCycleRecord? {
@@ -102,9 +138,11 @@ public struct ReadinessCycleStore: @unchecked Sendable {
     }
 
     /// The still-open cycle (§7.3: `cycleEndTimestamp IS NULL`), if any. There
-    /// should be at most one — nothing enforces that at the schema level
-    /// (closing a cycle is part of the not-yet-built primary-sleep-linking
-    /// task above), so this returns the most recently created one.
+    /// should be at most one — `closeCycle` is what keeps that true once a
+    /// caller (`ReadinessCyclePrimaryLinkingService`) actually calls it on
+    /// the right cycle at the right time, but nothing enforces it at the
+    /// schema level, so this returns the most recently created one rather
+    /// than assuming.
     public func openCycle() throws -> ReadinessCycleRecord? {
         try db.query("""
         SELECT id, anchorDate, primaryWakeTimestamp, cycleStartTimestamp, cycleEndTimestamp,

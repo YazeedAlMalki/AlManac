@@ -1137,3 +1137,63 @@ matching the 7 new tests exactly.
 **Still not built:** Meal/Supplement reminders and Contextual pre-workout
 snack (both need real product/schema decisions, not just wiring), and the
 `UNUserNotificationCenter` wiring itself (iOS-only, needs Xcode).
+
+## 2026-09-18: Readiness-cycle primary-episode linking (§7.3/§8.4)
+
+`ReadinessCycleStore`'s own doc comment flagged this as the one piece of
+Slice 2's readiness-cycle work left unbuilt: `createCycle`/`ensureCycle`
+make bare rows, but nothing tied a *known-primary* sleep episode
+(`SleepClassifier`'s job, already fully built — priority: user correction
+→ shift-aware → general-longest → none, `effectiveType == .primary`
+before an episode is ever persisted) to its `readiness_cycle` row. Picking
+*which* episode is primary was never in scope here; this is purely "now
+that we know, what does that mean for `readiness_cycle` and everything
+downstream of it."
+
+Two new `ReadinessCycleStore` methods split the write in two, matching
+§7.3's own split: `linkPrimaryEpisode(id:primarySleepEpisodeId:
+primaryWakeTimestamp:cycleStartTimestamp:)` backfills a cycle's primary
+episode without touching `cycleEndTimestamp`; `closeCycle(id:
+cycleEndTimestamp:)` sets it, called separately because the two are
+decided by different events (this cycle's own wake vs. the *next*
+cycle's wake).
+
+`ReadinessCyclePrimaryLinkingService` (new) does the actual assembly, via
+`linkPrimaryEpisode(for: logicalDay)` or `linkPrimaryEpisode(episodeId:)`:
+resolves `anchorDate` from the wake instant itself
+(`TimeModel.logicalDay(_:)`, per §8.4 — not the episode's own stored
+night-label, which is the caller's chosen grouping, not necessarily the
+same rule), creates-or-backfills that day's cycle, closes whichever cycle
+was open before it, and relinks mood/soreness logs (via the pre-existing
+`ReadinessCycleLinkingService`) into both the newly-closed cycle's final
+window and the new cycle's still-open one.
+
+Self-caught correctness bug before ever requesting a compile: the first
+draft looked up "the previous cycle to close" via `openCycle()` *after*
+creating the new cycle row. Since `openCycle()` orders by id descending
+and a brand-new row is both open and highest-id, it would mask the real
+previous cycle and silently skip closing it on every run past the first.
+Fixed by capturing both `cycle(anchorDate:)` and `openCycle()` (self-
+excluded by id) *before* any write in the operation — the same
+non-circularity discipline as the 7-day wake-time average never using a
+day's own not-yet-happened data.
+
+12 new tests (4 on `ReadinessCycleStore`'s two new methods, 8 on the
+service — including one full close→unlink→relink cascade proving a log
+wrongly linked to a cycle while it was still open gets correctly moved to
+the next cycle once it closes). One test-data bug (not implementation)
+caught on the first `swift test` run: `primarySleepEpisodeId` is a real
+FK into `sleep_episode`, and two tests used a fabricated id — fixed by
+creating genuine `SleepEpisodeStore` rows first.
+
+Verified on yamal: `swift test` green, 293 tests (1 skipped, env-gated),
+zero regressions — up from 281, matching the 12 new tests exactly.
+
+**Still not built:** `circadianContextId` wiring on `readiness_cycle`
+remains its own separate, unstarted task. Out-of-order backfill (a
+correction arriving for a night earlier than the most recently processed
+one) and a correction that reaches back past an already-closed cycle
+boundary are not handled — `link()` always treats the immediately-prior
+open cycle as the one to close, which is correct for the normal forward-
+in-time case this was built for, but not verified against replay/backfill
+scenarios.
