@@ -52,6 +52,18 @@ struct WorkoutSessionStoreTests {
         #expect(session?.prescribedWorkoutId == templateId)
     }
 
+    @Test("A session records the user-selected workout type")
+    func recordsSessionType() throws {
+        let id = try store.log(WorkoutSessionDraft(date: "2026-09-16", sessionType: "CrossFit"))
+        #expect(try store.session(id: id)?.sessionType == "CrossFit")
+    }
+
+    @Test("sessionType is nil when not given")
+    func sessionTypeDefaultsToNil() throws {
+        let id = try store.log(WorkoutSessionDraft(date: "2026-09-16"))
+        #expect(try store.session(id: id)?.sessionType == nil)
+    }
+
     @Test("Soft delete removes a session from date listings")
     func softDelete() throws {
         let id = try store.log(WorkoutSessionDraft(date: "2026-09-16", durationMinutes: 30))

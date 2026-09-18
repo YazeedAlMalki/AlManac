@@ -210,6 +210,17 @@ an absence in the design itself.
 
 ## 6. Build plan, next
 
+**2026-09-18 addendum (Ticket 4, yamal-buildable scope):** three gaps this
+plan left open turned out to be buildable without any HealthKit dependency
+and are now done — `workoutSession.sessionType` (Migration026, the
+user-selected sport/activity), `ExerciseProgressStore` (cross-session
+per-exercise weight/reps/sets history — see `docs/implementation-status.md`,
+2026-09-18), and `WorkoutHealthKitMatcher` (pure time-overlap matching,
+step 1(d) below, built against a standalone `HealthKitWorkoutSample` fake
+so it's ready to wire once the bridge exists). Step 1(a)-(c) are still
+open — the matcher only solves "given a session and some candidate
+windows, which one wins," not where the candidates come from.
+
 1. HealthKit bridge — needs, in order: (a) a design decision on how
    `HealthSample` (or a new parallel type) carries workout activity type,
    (b) a migration adding `source`/`healthKitUUID` to `workoutSession` for
@@ -217,7 +228,8 @@ an absence in the design itself.
    `prescriptionType`/`containerType` defaults (a real per-value decision
    table, not a guess), (d) the bridge itself, one `workoutSession` per
    `HKWorkout` (matching the granularity that actually exists on both
-   sides), with unmatched/unstructured workouts landing as `session_only`.
+   sides), with unmatched/unstructured workouts landing as `session_only` —
+   time-overlap matching itself is done (`WorkoutHealthKitMatcher`, above).
 2. ~~UI~~ — done 2026-09-17 (§5 above), scoped to quick-add against an
    ad-hoc daily session, using `WorkloadComputer` for the aggregate shown
    both on the Training tab and (when today has one) as a section on

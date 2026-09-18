@@ -923,3 +923,45 @@ prompt is unbuilt by design.
 **Verified:** Swift Testing 216/216 (was 202; 14 new tests, zero
 regressions), XCTest 262 (1 skipped), unchanged.
 
+---
+
+## 2026-09-18 — Ticket 4: training/workout schema gaps (yamal-buildable scope)
+
+Same handoff as Ticket 1 above. Training's schema/stores/UI (Migration016,
+2026-09-16/17) already covered most of Ticket 4's ask — see
+`docs/features/training.md`. Checked against that doc and the actual
+schema before building anything, specifically to avoid a repeat of the
+2026-09-16 schema-collision incident: three genuine gaps remained, all
+built here, nothing duplicated.
+
+- **`workoutSession.sessionType`** (Migration026) — the user-selected
+  sport/activity ("CrossFit", "football", "running", ...), which
+  `workoutSession` had no column for at all. Deliberately a plain nullable
+  `TEXT`, no `CHECK` constraint — unlike the twelve prescription types
+  (closed and enumerable by design, §2), the set of sports a session can be
+  is open-ended; the ticket's own examples end in "etc." 2 tests.
+- **`ExerciseProgressStore`** (`Sources/AlmanacCore/Training/`) — the actual
+  point of collecting per-exercise data that `WorkloadComputer` doesn't
+  cover: `WorkloadComputer` aggregates one session's bouts into a summary,
+  this follows one exercise's `actual*` fields (never prescribed — same
+  provenance rule as everywhere else in Training) across every session it
+  appears in, oldest first. A plain join over `workoutBout`/`workoutSession`,
+  filtered to live rows on both sides. 4 tests.
+- **`WorkoutHealthKitMatcher`** — pure time-overlap matching, ready to wire
+  to a real HealthKit bridge later, built and tested against a standalone
+  `HealthKitWorkoutSample` fake rather than `HealthSample` (extending
+  `HealthSample` for workout activity type is its own undecided design
+  question, training.md §5). Enforces "one HK workout per Almanac session,
+  never split" by picking the single greatest-overlap candidate when more
+  than one candidate's window overlaps the session's. 5 tests.
+
+**Not built:** any real HealthKit ingestion (blocked on iMac and on an
+unscoped workout-domain HealthKit decision per the handoff — flagged as a
+follow-up ticket, not guessed at here). No UI for `sessionType` or
+`ExerciseProgressStore` — both are storage/logic only, same "not verified
+by a build here" caveat as every other `Native/Almanac` UI gap in this repo.
+
+**Verified:** full clean rebuild (`rm -rf .build && swift build`) plus
+Swift Testing 227/227 (was 216; 11 new tests, zero regressions), XCTest 262
+(1 skipped), unchanged.
+

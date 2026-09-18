@@ -9,10 +9,12 @@ public struct WorkoutSessionDraft: Sendable {
     public var rpe: Int?  // 1-10, session-level
     public var notes: String?
     public var prescribedWorkoutId: Int64?
+    /// The user-selected sport/activity ("CrossFit", "football", "running", ...).
+    public var sessionType: String?
 
     public init(date: String, startTimestamp: Date? = nil, endTimestamp: Date? = nil,
                 durationMinutes: Int? = nil, rpe: Int? = nil, notes: String? = nil,
-                prescribedWorkoutId: Int64? = nil) {
+                prescribedWorkoutId: Int64? = nil, sessionType: String? = nil) {
         self.date = date
         self.startTimestamp = startTimestamp
         self.endTimestamp = endTimestamp
@@ -20,6 +22,7 @@ public struct WorkoutSessionDraft: Sendable {
         self.rpe = rpe
         self.notes = notes
         self.prescribedWorkoutId = prescribedWorkoutId
+        self.sessionType = sessionType
     }
 }
 
@@ -33,6 +36,7 @@ public struct WorkoutSessionEntry: Sendable, Hashable, Identifiable {
     public let rpe: Int?
     public let notes: String?
     public let prescribedWorkoutId: Int64?
+    public let sessionType: String?
     public let deletedAt: String?
     public let createdAt: String
     public let updatedAt: String
@@ -65,8 +69,8 @@ public struct WorkoutSessionStore: @unchecked Sendable {
         try db.run("""
         INSERT INTO workoutSession
             (date, startTimestamp, endTimestamp, durationMinutes, rpe, notes,
-             prescribedWorkoutId, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+             prescribedWorkoutId, sessionType, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(draft.date),
             draft.startTimestamp.map { SQLValue.text(iso($0)) } ?? .null,
@@ -75,6 +79,7 @@ public struct WorkoutSessionStore: @unchecked Sendable {
             draft.rpe.map { SQLValue.integer(Int64($0)) } ?? .null,
             draft.notes.map { SQLValue.text($0) } ?? .null,
             draft.prescribedWorkoutId.map { SQLValue.integer($0) } ?? .null,
+            draft.sessionType.map { SQLValue.text($0) } ?? .null,
             .text(now), .text(now)
         ])
         var id: Int64 = 0
@@ -119,6 +124,7 @@ public struct WorkoutSessionStore: @unchecked Sendable {
             startTimestamp: row.string("startTimestamp"), endTimestamp: row.string("endTimestamp"),
             durationMinutes: row.int("durationMinutes").map(Int.init), rpe: row.int("rpe").map(Int.init),
             notes: row.string("notes"), prescribedWorkoutId: row.int("prescribedWorkoutId"),
+            sessionType: row.string("sessionType"),
             deletedAt: row.string("deletedAt"), createdAt: createdAt, updatedAt: updatedAt
         )
     }
