@@ -965,3 +965,34 @@ by a build here" caveat as every other `Native/Almanac` UI gap in this repo.
 Swift Testing 227/227 (was 216; 11 new tests, zero regressions), XCTest 262
 (1 skipped), unchanged.
 
+
+## 2026-09-18 — Ticket 5: nutrition portion-schema reconciliation (`nutrition_food_factor`, Migration027)
+
+`docs/features/nutrition.md` §8 flagged the pipeline's `nutrition_portion`
+(`household_measure`/`specific_gravity`/`edible_proportion`, Processing
+Design v0.1 §4) as unreconciled with AlmanacCore's own `nutrition_portion`
+(Migration010, household measures only). `specific_gravity` and
+`edible_proportion` are per **reference food** — thousands of CoFID rows —
+so they cannot reuse `nutrition_dish.edible_proportion` (one row per
+device-authored `almanac:` dish; that stays exactly as it was). New table
+`nutrition_food_factor` (Migration027) holds both, keyed `(food_ref, kind,
+source_record)`, CHECK constraints mirroring the bundle's own qualifier/value
+rule verbatim. `NutritionReferenceImporter` now imports `household_measure`
+rows into the existing `nutrition_portion` table (row-by-row — `unit_fold`
+needs `TextFold`, so not a bulk `INSERT...SELECT`) and the other two kinds
+into the new table (a plain bulk copy). Both ride the existing cascade-
+delete-then-reinsert transaction, so a device-authored dish's own portions
+still survive a reimport and nothing duplicates on a repeat import.
+`NutritionCatalog.foodFactor(of:kind:)` is the read side. 4 new tests in
+`NutritionBundleImportTests.swift` against the real fixture
+(`tools/nutrition/fixtures/bundle_v1.sql`); one existing test updated
+(module-prefixed-table assertion) and one pre-existing test
+(`testReimportingReplacesAndDropsARemovedSource`) fixed — its hand-built
+"source removed" bundle deleted `nutrition_food`/`nutrition_source` rows for
+the dropped namespace but not the matching `nutrition_portion` rows, which
+the real pipeline's own `PRAGMA foreign_key_check` gate would never allow to
+ship inconsistently; this only surfaced once something finally read
+`nutrition_portion`.
+
+Verified on yamal: `swift test` green, Swift Testing 237/237, XCTest 266
+(1 skipped), zero regressions.

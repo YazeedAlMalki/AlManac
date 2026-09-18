@@ -168,6 +168,7 @@ final class NutritionBundleImportTests: XCTestCase {
         let withoutCoFID = try bundle(altered: """
             DELETE FROM nutrition_value WHERE food_ref LIKE 'cofid:%';
             DELETE FROM nutrition_food_name WHERE food_ref LIKE 'cofid:%';
+            DELETE FROM nutrition_portion WHERE food_ref LIKE 'cofid:%';
             DELETE FROM nutrition_food WHERE namespace = 'cofid';
             DELETE FROM nutrition_source WHERE namespace = 'cofid';
             """)
@@ -175,5 +176,116 @@ final class NutritionBundleImportTests: XCTestCase {
         XCTAssertEqual(report.namespaces, [.afcd, .almanac, .ciqual, .usda])
         XCTAssertNil(try NutritionCatalog(db: db).food(ref("cofid:900-001")))
         XCTAssertEqual(try db.query("SELECT COUNT(*) AS n FROM nutrition_reference_import;").first?.int("n"), 2)
+    }
+
+    // MARK: - Portion-schema reconciliation (Ticket 5, nutrition.md §8)
+
+    /// `household_measure` rows import into the same `nutrition_portion` table
+    /// `addPortion` already writes to — readable through `portions(of:)` and
+    /// `grams(of:...)` exactly like a locally-added measure.
+    func testHouseholdMeasureRowsImportAndResolveToGrams() throws {
+        let db = try migrated()
+        try NutritionReferenceImporter(db: db).importBundle(at: bundle())
+        let catalog = NutritionCatalog(db: db)
+        let apple = ref("usda:900001")
+
+        let portions = try catalog.portions(of: apple)
+        XCTAssertEqual(Set(portions.map(\.unitText)), ["cup", "tablespoon"])
+
+        // "1 cup" weighs 156 g: 1 cup requested weighs 156 g.
+        let cupGrams = try XCTUnwrap(try catalog.grams(of: apple, amount: 1, unit: "cup"))
+        XCTAssertEqual(cupGrams, 156, accuracy: 1e-9)
+        // "2 tablespoon, chopped" weighs 33.9 g — the modifier narrows to the
+        // right row rather than the unmodified one (there is no unmodified
+        // tablespoon row in this fixture, but the principle is what's tested).
+        let tablespoonGrams = try XCTUnwrap(
+            try catalog.grams(of: apple, amount: 2, unit: "tablespoon", modifier: "chopped"))
+        XCTAssertEqual(tablespoonGrams, 33.9, accuracy: 1e-9)
+        // Plural matching, same as a locally-added portion.
+        let cupsGrams = try XCTUnwrap(try catalog.grams(of: apple, amount: 3, unit: "cups"))
+        XCTAssertEqual(cupsGrams, 468, accuracy: 1e-9)
+    }
+
+    /// `specific_gravity` and `edible_proportion` are per reference food, not
+    /// per dish — `nutrition_food_factor` (Migration027), read back through
+    /// `NutritionCatalog.foodFactor(of:kind:)`.
+    func testDensityAndEdibleProportionImportIntoFoodFactor() throws {
+        let db = try migrated()
+        // The fixture already carries a real edible_proportion row; add a
+        // specific_gravity row for the same food so both kinds are covered —
+        // a legitimate row, not a constraint-bypassing alteration.
+        let withGravity = try bundle(altered: """
+            INSERT INTO nutrition_portion VALUES
+                ('cofid:900-001', 'specific_gravity', 'g_per_ml', NULL, 1.03, 'measured', NULL,
+                 '1.03', 'g_per_ml', '', '', '1.2 Factors!row 4', 'B');
+            """)
+        try NutritionReferenceImporter(db: db).importBundle(at: withGravity)
+        let catalog = NutritionCatalog(db: db)
+        let food = ref("cofid:900-001")
+
+        let edible = try XCTUnwrap(try catalog.foodFactor(of: food, kind: .edibleProportion))
+        XCTAssertEqual(edible.value, 0.65)
+        XCTAssertEqual(edible.qualifier, .measured)
+        XCTAssertEqual(edible.licenceGroup, .attribution)
+
+        let gravity = try XCTUnwrap(try catalog.foodFactor(of: food, kind: .specificGravity))
+        XCTAssertEqual(gravity.value, 1.03)
+
+        // A food with neither kind reads back nil, not a crash or a stray row.
+        XCTAssertNil(try catalog.foodFactor(of: ref("usda:900001"), kind: .edibleProportion))
+    }
+
+    /// CoFID's `N` ("not analysed") reuses the qualifier token system, same as
+    /// a nutrient value: a token never becomes a number.
+    func testAQualifierOnlyFactorRowHasNoValue() throws {
+        let db = try migrated()
+        let notAnalysed = try bundle(altered: """
+            UPDATE nutrition_portion
+            SET value = NULL, qualifier = 'not_analysed', source_value = 'N'
+            WHERE food_ref = 'cofid:900-001' AND kind = 'edible_proportion';
+            """)
+        try NutritionReferenceImporter(db: db).importBundle(at: notAnalysed)
+        let factor = try XCTUnwrap(try NutritionCatalog(db: db)
+            .foodFactor(of: ref("cofid:900-001"), kind: .edibleProportion))
+        XCTAssertNil(factor.value, "a token is never coerced into a number")
+        XCTAssertEqual(factor.qualifier, .notAnalysed)
+    }
+
+    /// Reimporting is still one step (§3): portions and factors are replaced
+    /// with the food they belong to, never doubled — and a device-authored
+    /// dish's own portion, added through `addPortion` and untouched by the
+    /// bundle, survives a reimport exactly like `nutrition_dish` itself does.
+    func testReimportingDoesNotDuplicatePortionsOrFactorsAndPreservesADishsOwnPortion() throws {
+        let db = try migrated()
+        let catalog = NutritionCatalog(db: db)
+        try NutritionReferenceImporter(db: db).importBundle(at: bundle())
+        try NutritionReferenceImporter(db: db).importBundle(at: bundle())
+
+        XCTAssertEqual(try catalog.portions(of: ref("usda:900001")).count, 2,
+                       "re-running the same import must not double the two USDA rows")
+        XCTAssertEqual(try db.query("SELECT COUNT(*) AS n FROM nutrition_food_factor;").first?.int("n"), 1)
+
+        // A device-authored dish — marked by a `nutrition_dish` row, the same
+        // way `NutritionDishEditor` marks one, and never shipped by the
+        // bundle at all (unlike `almanac:fixture-dish`, which the fixture
+        // ships as ordinary native reference data and is therefore replaced
+        // like any other food) — keeps its own portion across a reimport,
+        // the same protection `nutrition_food`/`nutrition_value` already
+        // give a `nutrition_dish` row.
+        let dishRef = "almanac:test-dish"
+        try db.run("""
+            INSERT INTO nutrition_food (food_ref, namespace, local_id, licence_group, food_group_code,
+                                        food_group_name, source_record)
+            VALUES (?, 'almanac', 'test-dish', 'N', '', '', 'test');
+            """, [.text(dishRef)])
+        try db.run("""
+            INSERT INTO nutrition_dish (food_ref, yield_grams, edible_proportion, created_at, updated_at)
+            VALUES (?, NULL, NULL, '2026-09-18T00:00:00Z', '2026-09-18T00:00:00Z');
+            """, [.text(dishRef)])
+        try catalog.addPortion(NutritionPortion(foodRef: ref(dishRef), amount: 1, unitText: "serving",
+                                                 gramWeight: 250, licenceGroup: .native))
+        try NutritionReferenceImporter(db: db).importBundle(at: bundle())
+        XCTAssertEqual(try catalog.grams(of: ref(dishRef), amount: 1, unit: "serving"), 250,
+                       "a device-authored dish's own portion must survive a reimport")
     }
 }

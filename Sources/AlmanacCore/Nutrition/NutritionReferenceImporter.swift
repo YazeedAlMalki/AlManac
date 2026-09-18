@@ -77,6 +77,11 @@ public struct NutritionReferenceImporter: @unchecked Sendable {
                    substr(food_ref, 1, instr(food_ref, ':') - 1) AS namespace, licence_group
             FROM bundle.nutrition_value;
             """)
+        try verifyLicenceGroups("""
+            SELECT food_ref || '/' || kind || '/' || source_record AS identifier,
+                   substr(food_ref, 1, instr(food_ref, ':') - 1) AS namespace, licence_group
+            FROM bundle.nutrition_portion;
+            """)
         let namespaces = try db.query("SELECT namespace FROM bundle.nutrition_source ORDER BY namespace;")
             .compactMap { $0.string("namespace").flatMap(SourceIdentifier.Namespace.init(rawValue:)) }
         let namespacePlaceholders = namespaces.map { _ in "?" }.joined(separator: ", ")
@@ -158,6 +163,36 @@ public struct NutritionReferenceImporter: @unchecked Sendable {
                 SELECT food_ref, nutrient_id, basis, amount, qualifier, confidence, source_value,
                        source_nutrient_id, source_unit, licence_group
                 FROM bundle.nutrition_value;
+            """)
+            // Household measures (kind = 'household_measure') go into the existing
+            // nutrition_portion table — a real quantity of a named unit, the
+            // shape it was already built for (Migration010). One row at a
+            // time, not INSERT...SELECT, because unit_fold needs TextFold
+            // (Swift), the same reason nutrition_food_name's fold is a
+            // second pass below rather than part of the bulk insert. Bundle
+            // rows use '' for "no modifier" (a NOT NULL column); the device
+            // table uses NULL, matching what addPortion already writes.
+            for row in try db.query("SELECT * FROM bundle.nutrition_portion WHERE kind = 'household_measure';") {
+                let unit = row.string("unit") ?? ""
+                let modifier = row.string("modifier").flatMap { $0.isEmpty ? nil : $0 }
+                try db.run("""
+                INSERT INTO nutrition_portion
+                    (id, food_ref, amount, unit_text, unit_fold, modifier_text,
+                     gram_weight, sequence, licence_group, source_value)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?);
+                """, [.text(UUID().uuidString), .text(row.string("food_ref") ?? ""),
+                      .real(row.double("amount") ?? 0), .text(unit), .text(TextFold.fold(unit)),
+                      modifier.map { SQLValue.text($0) } ?? .null, .real(row.double("value") ?? 0),
+                      .text(row.string("licence_group") ?? ""), .text(row.string("source_value") ?? "")])
+            }
+            // specific_gravity and edible_proportion are a food-level factor, not a
+            // quantity — nutrition_food_factor (Migration027), a plain bulk copy since
+            // no Swift-side computation is needed for these two kinds.
+            try db.execute("""
+            INSERT INTO nutrition_food_factor (food_ref, kind, value, qualifier, source_value,
+                                               source_record, licence_group)
+                SELECT food_ref, kind, value, qualifier, source_value, source_record, licence_group
+                FROM bundle.nutrition_portion WHERE kind <> 'household_measure';
             """)
             // Search matches folded names, folded the way Laboratory folds its aliases.
             for name in try db.query("SELECT food_ref, language, name FROM nutrition_food_name;") {

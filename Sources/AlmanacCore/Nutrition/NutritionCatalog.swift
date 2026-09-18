@@ -1,12 +1,14 @@
 import Foundation
 
-/// One household measure, or one volume-to-mass factor, for a food.
+/// One household measure for a food: an amount, a unit, an optional modifier
+/// and the gram weight the publisher (or the person) measured.
 ///
-/// USDA `food_portion` is the shape: an amount, a unit, an optional modifier
-/// and the gram weight the publisher (or the person) measured. Held for any
-/// food in the catalog, reference or `almanac:`, since the pipeline does not
-/// ship portions yet (docs/features/nutrition.md §7) and every portion here is
-/// therefore locally added.
+/// Held for any food in the catalog, reference or `almanac:` — either bundle-
+/// imported (`NutritionReferenceImporter`, kind `household_measure`,
+/// `nutrition.md` §8) or locally added through `addPortion`. A food's
+/// *density* or *edible proportion*, the bundle's other two portion kinds,
+/// are a different shape (a factor, not a quantity of a named unit) and live
+/// in `NutritionFoodFactor` instead — see its own doc comment.
 public struct NutritionPortion: Sendable, Hashable {
     public let id: String
     public let foodRef: SourceIdentifier
@@ -53,6 +55,45 @@ public enum PortionMatch: Sendable, Hashable {
     public var resolved: NutritionPortion? {
         if case .one(let p) = self { return p }
         return nil
+    }
+}
+
+/// A food-level density or edible-proportion factor — the bundle's other two
+/// `nutrition_portion` kinds (`specific_gravity`, `edible_proportion`;
+/// Processing Design v0.1 §4), reconciled into their own table
+/// (`nutrition_food_factor`, Migration027) rather than sharing
+/// `NutritionPortion`'s shape, which is a quantity of a named unit and has no
+/// slot for a bare density or fraction.
+///
+/// Per **reference food** — thousands of CoFID rows — unlike
+/// `NutritionDish.edibleProportion`, which is the same concept for the one
+/// case of a device-authored `almanac:` dish. Two different foods, never the
+/// same row twice.
+///
+/// `value` is nil exactly when `qualifier` carries no quantity (CoFID's `N`,
+/// "not analysed") — the same "a token never becomes a number" rule
+/// `NutrientValue` already follows.
+public struct NutritionFoodFactor: Sendable, Hashable {
+    public enum Kind: String, Sendable, Hashable {
+        case specificGravity = "specific_gravity"
+        case edibleProportion = "edible_proportion"
+    }
+
+    public let foodRef: SourceIdentifier
+    public let kind: Kind
+    public let value: Double?
+    public let qualifier: NutrientQualifier
+    public let sourceValue: String
+    public let licenceGroup: LicenceGroup
+
+    public init(foodRef: SourceIdentifier, kind: Kind, value: Double?, qualifier: NutrientQualifier,
+                sourceValue: String, licenceGroup: LicenceGroup) {
+        self.foodRef = foodRef
+        self.kind = kind
+        self.value = value
+        self.qualifier = qualifier
+        self.sourceValue = sourceValue
+        self.licenceGroup = licenceGroup
     }
 }
 
@@ -255,6 +296,37 @@ public struct NutritionCatalog: @unchecked Sendable {
         guard let portion = try self.portion(of: ref, unit: unit, modifier: modifier).resolved
         else { return nil }
         return portion.gramsPerUnit * amount
+    }
+
+    // MARK: Food factors
+
+    /// A food's density or edible-proportion factor, bundle-imported into
+    /// `nutrition_food_factor` (Migration027). Nil when the food has no row
+    /// of that kind — most foods outside CoFID, and CoFID foods the source
+    /// itself left blank.
+    ///
+    /// One row is the expected shape (one factor per food per kind); several
+    /// source records disagreeing is a data anomaly, not a real ambiguity a
+    /// person resolves the way `portion(of:)` lets them — this simply
+    /// returns the first, ordered by `source_record`, rather than adding a
+    /// second ambiguity type for a case nothing has ever produced.
+    public func foodFactor(of ref: SourceIdentifier, kind: NutritionFoodFactor.Kind) throws -> NutritionFoodFactor? {
+        try db.query("""
+            SELECT food_ref, value, qualifier, source_value, licence_group
+            FROM nutrition_food_factor
+            WHERE food_ref = ? AND kind = ?
+            ORDER BY source_record
+            LIMIT 1;
+            """, [.text(ref.description), .text(kind.rawValue)])
+            .first.flatMap { row -> NutritionFoodFactor? in
+                guard let qualifierText = row.string("qualifier"),
+                      let qualifier = NutrientQualifier(rawValue: qualifierText),
+                      let sourceValue = row.string("source_value"),
+                      let group = row.string("licence_group").flatMap(LicenceGroup.init(rawValue:))
+                else { return nil }
+                return NutritionFoodFactor(foodRef: ref, kind: kind, value: row.double("value"),
+                                           qualifier: qualifier, sourceValue: sourceValue, licenceGroup: group)
+            }
     }
 
     /// The folded forms a typed measure may match: itself, its plural, and its

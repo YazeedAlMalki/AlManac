@@ -79,7 +79,8 @@ public enum AlmanacMigrations {
         Migration023_ReadinessRecordUniqueCycle.self,
         Migration024_ReligiousFastingAndPrayerSchema.self,
         Migration025_SleepTrackingSettings.self,
-        Migration026_WorkoutSessionType.self
+        Migration026_WorkoutSessionType.self,
+        Migration027_NutritionFoodFactor.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with
