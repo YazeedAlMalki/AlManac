@@ -18,14 +18,11 @@ public struct BackupService: Sendable {
     public enum BackupError: Error, CustomStringConvertible, Sendable {
         case cannotOpenDestination(String)
         case backupFailed(Int32)
-        case restoreNotImplemented
 
         public var description: String {
             switch self {
             case .cannotOpenDestination(let p): return "Could not open backup destination at \(p)"
             case .backupFailed(let c): return "SQLite backup failed with code \(c)"
-            case .restoreNotImplemented:
-                return "Restore is deliberately unimplemented until the spec's restore semantics are available."
             }
         }
     }
@@ -59,11 +56,15 @@ public struct BackupService: Sendable {
         return Int(rows.first?.int("v") ?? 0)
     }
 
-    /// Restore is intentionally not implemented. The spec defines what happens
-    /// to in-flight sync anchors and to user rows created after the snapshot;
-    /// guessing that is how a restore silently loses a day of logs.
-    public func restore(from path: String) throws -> Never {
-        throw BackupError.restoreNotImplemented
+    /// Replaces this database's contents with a snapshot's, wholesale.
+    ///
+    /// This is the happy-path slice only: a valid snapshot onto a reachable
+    /// path. Schema-version gating, corrupt-file detection, transactional
+    /// rollback, and HealthKit de-duplication are separate, not-yet-built
+    /// slices — see the Slice 12 handoff.
+    public func restore(from path: String) throws {
+        let snapshot = try Database(path: path)
+        try snapshot.backup(into: db)
     }
 }
 

@@ -1392,3 +1392,169 @@ regressions.
 
 **Still explicitly out of scope**: `UNUserNotificationCenter` wiring and
 settings-screen UI remain iOS/Xcode-only, unchanged from before.
+
+## 2026-09-19: Slice 11 status re-verification (correcting a stale build prompt)
+
+A "Slice 11 Build Prompt" handed to a session described the meal/supplement
+reminder and contextual pre-workout snack trigger types (§14.2) as still
+blocked on a product-decision interview, and Slice 11 as "15% complete."
+Both claims were already false by the time that prompt was used: commit
+`6496104` (2026-09-18, see above) had already built both trigger types —
+`meal_reminder_setting` (Migration029), `supplement_plan.reminderEnabled`/
+`reminderMinuteOfDay` (Migration030), and `planned_workout` (Migration031) —
+with 31 passing tests. The same prompt also named
+`Native/Almanac/HealthKit/HealthSyncService.swift` as an existing
+integration point; no such file or `HealthKit/` subdirectory exists. The
+real HealthKit code lives at `Native/Almanac/HealthKitProvider.swift`, and
+there is no separate sync-service class yet for a scheduler to hook into.
+
+Re-verified on yamal via the native toolchain (`source env.sh && swift
+test`, no Docker needed — see the toolchain notes elsewhere in this repo):
+full suite **347/347 Swift Testing tests pass, 50 suites, zero failures**
+(up from 332; the previously-noted `NutritionBundleImportTests`/
+`NutritionDictionaryContractTests` fixture-path failures are gone too).
+
+**Actual remaining scope for Slice 11, unchanged from the 2026-09-18
+entries above:** `UNUserNotificationCenter` wiring in
+`Native/Almanac/NotificationScheduler.swift` (currently a hydration-only
+stub) to consume `NotificationTriggerAssembler`/
+`NotificationSuppressionContextAssembler`'s output, its integration into
+whatever calls `HealthKitProvider` and into the readiness-cycle callback,
+and settings-screen UI for the reminder times/`planned_workout` rows. All
+of this is iOS/Xcode-only and cannot be built or verified on yamal.
+
+## 2026-09-19: Slice 12 — `BackupService.restore()`, cycle 1 (happy path only)
+
+`handoff-slices-8-10-12-execution.md` (outer workspace root) proposed
+Slices 8/9/10/12; the user picked Slice 12 to drive test-first this
+session, scoped to a single confirmed seam: `BackupService.restore(from:)`
+restoring a valid, same-schema snapshot into a target database.
+
+Before writing the test, three of that handoff doc's own claims turned
+out stale against the actual tree, worth recording since another session
+may still be working from it:
+
+- **Migration count.** The doc says "Current migrations: 001–016." Actual:
+  `Migrations.swift` registers **001–031** — Migration016 is Slice 4, but
+  15 more (Nutrition meal type, BodyComposition/Wellness, Vitals fixes,
+  Fasting, religious fasting/Prayer, sleep tracking settings, and more)
+  have landed since.
+- **Backup format.** The doc describes export as "ZIP format." The actual
+  `snapshot(to:)` writes a raw SQLite file via the online backup API
+  (`sqlite3_backup_init`/`_step`/`_finish`) plus a `backup_manifest` table
+  row in the source DB — there is no ZIP container and no separate
+  manifest file. This session's restore implementation targets that real
+  format; wrapping it in a ZIP (per BRD §6.18) is a separate, later slice.
+- **Migration testing.** The doc says "no migration testing." Actual:
+  `MigrationRunnerTests.swift` already covers apply-in-order, idempotency,
+  full-rollback-on-failure, duplicate-version rejection, and
+  edited/tampered-migration detection — against synthetic migrations, not
+  yet an end-to-end real-schema export/restore round trip (which couldn't
+  exist until restore did something).
+
+**What changed:** `BackupService.restore(from:)` (previously
+`throws -> Never`, unconditionally throwing `.restoreNotImplemented`) now
+opens the snapshot file as a `Database` and backs it up into `self.db`
+using the existing `Database.backup(into:)` extension in the reverse
+direction — the same online-backup mechanism `snapshot()` already uses,
+just source and destination swapped. The `.restoreNotImplemented` error
+case is removed along with the stub.
+
+Test-first: `testRestoreReplacesTargetContentsWithSnapshot` in
+`SyncAndBackupTests.swift` (replacing the now-obsolete
+`testRestoreIsExplicitlyUnimplemented`) snapshots a source DB containing
+one `sync_anchor` row, restores it over a target DB that already has a
+*different* row, and asserts the target ends up with exactly the
+snapshot's row — proving restore replaces wholesale rather than merging.
+Confirmed red against the `Never`-returning stub, green after the change.
+Full suite: 266 XCTest + 347 Swift Testing, zero failures.
+
+**Explicitly out of scope for this slice** (separate future TDD cycles,
+per the seam scope confirmed with the user before writing any test):
+schema-version mismatch rejection, corrupt/non-SQLite file rejection,
+transactional rollback if restore fails partway, HealthKit
+de-duplication by `sourceIdentifier` + timestamp, manifest/checksum
+validation before applying, and the ZIP container format itself.
+
+Slice 8 was not touched this session — it remains gated on personal-action
+items (SFDA email, regional-dish reference material) rather than on
+available engineering time. Slices 9 and 10 were picked up later the same
+day; see the entry below.
+
+## 2026-09-19: Slices 9 & 10 — schema, stores, and the Insights engine
+
+Continuation of the same session, test-first throughout (red confirmed
+against each missing type/table before writing the implementation).
+Scoped deliberately to what the handoff doc marks safe to build without
+further product sign-off, and to what's buildable on yamal (no UI, no
+Xcode/Apple SDK here).
+
+**Slice 9 (Digestion & Urination) — schema only, per the handoff's own
+"Schema only for v1" scoping:**
+
+- **Migration032_DigestionSchema** (`Migration032.swift`) creates
+  `bowel_movement` and `urination_record`, both indexed on
+  `logicalDay`. Both carry a nullable `clinicianEscalationLevel` column
+  that nothing writes to yet — BRD §6.3's escalation *wording* needs
+  clinician review before ship, and that's a process gate on copy, not on
+  the column existing. No escalation-classification logic was written;
+  inventing a blood/symptom → escalation-tier mapping without clinical
+  sign-off is exactly the "guessing medical wording" the handoff calls
+  out as unsafe. Bristol type (1–7) and urination color grade (1–8) are
+  plain validated enums (`BristolType`, `UrinationColorGrade`).
+- `DigestionStore` and `UrinationStore` (`Sources/AlmanacCore/Digestion/`):
+  log + read-by-id + read-by-logical-day, mirroring `SorenessLogStore`'s
+  shape. 5 new tests across `DigestionStoreTests.swift` and
+  `UrinationStoreTests.swift`.
+- UI (quick-entry screens, color/Bristol pickers) is explicitly deferred —
+  it's SwiftUI, needs Xcode, and the handoff lists it under
+  "pre-App-Store hardening" alongside final medical wording anyway.
+
+**Slice 10 (Insights) — engine + schema, UI deferred:**
+
+- Three pure-logic engines in `Sources/AlmanacCore/Insights/`:
+  - `CorrelationEngine.pearson(_:minimumSampleSize:)` — Pearson r with a
+    14-sample floor (BRD's own "14+ days of paired data" example) below
+    which it returns `.insufficientData` rather than a number — the
+    "Limited/insufficient state" guardrail from BRD §6.16. Zero-variance
+    inputs return `r = 0`, not NaN. 4 tests: perfect positive/negative
+    correlation against hand-computable series, the zero-variance edge
+    case, and the insufficient-sample gate.
+  - `TrendEngine.snapshot(of:)` — average/min/max plus an up/down/flat
+    direction from comparing the older half of the series to the newer
+    half (steadier than first-vs-last against one noisy point). 4 tests.
+  - `AchievementEngine.badges(for:)` — the five BRD §6.16 badges (steps,
+    high load, fasted day, nutrition targets, perfect log) as a pure
+    function over a `DailyAchievementInputs` struct. `isPerfectLog` is
+    taken as a given boolean, not computed here — the handoff explicitly
+    leaves "all Wellness data filled in, or all recommended entries
+    logged?" as an open, undecided question, and this session isn't
+    picking an answer on the doc's behalf. 4 tests.
+- Schema: **Migration033_InsightsSchema** creates `correlation_pair`,
+  `trend_snapshot`, `achievement_record` (all three named and shaped per
+  the handoff's own schema sketch). `correlation_pair.pValue` is nullable
+  and unpopulated — `CorrelationEngine` computes `r` and a sample size,
+  not a p-value, so the column exists without a fabricated statistic
+  behind it.
+- `TrendSnapshotStore`, `CorrelationPairStore`, `AchievementRecordStore`
+  persist each engine's output, upsert semantics (recomputing a
+  metric/pair/day replaces its prior row rather than accumulating history
+  — matches BRD §6.17's "recalculates on edit" for achievements). 6 tests
+  in `InsightsStoresTests.swift`.
+- Trend/correlation *query building* (pulling the actual paired series out
+  of `ReadinessRecordStore`, sleep, steps, etc.) was not built — the
+  handoff's sequencing question ("build engine now, defer complex UI
+  until Slice 2/4 UI lands") only asked for the engine and schema at this
+  stage, and wiring real queries is naturally scoped with whatever screen
+  first consumes them.
+
+Full suite after both slices: 266 XCTest + **370 Swift Testing** (up from
+347; +23 across Slices 9 and 10), zero failures.
+
+**Still gated on personal-action items, unchanged:** Slice 8 (SFDA email,
+dish reference material); final Slice 9 medical wording and clinician
+review; Slice 10's correlation-approach sign-off (this session proceeded
+on the handoff's own stated recommendation, Option A/Pearson, since it
+was already a concrete default, not an open question); Slice 10 UI and
+real metric-query wiring, deferred alongside Slice 2/4 UI per the
+handoff's sequencing note.

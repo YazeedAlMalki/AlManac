@@ -106,8 +106,28 @@ final class BackupServiceTests: XCTestCase {
         )
     }
 
-    func testRestoreIsExplicitlyUnimplemented() throws {
-        let db = try Database.inMemory()
-        XCTAssertThrowsError(try BackupService(db: db).restore(from: "/tmp/whatever"))
+    func testRestoreReplacesTargetContentsWithSnapshot() throws {
+        let sourcePath = NSTemporaryDirectory() + "almanac-src-\(UUID().uuidString).sqlite"
+        let snapshotPath = NSTemporaryDirectory() + "almanac-snap-\(UUID().uuidString).sqlite"
+        defer {
+            for p in [sourcePath, snapshotPath] { try? FileManager.default.removeItem(atPath: p) }
+        }
+
+        let source = try Database(path: sourcePath)
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(source)
+        try SyncAnchorStore(db: source).save(domain: "hrv", token: [4, 2])
+        try BackupService(db: source).snapshot(to: snapshotPath)
+
+        let target = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(target)
+        try SyncAnchorStore(db: target).save(domain: "steps", token: [9])
+
+        try BackupService(db: target).restore(from: snapshotPath)
+
+        XCTAssertEqual(try SyncAnchorStore(db: target).load("hrv")?.token, [4, 2])
+        XCTAssertNil(
+            try SyncAnchorStore(db: target).load("steps"),
+            "restore must replace the target's contents wholesale, not merge into them"
+        )
     }
 }
