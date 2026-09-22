@@ -36,6 +36,37 @@ On the machine itself (Intel iMac18,3, macOS 15.8 Sequoia; Xcode 26.3 /
   (items 10–11 in `Native/README.md`), which needs a human drive of the
   Simulator's Health app.
 
+## 2026-09-22 — Lab import automation (M1 + M2)
+
+The conflict-review machinery existed end-to-end (`upsertReport`
+fingerprinting, `recordReportConflict`, `resolveReportConflict`,
+`ReportConflictView`) but nothing produced proposals in a real run, so the
+review screen was permanently empty. Two milestones (`docs/next-slice-brief.md`)
+close that gap:
+
+- **M1 — dev fixture.** `Native/Almanac/LabReportFixture.swift` (DEBUG-only,
+  added to the Xcode project's Sources phase): when the app has no reports
+  yet, upserts one report and an unordered reissue with a corrected header —
+  `.conflict`, held for review. Verified in the iPhone 17 simulator via
+  sqlite: exactly one `lab_report` row and one `conflict` revision after
+  launch, and still exactly one after terminate/relaunch (idempotent at the
+  store level — re-sends resolve to `replayIgnored`).
+- **M2 — CSV import automation.**
+  `Sources/AlmanacCore/Laboratory/LabReportCSVImport.swift`: RFC-4180-lite
+  parser, rows grouped by `source_report_id` into one report, written through
+  the same `upsertReport`/`record` seams as manual entry. Conservative per
+  `docs/features/laboratory.md`: verbatim source text; blank dates stay
+  unknown; comparator-led numerics (`<0.01`, `~5`) parse to quantitative with
+  the comparator while non-numeric values stay `.text`; empty values become
+  absent observations (`notReportedBySource`); unmatched analytes stay
+  unmatched and visible; re-importing the same file is a fingerprint no-op;
+  unranked changes are held as conflicts (`holdAsConflict`). Native surface:
+  paste sheet (`CSVImportView`, Laboratory tab).
+- **Verification:** 8 new core tests (`LabCSVImportTests`) — full suite green
+  under the Xcode 26.3 toolchain; native Debug simulator build succeeds;
+  fixture verified live in the simulator (report + one conflict on first
+  launch, unchanged after relaunch).
+
 ## Verified core
 
 Swift 6.3.3 on x86_64 Linux (`yamal`, `source env.sh`): **115 XCTest tests —

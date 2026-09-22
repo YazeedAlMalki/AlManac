@@ -17,7 +17,12 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
 - Report detail, longitudinal test history with source-report navigation, and
   a separate revision history including metadata corrections and attribution.
 - Incoming report-conflict review with explicit accept/reject and reason.
-  There is no import automation creating these proposals in this app.
+  Import automation (CSV, `LabReportCSVImport`) creates these proposals:
+  unchanged re-imports are no-ops via fingerprints, and unranked changes are
+  held for review instead of applied.
+- Import CSV: paste a report CSV in the Laboratory tab; rows sharing a
+  `source_report_id` form one report, source text is stored verbatim, blank
+  dates stay unknown, and re-importing the same file adds nothing.
 - Hydration: log water (presets or a custom amount, with an optional note),
   a dashboard of today's total against a settings-configurable daily goal,
   and delete. Backed by `HydrationLoggingService`/`HydrationStore` in the
@@ -133,9 +138,10 @@ three places — Connect in Settings, after each local log/delete, and on scene
 activation — so what remains for those two items is driving the Simulator's
 Health app itself.
 
-Report conflict behavior is covered in core tests. To exercise its UI, use a
-development fixture that supplies conflicting reports via `upsertReport`; then
-accept or reject with a reason and confirm the unresolved badge clears.
+Report conflict behavior is covered in core tests. Debug builds seed one
+conflicting report pair automatically (`LabReportFixture`, first launch only);
+open it from the Laboratory tab and accept or reject with a reason, then
+confirm the unresolved badge clears.
 
 Trends, document import, attachments, backup UI, OCR, medical interpretation,
 and other tracker screens are outside this pass. The full earlier Laboratory

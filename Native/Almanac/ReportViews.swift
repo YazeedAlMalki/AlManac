@@ -6,6 +6,7 @@ struct ReportListView: View {
     @ObservedObject var model: LaboratoryModel
     @State private var reports: [LabReportSummary] = []
     @State private var create = false
+    @State private var importing = false
     @State private var error: String?
     @State private var limit = 50
 
@@ -36,8 +37,14 @@ struct ReportListView: View {
                 }
             }
             .navigationTitle("Laboratory")
-            .toolbar { Button("New report", systemImage: "plus") { create = true } }
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button("Import CSV", systemImage: "square.and.arrow.down") { importing = true }
+                    Button("New report", systemImage: "plus") { create = true }
+                }
+            }
             .sheet(isPresented: $create) { ReportEditor(model: model, report: nil) }
+            .sheet(isPresented: $importing) { CSVImportView(model: model) }
             .task { reload() }
             .onChange(of: model.generation) { _, _ in reload() }
             .editorError($error)
@@ -168,6 +175,64 @@ struct ReportDetailView: View {
         do {
             report = try model.store?.report(id: reportID)
             results = try model.store?.currentResults(inReport: reportID) ?? []
+        } catch { self.error = String(describing: error) }
+    }
+}
+
+/// Paste-in CSV import for laboratory reports. The import runs through the
+/// same `upsertReport` / `record` seams as manual entry, so re-imports are
+/// fingerprint-idempotent and unranked changes are held as conflicts for the
+/// review screen rather than silently applied.
+@MainActor
+struct CSVImportView: View {
+    @ObservedObject var model: LaboratoryModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var csv = ""
+    @State private var outcome: LabCSVImportResult?
+    @State private var error: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Columns (no header row)") {
+                    Text("source_report_id, report_date, laboratory_name, header_text, test_name, value, unit, range, flag, comment, source_observation_id")
+                        .font(.caption)
+                    Text("Rows sharing a source_report_id form one report. Values, units, ranges and flags are stored verbatim; blank dates stay unknown; non-numeric values stay text; unranked re-imports are held for review.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Section("CSV") {
+                    TextEditor(text: $csv)
+                        .frame(minHeight: 180)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
+                if let outcome {
+                    Section("Import result") {
+                        LabeledContent("Reports",
+                            value: "\(outcome.reportsCreated) created · \(outcome.reportsUnchanged) unchanged · \(outcome.reportConflicts) held")
+                        LabeledContent("Observations",
+                            value: "\(outcome.observationsCreated) added · \(outcome.observationsUnchanged) unchanged")
+                        if outcome.invalidRowCount > 0 {
+                            Text("\(outcome.invalidRowCount) rows skipped — see the source file").foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Import lab CSV")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Import", action: importCSV) }
+            }
+            .editorError($error)
+        }
+    }
+
+    private func importCSV() {
+        do {
+            guard let store = model.store else { throw EditorFailure(message: "The database is unavailable.") }
+            outcome = try LabReportCSVImport.importReports(csv: csv, into: store)
+            model.changed()
         } catch { self.error = String(describing: error) }
     }
 }

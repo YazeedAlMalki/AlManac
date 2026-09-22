@@ -84,7 +84,11 @@ final class LaboratoryModel: ObservableObject {
             try WgerCC0Seed.seed(into: ExerciseCatalogStore(db: db))
             self.catalog = catalog
             self.db = db
-            store = LabStore(db: db)
+            let store = LabStore(db: db)
+            self.store = store
+            #if DEBUG
+            try LabReportFixture.seedIfNeeded(into: store)
+            #endif
             startupError = nil
         } catch {
             // Never reset or replace a database after a failed migration/open.
