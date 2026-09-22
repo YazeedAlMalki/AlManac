@@ -229,7 +229,16 @@ final class ManualEntryTests: XCTestCase {
 
         var edit = LabObservationMetadataEdit()
         edit.catalogAnalyteID = .set("almanac:lab.vitamin-d.25oh-total")
-        try lab.updateObservationMetadata(id: observationID, edit)
+        let outcome = try lab.updateObservationMetadata(id: observationID, edit)
+        guard case .updated(observationID: observationID, revisionID: let revisionID,
+                            revisionNumber: let revisionNumber, changedFields: _) = outcome else {
+            XCTFail("expected an attributed update, got \(outcome)")
+            return
+        }
+        XCTAssertGreaterThan(revisionNumber, 0)
+        XCTAssertNotNil(UUID(uuidString: revisionID), "revision id must be a UUID")
+        XCTAssertEqual(try lab.metadataRevisions(of: observationID).count, 1,
+                       "one revision records the user's mapping decision")
 
         let view = try XCTUnwrap(try lab.currentResults(inReport: reportID).first)
         XCTAssertEqual(view.catalogAnalyteID, "almanac:lab.vitamin-d.25oh-total")

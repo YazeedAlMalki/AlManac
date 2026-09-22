@@ -1,8 +1,40 @@
 # Almanac implementation status
 
-Updated 2026-09-13. Work continues from `8836166` on `codex/manual-entry`; all
+Updated 2026-09-22. Work continues from `8836166` on `codex/manual-entry`; all
 preceding commits are preserved. The nutrition work below is uncommitted in the
 working tree. Nothing pushed.
+
+## 2026-09-22 — first Apple-platform verification (this iMac)
+
+On the machine itself (Intel iMac18,3, macOS 15.8 Sequoia; Xcode 26.3 /
+17C529 is the ceiling — no macOS Tahoe is reachable from this hardware):
+
+- **Native target compiles.** A Debug simulator build of the shared `Almanac`
+  scheme (iPhone 17, iOS 26.3 simulator runtime) succeeds with
+  `ONLY_ACTIVE_ARCH=YES`. Without it, the app target also builds an arm64
+  simulator slice while the local package only produced an x86_64
+  `AlmanacCore` module — “Unable to find module dependency: 'AlmanacCore'”.
+- **App launches in the Simulator without crashing** during DB open and
+  migration. `almanac.sqlite` is created under
+  `Application Support/Almanac/` with 73 tables and the migrations recorded
+  in `schema_migrations`, and **survives terminate/relaunch**.
+- **HealthKit water path audited end-to-end by reading the code**, not just
+  tests: `HealthSyncService` (rows + anchor commit atomically),
+  `HydrationWriteback`'s pending queue (`healthkit_synced_at IS NULL`,
+  row-by-row retry), sticky user soft-deletes in `HydrationStore.apply`,
+  own-write echo filtering and anchor archiving in `HealthKitProvider` —
+  all present and correctly wired to Settings.
+- **One wiring gap found and fixed** (Native-only, uncommitted): the
+  inbound/outbound sync ran only when Connect was tapped. `.log`/`.delete`
+  on `HydrationModel` now run the same sync after every local change
+  (`syncAfterChange`), and scene activation triggers `syncOnForeground`,
+  so water logged in Health appears without re-tapping Connect. No
+  `Sources/AlmanacCore` file was touched; Linux core tests were not
+  re-run because nothing in the core changed.
+- **Still outstanding:** interactive entry/navigation, keyboard, VoiceOver,
+  device signing/deployment, and the cross-app Health-app round trip
+  (items 10–11 in `Native/README.md`), which needs a human drive of the
+  Simulator's Health app.
 
 ## Verified core
 

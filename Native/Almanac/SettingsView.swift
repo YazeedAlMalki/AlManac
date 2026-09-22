@@ -4,7 +4,7 @@ import AlmanacCore
 @MainActor
 struct SettingsView: View {
     @ObservedObject var model: HydrationModel
-    @AppStorage("hydrationDailyGoalML") private var dailyGoal: Double = 2000
+    @State private var dailyGoal: Double = 2000
     @State private var remindersEnabled = false
     @State private var reminderIntervalMinutes = 60
     @State private var reminderStartHour = 7
@@ -19,6 +19,10 @@ struct SettingsView: View {
             Form {
                 Section("Daily goal") {
                     Stepper("\(Int(dailyGoal)) mL", value: $dailyGoal, in: 500...5000, step: 250)
+                        .onChange(of: dailyGoal) { _, newValue in
+                            do { try model.saveDailyGoal(milliliters: newValue) }
+                            catch { self.error = String(describing: error) }
+                        }
                 }
                 Section("HealthKit") {
                     Button("Connect to Health", action: connectHealthKit)
@@ -42,6 +46,7 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .editorError($error)
             .task {
+                dailyGoal = model.hydrationSettings?.dailyGoalMilliliters ?? 2000
                 guard let settings = model.hydrationSettings else { return }
                 remindersEnabled = settings.remindersEnabled
                 reminderIntervalMinutes = settings.reminderIntervalMinutes

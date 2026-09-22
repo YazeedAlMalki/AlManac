@@ -9,6 +9,7 @@ struct AlmanacApp: App {
     @StateObject private var hydrationModel = HydrationModel()
     @StateObject private var nutritionModel = NutritionModel()
     @StateObject private var trainingModel = TrainingModel()
+    @Environment(\.scenePhase) private var scenePhase
     var body: some Scene {
         WindowGroup {
             Group {
@@ -49,6 +50,9 @@ struct AlmanacApp: App {
                 }
             }
             .tint(.teal)
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { hydrationModel.syncOnForeground() }
+            }
         }
     }
 }

@@ -4,9 +4,13 @@ import AlmanacCore
 @MainActor
 struct HydrationDashboardView: View {
     @ObservedObject var model: HydrationModel
-    @AppStorage("hydrationDailyGoalML") private var dailyGoal: Double = 2000
     @State private var logging = false
     @State private var error: String?
+
+    /// The settings-row daily goal; the app default is 2000 mL when the row
+    /// has never stored one (the goal now lives in `hydration_settings`, not
+    /// `@AppStorage`).
+    private var dailyGoal: Double { model.hydrationSettings?.dailyGoalMilliliters ?? 2000 }
 
     var body: some View {
         NavigationStack {

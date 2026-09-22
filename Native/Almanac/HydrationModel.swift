@@ -57,6 +57,29 @@ final class HydrationModel: ObservableObject {
         hydrationSettings = updated
     }
 
+    /// Persists the daily goal half of `hydration_settings`, leaving the
+    /// other fields untouched. Mirrors `saveReminderSettings` so the goal
+    /// lives in the single source of truth instead of `@AppStorage`.
+    func saveDailyGoal(milliliters: Double) throws {
+        guard let settingsStore else { throw EditorFailure(message: "The database is unavailable.") }
+        let base = hydrationSettings ?? (try? settingsStore.getOrCreate()) ?? HydrationSettings()
+        guard base.dailyGoalMilliliters != milliliters else { return }
+        let updated = HydrationSettings(
+            isCalorieTrackingEnabled: base.isCalorieTrackingEnabled,
+            isDoubleTrackWarningEnabled: base.isDoubleTrackWarningEnabled,
+            remindersEnabled: base.remindersEnabled,
+            reminderIntervalMinutes: base.reminderIntervalMinutes,
+            reminderStartHour: base.reminderStartHour,
+            reminderEndHour: base.reminderEndHour,
+            dailyGoalMilliliters: milliliters,
+            trackSodium: base.trackSodium,
+            trackSugar: base.trackSugar,
+            updatedAt: Date()
+        )
+        try settingsStore.save(updated)
+        hydrationSettings = updated
+    }
+
     /// Wires the concrete iOS `HealthKitProvider` in. Left unconfigured, sync
     /// methods below are no-ops — hydration logging itself never depends on
     /// HealthKit being authorised.
@@ -89,12 +112,43 @@ final class HydrationModel: ObservableObject {
         guard let store else { throw EditorFailure(message: "The database is unavailable.") }
         try store.log(HydrationLogDraft(amount: amount, loggedAt: Date(), note: note))
         refresh()
+        syncAfterChange()
     }
 
     func delete(id: String) throws {
         guard let store else { throw EditorFailure(message: "The database is unavailable.") }
         try store.delete(id: id)
         refresh()
+        syncAfterChange()
+    }
+
+    /// Kicks the full inbound/outbound HealthKit sync (the same pair the
+    /// connect flow runs) without any auth sheet. Called when the scene
+    /// becomes active, so water logged in Health while Almanac was
+    /// backgrounded appears without re-tapping Connect. A no-op until
+    /// HealthKit has been configured via `configureHealthKit`.
+    func syncOnForeground() {
+        runHealthSync()
+    }
+
+    /// After any local change, pull new HealthKit water samples in and then
+    /// push pending manual entries back out — the documented "sync after each
+    /// manual log" behaviour (Native/README.md).
+    private func syncAfterChange() {
+        runHealthSync()
+    }
+
+    /// The shared sync driver: inbound goes through `HealthSyncService`
+    /// (rows and the anchor commit atomically), outbound through
+    /// `HydrationWriteback`'s pending queue. Both halves guard on their own
+    /// configuration and swallow their own errors, so a failed push simply
+    /// retries on the next run.
+    private func runHealthSync() {
+        guard healthProvider != nil || healthWriter != nil else { return }
+        Task { [weak self] in
+            await self?.syncInbound()
+            await self?.drainOutbound()
+        }
     }
 
     /// Pulls new HealthKit water samples in. A no-op until HealthKit has

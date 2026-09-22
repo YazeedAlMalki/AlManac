@@ -26,7 +26,9 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   permitted to `import HealthKit` (`HealthKitProvider.swift`). Inbound sync
   reuses the core's `HealthSyncService` unmodified; outbound uses
   `HydrationWriteback`, which pushes manually-logged entries not yet marked
-  synced. Authorization is requested from Settings, not on launch.
+  synced. The inbound/outbound pair runs when Connect is tapped, after each
+  local hydration log/delete, and whenever the scene becomes active.
+  Authorization is requested from Settings, not on launch.
 - Local notification reminders (fixed times, configurable in Settings) via
   `NotificationScheduler`. No Info.plist key is required for local
   notifications; only runtime authorization is requested, from Settings.
@@ -44,10 +46,23 @@ The Swift sources pass `swiftc -frontend -parse` on Linux. Project file
 references and shared-scheme XML have been checked for internal consistency.
 These are **syntax/structure checks, not Apple SDK compilation**.
 
-Not yet verified: SwiftUI type checking against an Apple SDK, Xcode package
-resolution and linking, Simulator launch, interactive entry and navigation,
-keyboard layout, accessibility, relaunch persistence through the app, device
-signing or deployment. Linux core tests do not establish any of these.
+On 2026-09-22, on the Intel iMac for this session (macOS 15.8 Sequoia, Xcode
+26.3 / 17C529), a Debug simulator build of the shared `Almanac` scheme for an
+iPhone 17 (iOS 26.3 runtime) **succeeds**, the app **launches in the
+Simulator without crashing**, and **survives relaunch with its database
+intact** (`almanac.sqlite` created with 73 tables, migrations recorded in
+`schema_migrations`). The only wrinkle on this Intel host: the build must run
+with `ONLY_ACTIVE_ARCH=YES`, otherwise the app target also compiles an arm64
+simulator slice while the local package only produced an x86_64 `AlmanacCore`
+module, and the arm64 pass fails with “Unable to find module dependency:
+'AlmanacCore'”. Consider setting `ONLY_ACTIVE_ARCH = YES` in the project's
+Debug configuration so plain Xcode Run works without the flag.
+
+Still not verified: interactive entry and navigation, keyboard layout,
+accessibility, device signing or deployment, and the cross-app HealthKit
+round trip (logging water in the Health app and watching it appear, and the
+reverse) — the Health-app half needs a human drive of the Simulator; its
+logic is covered by core tests on Linux.
 
 ## Build and run on a Mac
 
@@ -61,6 +76,9 @@ xcodebuild -project Native/Almanac.xcodeproj -scheme Almanac \
   -destination 'generic/platform=iOS Simulator' \
   CODE_SIGNING_ALLOWED=NO build
 ```
+
+On an Intel Mac, add `ONLY_ACTIVE_ARCH=YES` to the invocation — see the
+Verification boundary section.
 
 The target has a provisional bundle identifier `com.almanac.personal`. Configure
 a suitable identifier/team when preparing a physical-device build. The target
@@ -109,6 +127,11 @@ manual edit further. It still uses no document picker.
     appears, then confirm a reminder fires at a configured time
     (fast-forward the simulator clock or pick a near-future time to verify
     without waiting).
+
+The HealthKit paths in items 10 and 11 are code-verified and now run from
+three places — Connect in Settings, after each local log/delete, and on scene
+activation — so what remains for those two items is driving the Simulator's
+Health app itself.
 
 Report conflict behavior is covered in core tests. To exercise its UI, use a
 development fixture that supplies conflicting reports via `upsertReport`; then

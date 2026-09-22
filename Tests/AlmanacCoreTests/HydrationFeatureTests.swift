@@ -130,13 +130,16 @@ final class HydrationFeatureTests: XCTestCase {
 
         let defaults = try store.getOrCreate()
         XCTAssertFalse(defaults.isCalorieTrackingEnabled)
+        XCTAssertNil(defaults.dailyGoalMilliliters, "nil goal means 'use the app default', not 0")
 
         try store.save(HydrationSettings(isCalorieTrackingEnabled: true, remindersEnabled: false,
+                                          dailyGoalMilliliters: 2250,
                                           updatedAt: Date()))
 
         let reread = try store.fetch()
         XCTAssertEqual(reread?.isCalorieTrackingEnabled, true)
         XCTAssertEqual(reread?.remindersEnabled, false)
+        XCTAssertEqual(reread?.dailyGoalMilliliters, 2250)
     }
 
     func testProfileGetOrCreateReturnsDefaultsThenPersists() throws {
