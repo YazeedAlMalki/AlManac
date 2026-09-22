@@ -1,8 +1,8 @@
 # Almanac implementation status
 
-Updated 2026-09-22. Work continues from `8836166` on `codex/manual-entry`; all
-preceding commits are preserved. The nutrition work below is uncommitted in the
-working tree. Nothing pushed.
+Updated 2026-09-22. Apple-platform verification and lab import automation are
+committed on `master` and pushed to GitHub (`a02a366`, `c87d948`); the working
+tree is clean.
 
 ## 2026-09-22 — first Apple-platform verification (this iMac)
 
