@@ -52,10 +52,34 @@ scheme succeeds. Fresh simulator install: app launches, database created,
 migrations 34+35 recorded, 302 live catalogue rows, **0 without a graphic**,
 all 302 graphics present and non-empty in the installed bundle.
 
-**Not verified:** the Attributions page and the picker's graphic thumbnails were
-not driven interactively — Simulator UI automation is unavailable in this
-session (assistive access denied). Their content paths are covered by core
-tests and the installed-bundle checks above; the rendering itself is not.
+**Not verified:** nothing outstanding for this feature — see the UI test
+target below, which closes the gap this entry previously carried.
+
+### 2026-09-24 addendum — `AlmanacUITests` target
+
+The gap above ("not driven interactively") is now closed by a UI test target.
+
+- **`Native/AlmanacUITests/AttributionsUITests.swift`** — 3 XCTest UI tests on
+  a real simulator: the Attributions page credits every bundled source with
+  title, author, source link and licence link; a derived image is marked
+  modified *and* says what changed; the per-exercise author list is present;
+  and every visible row of the exercise picker draws a demonstration graphic.
+- Wired into `project.pbxproj` (target `AB00000000000000000008`,
+  `TEST_TARGET_NAME = Almanac`) and the shared `Almanac` scheme's `TestAction`.
+  Run with:
+
+  ```sh
+  xcodebuild test -project Native/Almanac.xcodeproj -scheme Almanac \
+    -configuration Debug -sdk iphonesimulator \
+    -destination 'platform=iOS Simulator,id=<simulator-udid>' ONLY_ACTIVE_ARCH=YES
+  ```
+
+- Note for whoever writes the next UI test: iOS collapses the sixth tab into
+  **More**, and that overflow menu is a *table* — its tabs are static texts
+  inside cells, not tab-bar buttons. The helper in this suite handles both
+  layouts; the first version looked for a button and failed, which is how the
+  real shape got pinned down.
+
 
 ## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)
 
