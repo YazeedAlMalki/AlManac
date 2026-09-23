@@ -43,6 +43,11 @@ struct SettingsView: View {
                             .onChange(of: reminderEndHour) { _, _ in Task { await applyReminderSchedule() } }
                     }
                 }
+                Section("About") {
+                    NavigationLink("Attributions") {
+                        AttributionsView(db: labModel.db)
+                    }
+                }
                 Section("Data") {
                     if let db = labModel.db {
                         NavigationLink("Backup & restore") {

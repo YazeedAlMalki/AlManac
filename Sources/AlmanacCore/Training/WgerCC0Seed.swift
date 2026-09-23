@@ -20,12 +20,22 @@ import Foundation
 /// reason recorded per-row, matching §6.1's own finding that a reviewable
 /// low/medium-confidence remainder is expected, not a bug. Nothing here is
 /// `.low` — every override has a concrete reason, not a guess.
+///
+/// `licenseAuthor` is wger's own per-row `license_author`, re-fetched from
+/// `https://wger.de/api/v2/exerciseinfo/` on 2026-09-23 (the same endpoint the
+/// 2026-09-16 seed used). CC0 needs no attribution, but the requirement is to
+/// preserve the publisher's row-level author through to the app and list it
+/// on the Attributions page.
 public enum WgerCC0Seed {
     public struct Row: Sendable {
         public let wgerId: String
         public let name: String
         public let category: String
         public let equipment: String?
+        /// wger's own `license_author` for this exercise. CC0 does not require
+        /// attribution, but the requirement is to preserve it per row and list
+        /// it on the Attributions page rather than discard it at seed time.
+        public let licenseAuthor: String
         public let prescriptionType: String
         public let confidence: String
         /// Present only when prescriptionType overrides what §6's mechanical
@@ -35,54 +45,54 @@ public enum WgerCC0Seed {
 
     public static let rows: [Row] = [
         // --- High confidence: §6's mechanical rule settles it cleanly ---
-        Row(wgerId: "177", name: "Cycling", category: "Cardio", equipment: nil,
+        Row(wgerId: "177", name: "Cycling", category: "Cardio", equipment: nil, licenseAuthor: "BFad07",
             prescriptionType: "duration", confidence: "high", overrideReason: nil),
-        Row(wgerId: "194", name: "Dips", category: "Chest", equipment: "none (bodyweight exercise)",
+        Row(wgerId: "194", name: "Dips", category: "Chest", equipment: "none (bodyweight exercise)", licenseAuthor: "BFad07",
             prescriptionType: "reps_bodyweight", confidence: "high", overrideReason: nil),
-        Row(wgerId: "282", name: "Handstand Pushup", category: "Shoulders", equipment: "none (bodyweight exercise)",
+        Row(wgerId: "282", name: "Handstand Pushup", category: "Shoulders", equipment: "none (bodyweight exercise)", licenseAuthor: "BFad07",
             prescriptionType: "reps_bodyweight", confidence: "high", overrideReason: nil),
-        Row(wgerId: "364", name: "Leg Curl", category: "Legs", equipment: nil,
+        Row(wgerId: "364", name: "Leg Curl", category: "Legs", equipment: nil, licenseAuthor: "BFad07",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "369", name: "Leg Extension", category: "Legs", equipment: nil,
+        Row(wgerId: "369", name: "Leg Extension", category: "Legs", equipment: nil, licenseAuthor: "BFad07",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "371", name: "Leg Press", category: "Legs", equipment: nil,
+        Row(wgerId: "371", name: "Leg Press", category: "Legs", equipment: nil, licenseAuthor: "BFad07",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "445", name: "Pause Bench", category: "Chest", equipment: "Barbell, Bench",
+        Row(wgerId: "445", name: "Pause Bench", category: "Chest", equipment: "Barbell, Bench", licenseAuthor: "Mens Fitness",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "490", name: "Renegade Row", category: "Back", equipment: "Dumbbell",
+        Row(wgerId: "490", name: "Renegade Row", category: "Back", equipment: "Dumbbell", licenseAuthor: "fletchgraham",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "495", name: "Reverse Curl", category: "Arms", equipment: "Barbell, Dumbbell",
+        Row(wgerId: "495", name: "Reverse Curl", category: "Arms", equipment: "Barbell, Dumbbell", licenseAuthor: "BFad07",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "508", name: "Row", category: "Back", equipment: "Barbell, Dumbbell, Pull-up bar",
+        Row(wgerId: "508", name: "Row", category: "Back", equipment: "Barbell, Dumbbell, Pull-up bar", licenseAuthor: "BFad07",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "570", name: "Shoulder Shrug", category: "Shoulders", equipment: "none (bodyweight exercise)",
+        Row(wgerId: "570", name: "Shoulder Shrug", category: "Shoulders", equipment: "none (bodyweight exercise)", licenseAuthor: "BFad07",
             prescriptionType: "reps_bodyweight", confidence: "high", overrideReason: nil),
-        Row(wgerId: "599", name: "Snatch", category: "Shoulders", equipment: "Barbell",
+        Row(wgerId: "599", name: "Snatch", category: "Shoulders", equipment: "Barbell", licenseAuthor: "Mens Fitness",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "616", name: "Squat Thrust", category: "Legs", equipment: "none (bodyweight exercise)",
+        Row(wgerId: "616", name: "Squat Thrust", category: "Legs", equipment: "none (bodyweight exercise)", licenseAuthor: "BFad07",
             prescriptionType: "reps_bodyweight", confidence: "high", overrideReason: nil),
-        Row(wgerId: "621", name: "Standing Bicep Curl", category: "Arms", equipment: "Dumbbell",
+        Row(wgerId: "621", name: "Standing Bicep Curl", category: "Arms", equipment: "Dumbbell", licenseAuthor: "BFad07",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
-        Row(wgerId: "650", name: "Thruster", category: "Legs", equipment: "Barbell",
+        Row(wgerId: "650", name: "Thruster", category: "Legs", equipment: "Barbell", licenseAuthor: "BeLikeWater",
             prescriptionType: "reps_load", confidence: "high", overrideReason: nil),
 
         // --- Medium confidence: overridden from §6's mechanical rule ---
-        Row(wgerId: "152", name: "Chin Up", category: "Back", equipment: "Pull-up bar",
+        Row(wgerId: "152", name: "Chin Up", category: "Back", equipment: "Pull-up bar", licenseAuthor: "BFad07",
             prescriptionType: "reps_bodyweight", confidence: "medium",
             overrideReason: "equipment='Pull-up bar' isn't 'body only', so the rule alone reaches reps_load; a chin-up is bodyweight calisthenics, the bar is the apparatus, not the load."),
-        Row(wgerId: "297", name: "Hollow Hold", category: "Abs", equipment: "Gym mat",
+        Row(wgerId: "297", name: "Hollow Hold", category: "Abs", equipment: "Gym mat", licenseAuthor: "Behrooz",
             prescriptionType: "time_under_load", confidence: "medium",
             overrideReason: "no 'force' field to trigger §6's static-hold rule from equipment alone; 'hold' in the name is the same isometric case the model's own table lists (plank, wall sit)."),
-        Row(wgerId: "376", name: "Leg Raise", category: "Legs", equipment: nil,
+        Row(wgerId: "376", name: "Leg Raise", category: "Legs", equipment: nil, licenseAuthor: "BFad07",
             prescriptionType: "reps_bodyweight", confidence: "medium",
             overrideReason: "equipment is empty rather than explicitly 'none (bodyweight exercise)', so the rule defaults to reps_load; a leg raise (hanging or lying) is bodyweight."),
-        Row(wgerId: "718", name: "Wall Squat", category: "Legs", equipment: "none (bodyweight exercise)",
+        Row(wgerId: "718", name: "Wall Squat", category: "Legs", equipment: "none (bodyweight exercise)", licenseAuthor: "Blablabla",
             prescriptionType: "time_under_load", confidence: "medium",
             overrideReason: "equipment='none' reaches reps_bodyweight mechanically, but a wall squat is a static hold — prescription-model-v0.1.md §2 names 'wall sit' as its own time_under_load example."),
-        Row(wgerId: "722", name: "Weighted Step-ups", category: "Legs", equipment: nil,
+        Row(wgerId: "722", name: "Weighted Step-ups", category: "Legs", equipment: nil, licenseAuthor: "jigglychipmunk",
             prescriptionType: "reps_load", confidence: "medium",
             overrideReason: "equipment is empty, but the exercise name states 'Weighted' — external load, not bodyweight."),
-        Row(wgerId: "2478", name: "Glute-Ham Raise", category: "Legs", equipment: "Bench",
+        Row(wgerId: "2478", name: "Glute-Ham Raise", category: "Legs", equipment: "Bench", licenseAuthor: "personal use",
             prescriptionType: "reps_bodyweight", confidence: "medium",
             overrideReason: "equipment='Bench' isn't 'body only', but a glute-ham raise is bodyweight resistance against a GHD/bench apparatus, not an external load."),
     ]
@@ -100,6 +110,7 @@ public enum WgerCC0Seed {
                 sourceId: "wger", exerciseId: row.wgerId, name: row.name,
                 category: row.category, equipment: row.equipment,
                 prescriptionType: row.prescriptionType, licenseGroup: "cc0",
+                licenseAuthor: row.licenseAuthor,
                 confidence: row.confidence, notes: notes
             ))
             inserted += 1
