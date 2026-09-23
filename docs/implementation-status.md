@@ -1,8 +1,68 @@
 # Almanac implementation status
 
-Updated 2026-09-23. The Slice 12 whole-app backup bundle and its Settings
-surface are committed on `master` and pushed to GitHub; the working tree is
-clean.
+Updated 2026-09-23. Slice 12 is complete: the whole-app backup bundle, the ZIP
+wrapper, HealthKit reconcile/de-dup on restore, migration fixtures, and the
+iOS widgets + App Intents are all committed on `master`.
+
+## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)
+
+Finishes the Slice 12 work the earlier entry scoped as deferred: the actual
+ZIP container, restore-time de-duplication, migration fixtures, and the
+iOS-only widgets/App Intents.
+
+- **`Sources/AlmanacCore/Backup/BackupZipper.swift`** — the ZIP wrapper the
+  2026-09-19 entry explicitly out-scoped. Hand-rolled pure-Swift ZIP codec
+  (STORE entries, CRC-32, local offset 0), because `FileManager.zipItem`/
+  `unzipItem` and the `Archive` framework do not exist in this SDK and iOS
+  cannot shell out to `/usr/bin/zip`. Envelope semantics: exactly one
+  `.almanac-backup` entry; foreign DEFLATE entries are refused
+  (`notABackupFile`), not decoded; path traversal is guarded; CRC validated
+  on read. `BackupView` export shares a `.zip` twin; import accepts both
+  `.zip` and raw `.almanac-backup`. Verified against `/usr/bin/unzip`
+  interop and CRC-corruption rejection (4 tests).
+- **`HydrationStore.reconcileAfterRestore()`** — restore-time HealthKit
+  de-dup, wired into `BackupBundle.restoreBundle` right after the restored
+  database is swapped in. Collapses only provable overlap: a
+  `healthkit`-sourced hydration row whose `external_id` equals a **live**
+  manual row's `healthkit_external_id`; the manual row wins and the HealthKit
+  row is soft-deleted (matching the table's sticky-delete semantics so a
+  re-sync of the same anchor range cannot resurrect it). Timestamp-window
+  matching across *different* sources stays deliberately unresolved — the
+  "keep both, or confirm?" question remains a product decision, recorded as
+  such in the method's doc comment. 4 tests.
+- **Migration fixtures** (`MigrationFixtureTests.swift`) — build a real
+  database through the first N migrations
+  (`AlmanacMigrations.all.filter { $0.version <= n }`), seed, upgrade to head
+  (now 34), verify data + foreign keys. Covers v010 → head, v015 → head (the
+  export/re-import path), and the v012 refusal. `migrate` exposing only
+  newly-applied versions is the assertion seam.
+- **Widgets + App Intents** (`Native/AlmanacWidgets/`) — `WaterWidget`
+  (today's total + goal from the shared `HydrationStore`, one-tap +250 ml via
+  `LogWaterIntent`) and `FastingWidget` (active session + start/end via
+  `StartFastIntent`/`EndFastIntent`). The database moved to App Group
+  `group.com.almanac.personal` so the widget extension and the app open the
+  *same* SQLite file (`AppGroupDatabase`, compiled into both targets; falls
+  back to Application Support when the group container is unavailable, e.g.
+  unsigned builds). New `AlmanacWidgets.appex` target embedded into the app,
+  with its own entitlements file and the widget Info.plist's
+  `NSExtensionPointIdentifier`.
+- **Verified on this iMac:** full `swift test` — Swift Testing 386/386 in 61
+  suites, plus 37 XCTest suites including `BackupZipperTests`,
+  `MigrationFixtureTests`, `RestoreHealthReconcileTests`. Debug simulator
+  build of the shared `Almanac` scheme succeeds; the app launches with the
+  `.appex` embedded; with entitlements signed in, `almanac.sqlite` is created
+  inside the `group.com.almanac.personal` container (verified via
+  `simctl get_app_container groups`) and no Application Support copy exists.
+  The HealthKit entitlement under ad-hoc `-` signing is refused by SpringBoard
+  on install (expected; a provisioning profile resolves it).
+
+Also landed in this working tree from a parallel session (committed together,
+tests green): Migration034, `Attribution.swift`/`ExerciseAuthorCredits` and
+the Attribution views/UI wiring.
+
+**Out of scope, unchanged:** HealthKit timestamp-window conflict policy (keep
+both vs confirm — product question), Slices 8/9/10 (SFDA email, clinician
+review, insights UI).
 
 ## 2026-09-23 — Slice 12: whole-app backup bundle + restore UI (iMac)
 

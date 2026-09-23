@@ -289,4 +289,37 @@ public struct HydrationStore: HealthSampleWriting, TimelineProviding, @unchecked
 
         return HealthApplyCounts(inserted: inserted, updated: updated, deleted: deleted)
     }
+
+    // MARK: - Restore reconcile (HealthKit)
+
+    /// Collapses hydration entries duplicated by the manual-writeback + re-sync
+    /// overlap after a restore. Returns how many duplicates were dropped.
+    ///
+    /// The Slice 12 handoff's overlap case has exactly one provable shape in
+    /// this schema: a manual entry pushed to HealthKit carries
+    /// `healthkit_external_id`, and a later inbound sync can read that same
+    /// sample back as a `healthkit`-sourced row keyed on the same UUID in
+    /// `external_id`. That is the same drink twice — one user-authored, one
+    /// machine-imported. The manual row wins: it can carry a note or drink
+    /// attachment the bare HealthKit row never has.
+    ///
+    /// Soft delete, matching this table's sticky-delete semantics: the HealthKit
+    /// row must stay gone even if the next sync re-reads the same anchor range.
+    ///
+    /// Timestamp-window matching between *different* sources (a HealthKit entry
+    /// and an unlinked manual tap at the same time) is deliberately **not**
+    /// resolved here — the handoff leaves that "keep both, or confirm?" as a
+    /// product decision, so this only collapses rows linked by the sample UUID.
+    @discardableResult
+    public func reconcileAfterRestore() throws -> Int {
+        try db.run("""
+        UPDATE hydration_log SET deleted_at = ?
+        WHERE source_system = ? AND deleted_at IS NULL
+          AND external_id IN (
+              SELECT healthkit_external_id FROM hydration_log
+              WHERE source_system = ? AND healthkit_external_id IS NOT NULL
+                AND deleted_at IS NULL
+        );
+        """, [.text(nowText), .text(healthKitSourceSystem), .text(manualSourceSystem)])
+    }
 }

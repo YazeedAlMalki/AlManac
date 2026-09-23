@@ -73,12 +73,11 @@ final class LaboratoryModel: ObservableObject {
 
     func open() {
         do {
-            let root = try FileManager.default.url(for: .applicationSupportDirectory,
-                in: .userDomainMask, appropriateFor: nil, create: true)
-                .appendingPathComponent("Almanac", isDirectory: true)
-            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-            let db = try Database(path: root.appendingPathComponent("almanac.sqlite").path)
-            try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+            // The database lives in the App Group container so the widgets can
+            // open the same file; `AppGroupDatabase` adopts a pre-App-Group
+            // install's Application Support copy on first launch.
+            try AppGroupDatabase.adoptLegacyData()
+            let db = try AppGroupDatabase.open()
             let catalog = LabCatalogStore(db: db)
             try LabCatalogSeed.seed(into: catalog)
             try WgerCC0Seed.seed(into: ExerciseCatalogStore(db: db))

@@ -220,6 +220,14 @@ public extension BackupService {
             throw BackupError.corruptBundle(reason: "database payload is not an Almanac database")
         }
         try restored.backup(into: db)
+
+        // HealthKit de-duplication (Slice 12 handoff §6.18): a manual hydration
+        // entry pushed to HealthKit carries `healthkit_external_id`, and the
+        // bundled snapshot can also hold the HealthKit-sourced echo of that same
+        // sample. After restore they are the same drink twice — collapse the
+        // machine-imported copy, keeping the richer manual row. This runs on the
+        // shared restore seam so *every* restore path de-duplicates.
+        try HydrationStore(db: db).reconcileAfterRestore()
     }
 
     /// Enumerates the valid bundles in a directory, newest first.
