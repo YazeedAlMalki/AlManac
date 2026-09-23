@@ -1,8 +1,78 @@
 # Almanac implementation status
 
-Updated 2026-09-22. Apple-platform verification and lab import automation are
-committed on `master` and pushed to GitHub (`a02a366`, `c87d948`); the working
-tree is clean.
+Updated 2026-09-23. The Slice 12 whole-app backup bundle and its Settings
+surface are committed on `master` and pushed to GitHub; the working tree is
+clean.
+
+## 2026-09-23 — Slice 12: whole-app backup bundle + restore UI (iMac)
+
+The 2026-09-19 pass built `BackupService.restore(from:)` (happy-path snapshot
+restore). This pass builds the `.almanac-backup` container on top of it — the
+restore/export half of Slice 12 that the handoff scoped as AI-delegatable once
+`BackupService` existed:
+
+- **`Sources/AlmanacCore/Backup/BackupBundle.swift`** — one self-contained
+  `*.almanac-backup` file carrying the live database *and* every document
+  file. The container is itself a SQLite database (`bundle_meta`,
+  `bundle_db`, `bundle_files`), so the same open/query machinery works on
+  bundle and app alike — no archive library.
+  - `writeBundle(to:documentsRoot:note:)` — online-backup snapshot of the
+    live DB (never a file copy, WAL-consistent), `wal_checkpoint(TRUNCATE)`
+    so the payload is the whole database, every regular file under the
+    document root keyed by its relative path (symlink-resolved on both
+    sides before the prefix is stripped), then the container assembled in
+    one transaction and finished in DELETE journal mode so no `-wal`/`-shm`
+    sidecar survives next to a file about to be shared. Records to
+    `backup_manifest` exactly like `snapshot(to:)`.
+  - `readBundleInfo(at:)` — validates structure + the db digest without
+    touching the live database; a schema mismatch is *reported* (an old
+    backup can be listed) not thrown.
+  - `restoreBundle(at:documentsRoot:)` — refuses a mismatched
+    `schema_version` and a failed checksum before mutating anything; writes
+    documents *before* the database (orphan files after a failed restore are
+    harmless, metadata pointing at never-written documents is the bug this
+    order prevents); database is swapped wholesale via the online backup
+    API, replacing rather than merging. Files on disk that are not in the
+    bundle are left alone, unreferenced rather than deleted. Document paths
+    are escape-checked against the document root.
+  - `listBundles(in:)` — keyed on the files themselves, not
+    `backup_manifest` (that table lives inside the database a restore
+    replaces); broken `.almanac-backup` files are skipped, newest first.
+- **`BackupService`** — new error cases (`notABackupFile`,
+  `incompatibleSchemaVersion`, `corruptBundle`, `missingPayload`,
+  `cannotWriteDocument`, `cannotReadDirectory`) with user-facing
+  descriptions; `db`/`clock`/`currentSchemaVersion` made internal for the
+  extension.
+- **`Native/Almanac/BackupView.swift`** — Settings → Data → Backup &
+  restore: create a backup with one tap, ShareLink the latest, list backups
+  on device (old-schema ones marked "restore not available"), confirm-and-
+  restore (app restarts via `exit(0)` after restore because the in-memory
+  connection no longer matches the replaced file). Wired in SettingsView
+  behind `if let db = labModel.db`.
+- **`Tests/AlmanacCoreTests/BackupBundleTests.swift`** — 7 tests: database+
+  documents round trip, wholesale-replace + stray-files-left-alone, schema
+  gate rejects before mutating, tampered payload rejected before mutating,
+  corrupt/missing files rejected, manifest recording, list newest-first +
+  skips broken.
+
+**Verified on the iMac (this session):** full `swift test` — XCTest 281 (1
+env-gated skip, 0 failures), Swift Testing 370/370 — plus a Debug simulator
+build of the shared `Almanac` scheme (`generic/platform=iOS Simulator`,
+`ONLY_ACTIVE_ARCH=YES`) **succeeds** with the new Settings section and
+BackupView present.
+
+**Deliberately out of scope, unchanged from the handoff / 2026-09-19 entry:**
+BRD §6.18's ZIP container (the actual format is the SQLite snapshot; wrapping
+it in ZIP is a separate later slice), transactional rollback *mid-apply*
+(the schema/checksum gates make the meaningful failure modes happen before
+any mutation, but a document-write failure code paths past some document
+writes — flagged in the file header, not silently claimed), HealthKit
+re-sync + sourceIdentifier/timestamp de-duplication (needs the §6.18
+"reconcile separately" decision and HealthKit, both outside the Linux core),
+migration fixtures (v010 → current; export-v015-restore-v016), widgets and
+App Intents (iOS/Xcode + product scope questions, separate slices). The
+BackupView UI compiled in the simulator but was not interactively driven
+(share sheet, confirm dialog, post-restore restart).
 
 ## 2026-09-22 — first Apple-platform verification (this iMac)
 

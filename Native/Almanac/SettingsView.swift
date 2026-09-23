@@ -4,6 +4,7 @@ import AlmanacCore
 @MainActor
 struct SettingsView: View {
     @ObservedObject var model: HydrationModel
+    @ObservedObject var labModel: LaboratoryModel
     @State private var dailyGoal: Double = 2000
     @State private var remindersEnabled = false
     @State private var reminderIntervalMinutes = 60
@@ -40,6 +41,13 @@ struct SettingsView: View {
                             .onChange(of: reminderStartHour) { _, _ in Task { await applyReminderSchedule() } }
                         Stepper("Until \(reminderEndHour):00", value: $reminderEndHour, in: 0...23)
                             .onChange(of: reminderEndHour) { _, _ in Task { await applyReminderSchedule() } }
+                    }
+                }
+                Section("Data") {
+                    if let db = labModel.db {
+                        NavigationLink("Backup & restore") {
+                            BackupView(db: db)
+                        }
                     }
                 }
             }

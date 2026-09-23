@@ -25,7 +25,7 @@ struct AlmanacApp: App {
                             .tabItem { Label("Hydration", systemImage: "drop") }
                         NutritionQuickEntryView(model: nutritionModel)
                             .tabItem { Label("Nutrition", systemImage: "fork.knife") }
-                        SettingsView(model: hydrationModel)
+                        SettingsView(model: hydrationModel, labModel: model)
                             .tabItem { Label("Settings", systemImage: "gear") }
                     }
                     // The database is opened synchronously in LaboratoryModel.open(),

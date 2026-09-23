@@ -7,8 +7,8 @@ import CSQLite
 /// database on disk is not a consistent snapshot — copying it while the app is
 /// running produces a backup that restores to a moment that never existed.
 public struct BackupService: Sendable {
-    private let db: Database
-    private let clock: any Clock
+    let db: Database
+    let clock: any Clock
 
     public init(db: Database, clock: any Clock = SystemClock()) {
         self.db = db
@@ -18,11 +18,24 @@ public struct BackupService: Sendable {
     public enum BackupError: Error, CustomStringConvertible, Sendable {
         case cannotOpenDestination(String)
         case backupFailed(Int32)
+        case notABackupFile(String)
+        case incompatibleSchemaVersion(found: Int64, expected: Int64)
+        case corruptBundle(reason: String)
+        case missingPayload(String)
+        case cannotWriteDocument(relativePath: String, underlying: String)
+        case cannotReadDirectory(String)
 
         public var description: String {
             switch self {
             case .cannotOpenDestination(let p): return "Could not open backup destination at \(p)"
             case .backupFailed(let c): return "SQLite backup failed with code \(c)"
+            case .notABackupFile(let p): return "\(p) is not an Almanac backup"
+            case .incompatibleSchemaVersion(let found, let expected):
+                return "This backup was made by a different app version (its schema is \(found), this app is \(expected)). Restore was not attempted."
+            case .corruptBundle(let reason): return "Backup is damaged: \(reason)"
+            case .missingPayload(let kind): return "Backup is missing its \(kind) payload"
+            case .cannotWriteDocument(let path, let underlying): return "Could not restore document \(path): \(underlying)"
+            case .cannotReadDirectory(let d): return "Could not read the folder at \(d)"
             }
         }
     }
@@ -51,7 +64,7 @@ public struct BackupService: Sendable {
         return bytes
     }
 
-    private func currentSchemaVersion() throws -> Int {
+    func currentSchemaVersion() throws -> Int {
         let rows = try db.query("SELECT COALESCE(MAX(version), 0) AS v FROM schema_migrations;")
         return Int(rows.first?.int("v") ?? 0)
     }
