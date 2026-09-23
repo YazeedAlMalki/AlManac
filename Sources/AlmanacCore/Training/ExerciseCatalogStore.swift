@@ -14,12 +14,16 @@ public struct ExerciseCatalogDraft: Sendable {
     /// per-exercise credit line, or the Attributions page's per-author list,
     /// can name whoever licensed that individual exercise.
     public var licenseAuthor: String?
+    /// File name of the exercise's demonstration graphic inside AlmanacCore's
+    /// resource bundle. Every *shipped* row has one — see
+    /// `ExerciseGraphicAudit`.
+    public var graphicPath: String?
     public var confidence: String?
     public var notes: String?
 
     public init(sourceId: String, exerciseId: String, name: String, category: String? = nil,
                 equipment: String? = nil, force: String? = nil, prescriptionType: String,
-                licenseGroup: String, licenseAuthor: String? = nil,
+                licenseGroup: String, licenseAuthor: String? = nil, graphicPath: String? = nil,
                 confidence: String? = nil, notes: String? = nil) {
         self.sourceId = sourceId
         self.exerciseId = exerciseId
@@ -30,6 +34,7 @@ public struct ExerciseCatalogDraft: Sendable {
         self.prescriptionType = prescriptionType
         self.licenseGroup = licenseGroup
         self.licenseAuthor = licenseAuthor
+        self.graphicPath = graphicPath
         self.confidence = confidence
         self.notes = notes
     }
@@ -47,6 +52,7 @@ public struct ExerciseCatalogEntry: Sendable, Hashable, Identifiable {
     public let prescriptionType: String
     public let licenseGroup: String
     public let licenseAuthor: String?
+    public let graphicPath: String?
     public let confidence: String?
     public let notes: String?
     public let deletedAt: String?
@@ -85,8 +91,8 @@ public struct ExerciseCatalogStore: @unchecked Sendable {
         try db.run("""
         INSERT INTO exerciseCatalog
             (sourceId, exerciseId, name, category, equipment, force, prescriptionType,
-             licenseGroup, licenseAuthor, confidence, notes, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+             licenseGroup, licenseAuthor, graphicPath, confidence, notes, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(draft.sourceId), .text(draft.exerciseId), .text(draft.name),
             draft.category.map { SQLValue.text($0) } ?? .null,
@@ -94,6 +100,7 @@ public struct ExerciseCatalogStore: @unchecked Sendable {
             draft.force.map { SQLValue.text($0) } ?? .null,
             .text(draft.prescriptionType), .text(draft.licenseGroup),
             draft.licenseAuthor.map { SQLValue.text($0) } ?? .null,
+            draft.graphicPath.map { SQLValue.text($0) } ?? .null,
             draft.confidence.map { SQLValue.text($0) } ?? .null,
             draft.notes.map { SQLValue.text($0) } ?? .null,
             .text(now), .text(now)
@@ -158,7 +165,7 @@ public struct ExerciseCatalogStore: @unchecked Sendable {
             category: row.string("category"), equipment: row.string("equipment"),
             force: row.string("force"), prescriptionType: prescriptionType,
             licenseGroup: licenseGroup, licenseAuthor: row.string("licenseAuthor"),
-            confidence: row.string("confidence"),
+            graphicPath: row.string("graphicPath"), confidence: row.string("confidence"),
             notes: row.string("notes"), deletedAt: row.string("deletedAt"),
             createdAt: createdAt, updatedAt: updatedAt
         )

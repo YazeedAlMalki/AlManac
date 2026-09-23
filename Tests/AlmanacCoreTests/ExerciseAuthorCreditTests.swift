@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import AlmanacCore
 
-/// The requirement allows the Attributions page to list each wger author
+/// The requirement allows the Attributions page to list each author
 /// individually instead of a per-exercise detail screen. This pins that list:
 /// distinct authors, each with the licence their rows carry, nil authors
 /// dropped, deterministic order.
@@ -47,12 +47,12 @@ struct ExerciseAuthorCreditTests {
         #expect(credits.allSatisfy { $0.author == "BFad07" })
     }
 
-    @Test("The seeded wger catalog lists its real authors individually")
+    @Test("The shipped catalog lists its real authors individually")
     func seededAuthorList() throws {
-        try WgerCC0Seed.seed(into: store)
+        try WorkoutGuideSeed.seed(into: store)
         let credits = ExerciseAuthorCredits.distinct(from: try store.all())
-        #expect(credits.count >= 5)
-        #expect(credits.allSatisfy { $0.license?.name == "CC0 1.0" })
-        #expect(credits.contains { $0.author == "BFad07" })
+        #expect(credits.count == 1)
+        #expect(credits.first?.author == "Bryl Lim")
+        #expect(credits.first?.license?.name == "CC BY-SA 4.0")
     }
 }

@@ -1,8 +1,63 @@
 # Almanac implementation status
 
-Updated 2026-09-23. Slice 12 is complete: the whole-app backup bundle, the ZIP
-wrapper, HealthKit reconcile/de-dup on restore, migration fixtures, and the
-iOS widgets + App Intents are all committed on `master`.
+Updated 2026-09-24. The exercise catalogue now ships a demonstration graphic
+with every exercise, and the in-app Attributions page is live
+(`docs/attribution-requirement.md`, `docs/exercise-sources.md`).
+
+## 2026-09-24 — Exercise graphics + Attributions page
+
+Implements the two requirements in `docs/exercise-sources.md` and
+`docs/attribution-requirement.md` (both added to this repo in this pass).
+
+- **`WorkoutGuideSeed`** — the catalogue is now all 302 `bryllim/workout-guide`
+  exercises (Bryl Lim, CC BY-SA 4.0), each bundled with the 512×512 PNG drawn
+  for it (~9.7 MB, one per exercise, not all 906 frames). The exercise list,
+  licence, author and per-frame upstream attribution come from workout-guide's
+  own `manifest.json`, copied into the resource bundle rather than retyped.
+  `prescriptionType` is a mechanical mapping from the source's own
+  `exerciseType`/`isStretch` fields, not 302 hand-assigned rows.
+- **The rule is enforced, not asserted.** `ExerciseGraphicAudit` fails the
+  build (and the app's own launch) if any shipped exercise lacks a graphic that
+  is really in the bundle. `AttributionAudit` does the same for a bundled
+  source with no Attributions entry. Both also run in `LaboratoryModel.open()`.
+- **`Attributions` page** — `Native/Almanac/AttributionsView.swift`, under
+  Settings → About. Compiled-in entries plus a per-author list read from the
+  local catalogue, so it works offline. Every CC BY-SA entry carries title,
+  author, source link and licence link; the Everkinetic entry is marked
+  modified with the derivation described, as CC BY-SA requires.
+- **Migrations 034/035** — `exerciseCatalog.licenseAuthor` and
+  `.graphicPath`. **035 also soft-deletes the old wger rows**: those 21
+  exercises have no compliant graphic, so leaving them live would break the
+  rule the app enforces on itself and an upgraded app would refuse to open.
+  Soft delete, not erase — bouts logged against them still resolve.
+
+**Why the wger seed was removed rather than given borrowed graphics:** measured
+against all four sources, "Pause Bench", "Thruster" and "Glute-Ham Raise" have
+no clean-licensed illustration anywhere (only free-exercise-db, whose photo
+provenance is unverified), and others only match the wrong movement ("Wall
+Squat" → "Squat"). A wrong demonstration is worse than none. Table in
+`docs/exercise-sources.md`.
+
+**Also fixed (found while verifying):** `AppGroupDatabase.legacyFileURL()` —
+introduced with the widget/App-Group work in `2108af0` — returned a path inside
+an `Application Support/Almanac` directory it never created, so a **fresh
+install with no App Group container could not open its database at all**
+("SQLite error 14"). Caught by reinstalling from scratch rather than trusting a
+relaunch. One `createDirectory` call restores the behaviour the pre-widget code
+had.
+
+**Verified (iMac, this session):** `swift test` — XCTest 292 (1 opt-in skip),
+Swift Testing 394, 0 failures. Debug simulator build of the shared `Almanac`
+scheme succeeds. Fresh simulator install: app launches, database created,
+migrations 34+35 recorded, 302 live catalogue rows, **0 without a graphic**,
+all 302 graphics present and non-empty in the installed bundle.
+
+**Not verified:** the Attributions page and the picker's graphic thumbnails were
+not driven interactively — Simulator UI automation is unavailable in this
+session (assistive access denied). Their content paths are covered by core
+tests and the installed-bundle checks above; the rendering itself is not.
+
+## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)
 
 ## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)
 

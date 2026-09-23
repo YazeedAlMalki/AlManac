@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import AlmanacCore
 
-/// The requirement's per-row obligation: wger licenses each exercise
+/// The requirement's per-row obligation: an exercise source licenses each row
 /// separately and names an author per row, so that data must survive every
 /// processing stage into the app database, and remain readable so the
 /// Attributions page can list each author individually.
@@ -47,22 +47,21 @@ struct ExerciseAttributionPersistenceTests {
         #expect(try store.exercise(id: id)?.licenseAuthor == nil)
     }
 
-    @Test("The seeded wger catalog keeps a real author on every row")
+    @Test("The shipped catalog keeps a real author on every row")
     func seedCarriesAuthors() throws {
-        try WgerCC0Seed.seed(into: store)
+        try WorkoutGuideSeed.seed(into: store)
         let all = try store.all()
-        #expect(all.count == 21)
+        #expect(all.count == 302)
         for entry in all {
             #expect((entry.licenseAuthor ?? "").isEmpty == false,
-                    "\(entry.name) must keep its wger license_author")
+                    "\(entry.name) must keep its license author")
         }
     }
 
-    @Test("The Attributions page can list wger's seeded authors individually")
+    @Test("The Attributions page can list the shipped authors individually")
     func seededAuthorsAreListable() throws {
-        try WgerCC0Seed.seed(into: store)
+        try WorkoutGuideSeed.seed(into: store)
         let authors = Set(try store.all().compactMap(\.licenseAuthor))
-        #expect(authors.contains("BFad07"))
-        #expect(authors.count >= 5)
+        #expect(authors == ["Bryl Lim"])
     }
 }

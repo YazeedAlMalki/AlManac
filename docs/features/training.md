@@ -21,8 +21,10 @@ project memory)"* — memory, not a file.
 
 What survives is its **effects**: the two enumerations and the schema shape
 in `Migration016_TrainingSchema`'s own doc comments, and the assignment
-rules cited (by section number, into a document nobody can open) in
-`WgerCC0Seed.swift`'s doc comments. Both are quoted verbatim in §2/§4 below.
+rules cited (by section number, into a document nobody can open) in the
+doc comments of the seed that has since been removed
+(`WgerCC0Seed`, deleted 2026-09-24 — see §4). Both are quoted verbatim in
+§2/§4 below.
 What does **not** survive: the document's actual prose — its full reasoning
 for each of the twelve prescription types, the open question at its own
 §8 about `quality_reps` (referenced but not explained anywhere in code),
@@ -134,20 +136,29 @@ separately from the source:
   `WorkoutBoutStore`** (`Sources/AlmanacCore/Training/`) — full CRUD (insert/
   log, idempotent soft delete, read by id, read by natural query). 20 tests
   across the four stores plus `Migration016Tests`' 6 schema tests.
-- **`WgerCC0Seed`** — 21 real wger exercises, fetched live from wger's own
-  API on 2026-09-16, licensed CC0 (`license.id == 3`) — **not** the
-  illustrative "squat, deadlift, bench press" list an earlier planning
-  document sketched. That list doesn't survive contact with wger's actual
-  per-row licensing: Bench Press, Squat, and Deadlift are all CC-BY-SA 4 in
-  wger's own catalog, not CC0. `licenseGroup` is stored as the plain string
-  `"cc0"` (not `"cc0_wger"`). 15 of 21 rows are `confidence: "high"` (the
-  mechanical category/equipment rule settles them cleanly); 6 are
-  `"medium"`, each with a recorded `overrideReason` explaining exactly why
-  wger's fields didn't mechanically settle it (e.g., a chin-up's equipment
-  field says "pull-up bar," which the mechanical rule alone would read as
-  `reps_load`, but a chin-up is bodyweight calisthenics — the bar is the
-  apparatus, not the load). None are `"low"` — every override has a
-  concrete reason, not a guess. 7 tests.
+- **`WgerCC0Seed` — REMOVED 2026-09-24, replaced by `WorkoutGuideSeed`.** The
+  seed was 21 wger exercises licensed CC0, fetched from wger's API. It is gone
+  because the "every exercise shipped must include a demonstration graphic"
+  rule cannot be met from wger: `docs/exercise-sources.md` records the
+  measurement — "Pause Bench", "Thruster" and "Glute-Ham Raise" have no
+  clean-licensed illustration in any source, and several others only match the
+  wrong movement. Migration 035 soft-deletes the rows it wrote, so logged bouts
+  still resolve.
+- **`WorkoutGuideSeed`** — all 302 `bryllim/workout-guide` exercises (Bryl
+  Lim, CC BY-SA 4.0), each shipped with the demonstration graphic drawn for
+  it. Exercise list, licence, author and per-frame upstream attribution are
+  read from workout-guide's own `manifest.json`, copied into the resource
+  bundle rather than retyped, so a re-sync can diff against upstream.
+  `prescriptionType` is a mechanical mapping from the source's own
+  `exerciseType`/`isStretch` fields (`WorkoutGuideSeed.prescriptionType`,
+  pinned by `WorkoutGuidePrescriptionMappingTests`), not 302 hand-assigned
+  rows: `weight_reps` → `reps_load`, `bodyweight_reps`/`assisted_bodyweight`
+  → `reps_bodyweight`, `distance_duration` → `distance`, `duration` → `time_under_load`
+  when the name reads as a static hold (hold/plank/sit/hang) else `duration`,
+  `isStretch` → `hold_stretch`. 21 tests.
+- **`ExerciseGraphicAudit`** — the rule as a build failure: every shipped
+  exercise must name a graphic that is actually in the bundle, or the build
+  (and the app's own launch) fails.
 - **`WorkloadComputer`** (2026-09-17) — session-level tonnage/distance/
   duration/reps/rounds/average-RPE aggregation from a session's bouts. See
   its own doc comment for exact per-type coverage; deliberately partial
@@ -190,9 +201,10 @@ missing — see §2's "why one wide table" reasoning. Revisit only if the "5 of
 section on `ReadinessDashboardView` when today has a summary. Deliberately
 scoped down from the fuller picture in §6.2 below: quick-add only, against
 one ad-hoc "today's session" — no `PrescribedWorkout` template picker, no
-container selection, no bout editing (only delete). `WgerCC0Seed.seed` is
+container selection, no bout editing (only delete). `WorkoutGuideSeed.seed` is
 now called from `LaboratoryModel.open()` (it never was before — the catalog
-would have been empty at every launch until this).
+would have been empty at every launch until this). The picker's rows show the
+exercise's bundled demonstration graphic.
 
 **Calorie burn from training load.** No MET or Compendium-derived
 calorie-burn code exists anywhere in this repo (confirmed absent by grep,

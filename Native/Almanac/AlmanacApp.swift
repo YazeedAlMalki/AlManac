@@ -80,7 +80,13 @@ final class LaboratoryModel: ObservableObject {
             let db = try AppGroupDatabase.open()
             let catalog = LabCatalogStore(db: db)
             try LabCatalogSeed.seed(into: catalog)
-            try WgerCC0Seed.seed(into: ExerciseCatalogStore(db: db))
+            let exercises = ExerciseCatalogStore(db: db)
+            try WorkoutGuideSeed.seed(into: exercises)
+            // Both content rules are checked here as well as in the test suite:
+            // shipping an uncredited source, or an exercise with no
+            // demonstration graphic, must not reach a user's device.
+            try AttributionAudit.assertAttributed(AttributionCatalog.bundledSourceIds)
+            try ExerciseGraphicAudit.assertEveryExerciseHasGraphic(try exercises.all())
             self.catalog = catalog
             self.db = db
             let store = LabStore(db: db)

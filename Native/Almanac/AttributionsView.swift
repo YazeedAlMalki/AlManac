@@ -61,9 +61,9 @@ struct AttributionsView: View {
         .padding(.vertical, 2)
     }
 
-    /// One row per distinct (author, licence) pair in the local catalog —
-    /// wger names an author per exercise, and listing them here satisfies the
-    /// per-exercise attribution obligation without a per-row detail screen.
+    /// One row per distinct (author, licence) pair in the local catalog — an
+    /// exercise source names an author per row, and listing them here satisfies
+    /// the per-exercise attribution obligation without a per-row detail screen.
     /// The grouping itself lives in `ExerciseAuthorCredits` (core, tested).
     private func loadAuthors() {
         guard let db, let entries = try? ExerciseCatalogStore(db: db).all() else { return }

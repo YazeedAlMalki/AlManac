@@ -78,15 +78,32 @@ public enum AttributionCatalog {
 
     /// Sources the build ships. Append-only; adding an id here without a
     /// matching `entries` row fails `AttributionAudit`.
-    public static let bundledSourceIds: [String] = ["wger"]
+    public static let bundledSourceIds: [String] = ["workout-guide", "everkinetic"]
 
     public static let entries: [Attribution] = [
         Attribution(
-            sourceId: "wger",
-            title: "wger exercise catalog",
-            author: "wger project contributors (per-exercise authors listed separately)",
-            sourceURL: "https://github.com/wger-project/wger",
-            licenses: [ccBySa40, ccBySa30, cc0]
+            sourceId: "workout-guide",
+            title: "workout-guide exercise illustrations and exercise list",
+            author: "Bryl Lim",
+            sourceURL: "https://github.com/bryllim/workout-guide",
+            licenses: [ccBySa40]
+        ),
+        Attribution(
+            sourceId: "everkinetic",
+            title: "Everkinetic exercise illustrations",
+            author: "Everkinetic",
+            sourceURL: "https://github.com/everkinetic/data",
+            licenses: [ccBySa40],
+            // 76 of workout-guide's frames are derived from Everkinetic art, and
+            // the derivation is a modification CC BY-SA requires us to state and
+            // to release under the same licence. Almanac bundles the derived
+            // PNGs without further change; the modification was made upstream
+            // and its description is carried per frame in the bundled manifest.
+            isModified: true,
+            modificationNote: "76 of the 302 bundled illustrations are derived from these: "
+                + "rasterized on a transparent 512 × 512 canvas, recoloured for monochrome "
+                + "display, and vector-traced by workout-guide. Those 76 files are released by "
+                + "workout-guide under CC BY-SA 4.0 and are shipped here unmodified."
         )
     ]
 

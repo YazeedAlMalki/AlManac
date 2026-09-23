@@ -36,6 +36,11 @@ enum AppGroupDatabase {
             for: .applicationSupportDirectory, in: .userDomainMask,
             appropriateFor: nil, create: true)
             .appendingPathComponent("Almanac", isDirectory: true)
+        // `create: true` above only creates Application Support itself, not the
+        // "Almanac" subdirectory. Without this, a fresh install with no group
+        // container fails to open the database at all ("unable to open database
+        // file"), because the parent directory does not exist.
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         return root.appendingPathComponent("almanac.sqlite")
     }
 
