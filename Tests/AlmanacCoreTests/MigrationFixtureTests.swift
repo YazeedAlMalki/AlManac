@@ -122,6 +122,56 @@ final class MigrationFixtureTests: XCTestCase {
         XCTAssertEqual(try foreignKeyViolations(db), 0)
     }
 
+    // MARK: - v035 fixture: workoutSession has no provenance columns yet
+
+    /// A session logged before 036 must survive the upgrade and be able to take
+    /// a HealthKit UUID afterwards — and a *second* manual session on the same
+    /// day must still be allowed, which is why the unique index is partial.
+    func testV035SessionSurvivesUpgradeAndTakesAHealthKitIdentity() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: prefix(35)).migrate(db)
+
+        let now = "2026-09-01T08:00:00Z"
+        try db.run("""
+        INSERT INTO workoutSession (date, startTimestamp, durationMinutes, sessionType, createdAt, updatedAt)
+        VALUES ('2026-09-01', '2026-09-01T07:00:00Z', 45, 'Running', '\(now)', '\(now)');
+        """)
+
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+
+        // The pre-existing row is intact, with both new columns null.
+        let upgraded = try XCTUnwrap(db.query("""
+        SELECT id, date, durationMinutes, sessionType, source, healthKitUUID
+        FROM workoutSession;
+        """).first)
+        XCTAssertEqual(upgraded.string("date"), "2026-09-01")
+        XCTAssertEqual(upgraded.int("durationMinutes"), 45)
+        XCTAssertEqual(upgraded.string("sessionType"), "Running")
+        XCTAssertNil(upgraded.string("source"))
+        XCTAssertNil(upgraded.string("healthKitUUID"))
+
+        // It can now be claimed by a HealthKit workout.
+        try db.run("UPDATE workoutSession SET source = 'healthkit', healthKitUUID = 'hk-1' WHERE id = ?;",
+                   [.integer(upgraded.int("id")!)])
+        let claimed = try XCTUnwrap(db.query("SELECT source, healthKitUUID FROM workoutSession;").first)
+        XCTAssertEqual(claimed.string("source"), "healthkit")
+        XCTAssertEqual(claimed.string("healthKitUUID"), "hk-1")
+
+        // A second manual session the same day is still fine — manual rows have
+        // no UUID, and the unique index must not treat NULLs as equal.
+        try db.run("""
+        INSERT INTO workoutSession (date, durationMinutes, createdAt, updatedAt)
+        VALUES ('2026-09-01', 30, '\(now)', '\(now)');
+        """)
+        XCTAssertEqual(try db.query("SELECT COUNT(*) AS n FROM workoutSession;").first?.int("n"), 2)
+
+        // But the same HealthKit UUID twice is refused — that is the whole point
+        // of the column.
+        XCTAssertThrowsError(try db.run(
+            "UPDATE workoutSession SET healthKitUUID = 'hk-1' WHERE id != ?;",
+            [.integer(upgraded.int("id")!)]))
+    }
+
     // MARK: - Cross-version bundle refusal, with a genuinely old bundle
 
     func testSchemaGateRefusesBundleFromRealOlderSchema() throws {

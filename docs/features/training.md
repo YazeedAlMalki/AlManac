@@ -233,15 +233,53 @@ so it's ready to wire once the bridge exists). Step 1(a)-(c) are still
 open — the matcher only solves "given a session and some candidate
 windows, which one wins," not where the candidates come from.
 
-1. HealthKit bridge — needs, in order: (a) a design decision on how
-   `HealthSample` (or a new parallel type) carries workout activity type,
-   (b) a migration adding `source`/`healthKitUUID` to `workoutSession` for
-   idempotent upsert, (c) a mapping from `HKWorkoutActivityType` to
-   `prescriptionType`/`containerType` defaults (a real per-value decision
-   table, not a guess), (d) the bridge itself, one `workoutSession` per
-   `HKWorkout` (matching the granularity that actually exists on both
-   sides), with unmatched/unstructured workouts landing as `session_only` —
-   time-overlap matching itself is done (`WorkoutHealthKitMatcher`, above).
+1. ~~HealthKit bridge~~ — **done 2026-09-25**, all four steps, and the shapes
+   turned out to be smaller than this plan expected. What actually shipped:
+
+   - **(a) Activity type** — `HealthSample` gained one optional `activity`
+     field carrying an opaque identifier (`"running"`). Not an enum: this is the
+     one platform-neutral type every sync passes through, so an enum could only
+     mirror Apple's ~80 values and would rot each iOS release. The identifier
+     crosses the boundary; the *decision* about it stays in core, where it is
+     testable on Linux.
+   - **(b) Idempotent upsert** — `Migration036_WorkoutSessionSource` adds
+     `source` + `healthKitUUID` to `workoutSession`, with a partial unique index
+     so manual sessions (all null) are unaffected. `source` means "this row was
+     *created* by this source"; `healthKitUUID` means only "a workout is linked
+     here". Keeping those apart is what lets a withdrawn workout be withdrawn
+     from a session Almanac made while leaving a user's own log untouched.
+   - **(c) Activity mapping** — **no decision table**, and deliberately so. The
+     plan assumed `workoutSession` needed `prescriptionType`/`containerType`
+     defaults, but a session carries neither: `workoutSession.sessionType` is
+     free text and nothing consumes it semantically yet. `WorkoutActivity`
+     therefore just renders an identifier as a readable label, with a
+     camel-case fallback so a type added by a future iOS is labelled rather
+     than dropped. **Promote the values worth grouping to a closed enum at the
+     point something needs to group them** — session templates, training focus,
+     calorie estimation — not before.
+   - **(d) The bridge** — `WorkoutSessionHealthBridge`. One `HKWorkout` maps to
+     exactly one session. A workout with no confident match becomes its own
+     session with no bouts; a workout the user also logged has that session
+     *claimed* and enriched, never duplicated.
+
+   **The merge-confidence rule, and why it is stricter than "any overlap".**
+   `WorkoutHealthKitMatcher` scores a candidate by overlap over the **union** of
+   the two windows, threshold 60% — not over the shorter window, and not merely
+   "any overlap". Both of those are wrong in the same direction: a 45-minute run
+   logged inside an 8-hour session shares 100% of the *shorter* window, so
+   either rule absorbs the run into the day's session and it disappears from the
+   training log entirely. Over the union the same pair scores ~9%. Two genuinely
+   near-identical windows still score ~98% and match, which is the case that
+   actually matters. The matcher also breaks ties on a total order rather than
+   input order — an unstable winner would move a workout between sessions on
+   alternate syncs.
+
+   Also fixed here, because auto-logging surfaced both: `TrainingModel.logBout`
+   used to attach a manually logged bout to `sessions(date:).first`, which a
+   watch-created session would have swallowed, so it now prefers the user's own
+   session; and `WorkloadComputer` counted only bouts, so a session-only workout
+   contributed no load at all, making auto-logging invisible in the one number
+   the Training tab shows.
 2. ~~UI~~ — done 2026-09-17 (§5 above), scoped to quick-add against an
    ad-hoc daily session, using `WorkloadComputer` for the aggregate shown
    both on the Training tab and (when today has one) as a section on

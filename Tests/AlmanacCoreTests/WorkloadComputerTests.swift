@@ -4,7 +4,7 @@ import Foundation
 
 @Suite("WorkloadComputer Tests")
 struct WorkloadComputerTests {
-    private func bout(prescriptionType: String, sequenceIndex: Int = 0,
+    private func bout(prescriptionType: String, sessionId: Int64 = 1, sequenceIndex: Int = 0,
                        prescribedSets: Int? = nil, prescribedReps: Int? = nil, prescribedLoadKg: Double? = nil,
                        prescribedDurationSeconds: Double? = nil, prescribedDistanceMeters: Double? = nil,
                        prescribedRounds: Int? = nil,
@@ -12,7 +12,7 @@ struct WorkloadComputerTests {
                        actualDurationSeconds: Double? = nil, actualDistanceMeters: Double? = nil,
                        actualRounds: Int? = nil, rpe: Int? = nil) -> WorkoutBoutEntry {
         WorkoutBoutEntry(
-            id: Int64(sequenceIndex), sessionId: 1, exerciseCatalogId: 1, sequenceIndex: sequenceIndex,
+            id: Int64(sequenceIndex), sessionId: sessionId, exerciseCatalogId: 1, sequenceIndex: sequenceIndex,
             prescriptionType: prescriptionType, containerType: nil,
             prescribedSets: prescribedSets, prescribedReps: prescribedReps, prescribedLoadKg: prescribedLoadKg,
             prescribedDurationSeconds: prescribedDurationSeconds, prescribedDistanceMeters: prescribedDistanceMeters,
@@ -148,5 +148,57 @@ struct WorkloadComputerTests {
                                        deletedAt: "2026-09-17T00:00:00Z", createdAt: "", updatedAt: "")
         let summary = WorkloadComputer.summary(for: [deleted])
         #expect(summary.totalTonnageKg == 2500)
+    }
+
+    // MARK: - Session-only load
+
+    private func session(_ id: Int64, durationMinutes: Int?) -> WorkoutSessionEntry {
+        WorkoutSessionEntry(id: id, date: "2026-09-17", startTimestamp: nil, endTimestamp: nil,
+                            durationMinutes: durationMinutes, rpe: nil, notes: nil,
+                            prescribedWorkoutId: nil, sessionType: "Running",
+                            healthKitUUID: nil, source: nil, deletedAt: nil,
+                            createdAt: "", updatedAt: "")
+    }
+
+    /// A workout synced from a watch has no bouts — a watch records time and
+    /// activity, not sets and reps. Without this its duration would not count
+    /// as training load at all, and auto-logging a workout would change nothing
+    /// the user can see.
+    @Test("A session with no bouts contributes its duration as load")
+    func sessionOnlyDurationCountsAsLoad() {
+        let summary = WorkloadComputer.summary(for: [session(1, durationMinutes: 45)], bouts: [])
+        let expected: Double = 45 * 60
+        #expect(summary.totalDurationSeconds == expected)
+    }
+
+    /// A session that *does* have bouts already contributes through them, so
+    /// adding its wall-clock duration too would count the same workout twice.
+    @Test("A session with bouts does not also contribute its own duration")
+    func sessionWithBoutsIsNotDoubleCounted() {
+        let bouts = [bout(prescriptionType: "duration", actualDurationSeconds: 600)]
+        let summary = WorkloadComputer.summary(for: [session(1, durationMinutes: 10)], bouts: bouts)
+        let expected: Double = 600
+        #expect(summary.totalDurationSeconds == expected)
+    }
+
+    @Test("Session-only time adds to bout-derived time")
+    func sessionOnlyAddsToBoutTime() {
+        // The bout belongs to a third session, so both listed sessions are
+        // session-only and all three durations should add up.
+        let bouts = [bout(prescriptionType: "duration", sessionId: 9, actualDurationSeconds: 600)]
+        let sessions: [WorkoutSessionEntry] = [session(1, durationMinutes: 20),
+                                               session(2, durationMinutes: 45)]
+        let summary = WorkloadComputer.summary(for: sessions, bouts: bouts)
+        let expected: Double = 600 + 20 * 60 + 45 * 60
+        #expect(summary.totalDurationSeconds == expected)
+    }
+
+    /// A session with neither bouts nor a duration — a manually created
+    /// placeholder, which is what `TrainingModel.logBout` makes first — must not
+    /// turn into a false zero.
+    @Test("A session with no bouts and no duration contributes nothing")
+    func emptySessionIsNotAFalseZero() {
+        let summary = WorkloadComputer.summary(for: [session(1, durationMinutes: nil)], bouts: [])
+        #expect(summary.totalDurationSeconds == nil)
     }
 }

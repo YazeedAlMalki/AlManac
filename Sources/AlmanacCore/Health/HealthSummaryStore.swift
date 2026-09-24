@@ -133,6 +133,12 @@ public struct HealthSummaryStore: Sendable {
         .init(domain: .sleep, title: "Sleep", table: "sleep_episode",
               timeColumn: "endTimestamp", valueColumn: "durationMinutes", unit: "min",
               scope: "source = 'healthkit'"),
+        // Workouts become sessions. Scoped to `source = 'healthkit'` for the
+        // same reason sleep is: a session the user logged is their record, not
+        // something HealthKit gave us, and the screen reports the latter.
+        .init(domain: .workouts, title: "Workouts", table: "workoutSession",
+              timeColumn: "endTimestamp", valueColumn: "durationMinutes", unit: "min",
+              scope: "source = 'healthkit' AND deletedAt IS NULL"),
     ]
 
     private func parseISO(_ text: String) -> Date? {

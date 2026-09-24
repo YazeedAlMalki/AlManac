@@ -27,6 +27,7 @@ final class HealthSummaryStoreTests: XCTestCase {
     private func writer(for domain: HealthDomain, _ db: Database) -> any HealthSampleWriting {
         switch domain {
         case .sleep: SleepEpisodeHealthBridge(db: db, timeModel: TimeModel(timeZone: utc))
+        case .workouts: WorkoutSessionHealthBridge(db: db, timeModel: TimeModel(timeZone: utc))
         case .bodyMass, .bodyFatPercentage, .leanBodyMass:
             BodyCompositionMeasurementHealthBridge(db: db, zone: ZoneContext(utc))
         default: VitalsRecordHealthBridge(db: db, zone: ZoneContext(utc))
@@ -43,6 +44,49 @@ final class HealthSummaryStoreTests: XCTestCase {
 
     private func window() -> DateRange {
         DateRange(from: "2026-02-01T00:00:00Z", to: "2026-03-01T00:00:00Z")!
+    }
+
+    /// A watch workout becomes a session of its own, so the Health screen has to
+    /// report sessions as well as the three sample tables.
+    func testWorkoutsReportSessionCountAndLatestDuration() async throws {
+        let (db, provider) = try fixture()
+        let formatter = ISO8601DateFormatter()
+        func workout(_ id: String, _ from: String, _ to: String) -> HealthSample {
+            HealthSample(externalID: id, domain: .workouts,
+                         start: formatter.date(from: from)!, end: formatter.date(from: to)!,
+                         value: nil, unit: nil, sourceName: "Apple Watch", activity: "running")
+        }
+        try await sync(provider, db, .workouts, [
+            workout("w1", "2026-02-10T07:00:00Z", "2026-02-10T07:45:00Z"),
+            workout("w2", "2026-02-11T18:00:00Z", "2026-02-11T18:30:00Z"),
+        ])
+
+        let summary = try XCTUnwrap(
+            HealthSummaryStore(db: db).summaries(in: window()).first { $0.domain == .workouts })
+        XCTAssertEqual(summary.count, 2, "two workouts, two sessions")
+        XCTAssertEqual(summary.latestValue, 30, "the most recent workout's duration")
+        XCTAssertEqual(summary.unit, "min")
+        XCTAssertEqual(summary.title, "Workouts")
+    }
+
+    /// A session the user logged is not a synced workout and must not be counted
+    /// as one — the screen reports what HealthKit gave us, not what the user did.
+    func testManualSessionsAreNotReportedAsSyncedWorkouts() async throws {
+        let (db, provider) = try fixture()
+        try await sync(provider, db, .workouts, [
+            HealthSample(externalID: "w1", domain: .workouts,
+                         start: Date(timeIntervalSince1970: 1_770_000_000),
+                         end: Date(timeIntervalSince1970: 1_770_002_700),
+                         value: nil, unit: nil, activity: "running"),
+        ])
+        try db.run("""
+        INSERT INTO workoutSession (date, durationMinutes, createdAt, updatedAt)
+        VALUES ('2026-02-10', 30, '2026-02-10T20:00:00Z', '2026-02-10T20:00:00Z');
+        """)
+
+        let summary = try XCTUnwrap(
+            HealthSummaryStore(db: db).summaries(in: window()).first { $0.domain == .workouts })
+        XCTAssertEqual(summary.count, 1, "only the watch workout, not the manual log")
     }
 
     func testVitalsDomainsReportTheirLatestValueAndCount() async throws {

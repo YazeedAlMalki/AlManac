@@ -45,22 +45,25 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     ]
 
     /// Domains delivered as categories rather than quantities. Sleep is the only
-    /// one: its stages are a vocabulary, not a measurement.
+    /// one whose data is a vocabulary rather than a measurement.
     private static let categories: [HealthDomain: HKCategoryType] = [
         .sleep: HKCategoryType(.sleepAnalysis),
     ]
 
+    /// Workouts are neither a quantity nor a category: an `HKWorkout` is its own
+    /// sample class, carrying time, activity type and optional totals.
+    private static let workout = HKObjectType.workoutType()
+
     private static func sampleType(for domain: HealthDomain) -> HKSampleType? {
+        if domain == .workouts { return workout }
         if let quantity = quantities[domain] { return quantity.type }
         return categories[domain]
     }
 
-    /// The domains this build can read, which is every case of `HealthDomain`
-    /// except `workouts` — matching a HealthKit workout to a logged bout needs a
-    /// duplicate-merge decision that has not been made, and
-    /// `WorkoutHealthKitMatcher` is waiting for it.
-    static let readableDomains: [HealthDomain] =
-        HealthDomain.allCases.filter { $0 != .workouts }
+    /// The domains this build can read: every case of `HealthDomain`. A
+    /// workout maps to exactly one session, claimed or created — see
+    /// `WorkoutSessionHealthBridge` — so no case is left out.
+    static let readableDomains: [HealthDomain] = HealthDomain.allCases
 
     func requestAuthorisation(for domains: [HealthDomain]) async throws {
         let read = Set(domains.compactMap(Self.sampleType(for:)))
@@ -105,7 +108,8 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     /// Maps one HealthKit sample into the platform-neutral shape. Quantity
     /// samples carry a value in the domain's unit; a sleep category sample has no
     /// quantity at all, so its stage travels in `unit` — which is exactly what
-    /// `SleepEpisodeHealthBridge` reads back.
+    /// `SleepEpisodeHealthBridge` reads back. A workout carries neither a unit
+    /// nor a value, just its window and its activity.
     private static func healthSample(_ sample: HKSample, domain: HealthDomain) -> HealthSample? {
         if let quantity = sample as? HKQuantitySample, let spec = quantities[domain] {
             return HealthSample(externalID: sample.uuid.uuidString, domain: domain,
@@ -121,7 +125,31 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
                                 value: nil, unit: stage.rawValue,
                                 sourceName: sample.sourceRevision.source.name)
         }
+        if let workout = sample as? HKWorkout, domain == .workouts {
+            // Duration comes from the window, so no value is carried. Totals
+            // (energy, distance) are deliberately not mapped: `docs/features/
+            // training.md` records that calorie estimation is blocked on an
+            // unresolved MET/licensing question, and a raw total would invite
+            // exactly the inference that is blocked.
+            return HealthSample(externalID: workout.uuid.uuidString, domain: .workouts,
+                                start: workout.startDate, end: workout.endDate,
+                                value: nil, unit: nil,
+                                sourceName: workout.sourceRevision.source.name,
+                                activity: activityIdentifier(workout.workoutActivityType))
+        }
         return nil
+    }
+
+    /// `HKWorkoutActivityType.running` → `"running"`.
+    ///
+    /// `rawValue` is an `NSUInteger` enum index, which is stable but means
+    /// nothing to a reader, so the case name is used instead. Safe because the
+    /// identifier only ever becomes a *display label* in
+    /// `workoutSession.sessionType` — a workout is identified by its UUID, never
+    /// by its activity — so a change in how Swift reflects the case could at
+    /// worst alter a label, never a stored link.
+    private static func activityIdentifier(_ type: HKWorkoutActivityType) -> String {
+        String(describing: type)
     }
 
     /// Apple's sleep vocabulary → Almanac's `SleepStage`.

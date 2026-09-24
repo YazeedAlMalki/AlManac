@@ -21,12 +21,13 @@ final class HealthModel: ObservableObject {
     /// domain's sync *and* its write-back, and syncing it from two places would
     /// race on the same anchor.
     static let domains: [HealthDomain] =
-        [.sleep, .heartRate, .hrv, .steps, .activeEnergy, .restingEnergy,
+        [.sleep, .workouts, .heartRate, .hrv, .steps, .activeEnergy, .restingEnergy,
          .bodyMass, .bodyFatPercentage, .leanBodyMass]
 
     private var db: Database?
     private var provider: (any HealthProvider)?
     private var sleepBridge: SleepEpisodeHealthBridge?
+    private var workoutBridge: WorkoutSessionHealthBridge?
     private var vitalsBridge: VitalsRecordHealthBridge?
     private var bodyBridge: BodyCompositionMeasurementHealthBridge?
 
@@ -34,7 +35,9 @@ final class HealthModel: ObservableObject {
         guard let db, self.db == nil else { return } // already configured
         self.db = db
         let zone = ZoneContext(TimeZone.current)
-        sleepBridge = SleepEpisodeHealthBridge(db: db, zone: zone)
+        let timeModel = TimeModel(timeZone: .current)
+        sleepBridge = SleepEpisodeHealthBridge(db: db, timeModel: timeModel, zone: zone)
+        workoutBridge = WorkoutSessionHealthBridge(db: db, timeModel: timeModel, zone: zone)
         vitalsBridge = VitalsRecordHealthBridge(db: db, zone: zone)
         bodyBridge = BodyCompositionMeasurementHealthBridge(db: db, zone: zone)
         refresh()
@@ -79,6 +82,7 @@ final class HealthModel: ObservableObject {
     private func writer(for domain: HealthDomain) -> any HealthSampleWriting {
         switch domain {
         case .sleep: return sleepBridge!
+        case .workouts: return workoutBridge!
         case .bodyMass, .bodyFatPercentage, .leanBodyMass: return bodyBridge!
         default: return vitalsBridge!
         }

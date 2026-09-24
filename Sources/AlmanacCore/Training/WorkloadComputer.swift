@@ -14,6 +14,12 @@ public struct WorkoutLoadSummary: Sendable, Hashable {
     public let totalReps: Int?
     public let totalRounds: Int?
     public let averageRPE: Double?
+
+    /// No load of any kind — every field nil, not zero. Lets a caller ask
+    /// "was there anything at all?" without a field-by-field comparison.
+    public static let empty = WorkoutLoadSummary(
+        totalTonnageKg: nil, totalDistanceMeters: nil, totalDurationSeconds: nil,
+        totalReps: nil, totalRounds: nil, averageRPE: nil)
 }
 
 /// Turns a session's `WorkoutBoutEntry` list into one `WorkoutLoadSummary`.
@@ -93,5 +99,32 @@ public enum WorkloadComputer {
             totalReps: reps, totalRounds: rounds,
             averageRPE: rpeCount > 0 ? rpeSum / Double(rpeCount) : nil
         )
+    }
+
+    /// A day's load across every session on it, counting time for sessions that
+    /// have no bouts at all.
+    ///
+    /// A workout synced from a watch has no bouts — a watch records time and
+    /// activity, not sets and reps — so without this its duration would not
+    /// count as training load, and auto-logging a workout would change nothing
+    /// the user can see. A session that *does* have bouts is skipped, because
+    /// its duration is already represented by them and adding it would count
+    /// the same workout twice.
+    public static func summary(for sessions: [WorkoutSessionEntry],
+                               bouts: [WorkoutBoutEntry]) -> WorkoutLoadSummary {
+        let boutDerived = summary(for: bouts)
+        let withBouts = Set(bouts.map(\.sessionId))
+        let seconds = sessions
+            .filter { !withBouts.contains($0.id) }
+            .compactMap { $0.durationMinutes }
+            .reduce(0) { $0 + Double($1) * 60 }
+        guard seconds > 0 else { return boutDerived }
+        return WorkoutLoadSummary(
+            totalTonnageKg: boutDerived.totalTonnageKg,
+            totalDistanceMeters: boutDerived.totalDistanceMeters,
+            totalDurationSeconds: (boutDerived.totalDurationSeconds ?? 0) + seconds,
+            totalReps: boutDerived.totalReps,
+            totalRounds: boutDerived.totalRounds,
+            averageRPE: boutDerived.averageRPE)
     }
 }

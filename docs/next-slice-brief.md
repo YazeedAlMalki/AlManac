@@ -106,9 +106,12 @@ Shipped:
 - `HealthModel` syncs on foreground and refreshes the readiness dashboard
   afterwards, so sleep and vitals actually reach the Today screen.
 
-**Not done, deliberately:** HealthKit **workouts**. Matching a workout to a
-logged bout needs a duplicate/merge policy, which is a real decision.
-`WorkoutHealthKitMatcher` stays built and unwired until it is made.
+**Workouts: done too, 2026-09-25.** `WorkoutSessionHealthBridge` and
+`Migration036_WorkoutSessionSource` closed the whole of
+`docs/features/training.md` §6 step 1. An unmatched workout becomes its
+own session; a workout the user also logged is *claimed* rather than
+duplicated. See that document for the merge-confidence rule, which is
+stricter than "any overlap" for a reason worth reading.
 
 Two mappings are not the obvious identifier and are documented in
 `HealthKitProvider`: `.heartRate` reads *resting* heart rate (the readiness

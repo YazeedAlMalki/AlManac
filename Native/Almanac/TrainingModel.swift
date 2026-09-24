@@ -38,12 +38,17 @@ final class TrainingModel: ObservableObject {
         do {
             exercises = try catalogStore.all()
             let today = timeModel.logicalDay(Date()).value
+            let sessions = try sessionStore.sessions(date: today)
             var bouts: [WorkoutBoutEntry] = []
-            for session in try sessionStore.sessions(date: today) {
+            for session in sessions {
                 bouts.append(contentsOf: try boutStore.bouts(sessionId: session.id))
             }
             todaysBouts = bouts
-            todaysSummary = bouts.isEmpty ? nil : WorkloadComputer.summary(for: bouts)
+            // Sessions as well as bouts: a workout synced from a watch has no
+            // bouts, and without its duration the day's load would not change
+            // when one is auto-logged.
+            let summary = WorkloadComputer.summary(for: sessions, bouts: bouts)
+            todaysSummary = (bouts.isEmpty && summary == WorkoutLoadSummary.empty) ? nil : summary
         } catch {
             // A read failure here should not crash the dashboard; it will
             // simply show stale figures until the next refresh() succeeds.
@@ -67,7 +72,12 @@ final class TrainingModel: ObservableObject {
         }
         let today = timeModel.logicalDay(Date()).value
         let sessionId: Int64
-        if let existing = try sessionStore.sessions(date: today).first {
+        // A session synced from a watch is not the one to attach a manually
+        // logged bout to: it carries no bouts of its own, so a bout filed under
+        // it would report as that workout's own detail. The user's own session
+        // is preferred, and one is created only if they have none.
+        let own = try sessionStore.sessions(date: today).first { $0.isOwnLog }
+        if let existing = own {
             sessionId = existing.id
         } else {
             sessionId = try sessionStore.log(WorkoutSessionDraft(date: today))

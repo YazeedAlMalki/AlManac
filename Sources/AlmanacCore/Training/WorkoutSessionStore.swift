@@ -37,11 +37,23 @@ public struct WorkoutSessionEntry: Sendable, Hashable, Identifiable {
     public let notes: String?
     public let prescribedWorkoutId: Int64?
     public let sessionType: String?
+    /// Set when a HealthKit workout has been linked to this session. Null on
+    /// every session the user logged themselves — including one a workout was
+    /// later linked to and then unlinked from.
+    public let healthKitUUID: String?
+    /// Who *created* the row: `"healthkit"` for a session auto-logged from a
+    /// watch workout, null for the user's own. Distinct from `healthKitUUID`,
+    /// which records only that a link exists.
+    public let source: String?
     public let deletedAt: String?
     public let createdAt: String
     public let updatedAt: String
 
     public var isDeleted: Bool { deletedAt != nil }
+
+    /// True when the user logged this session themselves, so a manually logged
+    /// bout belongs here rather than on a watch-derived one.
+    public var isOwnLog: Bool { healthKitUUID == nil }
 }
 
 /// Completed-session storage over `workoutSession`.
@@ -125,6 +137,7 @@ public struct WorkoutSessionStore: @unchecked Sendable {
             durationMinutes: row.int("durationMinutes").map(Int.init), rpe: row.int("rpe").map(Int.init),
             notes: row.string("notes"), prescribedWorkoutId: row.int("prescribedWorkoutId"),
             sessionType: row.string("sessionType"),
+            healthKitUUID: row.string("healthKitUUID"), source: row.string("source"),
             deletedAt: row.string("deletedAt"), createdAt: createdAt, updatedAt: updatedAt
         )
     }

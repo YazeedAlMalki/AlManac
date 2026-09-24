@@ -34,9 +34,22 @@ public struct HealthSample: Sendable, Hashable {
     public let value: Double?
     public let unit: String?
     public let sourceName: String?
+    /// The platform's activity identifier, for workout samples only —
+    /// `"running"`, `"traditionalStrengthTraining"`, and so on.
+    ///
+    /// Deliberately an opaque string rather than a cross-platform enum. This is
+    /// the one platform-neutral type any HealthKit sync passes through, and
+    /// `AlmanacCore` cannot import HealthKit, so an enum here could only ever
+    /// mirror HealthKit's own list — about eighty values whose spelling Apple
+    /// controls. Carrying the identifier and *deciding* what it means in core
+    /// keeps the mapping testable on Linux and keeps an unrecognised activity
+    /// from failing to decode: `WorkoutActivity` turns one into a label, with a
+    /// fallback, rather than the sample being dropped.
+    public let activity: String?
 
     public init(externalID: String, domain: HealthDomain, start: Date, end: Date,
-                value: Double?, unit: String?, sourceName: String? = nil) {
+                value: Double?, unit: String?, sourceName: String? = nil,
+                activity: String? = nil) {
         self.externalID = externalID
         self.domain = domain
         self.start = start
@@ -44,6 +57,7 @@ public struct HealthSample: Sendable, Hashable {
         self.value = value
         self.unit = unit
         self.sourceName = sourceName
+        self.activity = activity
     }
 }
 

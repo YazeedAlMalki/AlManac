@@ -178,6 +178,92 @@ confirm HealthKit returns what the mapping expects — in particular whether
 dashboard has a resting heart rate at all.
 
 
+## 2026-09-25 — HealthKit workouts: the last unwired domain
+
+Closes the whole of `docs/features/training.md` §6 step 1 — the item deferred
+from the 2026-09-24 slice. Every `HealthDomain` now has a mapping in
+`HealthKitProvider` and a writer in core.
+
+**Decided with the user:** an unmatched workout becomes its own session (so watch
+workouts count with no manual logging), and two records are "the same workout"
+at 60% overlap.
+
+### One correction worth reading
+
+I described that second rule to the user as *"60% of the shorter window"*, and
+that description was **wrong**. A 45-minute run inside an 8-hour session shares
+100% of the shorter window, so that rule does the exact thing it was meant to
+prevent — it absorbs the run into the day's session. The metric that actually
+separates the cases is overlap over the **union** of both windows: the same pair
+scores ~9% there, while two near-identical windows still score ~98%. Shipped as
+60%-of-union, and the correction was flagged before implementing rather than
+after.
+
+`WorkoutHealthKitMatcher` also had a latent bug the new tests exposed: its
+tiebreak was `max(by: overlap)` with no further key, so two equally-overlapping
+sessions resolved by **input order** — a workout could move between sessions on
+alternate syncs. It now breaks ties on a total order (confidence, then
+duration, then id).
+
+### New
+
+- **`Sources/AlmanacCore/Training/WorkoutSessionHealthBridge.swift`** — one
+  `HKWorkout` maps to exactly one session. No confident match → a new session
+  with no bouts; a match → the user's session is *claimed* and enriched, never
+  duplicated. A withdrawn workout soft-deletes a session the bridge created but
+  only *releases the claim* on one the user logged, because that record is
+  theirs and a source withdrawing its own sample is not permission to erase
+  something Almanac never owned.
+- **`Migration036_WorkoutSessionSource`** — `source` + `healthKitUUID` on
+  `workoutSession`, with a partial unique index. The two columns deliberately
+  mean different things: `source` records who *created* the row, `healthKitUUID`
+  only that a workout is linked to it. Conflating them is what made the first
+  draft of the withdrawal path delete users' own logs.
+- **`WorkoutActivity`** — turns an activity identifier into a label, with a
+  camel-case fallback. Deliberately **not** the ~80-row decision table §6 step
+  1(c) anticipated: `workoutSession.sessionType` is free text with no semantic
+  consumer, so the table would mostly re-spell what the fallback produces. The
+  doc records when to promote it to a closed enum.
+
+### Two pre-existing bugs that auto-logging would have made visible
+
+- **`TrainingModel.logBout`** attached a manually logged bout to
+  `sessions(date:).first`. Once a watch workout created a session, that would
+  have become the target and the user's own sets/reps would report as the
+  watch workout's detail. It now prefers a session with no `healthKitUUID`.
+- **`WorkloadComputer`** summed only bouts, so a session-only workout
+  contributed *no* training load — which would have made Q1's "training load
+  counts watch workouts" true of the database and invisible on the Training tab.
+  `summary(for:bouts:)` now adds the duration of sessions that have no bouts,
+  skipping any that do, or the same workout would count twice.
+
+### `HealthSample.activity`
+
+The one platform-neutral type every sync passes through gained a single optional
+`activity` field, carrying an opaque identifier. Not an enum: an enum there could
+only mirror Apple's ~80 values and would rot each iOS release. The identifier
+crosses the boundary and the decision about it stays in testable core.
+
+`HealthKitProvider` derives the identifier from `String(describing:)` rather than
+`rawValue`, which is an `NSUInteger` index in this SDK. Safe because the
+identifier only ever becomes a *display label* — a workout is identified by its
+UUID — so a change in reflection could at worst alter a label, never a link.
+
+### Verification
+
+- `swift test`: XCTest 313 (1 opt-in skip) + Swift Testing 402, 0 failures.
+  19 new tests: 8 bridge, 4 matcher, 4 workload, 2 summary, 1 migration fixture.
+- Simulator build clean; 4/4 UI tests pass.
+- Fresh install: 36 migrations, both new columns present, 302 exercises, 0
+  sessions and 0 anchors — correct, since the simulator cannot authorise
+  HealthKit.
+
+**Not verified:** real sample ingestion, for the same reason as the 2026-09-24
+entry. A device is required, and the specific things to watch there are whether
+HealthKit returns resting heart rate for the user, and what activity identifiers
+its SDK actually reflects.
+
+
 ## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)
 
 ## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)
