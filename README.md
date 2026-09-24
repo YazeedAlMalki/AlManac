@@ -16,7 +16,7 @@ that do are left as protocol boundaries.
 | **Migration_001 (48-table domain schema)** | **NOT BUILT — spec text unavailable** |
 | TimeModel / `logicalDay()` | Built; boundary rule **injected, not assumed** |
 | ReadinessCycle skeleton | Not built — needs the spec's readiness definition |
-| HealthKitManager init | Built as `HealthProvider` protocol + `FakeHealthProvider` |
+| HealthKitManager init | Built as `HealthProvider` protocol + `FakeHealthProvider`; every read domain mapped (workouts excluded, pending a merge policy) |
 | SyncAnchor table | Built — `sync_anchor`, `SyncAnchorStore` |
 | BackupService skeleton | Built — snapshot via SQLite online backup; restore unimplemented by design |
 | Provenance enums | Built — `LicenceGroup`, `NutrientQualifier`, `SourceIdentifier` |

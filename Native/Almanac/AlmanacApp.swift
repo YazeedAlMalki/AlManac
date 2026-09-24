@@ -9,6 +9,7 @@ struct AlmanacApp: App {
     @StateObject private var hydrationModel = HydrationModel()
     @StateObject private var nutritionModel = NutritionModel()
     @StateObject private var trainingModel = TrainingModel()
+    @StateObject private var healthModel = HealthModel()
     @Environment(\.scenePhase) private var scenePhase
     var body: some Scene {
         WindowGroup {
@@ -25,7 +26,7 @@ struct AlmanacApp: App {
                             .tabItem { Label("Hydration", systemImage: "drop") }
                         NutritionQuickEntryView(model: nutritionModel)
                             .tabItem { Label("Nutrition", systemImage: "fork.knife") }
-                        SettingsView(model: hydrationModel, labModel: model)
+                        SettingsView(model: hydrationModel, labModel: model, healthModel: healthModel)
                             .tabItem { Label("Settings", systemImage: "gear") }
                     }
                     // The database is opened synchronously in LaboratoryModel.open(),
@@ -38,6 +39,7 @@ struct AlmanacApp: App {
                         hydrationModel.configure(db: model.db)
                         nutritionModel.configure(db: model.db)
                         trainingModel.configure(db: model.db)
+                        healthModel.configure(db: model.db)
                     }
                 } else {
                     ContentUnavailableView {
@@ -51,7 +53,17 @@ struct AlmanacApp: App {
             }
             .tint(.teal)
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { hydrationModel.syncOnForeground() }
+                if phase == .active {
+                    hydrationModel.syncOnForeground()
+                    // Awaited rather than fired and forgotten: sleep episodes and
+                    // vitals feed the readiness score, so the dashboard must be
+                    // refreshed *after* the sync that fills them. Both syncs are
+                    // no-ops until HealthKit is connected.
+                    Task {
+                        await healthModel.syncNow()
+                        readinessModel.refresh()
+                    }
+                }
             }
         }
     }

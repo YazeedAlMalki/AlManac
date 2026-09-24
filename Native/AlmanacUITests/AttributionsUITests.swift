@@ -89,13 +89,47 @@ final class AttributionsUITests: XCTestCase {
         }
     }
 
+    // MARK: - Health
+
+    /// The screen that makes the non-dashboard synced domains visible.
+    ///
+    /// The simulator has no Health app, so this cannot assert that a sync
+    /// happened — what it does assert is the part that is otherwise unverified:
+    /// the screen is reachable and never renders a blank list. Either the
+    /// domains are listed or the screen says there is nothing yet; an empty
+    /// list with no explanation would be the bug.
+    func testHealthScreenShowsSyncedDomainsOrSaysThereAreNoneYet() {
+        openSettings()
+        // Settings is a Form, which builds rows lazily — a section below the
+        // fold is not in the hierarchy until it is scrolled to.
+        scrollTo("Health data")
+        app.buttons["Health data"].tap()
+        XCTAssertTrue(app.navigationBars["Health"].waitForExistence(timeout: 10),
+                      "the Health screen never appeared")
+        XCTAssertTrue(app.buttons["Sync now"].exists, "there must be a way to sync by hand")
+
+        let noneYet = app.staticTexts["No health data yet"]
+        let firstDomain = app.staticTexts["Sleep"]
+        XCTAssertTrue(noneYet.exists || firstDomain.exists,
+                      "the screen must list synced domains or explain that there are none")
+    }
+
     // MARK: - Helpers
+
+    /// Scrolls a lazily-built Form until `label` appears. A fixed number of
+    /// swipes rather than a loop on the element query, so a genuinely missing
+    /// row still fails instead of spinning.
+    private func scrollTo(_ label: String, maxSwipes: Int = 6) {
+        let target = app.buttons[label]
+        for _ in 0..<maxSwipes where !target.exists || !target.isHittable {
+            app.swipeUp()
+        }
+    }
 
     /// iOS collapses a sixth tab into "More", so Settings may be one tap or two
     /// depending on width; handle both rather than pin one layout. The overflow
     /// tabs are presented outside the tab bar, hence the second lookup.
-    private func openSettings() {
-        let inTabBar = app.tabBars.buttons["Settings"]
+    private func openSettings() {        let inTabBar = app.tabBars.buttons["Settings"]
         if inTabBar.exists && inTabBar.isHittable {
             inTabBar.tap()
             return

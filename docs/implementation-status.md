@@ -81,6 +81,103 @@ The gap above ("not driven interactively") is now closed by a UI test target.
   real shape got pinned down.
 
 
+## 2026-09-24 — HealthKit non-water domains: sleep, vitals, body composition
+
+`docs/next-slice-brief.md` §4 recorded this slice as **blocked** on the spec's
+§6/Appendix C HealthKit permission map, which is not on this machine. The block
+turned out to be unnecessary: the map was already encoded in the codebase —
+`HealthDomain` names all eleven domains, the three bridges each declare the
+metric and unit their samples land under, and `SleepStage` is defined in terms
+of `HKCategoryValueSleepAnalysis`. Only the `HealthDomain` → HealthKit
+identifier mapping in the iOS adapter was missing, and that is a 1:1 reading of
+names the core already fixed.
+
+**What was actually broken:** `HealthKitProvider` returned an empty change set
+for every domain except `.water`, and nothing in `Native/` ever called
+`VitalsRecordHealthBridge`, `BodyCompositionMeasurementHealthBridge` or
+`SleepClassifier`. Three bridges, fully built and tested, feeding nothing.
+
+### New
+
+- **`Sources/AlmanacCore/Sleep/SleepEpisodeHealthBridge.swift`** — the one
+  domain with no writer. Sleep was the only `HealthDomain` whose samples could
+  not reach a table: `SleepClassifier` and `SleepEpisodeStore` existed with
+  nothing feeding them. Composes `HealthSampleStore` (a previous bridge
+  re-implemented that persistence and was deleted — Migration021) and
+  re-classifies each touched day through §8.1–§8.3.
+
+  Two non-obvious things it had to get right, both found by tests:
+  - An episode is keyed by the day it **wakes**, and with a 04:00 boundary a
+    sample's own logical day is only a hint about where its episode ends. Each
+    touched day is therefore widened by the day after it: withdrawing the
+    23:00–03:00 stage of a night leaves the remaining stages ending at 07:00, on
+    a day the withdrawn sample never mentioned.
+  - An episode's identity is its first sample's UUID, so withdrawing that one
+    sample re-identifies an unchanged night. The upsert cannot see that (the new
+    identity is a different key), and the dashboard sums every episode on the
+    day, so superseded rows are retired explicitly. `sleep_episode` has no
+    `deletedAt` column, so this is a hard delete, scoped to rows that have a
+    `healthKitUUID` and only on a day that was just reclassified — manual
+    wake-time entries are never touched.
+
+- **`Sources/AlmanacCore/Health/HealthSummaryStore.swift`** — the display
+  surface `next-slice-brief` §4 flagged as the genuinely new design work.
+  Reads the three tables the bridges write as one list. The three do not agree
+  on soft deletion (`body_composition_measurement.deletedAt`,
+  `vitals_record` has no such column, `sleep_episode` is keyed by source), so
+  each spec carries its own scope predicate.
+
+- **`Native/Almanac/HealthModel.swift` / `HealthView.swift`** — the sync driver
+  and Settings → Health data. Placed in Settings rather than as a seventh tab:
+  the tab bar already overflows into "More" at six.
+
+### Two mappings that are not the obvious identifier
+
+- `.heartRate` reads **`restingHeartRate`**, not raw heart rate.
+  `VitalsRecordHealthBridge` files it under the `rhr` metric and
+  `ReadinessModel` reads it as resting heart rate averaged over 28 days as the
+  readiness baseline. Feeding it all-day instantaneous readings would report
+  "120 bpm" after a run and make every readiness score wrong — worse than
+  reporting none. The cost: a user with no Apple Watch sees no resting heart
+  rate, which is the honest answer rather than a fabricated one.
+- `.restingEnergy` reads **`basalEnergyBurned`**. HealthKit has no
+  `restingEnergyBurned`; basal energy and resting metabolic rate are close but
+  not the same measurement.
+
+`HKCategoryValueSleepAnalysis.asleepUnspecified` maps to `.asleepCore` — sleep
+of unknown depth, and core is the stage always present in a night, so it cannot
+distort the deep/REM weighting. A stage value outside the known set is dropped,
+not guessed.
+
+### Not done, deliberately
+
+- **HealthKit workouts.** Matching a workout to a logged bout needs a
+  duplicate/merge policy — a real decision. `WorkoutHealthKitMatcher` stays
+  built and unwired. `HealthDomain.workouts` is excluded from
+  `HealthKitProvider.readableDomains`.
+- **Water is still `HydrationModel`'s.** It is the only write-back domain;
+  syncing it from two places would race on the same anchor.
+
+### Verification
+
+- `swift test`: XCTest 302 (1 opt-in skip) + Swift Testing 394, 0 failures.
+  10 new core tests across `SleepEpisodeHealthBridgeTests` and
+  `HealthSummaryStoreTests`. The summary tests drive the **real** bridges
+  through `HealthSyncService` and read the summary back, so a screen wired to
+  the wrong table or metric fails rather than showing nothing.
+- Simulator build succeeds; 4/4 UI tests pass, including a new one asserting
+  the Health screen is reachable and never renders a blank list.
+- Fresh install: 35 migrations, 302 exercises, 0 health rows — correct, since
+  the simulator has no Health app and no authorisation.
+
+**Not verified:** real sample ingestion. The simulator cannot authorise
+HealthKit, so no actual sleep or vitals sample has been synced end to end. The
+plumbing is covered by tests over `FakeHealthProvider`; a device is required to
+confirm HealthKit returns what the mapping expects — in particular whether
+`restingHeartRate` is populated for the user, which decides whether the Today
+dashboard has a resting heart rate at all.
+
+
 ## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)
 
 ## 2026-09-23 — Slice 12 remainder: ZIP wrapper, HealthKit reconcile, migration fixtures, widgets (iMac)

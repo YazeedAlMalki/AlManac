@@ -5,6 +5,7 @@ import AlmanacCore
 struct SettingsView: View {
     @ObservedObject var model: HydrationModel
     @ObservedObject var labModel: LaboratoryModel
+    @ObservedObject var healthModel: HealthModel
     @State private var dailyGoal: Double = 2000
     @State private var remindersEnabled = false
     @State private var reminderIntervalMinutes = 60
@@ -48,6 +49,16 @@ struct SettingsView: View {
                         AttributionsView(db: labModel.db)
                     }
                 }
+                Section("Health") {
+                    NavigationLink("Health data") {
+                        HealthView(model: healthModel)
+                    }
+                    if model.hydrationSettings != nil || labModel.db != nil {
+                        Text("Sleep, heart rate, steps and body composition sync from Apple Health.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Section("Data") {
                     if let db = labModel.db {
                         NavigationLink("Backup & restore") {
@@ -72,11 +83,17 @@ struct SettingsView: View {
     private func connectHealthKit() {
         Task {
             do {
+                // One provider, one authorisation sheet: the same concrete
+                // object serves the hydration read/write pair and the read-only
+                // domains, so the user answers once.
                 let provider = HealthKitProvider()
                 model.configureHealthKit(provider: provider, writer: provider)
-                try await provider.requestAuthorisation(for: [.water])
+                healthModel.configure(provider: provider)
+                try await provider.requestAuthorisation(for: HealthKitProvider.readableDomains)
+                // Water's own sync and write-back stay with HydrationModel.
                 await model.syncInbound()
                 await model.drainOutbound()
+                await healthModel.syncNow()
                 healthKitStatus = "Connected."
             } catch {
                 self.error = String(describing: error)

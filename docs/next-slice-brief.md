@@ -82,30 +82,45 @@ machinery instead of duplicating. Matched/unknown analytes stay annotative
 **M2 files:** `Sources/AlmanacCore/Laboratory/LabReportCSVImport.swift` (+ shared draft
 builder) + Native affordance (file picker or paste sheet in Reports tab) + tests.
 
-## 4. HealthKit non-water domains — annex (prepped, blocked)
+## 4. HealthKit non-water domains — annex (unblocked, shipped 2026-09-24)
 
-**Block:** the mapping must not be guessed, and the spec's §6/App. C HealthKit permission
-map is **not on this Mac**. Both `almanac-tech-spec-v1.0.md` (the authoritative 2026-08-05
-file) and `almanac-technical-spec-v1.0.md` (the reconstruction) are absent from
-`~/Documents`; the reconciliation doc found them only at the old Linux path
-(`/home/yamal/projects/almanac`). Grep confirms the only HK type in the codebase is
-`HKQuantityType(.dietaryWater)` (`Native/Almanac/HealthKitProvider.swift:13`).
+**Status: built.** The block recorded below was resolved without the spec's
+§6/Appendix C map, because the map turned out to be already encoded in the
+codebase: `HealthDomain` names all eleven domains, the three bridges each
+declare the metric and unit their samples land under, and `SleepStage` is
+defined in terms of `HKCategoryValueSleepAnalysis`. What was missing was only
+the `HealthDomain` → HealthKit identifier mapping in the iOS adapter, which is
+a 1:1 reading of those names.
 
-**Already ready for it (no change needed):** `sync_anchor` moved to the spec's per-
-`sampleType` shape (spec-reconciliation §4.1, migration 015) since the change to
-`HealthKitProvider` extends per-HK-type anchors without schema work. `HealthSyncService`
-and `HealthSampleStore` are already domain-generic.
+Shipped:
 
-**The moment the map arrives, the slice is:** extend `HealthKitProvider` with the mapped
-types + read predicates per domain; wire the domain's sync in `AlmanacApp`/`HydrationModel`
-pattern; and — the genuinely new piece this slice must also do — **design a display
-surface**: nothing in Native currently reads `health_sample` (no Timeline/health_sample
-usage), so synced non-water rows would be invisible. That display work is blockable
-design, not blocked code, and is where the spec's §15 screen map would normally steer it.
+- **`HealthKitProvider`** — every read domain mapped: sleep, heart rate, HRV,
+  steps, active and resting energy, body mass, body fat and lean mass. Water
+  remains the only write-back.
+- **`SleepEpisodeHealthBridge`** — the one domain with no writer at all.
+  Composes `HealthSampleStore` and re-classifies via `SleepClassifier`.
+- **`VitalsRecordHealthBridge` / `BodyCompositionMeasurementHealthBridge`** —
+  already built and tested, previously never called. Now wired.
+- **`HealthModel` / `HealthView`** (Settings → Health data) — the display
+  surface §4 originally flagged as missing, via `HealthSummaryStore`.
+- `HealthModel` syncs on foreground and refreshes the readiness dashboard
+  afterwards, so sleep and vitals actually reach the Today screen.
 
-**To unblock:** paste pp. §6 + Appendix C (HealthKit permission map and integration
-contract) from `almanac-tech-spec-v1.0.md`, or drop the file at
-`~/Documents/almanac-tech-spec-v1.0.md`.
+**Not done, deliberately:** HealthKit **workouts**. Matching a workout to a
+logged bout needs a duplicate/merge policy, which is a real decision.
+`WorkoutHealthKitMatcher` stays built and unwired until it is made.
+
+Two mappings are not the obvious identifier and are documented in
+`HealthKitProvider`: `.heartRate` reads *resting* heart rate (the readiness
+score averages `rhr` over 28 days and would be wrecked by all-day readings),
+and `.restingEnergy` reads `basalEnergyBurned`, the only resting-ish energy
+type HealthKit offers.
+
+**Not verifiable here:** real HealthKit sync. The simulator has no Health app
+and no authorisation, so a fresh install correctly syncs zero rows. The
+plumbing is covered by core tests over `FakeHealthProvider` and by a UI test on
+the screen; a device is required to confirm sample ingestion.
+
 
 ## 5. Decision gates before implementation
 
@@ -113,8 +128,9 @@ contract) from `almanac-tech-spec-v1.0.md`, or drop the file at
    is a much bigger lift and should not be the POC).
 2. **Where import lives in the UI**: paste sheet vs file picker in the Reports tab
    (affects M2 native surface only; core unchanged either way).
-3. **(HealthKit, non-blocking)** supply the spec map per §4 to unblock the other slice
-   in parallel.
+3. **(HealthKit, closed)** the spec map per §4 turned out to be unnecessary —
+   the mapping was already encoded in `HealthDomain` and the three bridges.
+   Shipped 2026-09-24.
 
 ## 6. Verification boundary
 
