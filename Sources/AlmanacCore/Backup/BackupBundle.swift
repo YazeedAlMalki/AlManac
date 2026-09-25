@@ -197,12 +197,9 @@ public extension BackupService {
         }
         try HydrationStore(db: restored).reconcileAfterRestore()
 
-        let rollbackFile = tmpDir.appendingPathComponent("rollback.sqlite")
-        let rollback = try Database(path: rollbackFile.path)
-        try db.backup(into: rollback)
-
         var attemptedDocumentTargets: [URL] = []
         var originalDocuments: [(target: URL, data: Data?)] = []
+        var createdDocumentDirectories: [URL] = []
 
         // Documents first; database last (see file header for the asymmetry).
         // Stage every payload before touching the live document root, then
@@ -229,7 +226,14 @@ public extension BackupService {
                 }
                 let target = try validatedDocumentTarget(relativePath: relativePath, under: documentsRoot)
                 do {
-                    let stagedURL = staging.appendingPathComponent(relativePath)
+                    let stagedURL = staging.appendingPathComponent(relativePath).standardizedFileURL
+                    let stagingPath = staging.resolvingSymlinksInPath().standardizedFileURL.path
+                    guard stagedURL.resolvingSymlinksInPath().standardizedFileURL.path
+                        .hasPrefix(stagingPath + "/") else {
+                        throw BackupError.corruptBundle(
+                            reason: "staged document path escapes its staging root: \\(relativePath)"
+                        )
+                    }
                     try fm.createDirectory(at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true)
                     try Data(bytes).write(to: stagedURL, options: .atomic)
                     staged.append((relativePath, target, bytes))
@@ -258,13 +262,19 @@ public extension BackupService {
                 for document in staged {
                     currentRelativePath = document.relativePath
                     attemptedDocumentTargets.append(document.target)
+                    for directory in missingDocumentDirectories(for: document.target, under: documentsRoot)
+                    where !createdDocumentDirectories.contains(directory) {
+                        createdDocumentDirectories.append(directory)
+                    }
                     try fm.createDirectory(at: document.target.deletingLastPathComponent(),
                                            withIntermediateDirectories: true)
                     try Data(document.bytes).write(to: document.target, options: .atomic)
                 }
             } catch {
                 let rollbackFailures = rollbackDocuments(
-                    attemptedDocumentTargets, originals: originalDocuments
+                    attemptedDocumentTargets,
+                    originals: originalDocuments,
+                    createdDirectories: createdDocumentDirectories
                 )
                 if !rollbackFailures.isEmpty {
                     throw BackupError.rollbackFailed(rollbackFailures.joined(separator: "; "))
@@ -278,14 +288,11 @@ public extension BackupService {
             // Database last, wholesale: the target's current contents are replaced.
             try restored.backup(into: db)
         } catch {
-            var failures = rollbackDocuments(
-                attemptedDocumentTargets, originals: originalDocuments
+            let failures = rollbackDocuments(
+                attemptedDocumentTargets,
+                originals: originalDocuments,
+                createdDirectories: createdDocumentDirectories
             )
-            do {
-                try rollback.backup(into: db)
-            } catch {
-                failures.append("database rollback: \(String(describing: error))")
-            }
             if !failures.isEmpty {
                 throw BackupError.rollbackFailed(failures.joined(separator: "; "))
             }
@@ -294,6 +301,10 @@ public extension BackupService {
     }
 
     private func validatedDocumentTarget(relativePath: String, under root: URL) throws -> URL {
+        let components = URL(fileURLWithPath: relativePath).pathComponents
+        guard !components.contains("..") else {
+            throw BackupError.corruptBundle(reason: "document path contains '..': \\(relativePath)")
+        }
         let target = URL(fileURLWithPath: relativePath, relativeTo: root).standardizedFileURL
         let rootPath = root.resolvingSymlinksInPath().standardizedFileURL.path
         let resolvedParent = target.deletingLastPathComponent().resolvingSymlinksInPath()
@@ -325,8 +336,24 @@ public extension BackupService {
         }
     }
 
+    private func missingDocumentDirectories(for target: URL, under root: URL) -> [URL] {
+        let fm = FileManager.default
+        let rootPath = root.standardizedFileURL.path
+        var current = target.deletingLastPathComponent().standardizedFileURL
+        var directories: [URL] = []
+        while current.path != rootPath {
+            guard !fm.fileExists(atPath: current.path) else { break }
+            directories.append(current)
+            let parent = current.deletingLastPathComponent()
+            guard parent.path != current.path else { break }
+            current = parent
+        }
+        return directories.reversed()
+    }
+
     private func rollbackDocuments(_ targets: [URL],
-                                   originals: [(target: URL, data: Data?)]) -> [String] {
+                                   originals: [(target: URL, data: Data?)],
+                                   createdDirectories: [URL]) -> [String] {
         let fm = FileManager.default
         var failures: [String] = []
         for target in targets.reversed() {
@@ -338,6 +365,20 @@ public extension BackupService {
                 }
             } catch {
                 failures.append("\(target.path): \(String(describing: error))")
+            }
+        }
+        for directory in createdDirectories.reversed() {
+            do {
+                guard fm.fileExists(atPath: directory.path) else { continue }
+                var isDirectory: ObjCBool = false
+                guard fm.fileExists(atPath: directory.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+                    continue
+                }
+                if try fm.contentsOfDirectory(atPath: directory.path).isEmpty {
+                    try fm.removeItem(at: directory)
+                }
+            } catch {
+                failures.append("\(directory.path): \(String(describing: error))")
             }
         }
         return failures

@@ -108,6 +108,37 @@ final class BackupBundleTests: XCTestCase {
                        "a failed document restore must not replace the database")
     }
 
+    func testRollbackRemovesNewDocumentDirectories() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/snapshot.almanac-backup"
+        let targetPath = dir + "/tgt.sqlite"
+        let sourceDocs = URL(fileURLWithPath: dir + "/src-docs", isDirectory: true)
+        let targetDocs = URL(fileURLWithPath: dir + "/tgt-docs", isDirectory: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        try writeDoc(sourceDocs, "first/file.txt", "first")
+        try writeDoc(sourceDocs, "z/bad.txt", "second")
+        let source = try makeDB(sourcePath)
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: sourceDocs, note: nil)
+
+        try FileManager.default.createDirectory(at: targetDocs, withIntermediateDirectories: true)
+        try Data("not a directory".utf8).write(to: targetDocs.appendingPathComponent("z"), options: .atomic)
+        let target = try makeDB(targetPath)
+
+        do {
+            try BackupService(db: target).restoreBundle(at: bundlePath, documentsRoot: targetDocs)
+            XCTFail("restore must fail on the second document")
+        } catch BackupService.BackupError.cannotWriteDocument(let relativePath, _) {
+            XCTAssertEqual(relativePath, "z/bad.txt")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: targetDocs.appendingPathComponent("first").path),
+                       "rollback must remove directories it created")
+    }
+
     func testSymlinkedDocumentParentCannotEscapeTheDocumentRoot() throws {
         let dir = try tempDir()
         let sourcePath = dir + "/src.sqlite"

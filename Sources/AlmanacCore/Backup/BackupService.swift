@@ -90,9 +90,14 @@ extension Database {
             guard let b = sqlite3_backup_init(dst, "main", src, "main") else {
                 throw BackupService.BackupError.backupFailed(sqlite3_errcode(dst))
             }
-            sqlite3_backup_step(b, -1)
-            let rc = sqlite3_backup_finish(b)
-            guard rc == SQLITE_OK else { throw BackupService.BackupError.backupFailed(rc) }
+            let step = sqlite3_backup_step(b, -1)
+            let finish = sqlite3_backup_finish(b)
+            guard step == SQLITE_DONE else {
+                throw BackupService.BackupError.backupFailed(step)
+            }
+            guard finish == SQLITE_OK else {
+                throw BackupService.BackupError.backupFailed(finish)
+            }
         }
     }
 }
