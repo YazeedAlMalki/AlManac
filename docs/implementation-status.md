@@ -42,6 +42,12 @@ root tab.
 - Edit-path regression tests cover timestamp, amount, restoration, invalidation,
   extension, unknown-time and metadata-only cases.
 
+## 2026-09-25 — Atomic bundle document restore
+
+- Bundle documents are staged before touching the live document root, then
+  committed with rollback protection. A failed write now leaves both the
+  document tree and live database unchanged.
+
 ## 2026-09-25 — Circular wake-time averaging
 
 - `NotificationTriggerAssembler` now uses a circular mean for the seven-day
@@ -85,7 +91,7 @@ called the importer. A fresh install therefore had an empty food catalogue.
   2,941 food factors and one import audit row. A second launch left the audit
   count at one.
 - Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
-  tests (1 opt-in skip); the full Swift run passed 321 XCTest tests (1 skip) and
+  tests (1 opt-in skip); the full Swift run passed 322 XCTest tests (1 skip) and
   419 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
   including the new More destinations and Today tracking calendar coverage.
 

@@ -22,12 +22,11 @@ import Foundation
 ///
 /// A restore refuses to run when the bundle's `schema_version` differs from
 /// the live database's head, and refuses to mutate anything until the
-/// database payload has matched its recorded digest. Documents are written
-/// *before* the database is swapped: orphan files after a failed restore are
-/// harmless, while metadata that points at documents that were never written
-/// is the bug this format exists to prevent. Files on disk that are not in
-/// the bundle are deliberately left alone — after a restore they are simply
-/// unreferenced by the restored metadata.
+/// database payload has matched its recorded digest. Documents are staged
+/// first, then committed with rollback before the database is swapped, so a
+/// document-write failure cannot leave a partial set of files. Files on disk
+/// that are not in the bundle are deliberately left alone — after a restore
+/// they are simply unreferenced by the restored metadata.
 public extension BackupService {
 
     /// Writes a whole-app snapshot to `path` and records it in
@@ -183,11 +182,24 @@ public extension BackupService {
         }
 
         // Documents first; database last (see file header for the asymmetry).
+        // Stage every payload before touching the live document root, then
+        // commit with a small rollback journal so a write/move failure cannot
+        // leave a half-restored set of files behind.
         if let documentsRoot {
             let fileRows: [Row]
-            do { fileRows = try container.query("SELECT relative_path, bytes FROM bundle_files;") }
-            catch { throw BackupError.notABackupFile(path) }
+            do {
+                fileRows = try container.query("SELECT relative_path, bytes FROM bundle_files ORDER BY relative_path;")
+            } catch {
+                throw BackupError.notABackupFile(path)
+            }
             let base = documentsRoot.standardizedFileURL.path
+            let staging = fm.temporaryDirectory.appendingPathComponent(
+                "AlmanacDocuments-\(UUID().uuidString)", isDirectory: true
+            )
+            try fm.createDirectory(at: staging, withIntermediateDirectories: true)
+            defer { try? fm.removeItem(at: staging) }
+
+            var staged: [(relativePath: String, target: URL, bytes: [UInt8])] = []
             for row in fileRows {
                 guard let relativePath = row.string("relative_path"),
                       case .blob(let bytes)? = row["bytes"] else {
@@ -198,12 +210,51 @@ public extension BackupService {
                     throw BackupError.corruptBundle(reason: "document path escapes the document root: \(relativePath)")
                 }
                 do {
-                    try fm.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
-                    try Data(bytes).write(to: target, options: .atomic)
+                    let stagedURL = staging.appendingPathComponent(relativePath)
+                    try fm.createDirectory(at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try Data(bytes).write(to: stagedURL, options: .atomic)
+                    staged.append((relativePath, target, bytes))
                 } catch {
                     throw BackupError.cannotWriteDocument(relativePath: relativePath,
                                                           underlying: String(describing: error))
                 }
+            }
+
+            var originals: [(target: URL, data: Data?)] = []
+            for document in staged {
+                do {
+                    try validateDocumentTarget(document.target, under: documentsRoot)
+                    if fm.fileExists(atPath: document.target.path) {
+                        originals.append((document.target, try Data(contentsOf: document.target)))
+                    } else {
+                        originals.append((document.target, nil))
+                    }
+                } catch {
+                    throw BackupError.cannotWriteDocument(relativePath: document.relativePath,
+                                                          underlying: String(describing: error))
+                }
+            }
+
+            var written: [URL] = []
+            var currentRelativePath = "document"
+            do {
+                for document in staged {
+                    currentRelativePath = document.relativePath
+                    try fm.createDirectory(at: document.target.deletingLastPathComponent(),
+                                           withIntermediateDirectories: true)
+                    try Data(document.bytes).write(to: document.target, options: .atomic)
+                    written.append(document.target)
+                }
+            } catch {
+                for target in written.reversed() {
+                    if let original = originals.first(where: { $0.target == target })?.data {
+                        try? Data(original).write(to: target, options: .atomic)
+                    } else {
+                        try? fm.removeItem(at: target)
+                    }
+                }
+                throw BackupError.cannotWriteDocument(relativePath: currentRelativePath,
+                                                      underlying: String(describing: error))
             }
         }
 
@@ -228,6 +279,36 @@ public extension BackupService {
         // machine-imported copy, keeping the richer manual row. This runs on the
         // shared restore seam so *every* restore path de-duplicates.
         try HydrationStore(db: db).reconcileAfterRestore()
+    }
+
+    private func validateDocumentTarget(_ target: URL, under root: URL) throws {
+        let fm = FileManager.default
+        let rootPath = root.standardizedFileURL.path
+        var isDirectory: ObjCBool = false
+        if fm.fileExists(atPath: rootPath, isDirectory: &isDirectory), !isDirectory.boolValue {
+            throw NSError(domain: "AlmanacBackup", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "document root is not a directory"
+            ])
+        }
+
+        var current = target.standardizedFileURL
+        while current.path != rootPath {
+            if fm.fileExists(atPath: current.path, isDirectory: &isDirectory) {
+                if current == target, isDirectory.boolValue {
+                    throw NSError(domain: "AlmanacBackup", code: 2, userInfo: [
+                        NSLocalizedDescriptionKey: "document target is a directory"
+                    ])
+                }
+                guard isDirectory.boolValue else {
+                    throw NSError(domain: "AlmanacBackup", code: 3, userInfo: [
+                        NSLocalizedDescriptionKey: "document parent is not a directory"
+                    ])
+                }
+            }
+            let parent = current.deletingLastPathComponent()
+            guard parent.path != current.path else { break }
+            current = parent
+        }
     }
 
     /// Enumerates the valid bundles in a directory, newest first.

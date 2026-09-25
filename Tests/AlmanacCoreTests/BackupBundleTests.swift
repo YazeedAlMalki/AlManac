@@ -74,6 +74,39 @@ final class BackupBundleTests: XCTestCase {
             "plain doc")
     }
 
+    func testDocumentWriteFailureLeavesTheTargetDocumentsUntouched() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/snapshot.almanac-backup"
+        let targetPath = dir + "/tgt.sqlite"
+        let sourceDocs = URL(fileURLWithPath: dir + "/src-docs", isDirectory: true)
+        let targetDocs = URL(fileURLWithPath: dir + "/tgt-docs", isDirectory: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        try writeDoc(sourceDocs, "a.txt", "first document")
+        try writeDoc(sourceDocs, "nested/b.txt", "second document")
+        let source = try makeDB(sourcePath)
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: sourceDocs, note: nil)
+
+        try FileManager.default.createDirectory(at: targetDocs, withIntermediateDirectories: true)
+        try Data("not a directory".utf8).write(to: targetDocs.appendingPathComponent("nested"), options: .atomic)
+        let target = try makeDB(targetPath, anchors: [("steps", [9])])
+
+        do {
+            try BackupService(db: target).restoreBundle(at: bundlePath, documentsRoot: targetDocs)
+            XCTFail("restore must reject an unwritable document path")
+        } catch BackupService.BackupError.cannotWriteDocument(let relativePath, _) {
+            XCTAssertEqual(relativePath, "nested/b.txt")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: targetDocs.appendingPathComponent("a.txt").path),
+                       "a failed restore must not leave an earlier document behind")
+        XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9],
+                       "a failed document restore must not replace the database")
+    }
+
     func testRestoreReplacesDatabaseWholesaleAndLeavesExtraFiles() throws {
         let dir = try tempDir()
         let sourcePath = dir + "/src.sqlite"
