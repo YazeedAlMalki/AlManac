@@ -218,6 +218,12 @@ struct FastingAwareNutritionLogTests {
         #expect(restored.fastingOutcome == .restored(sessionId: sessionID))
         #expect(try sessions.session(id: sessionID)?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 7200))
         #expect(try sessions.session(id: sessionID)?.isActive == false)
+
+        var readd = NutritionLogEdit()
+        readd.grams = .set(200)
+        let readded = try bridge.update(id: shortened.outcome.logID, readd)
+        #expect(readded.fastingOutcome == .ended(sessionId: sessionID, durationMinutes: 180))
+        #expect(try sessions.session(id: sessionID)?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 10_800))
     }
 
     @Test("An old meal edit does not reopen over a newer active fast")

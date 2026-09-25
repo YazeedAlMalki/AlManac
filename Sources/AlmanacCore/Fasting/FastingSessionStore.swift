@@ -105,32 +105,31 @@ public struct FastingSessionStore: @unchecked Sendable {
         currentCalories: Double,
         currentTimestamp: Date
     ) throws -> FastingBreakOutcome {
-        guard previousCalories > 0 else {
-            return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
-        }
-
-        if let ended = try mostRecentEndedSession(), ended.endTimestamp == previousTimestamp {
-            guard try activeSession() == nil else { return .noOp }
-            let restoredEnd: Date?
-            if let correction = ended.correctionHistory.last(where: {
+        if let ended = try mostRecentEndedSession() {
+            let correction = ended.correctionHistory.last(where: {
                 ($0.action == .shortened || $0.action == .extended)
                     && $0.entryTimestamp == previousTimestamp
-            }) {
-                restoredEnd = correction.previousEndTimestamp
-                try restore(ended, to: restoredEnd)
-            } else {
-                restoredEnd = nil
-                try reopen(ended)
+            })
+            let normallyEnded = previousCalories > 0 && ended.endTimestamp == previousTimestamp
+            if normallyEnded || correction != nil {
+                guard try activeSession() == nil else { return .noOp }
+                let restoredEnd = correction?.previousEndTimestamp
+                if let restoredEnd {
+                    try restore(ended, to: restoredEnd)
+                } else {
+                    try reopen(ended)
+                }
+                guard currentCalories > 0 else { return .restored(sessionId: ended.id) }
+                if let restoredEnd, currentTimestamp > restoredEnd {
+                    let minutes = try extend(ended, from: restoredEnd, at: currentTimestamp)
+                    return .ended(sessionId: ended.id, durationMinutes: minutes)
+                }
+                return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
             }
-            guard currentCalories > 0 else { return .restored(sessionId: ended.id) }
-            if let restoredEnd, currentTimestamp > restoredEnd {
-                let minutes = try extend(ended, from: restoredEnd, at: currentTimestamp)
-                return .ended(sessionId: ended.id, durationMinutes: minutes)
-            }
-            return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
         }
 
-        if let invalidated = try invalidatedSession(affectedBy: previousTimestamp) {
+        if previousCalories > 0,
+           let invalidated = try invalidatedSession(affectedBy: previousTimestamp) {
             guard try activeSession() == nil else { return .noOp }
             let restoredEnd = try restore(invalidated, previousTimestamp: previousTimestamp)
             guard currentCalories > 0 else { return .restored(sessionId: invalidated.id) }
