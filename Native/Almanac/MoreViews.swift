@@ -11,6 +11,7 @@ struct MoreView: View {
     let healthModel: HealthModel
     let readinessModel: ReadinessModel
     let trackingModel: TrackingCalendarModel
+    let prayerModel: PrayerModel
 
     var body: some View {
         NavigationStack {
@@ -31,6 +32,12 @@ struct MoreView: View {
                     MeasurementsView(db: db, trackingModel: trackingModel)
                 } label: {
                     Label("Measurements", systemImage: "ruler")
+                }
+
+                NavigationLink {
+                    PrayerView(model: prayerModel)
+                } label: {
+                    Label("Prayer", systemImage: "sun.horizon")
                 }
 
                 NavigationLink {

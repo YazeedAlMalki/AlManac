@@ -157,6 +157,18 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Measurements"].waitForExistence(timeout: 5))
     }
 
+    func testPrayerScreenOpensFromMore() {
+        let more = app.tabBars.buttons["More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        more.tap()
+
+        let prayer = app.buttons["Prayer"]
+        XCTAssertTrue(prayer.waitForExistence(timeout: 5))
+        prayer.tap()
+        XCTAssertTrue(app.navigationBars["Prayer"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Use current location"].exists)
+    }
+
     // MARK: - Helpers
 
     /// Scrolls a lazily-built Form until `label` appears. A fixed number of

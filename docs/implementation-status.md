@@ -16,6 +16,10 @@ root tab.
 - `ProfileView` edits the existing `ProfileStore` fields and refreshes the Today
   greeting after save. `MeasurementsView` reuses the body-composition and custom
   measurement stores, shows recent values, and accepts manual body/custom adds.
+- `PrayerView` is reachable from More. `PrayerModel` reuses the core
+  `PrayerTimeEngine`, ensures a rolling cache on launch/foreground, resumes
+  authorized location updates, recalculates after a location/method change, and
+  pauses location updates in the background.
 - `TrackingCalendarModel` provides a native graphical date picker on Today. A
   selected calendar date is converted to Almanac's explicit logical-day label
   (04:00 boundary), then `TrackingTimeline` merges the module-provided laboratory,
@@ -91,9 +95,9 @@ called the importer. A fresh install therefore had an empty food catalogue.
   2,941 food factors and one import audit row. A second launch left the audit
   count at one.
 - Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
-  tests (1 opt-in skip); the full Swift run passed 324 XCTest tests (1 skip) and
-  419 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
-  including the new More destinations and Today tracking calendar coverage.
+  tests (1 opt-in skip); the full Swift run passed 325 XCTest tests (1 skip) and
+  419 Swift Testing tests; the Debug simulator build and all eight UI tests pass,
+  including the new More destinations, Today tracking calendar, and Prayer screen coverage.
 
 Still not done: owner-supplied Saudi/Gulf dish data, and the derived
 `edibleGrams`/specific-gravity calculation recorded as to-do #17.

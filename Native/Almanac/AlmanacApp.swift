@@ -18,6 +18,7 @@ struct AlmanacApp: App {
     @StateObject private var nutritionModel = NutritionModel()
     @StateObject private var trainingModel = TrainingModel()
     @StateObject private var healthModel = HealthModel()
+    @StateObject private var prayerModel = PrayerModel()
     @StateObject private var trackingModel = TrackingCalendarModel()
     @State private var selectedTab = AppTab.today
     @Environment(\.scenePhase) private var scenePhase
@@ -48,7 +49,8 @@ struct AlmanacApp: App {
                             hydrationModel: hydrationModel,
                             healthModel: healthModel,
                             readinessModel: readinessModel,
-                            trackingModel: trackingModel
+                            trackingModel: trackingModel,
+                            prayerModel: prayerModel
                         )
                         .tag(AppTab.more)
                         .tabItem { Label("More", systemImage: "ellipsis.circle") }
@@ -68,6 +70,7 @@ struct AlmanacApp: App {
                         trainingModel.configure(db: model.db)
                         healthModel.configure(db: model.db)
                         trackingModel.configure(db: model.db)
+                        prayerModel.configure(db: model.db)
                     }
                 } else {
                     ContentUnavailableView {
@@ -82,6 +85,8 @@ struct AlmanacApp: App {
             .tint(.teal)
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
+                    prayerModel.ensureCache()
+                    prayerModel.resumeLocationIfAuthorized()
                     // Await both syncs before refreshing: sleep, vitals and water
                     // all feed the homepage, and a fire-and-forget hydration
                     // sync would leave the tracking calendar one refresh behind.
@@ -92,6 +97,8 @@ struct AlmanacApp: App {
                         readinessModel.refresh()
                         trackingModel.refresh()
                     }
+                } else if phase == .background {
+                    prayerModel.pauseLocation()
                 }
             }
         }
