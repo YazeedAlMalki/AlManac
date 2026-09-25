@@ -176,9 +176,15 @@ struct EditorialRhythmCalendarView: View {
                         .font(AlmanacTypography.font(.bodyMedium))
                         .foregroundStyle(AlmanacPalette.textPrimary)
                     ForEach(["Calories", "Carbohydrates", "Protein", "Fat", "Fiber"], id: \.self) { name in
-                        Label("\(name): unavailable", systemImage: "questionmark")
-                            .font(AlmanacTypography.font(.caption))
-                            .foregroundStyle(AlmanacPalette.textSecondary)
+                        HStack(spacing: 8) {
+                            Text(name)
+                                .font(AlmanacTypography.font(.body))
+                                .foregroundStyle(AlmanacPalette.textPrimary)
+                            Spacer(minLength: 8)
+                            Text("Not set")
+                                .font(AlmanacTypography.font(.caption))
+                                .foregroundStyle(AlmanacPalette.textSecondary)
+                        }
                     }
                 }
                 .padding(14)
@@ -206,7 +212,7 @@ struct EditorialRhythmCalendarView: View {
             .disabled(model.database == nil)
 
             if day.isGolden {
-                AlmanacStatusMark(text: "All visible rings complete — golden day", tone: .good)
+                AlmanacStatusMark(text: "Golden day, every visible ring complete", tone: .good)
             }
 
             if model.summary.isEmpty {
@@ -238,8 +244,10 @@ struct EditorialRhythmCalendarView: View {
                     }
                     .padding(.top, 12)
                 }
+                // Disclosure chrome is navigation, not a reading, so it keeps
+                // the ink colors; the accent is reserved for measured state.
                 .font(AlmanacTypography.font(.bodyMedium))
-                .tint(AlmanacPalette.accent)
+                .tint(AlmanacPalette.textPrimary)
             }
         }
     }
@@ -250,9 +258,12 @@ struct EditorialRhythmCalendarView: View {
                 .foregroundStyle(complete ? AlmanacPalette.accent : AlmanacPalette.textSecondary)
                 .font(.system(size: 18, weight: .medium))
             VStack(alignment: .leading, spacing: 3) {
-                Text("\(title): \(state)")
+                Text(title)
                     .font(AlmanacTypography.font(.bodyMedium))
                     .foregroundStyle(AlmanacPalette.textPrimary)
+                Text(state)
+                    .font(AlmanacTypography.font(.body))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
                 if let detail, !detail.isEmpty {
                     Text(detail)
                         .font(AlmanacTypography.font(.caption).monospacedDigit())
@@ -271,7 +282,7 @@ struct EditorialRhythmCalendarView: View {
         case .mess: return ("Well outside target", nil, false)
         case .notLogged: return ("No nutrition logged", "No nutrition ring", false)
         case .dietProfileRequired:
-            return ("Diet Profile required", "Targets remain unavailable", false)
+            return ("No targets yet", "Add a Diet Profile to set nutrition targets", false)
         }
     }
 

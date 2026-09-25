@@ -148,10 +148,17 @@ private struct AlmanacNavigationBar: View {
     let quickLog: () -> Void
 
     var body: some View {
+        // The quick-log action is the bar's one memorable element, so it sits on
+        // the exact centre rather than in a fourth equal column. A fixed-width
+        // spacer holds the centre while Today and Trends share the left half and
+        // Modules takes the right, which puts the icon on a real centreline.
         HStack(spacing: 0) {
             destinationButton(.today, title: "Today", icon: AlmanacIcon.today)
             destinationButton(.trends, title: "Trends", icon: AlmanacIcon.trends)
-
+            Color.clear.frame(width: 84, height: 1)
+            destinationButton(.modules, title: "Modules", icon: AlmanacIcon.modules)
+        }
+        .overlay(alignment: .top) {
             Button(action: quickLog) {
                 Image(systemName: AlmanacIcon.quickAdd)
                     .font(.system(size: 22, weight: .semibold))
@@ -159,16 +166,12 @@ private struct AlmanacNavigationBar: View {
                     .frame(width: 52, height: 52)
                     .background(AlmanacPalette.accent)
                     .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-                    .shadow(color: AlmanacPalette.accent.opacity(0.22), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: .infinity)
-            .offset(y: -12)
+            .offset(y: -14)
             .accessibilityLabel("Quick log")
             .accessibilityHint("Choose water, food, training, or a body measurement")
             .accessibilityIdentifier("quick-log")
-
-            destinationButton(.modules, title: "Modules", icon: AlmanacIcon.modules)
         }
         .frame(height: 66)
         .padding(.horizontal, 8)
@@ -267,13 +270,29 @@ func dateLabel(_ date: PartialDateTime) -> String {
 func readable(_ raw: String) -> String { raw.replacingOccurrences(of: "_", with: " ").capitalized }
 
 extension View {
+    /// One error surface for every editor. The alert used to be titled "Could
+    /// not complete the action" for everything — a bad number, a duplicate
+    /// measurement, a failed import — which is the most default string in the
+    /// app and told the reader nothing. The title is the specific failure the
+    /// store raised, so it names what happened; the body stays the store's
+    /// own wording, which already says how to fix it.
     func editorError(_ message: Binding<String?>) -> some View {
-        alert("Could not complete the action", isPresented: Binding(
+        alert(errorTitle(message.wrappedValue), isPresented: Binding(
             get: { message.wrappedValue != nil },
             set: { if !$0 { message.wrappedValue = nil } }
         )) {
             Button("OK", role: .cancel) { message.wrappedValue = nil }
         } message: { Text(message.wrappedValue ?? "") }
+    }
+
+    private func errorTitle(_ message: String?) -> String {
+        guard let message, !message.isEmpty else { return "Something went wrong" }
+        // A message that already begins with what went wrong is its own title.
+        let sentence = message.split(separator: "\n").first.map(String.init) ?? message
+        if let first = sentence.split(separator: ".").first, first.count > 12 {
+            return String(first).trimmingCharacters(in: .whitespaces)
+        }
+        return sentence
     }
 }
 

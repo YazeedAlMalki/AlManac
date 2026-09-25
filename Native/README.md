@@ -17,6 +17,11 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   Modules index. Training, Hydration, Nutrition, Fasting, Prayer, Laboratory,
   Profile, Measurements and Settings remain native module screens for now; a
   later pass will bring them onto the same tokens and components.
+- Visual language: a true-neutral page with hairline rules rather than stacked
+  cards, one step of panel surface, and a desaturated ink-blue accent reserved
+  for things Almanac recorded. Fraunces is used only for the screen title and
+  the readiness number; everything else is the system sans until licensed
+  Neue Montreal files are supplied.
 - Quick Log provides water presets plus focused food, training and body entry;
   the Settings appearance picker persists System/Light/Dark across launches.
   Fraunces and Almarai ship with their OFL files; Neue Montreal remains a

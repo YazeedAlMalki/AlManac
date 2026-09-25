@@ -66,11 +66,7 @@ struct ReadinessDashboardView: View {
 
     private var masthead: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)).uppercased())
-                .font(AlmanacTypography.font(.label))
-                .tracking(1.2)
-                .foregroundStyle(AlmanacPalette.textSecondary)
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            AlmanacEyebrow(text: Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
             Text("Today")
                 .font(AlmanacTypography.font(.screenTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)
@@ -81,20 +77,17 @@ struct ReadinessDashboardView: View {
         .accessibilityElement(children: .combine)
     }
 
+    /// The one object Today is about, so it is the one panel with a filled
+    /// surface; everything below it is a ruled area of the page.
     private var readinessCard: some View {
         let outcome = model.outcome
         let isFinal = outcome?.state == .final
-        let tone = AlmanacReadinessPresentation.tone(for: outcome?.color ?? .none)
 
-        return AlmanacCard {
+        return AlmanacCard(prominent: true) {
             VStack(alignment: .leading, spacing: 18) {
                 if dynamicTypeSize.isAccessibilitySize {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("READINESS")
-                            .font(AlmanacTypography.font(.label))
-                            .tracking(1.1)
-                            .foregroundStyle(AlmanacPalette.accent)
-                            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                        AlmanacEyebrow(text: "Readiness")
                         readinessValue(outcome)
                         if let confidence = outcome?.confidence {
                             AlmanacStatusMark(
@@ -106,10 +99,7 @@ struct ReadinessDashboardView: View {
                 } else {
                     HStack(alignment: .top, spacing: 18) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(readinessStateLabel(outcome))
-                                .font(AlmanacTypography.font(.label))
-                                .tracking(1.1)
-                                .foregroundStyle(AlmanacPalette.accent)
+                            AlmanacEyebrow(text: readinessStateLabel(outcome))
                             readinessValue(outcome)
                         }
 
@@ -153,8 +143,6 @@ struct ReadinessDashboardView: View {
                         HStack(spacing: 10) {
                             AlmanacStatusMark(text: isFinal ? "Final" : "Provisional", tone: isFinal ? .good : .neutral)
                             if !outcome.missingInputs.isEmpty {
-                                Text("•")
-                                    .foregroundStyle(AlmanacPalette.textSecondary)
                                 Text("\(outcome.missingInputs.count) input\(outcome.missingInputs.count == 1 ? "" : "s") missing")
                                     .font(AlmanacTypography.font(.caption))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
@@ -163,13 +151,6 @@ struct ReadinessDashboardView: View {
                     }
                 }
             }
-        }
-        .overlay(alignment: .leading) {
-            Rectangle()
-                .fill(tone.color)
-                .frame(width: 3)
-                .padding(.vertical, 18)
-                .clipShape(Capsule())
         }
         .animation(reduceMotion ? nil : .easeOut(duration: 0.45), value: model.outcome?.score)
     }
@@ -373,24 +354,25 @@ struct ReadinessDashboardView: View {
 
     @ViewBuilder
     private func readinessValue(_ outcome: ReadinessOutcome?) -> some View {
+        // The display face is reserved for a real reading. With no score there
+        // is nothing to give it to, and the state is already stated by the
+        // eyebrow above and the headline below, so the value slot stays empty
+        // rather than repeating it in grey.
         if let score = outcome?.score {
             Text("\(score)")
                 .font(AlmanacTypography.font(.display).monospacedDigit())
                 .foregroundStyle(AlmanacPalette.textPrimary)
                 .contentTransition(.numericText(value: Double(score)))
                 .accessibilityIdentifier("readiness-score")
-        } else {
-            Text("Waiting")
-                .font(AlmanacTypography.font(.screenTitle))
-                .foregroundStyle(AlmanacPalette.textPrimary)
-                .accessibilityIdentifier("readiness-score")
         }
     }
 
+    /// The state of the reading, in words. Joining two words with a middle dot
+    /// is a meta-string tic; the state is simply stated, and the card already
+    /// says "Readiness" directly above it.
     private func readinessStateLabel(_ outcome: ReadinessOutcome?) -> String {
-        guard let outcome else { return "READINESS · WAITING" }
-        if outcome.score == nil { return "READINESS · WAITING" }
-        return outcome.state == .final ? "READINESS · FINAL" : "READINESS · PROVISIONAL"
+        guard let outcome, outcome.score != nil else { return "Waiting on signals" }
+        return outcome.state == .final ? "Final" : "Provisional"
     }
 
     private func readinessHeadline(_ outcome: ReadinessOutcome?) -> String {

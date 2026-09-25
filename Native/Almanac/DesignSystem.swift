@@ -3,18 +3,31 @@ import UIKit
 import CoreText
 import AlmanacCore
 
-/// Shared visual tokens for the first Almanac design-system slice.
-/// Values mirror the approved UI Design Reference v1.0; final status colors
-/// still need confirmation on physical devices.
+/// Shared visual tokens for the Almanac design system.
+///
+/// Almanac is a private physiological logbook: one person records sleep, water,
+/// food, training, prayer and fasting against days that begin at 04:00, then
+/// reads one readiness number back. The palette is instrument-like rather than
+/// decorative — neutral paper, hairline rules, and an ink-blue accent that marks
+/// something the app *measured* rather than something it wants to look like.
+/// Status colors are the only colors allowed to carry judgement.
 enum AlmanacPalette {
-    static let canvas = dynamic(light: 0xF4F3EE, dark: 0x14171A)
-    static let surface = dynamic(light: 0xFBFAF6, dark: 0x1D2023)
-    static let surfaceMuted = dynamic(light: 0xECEBE5, dark: 0x25292E)
-    static let textPrimary = dynamic(light: 0x191918, dark: 0xECEAE3)
-    static let textSecondary = dynamic(light: 0x64635F, dark: 0x9BA1A8)
-    static let divider = dynamic(light: 0xDFDED7, dark: 0x34393F)
-    static let accent = dynamic(light: 0x0A5FFF, dark: 0x4C8CFF)
-    static let onAccent = dynamic(light: 0xFFFFFF, dark: 0x101214)
+    /// The page. A true neutral, not a warm tint: a warm cream reads as a
+    /// template, and it forced three more near-whites to stay legible.
+    static let canvas = dynamic(light: 0xFCFCFA, dark: 0x0B0B0C)
+    /// A single step off the page, for a panel or the bar. A second step is
+    /// deliberately absent — reaching for a third surface means the hierarchy,
+    /// not the color, is wrong.
+    static let surface = dynamic(light: 0xF1F1ED, dark: 0x15161A)
+    static let surfaceMuted = dynamic(light: 0xE6E6E1, dark: 0x1E2024)
+    /// Rules are the structural device. Containers are not.
+    static let divider = dynamic(light: 0xDCDCD6, dark: 0x2A2C30)
+    static let textPrimary = dynamic(light: 0x1A1A18, dark: 0xECECEA)
+    static let textSecondary = dynamic(light: 0x63635E, dark: 0x9A9C9F)
+    /// Graphite, not a product blue. It is the colour of a pen in a chart
+    /// margin, and it appears only where Almanac recorded something.
+    static let accent = dynamic(light: 0x1F4E8C, dark: 0x6FA0D8)
+    static let onAccent = dynamic(light: 0xFFFFFF, dark: 0x0B0B0C)
     static let good = dynamic(light: 0x1E7A4C, dark: 0x63D394)
     static let warning = dynamic(light: 0x8A5A00, dark: 0xF2B84B)
     static let critical = dynamic(light: 0xB3261E, dark: 0xFF7A70)
@@ -92,14 +105,14 @@ enum AlmanacTypography {
 
         var weight: Font.Weight {
             switch self {
-            case .bodyMedium, .label, .data: return .medium
+            case .bodyMedium, .label, .data, .sectionTitle: return .medium
             default: return .regular
             }
         }
 
         var usesMediumFamily: Bool {
             switch self {
-            case .bodyMedium, .label, .data: return true
+            case .bodyMedium, .label, .data, .sectionTitle: return true
             default: return false
             }
         }
@@ -111,15 +124,19 @@ enum AlmanacTypography {
     private static let almaraiRegular = ["Almarai-Regular", "Almarai"]
     private static let almaraiBold = ["Almarai-Bold", "Almarai"]
 
+    /// Fraunces is a display face: the screen title and the readiness number,
+    /// and nothing else. At 22pt and below its high-contrast strokes are the
+    /// thinnest part of the cut, so headings inside content are set in the sans
+    /// at medium weight instead.
     static func font(_ role: Role, locale: Locale = .current) -> Font {
         let candidates: [String]
         if locale.language.languageCode?.identifier == "ar" {
             candidates = role.usesMediumFamily ? almaraiBold : almaraiRegular
         } else {
             switch role {
-            case .display, .screenTitle, .sectionTitle:
+            case .display, .screenTitle:
                 candidates = frauncesRegular
-            case .body, .bodyMedium, .label, .data:
+            case .sectionTitle, .body, .bodyMedium, .label, .data:
                 candidates = role.usesMediumFamily ? neueMedium : neueRegular
             case .caption, .dayNumber:
                 candidates = neueRegular
@@ -177,7 +194,9 @@ enum AlmanacMetrics {
     static let screenInset: CGFloat = 20
     static let cardPadding: CGFloat = 24
     static let sectionGap: CGFloat = 32
-    static let cardRadius: CGFloat = 24
+    /// Rules now do the separating, so the radius no longer has to be soft to
+    /// make a panel read as a panel.
+    static let cardRadius: CGFloat = 14
     static let controlRadius: CGFloat = 10
     static let minimumControl: CGFloat = 50
 }
@@ -254,19 +273,30 @@ enum AlmanacStatusTone {
     }
 }
 
+/// A panel. Most panels are ruled areas of the page rather than boxes stacked on
+/// top of it: a daybook separates its entries with a rule, and a screen where
+/// every block is an identical filled card has no hierarchy at all. The one
+/// object a screen is about passes `prominent: true` and gets the filled
+/// surface, so the emphasis lands in a single place.
 struct AlmanacCard<Content: View>: View {
     private let padding: CGFloat
+    private let prominent: Bool
     private let content: Content
 
-    init(padding: CGFloat = AlmanacMetrics.cardPadding, @ViewBuilder content: () -> Content) {
+    init(
+        padding: CGFloat = AlmanacMetrics.cardPadding,
+        prominent: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) {
         self.padding = padding
+        self.prominent = prominent
         self.content = content()
     }
 
     var body: some View {
         content
             .padding(padding)
-            .background(AlmanacPalette.surface)
+            .background(prominent ? AlmanacPalette.surface : AlmanacPalette.canvas)
             .clipShape(RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous)
@@ -275,16 +305,19 @@ struct AlmanacCard<Content: View>: View {
     }
 }
 
+/// A section heading. Sentence case, no tracking, no uppercase: a daybook
+/// separates its entries with a plain name, and a tracked-out all-caps eyebrow
+/// above every heading is the oldest template tell there is. `detail` carries
+/// real information only — a range, a count, a time window — never decoration.
 struct AlmanacSectionHeader: View {
     let title: String
     var detail: String?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(title.uppercased())
-                .font(AlmanacTypography.font(.label))
-                .tracking(1.1)
-                .foregroundStyle(AlmanacPalette.textSecondary)
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title)
+                .font(AlmanacTypography.font(.sectionTitle))
+                .foregroundStyle(AlmanacPalette.textPrimary)
             Spacer(minLength: 16)
             if let detail {
                 Text(detail)
@@ -292,6 +325,23 @@ struct AlmanacSectionHeader: View {
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }
         }
+    }
+}
+
+/// The caption above a reading, e.g. the date on Today or the state of the
+/// readiness score. Sentence case and no tracking — a tracked-out all-caps
+/// eyebrow above every heading is the oldest template tell there is. It stays
+/// ink-coloured by default: the accent means Almanac recorded something, so
+/// tinting a label with it would spend the one color that carries meaning.
+struct AlmanacEyebrow: View {
+    let text: String
+    var color: Color = AlmanacPalette.textSecondary
+
+    var body: some View {
+        Text(text)
+            .font(AlmanacTypography.font(.label))
+            .foregroundStyle(color)
+            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 }
 

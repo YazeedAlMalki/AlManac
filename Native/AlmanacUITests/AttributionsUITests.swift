@@ -116,7 +116,7 @@ final class AttributionsUITests: XCTestCase {
         let trends = app.buttons["Trends"]
         XCTAssertTrue(trends.waitForExistence(timeout: 5))
         trends.tap()
-        XCTAssertTrue(app.staticTexts["PATTERNS, NOT NOISE"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Trends"].waitForExistence(timeout: 5))
 
         let modules = app.buttons["Modules"]
         XCTAssertTrue(modules.waitForExistence(timeout: 5))
@@ -165,7 +165,7 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testTodayShowsTheActivityRingsCalendar() {
-        XCTAssertTrue(app.staticTexts["RHYTHM"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Rhythm"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.datePickers.firstMatch.exists, "the free-date picker was superseded")
 
         let initialMonthFormatter = DateFormatter()

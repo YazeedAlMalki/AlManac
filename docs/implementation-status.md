@@ -26,7 +26,23 @@ Debug:
   second stack inside Modules. The bar is laid out in flow rather than attached
   with `safeAreaInset`: a navigation stack swallowed that inset, so every scroll
   view kept the full screen height and the last row of a long list — Settings —
-  stayed pinned behind the bar with no way to scroll it clear.
+  stayed pinned behind the bar with no way to scroll it clear. The quick-log
+  action is the bar's one memorable element and sits on the exact centreline: a
+  fixed-width spacer holds the middle while Today and Trends share the left half
+  and Modules takes the right, instead of four equal columns that pushed the
+  action a quarter of the way off-centre.
+- A design-token pass replaced the warm-cream canvas and electric-blue accent
+  with values chosen for the product rather than for a template: a true-neutral
+  page, one step of panel surface, hairline rules as the structural device, and
+  a desaturated ink-blue accent that marks something Almanac measured. Fraunces
+  is now used only for the screen title and the readiness number — at 22pt and
+  below its high-contrast strokes are the weakest part of the cut, so headings
+  inside content are set in the sans. Panels are ruled areas of the page rather
+  than uniformly filled cards, and only the object a screen is about (the
+  readiness card on Today) gets the filled surface. Tracked-out all-caps
+  eyebrows, middle-dot meta strings and the "Could not complete the action"
+  error title are gone; the alert title is now the specific failure the store
+  raised.
 - Today is a scrolling editorial ledger: readiness headline, explicit waiting
   state, recommendation, check-in, daily signals, input provenance and the
   Activity Rings rhythm calendar. The calendar keeps the existing model and

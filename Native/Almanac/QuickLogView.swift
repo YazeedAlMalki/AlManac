@@ -29,14 +29,11 @@ struct QuickLogView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: AlmanacMetrics.sectionGap) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("FAST ENTRY")
-                            .font(AlmanacTypography.font(.label))
-                            .tracking(1.2)
-                            .foregroundStyle(AlmanacPalette.textSecondary)
+                        AlmanacEyebrow(text: "Log without sorting first")
                         Text("Quick log")
                             .font(AlmanacTypography.font(.screenTitle))
                             .foregroundStyle(AlmanacPalette.textPrimary)
-                        Text("Add the small things now. Almanac keeps the record precise without making you stop and sort it first.")
+                        Text("Record the small things as they happen. Almanac keeps each one precise on its own.")
                             .font(AlmanacTypography.font(.body))
                             .foregroundStyle(AlmanacPalette.textSecondary)
                     }

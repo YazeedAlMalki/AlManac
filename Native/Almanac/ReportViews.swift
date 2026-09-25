@@ -23,7 +23,7 @@ struct ReportListView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(report.laboratoryNameText ?? "Laboratory report").font(.headline)
-                        Text("\(dateLabel(report.reportedAt)) · \(report.resultCount) results")
+                        Text("\(dateLabel(report.reportedAt)), \(report.resultCount) results")
                             .font(.subheadline).foregroundStyle(.secondary)
                         if report.hasUnresolvedConflict {
                             Label("Needs review", systemImage: "exclamationmark.bubble").font(.caption)

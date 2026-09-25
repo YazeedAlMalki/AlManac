@@ -93,14 +93,10 @@ struct TrendsView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("PATTERNS, NOT NOISE")
-                .font(AlmanacTypography.font(.label))
-                .tracking(1.2)
-                .foregroundStyle(AlmanacPalette.textSecondary)
             Text("Trends")
                 .font(AlmanacTypography.font(.screenTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)
-            Text("Readiness history stays descriptive. It does not infer causes.")
+            Text("Readiness for every day Almanac has enough signals to score. Days without a score stay blank.")
                 .font(AlmanacTypography.font(.body))
                 .foregroundStyle(AlmanacPalette.textSecondary)
         }
@@ -109,13 +105,10 @@ struct TrendsView: View {
     private var emptyState: some View {
         AlmanacCard {
             VStack(alignment: .leading, spacing: 14) {
-                Image(systemName: AlmanacIcon.trends)
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundStyle(AlmanacPalette.accent)
-                Text("Your trend starts with the first scored day")
+                Text("No scored days yet")
                     .font(AlmanacTypography.font(.sectionTitle))
                     .foregroundStyle(AlmanacPalette.textPrimary)
-                Text("Scores appear here after Almanac has enough sleep and vitals data. Missing days stay missing rather than becoming zero.")
+                Text("A day appears here once sleep and vitals give Almanac enough to score it. Until then the chart stays empty rather than showing a zero.")
                     .font(AlmanacTypography.font(.body))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }
@@ -138,9 +131,8 @@ struct TrendsView: View {
 
     private func summaryCell(_ title: String, _ value: String) -> some View {
         VStack(spacing: 5) {
-            Text(title.uppercased())
+            Text(title)
                 .font(AlmanacTypography.font(.caption))
-                .tracking(0.8)
                 .foregroundStyle(AlmanacPalette.textSecondary)
             Text(value)
                 .font(AlmanacTypography.font(.data).monospacedDigit())
@@ -221,7 +213,9 @@ struct TrendsView: View {
                 .accessibilityLabel("Readiness trend chart")
                 .accessibilityHint("Drag across the chart to inspect individual days.")
 
-                Text("Reference bands: below \(ReadinessFormula.compromisedThreshold) compromised · \(ReadinessFormula.compromisedThreshold)–\(ReadinessFormula.readyThreshold - 1) moderate · \(ReadinessFormula.readyThreshold)+ ready. Provisional and final observations share the scale; gaps remain visible.")
+                // The bands are drawn, so the caption names the line and the
+                // scale rather than explaining the chart to the reader.
+                Text("Dashed lines mark \(ReadinessFormula.compromisedThreshold) and \(ReadinessFormula.readyThreshold) on the 0–100 readiness scale.")
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }
