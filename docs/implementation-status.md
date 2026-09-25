@@ -34,14 +34,22 @@ Debug:
 - Quick Log provides one-tap water presets plus focused food, training and body
   entry sheets; the existing domain forms accept an optional completion hook so
   the sheet remains usable for a second entry.
+- The named motion budget for this slice is: readiness-score reveal, quick-log
+  save confirmation, hydration/nutrition goal crossing, and golden-day/streak
+  milestones. The first two are implemented; goal crossing and milestone
+  animation remain deliberately reserved rather than adding generic motion.
 - Verification: `swift test` passes 421 Swift Testing tests, the Debug
   simulator build succeeds, and all 10 `AttributionsUITests` pass on the
   iPhone 16e simulator. Large Dynamic Type was checked separately; the calendar
   and readiness card reflow instead of using a fixed-width score layout.
 
 Outstanding product/design decisions remain: licensed Neue Montreal files,
-custom icon artwork, final on-device status colors, and the final quick-log
-default action.
+custom icon artwork, final on-device status colors, the final quick-log default
+action, and whether Modules should become a side drawer rather than a fourth
+root destination. Arabic strings and RTL layout are not yet localized; the
+Almarai registration is in place for that later pass. The first-slice privacy
+and empty-state copy is provisional pending the tone decision recorded in the
+reference.
 
 ## 2026-09-25 — More navigation and Today tracking calendar
 

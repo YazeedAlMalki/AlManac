@@ -6,9 +6,10 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
 
 ## Authored
 
-- Navigation: five explicit tabs — Today, Training, Hydration, Nutrition and
-  More. The app-owned More page links to Laboratory, Profile, Measurements and
-  Settings, so Laboratory and Settings are no longer system-overflow tabs.
+- Navigation: a compact root shell with Today, Trends, a central Quick Log
+  action and Modules. The app-owned Modules page links to Training, Hydration,
+  Nutrition, Fasting, Prayer, Laboratory, Profile, Measurements and Settings,
+  so the domain screens are not system-overflow tabs.
 - Today includes a native graphical tracking calendar. Selecting a past date
   shows a read-only, chronologically merged history from the module-provided
   `Timeline` providers; the 04:00 Almanac logical-day boundary is shown in the UI.
@@ -28,7 +29,7 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   Import automation (CSV, `LabReportCSVImport`) creates these proposals:
   unchanged re-imports are no-ops via fingerprints, and unranked changes are
   held for review instead of applied.
-- Import CSV: paste a report CSV in the Laboratory tab; rows sharing a
+- Import CSV: paste a report CSV in the Laboratory module; rows sharing a
   `source_report_id` form one report, source text is stored verbatim, blank
   dates stay unknown, and re-importing the same file adds nothing.
 - Hydration: log water (presets or a custom amount, with an optional note),
@@ -153,10 +154,11 @@ Health app itself.
 
 Report conflict behavior is covered in core tests. Debug builds seed one
 conflicting report pair automatically (`LabReportFixture`, first launch only);
-open it from the Laboratory tab and accept or reject with a reason, then
+open it from the Laboratory module and accept or reject with a reason, then
 confirm the unresolved badge clears.
 
-Trends, document import, attachments, backup UI, OCR, medical interpretation,
-and other tracker screens are outside this pass. The full earlier Laboratory
+Document import, attachments, backup UI, OCR, medical interpretation, and
+other tracker screens are outside this pass. Trends is now a first-class root
+surface with a bounded readiness chart. The full earlier Laboratory
 specification remains incomplete until the remaining features are implemented
 and the real UI path above has been verified.

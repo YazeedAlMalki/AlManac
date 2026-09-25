@@ -133,16 +133,16 @@ public struct ReadinessRecordStore: @unchecked Sendable {
     }
 
     /// Recent records in chronological order for the Trends surface. The
-    /// limit is interpolated only after clamping it to a small positive
-    /// integer, so it remains a bound value rather than caller SQL.
+    /// limit is clamped to a small positive integer and bound as a query
+    /// parameter rather than interpolated into caller SQL.
     public func records(limit: Int = 90) throws -> [StoredReadinessRecord] {
         guard limit > 0 else { return [] }
         let boundedLimit = min(limit, 3_660)
         let recent = try db.query("""
         \(Self.columns) FROM readiness_record
         ORDER BY anchorDate DESC
-        LIMIT \(boundedLimit);
-        """).compactMap(rowToRecord)
+        LIMIT ?;
+        """, [.integer(Int64(boundedLimit))]).compactMap(rowToRecord)
         return Array(recent.reversed())
     }
 

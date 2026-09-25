@@ -154,7 +154,7 @@ struct EditorialRhythmCalendarView: View {
             ringRow(
                 title: "Hydration",
                 state: day.hydration == .complete ? "Target met" : "Target not met",
-                detail: "\(rhythmNumber(day.hydrationTotalMilliliters.value)) of \(rhythmNumber(day.hydrationTargetMilliliters.value)) mL",
+                detail: "\(AlmanacNumber.short(day.hydrationTotalMilliliters.value)) of \(AlmanacNumber.short(day.hydrationTargetMilliliters.value)) mL",
                 complete: day.hydration == .complete
             )
             ringRow(
@@ -350,8 +350,4 @@ private struct EditorialActivityRingDayCell: View {
             EmptyView()
         }
     }
-}
-
-private func rhythmNumber(_ value: Double) -> String {
-    value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
 }

@@ -4,7 +4,7 @@ import Combine
 import Foundation
 
 @MainActor
-struct MoreView: View {
+struct ModulesView: View {
     let db: Database?
     let labModel: LaboratoryModel
     let hydrationModel: HydrationModel

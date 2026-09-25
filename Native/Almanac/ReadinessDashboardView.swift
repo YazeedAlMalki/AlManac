@@ -84,7 +84,7 @@ struct ReadinessDashboardView: View {
     private var readinessCard: some View {
         let outcome = model.outcome
         let isFinal = outcome?.state == .final
-        let tone = readinessTone(outcome?.color ?? .none)
+        let tone = AlmanacReadinessPresentation.tone(for: outcome?.color ?? .none)
 
         return AlmanacCard {
             VStack(alignment: .leading, spacing: 18) {
@@ -98,8 +98,8 @@ struct ReadinessDashboardView: View {
                         readinessValue(outcome)
                         if let confidence = outcome?.confidence {
                             AlmanacStatusMark(
-                                text: confidenceLabel(confidence),
-                                tone: confidenceTone(confidence)
+                                text: AlmanacReadinessPresentation.confidenceLabel(confidence),
+                                tone: AlmanacReadinessPresentation.confidenceTone(confidence)
                             )
                         }
                     }
@@ -117,8 +117,8 @@ struct ReadinessDashboardView: View {
 
                         if let confidence = outcome?.confidence {
                             AlmanacStatusMark(
-                                text: confidenceLabel(confidence),
-                                tone: confidenceTone(confidence)
+                                text: AlmanacReadinessPresentation.confidenceLabel(confidence),
+                                tone: AlmanacReadinessPresentation.confidenceTone(confidence)
                             )
                             .multilineTextAlignment(.trailing)
                         }
@@ -205,8 +205,8 @@ struct ReadinessDashboardView: View {
                     AlmanacMetricRow(
                         icon: AlmanacIcon.hydration,
                         title: "Hydration",
-                        value: "\(number(hydrationModel.todayTotal.value)) mL",
-                        detail: "of \(number(hydrationGoal)) mL",
+                        value: "\(AlmanacNumber.short(hydrationModel.todayTotal.value)) mL",
+                        detail: "of \(AlmanacNumber.short(hydrationGoal)) mL",
                         tone: hydrationTone
                     )
                     Divider().overlay(AlmanacPalette.divider).padding(.leading, 62)
@@ -231,32 +231,27 @@ struct ReadinessDashboardView: View {
     }
 
     private var inputs: some View {
-        DisclosureGroup {
-            VStack(spacing: 0) {
-                inputRows
-            }
-            .padding(.top, 14)
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Inputs used")
-                        .font(AlmanacTypography.font(.bodyMedium))
-                        .foregroundStyle(AlmanacPalette.textPrimary)
-                    Text("What shaped today’s estimate")
-                        .font(AlmanacTypography.font(.caption))
-                        .foregroundStyle(AlmanacPalette.textSecondary)
+        AlmanacCard(padding: 20) {
+            DisclosureGroup {
+                VStack(spacing: 0) {
+                    inputRows
                 }
-                Spacer()
+                .padding(.top, 14)
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Inputs used")
+                            .font(AlmanacTypography.font(.bodyMedium))
+                            .foregroundStyle(AlmanacPalette.textPrimary)
+                        Text("What shaped today’s estimate")
+                            .font(AlmanacTypography.font(.caption))
+                            .foregroundStyle(AlmanacPalette.textSecondary)
+                    }
+                    Spacer()
+                }
             }
-        }
-        .font(AlmanacTypography.font(.body))
-        .tint(AlmanacPalette.accent)
-        .padding(20)
-        .background(AlmanacPalette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous)
-                .stroke(AlmanacPalette.divider, lineWidth: 1)
+            .font(AlmanacTypography.font(.body))
+            .tint(AlmanacPalette.accent)
         }
     }
 
@@ -264,9 +259,9 @@ struct ReadinessDashboardView: View {
         VStack(spacing: 0) {
             inputRow("Sleep", value: model.sleepDurationMinutes.map(durationLabel), missingValue: "Not available")
             Divider().overlay(AlmanacPalette.divider)
-            inputRow("Resting heart rate", value: model.latestRHR.map { "\(number($0)) bpm" }, missingValue: "Not available")
+            inputRow("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.short($0)) bpm" }, missingValue: "Not available")
             Divider().overlay(AlmanacPalette.divider)
-            inputRow("HRV", value: model.latestHRV.map { "\(number($0)) ms" }, missingValue: "Not available")
+            inputRow("HRV", value: model.latestHRV.map { "\(AlmanacNumber.short($0)) ms" }, missingValue: "Not available")
             Divider().overlay(AlmanacPalette.divider)
             inputRow("Mood", value: model.todayMood.map { "\($0.score)/10" }, missingValue: "Not logged")
             Divider().overlay(AlmanacPalette.divider)
@@ -281,26 +276,26 @@ struct ReadinessDashboardView: View {
                 VStack(spacing: 0) {
                     if let summary = trainingModel.todaysSummary {
                         if let tonnage = summary.totalTonnageKg {
-                            inputRow("Tonnage", value: "\(number(tonnage)) kg", missingValue: nil)
-                            Divider().overlay(AlmanacPalette.divider)
+                            inputRow("Tonnage", value: "\(AlmanacNumber.short(tonnage)) kg", missingValue: nil)
                         }
                         if let distance = summary.totalDistanceMeters {
-                            inputRow("Distance", value: "\(number(distance)) m", missingValue: nil)
                             Divider().overlay(AlmanacPalette.divider)
+                            inputRow("Distance", value: "\(AlmanacNumber.short(distance)) m", missingValue: nil)
                         }
                         if let duration = summary.totalDurationSeconds {
-                            inputRow("Time", value: durationLabel(Int(duration.rounded())), missingValue: nil)
                             Divider().overlay(AlmanacPalette.divider)
+                            inputRow("Time", value: durationLabel(Int(duration.rounded())), missingValue: nil)
                         }
                         if let reps = summary.totalReps {
-                            inputRow("Reps", value: "\(reps)", missingValue: nil)
                             Divider().overlay(AlmanacPalette.divider)
+                            inputRow("Reps", value: "\(reps)", missingValue: nil)
                         }
                         if let rounds = summary.totalRounds {
-                            inputRow("Rounds", value: "\(rounds)", missingValue: nil)
                             Divider().overlay(AlmanacPalette.divider)
+                            inputRow("Rounds", value: "\(rounds)", missingValue: nil)
                         }
                         if let rpe = summary.averageRPE {
+                            Divider().overlay(AlmanacPalette.divider)
                             inputRow("Average RPE", value: String(format: "%.1f/10", rpe), missingValue: nil)
                         }
                     }
@@ -333,7 +328,7 @@ struct ReadinessDashboardView: View {
 
     private var nutritionValue: String {
         guard let totals = nutritionModel.todaysTotals, totals.mealsCounted > 0 else { return "—" }
-        return "\(number(totals.kcal)) kcal"
+        return "\(AlmanacNumber.short(totals.kcal)) kcal"
     }
 
     private var nutritionDetail: String {
@@ -347,8 +342,8 @@ struct ReadinessDashboardView: View {
         guard let summary = trainingModel.todaysSummary else { return "—" }
         if let duration = summary.totalDurationSeconds { return durationLabel(Int(duration.rounded())) }
         if let rounds = summary.totalRounds { return "\(rounds) rounds" }
-        if let tonnage = summary.totalTonnageKg { return "\(number(tonnage)) kg" }
-        if let distance = summary.totalDistanceMeters { return "\(number(distance)) m" }
+        if let tonnage = summary.totalTonnageKg { return "\(AlmanacNumber.short(tonnage)) kg" }
+        if let distance = summary.totalDistanceMeters { return "\(AlmanacNumber.short(distance)) m" }
         return "Logged"
     }
 
@@ -430,40 +425,9 @@ struct ReadinessDashboardView: View {
         }
     }
 
-    private func readinessTone(_ grade: ReadinessColor) -> AlmanacStatusTone {
-        switch grade {
-        case .green: return .good
-        case .yellow: return .warning
-        case .red: return .critical
-        case .none: return .neutral
-        }
-    }
-
-    private func confidenceTone(_ confidence: ReadinessConfidence) -> AlmanacStatusTone {
-        switch confidence {
-        case .high, .medium: return .good
-        case .low, .veryLow: return .warning
-        case .insufficient: return .neutral
-        }
-    }
-
-    private func confidenceLabel(_ confidence: ReadinessConfidence) -> String {
-        switch confidence {
-        case .high: return "High confidence"
-        case .medium: return "Medium confidence"
-        case .low: return "Low confidence"
-        case .veryLow: return "Very low confidence"
-        case .insufficient: return "Insufficient data"
-        }
-    }
-
     private func durationLabel(_ minutes: Int) -> String {
         let hours = minutes / 60
         let mins = minutes % 60
         return hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
-    }
-
-    private func number(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import CoreText
+import AlmanacCore
 
 /// Shared visual tokens for the first Almanac design-system slice.
 /// Values mirror the approved UI Design Reference v1.0; final status colors
@@ -46,6 +47,12 @@ enum AlmanacFontRegistration {
         for resource in resources {
             guard let url = Bundle.main.url(forResource: resource, withExtension: "ttf") else { continue }
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
+    }
+
+    static func hasDisplayFont() -> Bool {
+        ["Fraunces-Regular", "Fraunces", "Fraunces-SemiBold"].contains {
+            UIFont(name: $0, size: 12) != nil
         }
     }
 }
@@ -132,14 +139,47 @@ enum AlmanacTypography {
     }
 }
 
+enum AlmanacReadinessPresentation {
+    static func confidenceLabel(_ confidence: ReadinessConfidence) -> String {
+        switch confidence {
+        case .high: return "High confidence"
+        case .medium: return "Medium confidence"
+        case .low: return "Low confidence"
+        case .veryLow: return "Very low confidence"
+        case .insufficient: return "Insufficient data"
+        }
+    }
+
+    static func confidenceTone(_ confidence: ReadinessConfidence) -> AlmanacStatusTone {
+        switch confidence {
+        case .high, .medium: return .good
+        case .low, .veryLow: return .warning
+        case .insufficient: return .neutral
+        }
+    }
+
+    static func tone(for grade: ReadinessColor) -> AlmanacStatusTone {
+        switch grade {
+        case .green: return .good
+        case .yellow: return .warning
+        case .red: return .critical
+        case .none: return .neutral
+        }
+    }
+}
+
+enum AlmanacNumber {
+    static func short(_ value: Double) -> String {
+        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+    }
+}
+
 enum AlmanacMetrics {
     static let screenInset: CGFloat = 20
-    static let regularInset: CGFloat = 28
     static let cardPadding: CGFloat = 24
     static let sectionGap: CGFloat = 32
     static let cardRadius: CGFloat = 24
     static let controlRadius: CGFloat = 10
-    static let chartRadius: CGFloat = 12
     static let minimumControl: CGFloat = 50
 }
 
@@ -373,6 +413,15 @@ struct AlmanacSecondaryButtonStyle: ButtonStyle {
 }
 
 extension View {
+    @ViewBuilder
+    func almanacNavigationHost(_ embedded: Bool) -> some View {
+        if embedded {
+            self
+        } else {
+            NavigationStack { self }
+        }
+    }
+
     func almanacScreen() -> some View {
         self
             .tint(AlmanacPalette.accent)

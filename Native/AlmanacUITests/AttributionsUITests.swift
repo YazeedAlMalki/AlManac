@@ -100,6 +100,30 @@ final class AttributionsUITests: XCTestCase {
         }
     }
 
+    // MARK: - Editorial shell
+
+    func testEditorialShellQuickLogTrendsAndModules() {
+        let quickLog = app.buttons["Quick log"]
+        XCTAssertTrue(quickLog.waitForExistence(timeout: 5))
+        quickLog.tap()
+
+        XCTAssertTrue(app.staticTexts["Quick log"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["+250"].exists)
+        app.buttons["+250"].tap()
+        XCTAssertTrue(app.staticTexts["250 mL added"].waitForExistence(timeout: 5))
+        app.buttons["Close"].tap()
+
+        let trends = app.buttons["Trends"]
+        XCTAssertTrue(trends.waitForExistence(timeout: 5))
+        trends.tap()
+        XCTAssertTrue(app.staticTexts["PATTERNS, NOT NOISE"].waitForExistence(timeout: 5))
+
+        let modules = app.buttons["Modules"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 5))
+        modules.tap()
+        XCTAssertTrue(app.navigationBars["Modules"].waitForExistence(timeout: 5))
+    }
+
     // MARK: - Health
 
     /// The screen that makes the non-dashboard synced domains visible.

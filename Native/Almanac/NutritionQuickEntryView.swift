@@ -47,13 +47,8 @@ struct NutritionQuickEntryView: View {
         }
     }
 
-    @ViewBuilder
     var body: some View {
-        if embedded {
-            content
-        } else {
-            NavigationStack { content }
-        }
+        content.almanacNavigationHost(embedded)
     }
 
     private var content: some View {

@@ -13,13 +13,8 @@ struct TrainingDashboardView: View {
         self.embedded = embedded
     }
 
-    @ViewBuilder
     var body: some View {
-        if embedded {
-            dashboard
-        } else {
-            NavigationStack { dashboard }
-        }
+        dashboard.almanacNavigationHost(embedded)
     }
 
     private var dashboard: some View {

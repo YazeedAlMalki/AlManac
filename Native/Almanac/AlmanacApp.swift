@@ -30,6 +30,11 @@ struct AlmanacApp: App {
 
     init() {
         AlmanacFontRegistration.registerBundledFonts()
+        #if DEBUG
+        if !AlmanacFontRegistration.hasDisplayFont() {
+            print("Almanac design warning: bundled Fraunces did not register; display text will use the system fallback.")
+        }
+        #endif
     }
 
     var body: some Scene {
@@ -54,6 +59,10 @@ struct AlmanacApp: App {
                     prayerModel.ensureCache()
                     fastingModel.ensureToday()
                     prayerModel.resumeLocationIfAuthorized()
+                    // Await both syncs before refreshing: sleep, vitals and water
+                    // all feed the homepage, and a fire-and-forget hydration
+                    // sync would leave the tracking calendar one refresh behind.
+                    // Both syncs are no-ops until HealthKit is connected.
                     Task {
                         await hydrationModel.syncOnForeground()
                         await healthModel.syncNow()
@@ -114,7 +123,7 @@ struct AlmanacApp: App {
         case .trends:
             TrendsView(db: model.db)
         case .modules:
-            MoreView(
+            ModulesView(
                 db: model.db,
                 labModel: model,
                 hydrationModel: hydrationModel,

@@ -3,8 +3,12 @@ import AlmanacCore
 
 /// §9.10's feedback question, shown for a *previous* cycle's outcome — never
 /// directly under today's score, which is the one thing the spec explicitly
-/// forbids. The rendering is a standalone card so it can live in Today’s
-/// scrolling editorial layout without depending on `List` sections.
+/// forbids. The BRD's timing rule is the reason this view is separate from
+/// `ReadinessModel`: the prompt must survive a later recomputation of today's
+/// record without rewriting the older result it is asking about.
+///
+/// The rendering is a standalone card so it can live in Today’s scrolling
+/// editorial layout without depending on `List` sections.
 @MainActor
 struct FeedbackPromptView: View {
     @ObservedObject var model: ReadinessModel

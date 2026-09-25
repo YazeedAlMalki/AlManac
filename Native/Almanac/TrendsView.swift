@@ -126,9 +126,9 @@ struct TrendsView: View {
         let snapshot = snapshot
         return AlmanacCard(padding: 0) {
             HStack(spacing: 0) {
-                summaryCell("Average", snapshot.map { number($0.average) } ?? "—")
+                summaryCell("Average", snapshot.map { AlmanacNumber.short($0.average) } ?? "—")
                 Divider().frame(height: 52)
-                summaryCell("Low", snapshot.map { number($0.minimum) } ?? "—")
+                summaryCell("Low", snapshot.map { AlmanacNumber.short($0.minimum) } ?? "—")
                 Divider().frame(height: 52)
                 summaryCell("Direction", snapshot.map { directionLabel($0.direction) } ?? "—")
             }
@@ -156,6 +156,13 @@ struct TrendsView: View {
             VStack(alignment: .leading, spacing: 14) {
                 AlmanacSectionHeader(title: "Readiness", detail: "0–100")
                 Chart {
+                    RuleMark(y: .value("Reference band", 40))
+                        .foregroundStyle(AlmanacPalette.warning.opacity(0.55))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    RuleMark(y: .value("Reference band", 70))
+                        .foregroundStyle(AlmanacPalette.good.opacity(0.55))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+
                     ForEach(points) { point in
                         LineMark(
                             x: .value("Day", point.date),
@@ -214,7 +221,7 @@ struct TrendsView: View {
                 .accessibilityLabel("Readiness trend chart")
                 .accessibilityHint("Drag across the chart to inspect individual days.")
 
-                Text("Provisional and final observations use the same scale. Gaps remain visible.")
+                Text("Reference bands: below 40 compromised · 40–69 moderate · 70+ ready. Provisional and final observations share the scale; gaps remain visible.")
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }
@@ -251,7 +258,10 @@ struct TrendsView: View {
                             .font(AlmanacTypography.font(.body))
                             .foregroundStyle(AlmanacPalette.textPrimary)
                     }
-                    AlmanacStatusMark(text: confidenceLabel(point.record.confidence), tone: confidenceTone(point.record.confidence))
+                    AlmanacStatusMark(
+                        text: AlmanacReadinessPresentation.confidenceLabel(point.record.confidence),
+                        tone: AlmanacReadinessPresentation.confidenceTone(point.record.confidence)
+                    )
                 }
             }
         }
@@ -261,7 +271,7 @@ struct TrendsView: View {
         selectedDate = nil
         guard let db else {
             records = []
-            error = "The database is unavailable."
+            error = "Trends are temporarily unavailable. Pull to try again."
             return
         }
         do {
@@ -269,7 +279,10 @@ struct TrendsView: View {
             error = nil
         } catch {
             records = []
-            self.error = String(describing: error)
+            #if DEBUG
+            print("Almanac Trends load failed: \(error)")
+            #endif
+            self.error = "Trends are temporarily unavailable. Pull to try again."
         }
     }
 
@@ -282,33 +295,11 @@ struct TrendsView: View {
         return formatter.date(from: text)
     }
 
-    private func number(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
-    }
-
     private func directionLabel(_ direction: TrendDirection) -> String {
         switch direction {
         case .up: return "Rising"
         case .down: return "Easing"
         case .flat: return "Steady"
-        }
-    }
-
-    private func confidenceLabel(_ confidence: ReadinessConfidence) -> String {
-        switch confidence {
-        case .high: return "High confidence"
-        case .medium: return "Medium confidence"
-        case .low: return "Low confidence"
-        case .veryLow: return "Very low confidence"
-        case .insufficient: return "Insufficient data"
-        }
-    }
-
-    private func confidenceTone(_ confidence: ReadinessConfidence) -> AlmanacStatusTone {
-        switch confidence {
-        case .high, .medium: return .good
-        case .low, .veryLow: return .warning
-        case .insufficient: return .neutral
         }
     }
 }

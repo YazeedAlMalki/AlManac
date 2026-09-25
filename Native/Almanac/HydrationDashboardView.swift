@@ -18,13 +18,8 @@ struct HydrationDashboardView: View {
     /// `@AppStorage`).
     private var dailyGoal: Double { model.hydrationSettings?.dailyGoalMilliliters ?? 2000 }
 
-    @ViewBuilder
     var body: some View {
-        if embedded {
-            dashboard
-        } else {
-            NavigationStack { dashboard }
-        }
+        dashboard.almanacNavigationHost(embedded)
     }
 
     private var dashboard: some View {
