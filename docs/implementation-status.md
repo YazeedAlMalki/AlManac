@@ -23,7 +23,10 @@ Debug:
 - The root shell is now Today, Trends, an always-available Quick Log action and
   Modules. Modules owns the full module index; the three former domain tabs are
   reachable there and use embedded navigation stacks rather than nesting a
-  second stack inside Modules.
+  second stack inside Modules. The bar is laid out in flow rather than attached
+  with `safeAreaInset`: a navigation stack swallowed that inset, so every scroll
+  view kept the full screen height and the last row of a long list — Settings —
+  stayed pinned behind the bar with no way to scroll it clear.
 - Today is a scrolling editorial ledger: readiness headline, explicit waiting
   state, recommendation, check-in, daily signals, input provenance and the
   Activity Rings rhythm calendar. The calendar keeps the existing model and
@@ -46,9 +49,11 @@ Debug:
   milestones. The first two are implemented; goal crossing and milestone
   animation remain deliberately reserved rather than adding generic motion.
 - Verification: `swift test` passes 421 Swift Testing tests, the Debug
-  simulator build succeeds, and all 11 `AttributionsUITests` pass on the
-  iPhone 16e simulator. Large Dynamic Type was checked separately; the calendar
-  and readiness card reflow instead of using a fixed-width score layout.
+  simulator build succeeds, and all 12 `AttributionsUITests` pass on the
+  iPhone 16e simulator, including one that scrolls Modules to its end and
+  asserts the last row clears the bar. Large Dynamic Type was checked
+  separately; the calendar and readiness card reflow instead of using a
+  fixed-width score layout.
 
 Outstanding product/design decisions remain: licensed Neue Montreal files,
 custom icon artwork, final on-device status colors, the final quick-log default

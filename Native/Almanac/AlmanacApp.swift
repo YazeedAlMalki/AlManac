@@ -77,10 +77,14 @@ struct AlmanacApp: App {
     }
 
     private var appShell: some View {
-        selectedDestination
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                AlmanacNavigationBar(selection: $selectedTab, quickLog: { quickLogging = true })
-            }
+        // The bar is laid out in flow rather than attached with
+        // `safeAreaInset`: a navigation stack swallows that inset, so every
+        // scroll view kept the full screen height and its last row stayed
+        // trapped behind the bar — Settings could not be scrolled to.
+        VStack(spacing: 0) {
+            selectedDestination
+            AlmanacNavigationBar(selection: $selectedTab, quickLog: { quickLogging = true })
+        }
             .sheet(isPresented: $quickLogging) {
                 QuickLogView(
                     db: model.db,
@@ -169,10 +173,14 @@ private struct AlmanacNavigationBar: View {
         .frame(height: 66)
         .padding(.horizontal, 8)
         .padding(.top, 6)
+        .padding(.bottom, 10)
         .background(AlmanacPalette.surface)
         .overlay(alignment: .top) {
             Rectangle().fill(AlmanacPalette.divider).frame(height: 1)
         }
+        // The bar now sits in the layout flow, so the surface is extended past
+        // the safe area to keep the home indicator on the bar's own colour.
+        .background(AlmanacPalette.surface.ignoresSafeArea(edges: .bottom))
         .accessibilityElement(children: .contain)
     }
 

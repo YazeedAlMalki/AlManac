@@ -147,7 +147,7 @@ struct EditorialRhythmCalendarView: View {
 
     private func selectedDay(_ day: ActivityRingDay) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Rings for \(day.day.value)")
+            Text("Rings for \(displayDay(day.day))")
                 .font(AlmanacTypography.font(.sectionTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)
 

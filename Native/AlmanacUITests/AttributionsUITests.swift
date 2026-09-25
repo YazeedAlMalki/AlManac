@@ -155,10 +155,13 @@ final class AttributionsUITests: XCTestCase {
         more.tap()
 
         XCTAssertTrue(app.staticTexts["Laboratory"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Profile"].exists)
-        XCTAssertTrue(app.staticTexts["Measurements"].exists)
-        scrollTo("Settings")
-        XCTAssertTrue(app.staticTexts["Settings"].exists)
+        // The bar now takes its own layout space, so fewer rows fit on screen
+        // and the later destinations have to be scrolled to.
+        for destination in ["Profile", "Measurements", "Settings"] {
+            scrollTo(destination)
+            XCTAssertTrue(app.staticTexts[destination].exists,
+                          "\(destination) is missing from Modules")
+        }
     }
 
     func testTodayShowsTheActivityRingsCalendar() {
@@ -190,7 +193,11 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(day.waitForExistence(timeout: 5), "the month grid rendered no selectable days")
         let selectedDay = String(day.identifier.dropFirst("activity-ring-day-".count))
         day.tap()
-        XCTAssertTrue(app.staticTexts["Rings for \(selectedDay)"].waitForExistence(timeout: 5))
+        let heading = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Rings for")
+        ).firstMatch
+        XCTAssertTrue(heading.waitForExistence(timeout: 5),
+                      "selecting a day must describe that day in the detail panel")
         let edit = app.buttons["Edit selected day's logs"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5))
         edit.tap()
@@ -221,6 +228,7 @@ final class AttributionsUITests: XCTestCase {
         more.tap()
 
         let profile = app.buttons["Profile"]
+        scrollTo("Profile")
         XCTAssertTrue(profile.waitForExistence(timeout: 5))
         profile.tap()
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
@@ -232,6 +240,7 @@ final class AttributionsUITests: XCTestCase {
         }
 
         let measurements = app.buttons["Measurements"]
+        scrollTo("Measurements")
         XCTAssertTrue(measurements.waitForExistence(timeout: 5))
         measurements.tap()
         XCTAssertTrue(app.navigationBars["Measurements"].waitForExistence(timeout: 5))
@@ -272,6 +281,27 @@ final class AttributionsUITests: XCTestCase {
         for _ in 0..<maxSwipes where !button.exists && !text.exists {
             app.swipeUp()
         }
+    }
+
+    /// The custom bottom bar is laid out in flow, not attached as a safe-area
+    /// inset. A navigation stack swallowed that inset, every scroll view kept
+    /// the full screen height, and the last row of a long list — Settings —
+    /// was pinned behind the bar with no way to scroll it clear.
+    func testTheLastModulesRowClearsTheBottomBar() {
+        openModules()
+        let settings = app.buttons["Settings"]
+        for _ in 0..<6 where !settings.isHittable { app.swipeUp() }
+        XCTAssertTrue(settings.waitForExistence(timeout: 5))
+        XCTAssertTrue(settings.isHittable, "Settings must be reachable, not trapped behind the bar")
+
+        // The bar's own buttons give its top edge; the row has to end above it.
+        let todayTab = app.buttons["Today"]
+        XCTAssertTrue(todayTab.exists)
+        XCTAssertLessThan(settings.frame.maxY, todayTab.frame.minY,
+                          "Settings is still covered by the bottom bar")
+        settings.tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10),
+                      "Settings did not open from Modules")
     }
 
     /// Modules is the app-owned full-module index in the new shell.
