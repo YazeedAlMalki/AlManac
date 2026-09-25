@@ -19,6 +19,7 @@ struct AlmanacApp: App {
     @StateObject private var trainingModel = TrainingModel()
     @StateObject private var healthModel = HealthModel()
     @StateObject private var prayerModel = PrayerModel()
+    @StateObject private var fastingModel = FastingModel()
     @StateObject private var trackingModel = TrackingCalendarModel()
     @State private var selectedTab = AppTab.today
     @Environment(\.scenePhase) private var scenePhase
@@ -50,7 +51,8 @@ struct AlmanacApp: App {
                             healthModel: healthModel,
                             readinessModel: readinessModel,
                             trackingModel: trackingModel,
-                            prayerModel: prayerModel
+                            prayerModel: prayerModel,
+                            fastingModel: fastingModel
                         )
                         .tag(AppTab.more)
                         .tabItem { Label("More", systemImage: "ellipsis.circle") }
@@ -71,6 +73,7 @@ struct AlmanacApp: App {
                         healthModel.configure(db: model.db)
                         trackingModel.configure(db: model.db)
                         prayerModel.configure(db: model.db)
+                         fastingModel.configure(db: model.db)
                     }
                 } else {
                     ContentUnavailableView {
@@ -86,6 +89,7 @@ struct AlmanacApp: App {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     prayerModel.ensureCache()
+                    fastingModel.ensureToday()
                     prayerModel.resumeLocationIfAuthorized()
                     // Await both syncs before refreshing: sleep, vitals and water
                     // all feed the homepage, and a fire-and-forget hydration

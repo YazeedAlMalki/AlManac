@@ -157,6 +157,18 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Measurements"].waitForExistence(timeout: 5))
     }
 
+    func testFastingScreenOpensFromMore() {
+        let more = app.tabBars.buttons["More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        more.tap()
+
+        let fasting = app.buttons["Fasting"]
+        XCTAssertTrue(fasting.waitForExistence(timeout: 5))
+        fasting.tap()
+        XCTAssertTrue(app.navigationBars["Fasting"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Refresh fasting state"].exists)
+    }
+
     func testPrayerScreenOpensFromMore() {
         let more = app.tabBars.buttons["More"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))

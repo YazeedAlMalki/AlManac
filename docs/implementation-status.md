@@ -11,8 +11,9 @@ root tab.
 
 - The root `TabView` has exactly five destinations: Today, Training, Hydration,
   Nutrition and More. More is an app-owned `NavigationStack` with Laboratory,
-  Profile, Measurements and Settings links. Existing Laboratory and Settings
-  screens were made embeddable so More does not create nested navigation stacks.
+  Profile, Measurements, Prayer, Fasting and Settings links. Existing Laboratory
+  and Settings screens were made embeddable so More does not create nested
+  navigation stacks.
 - `ProfileView` edits the existing `ProfileStore` fields and refreshes the Today
   greeting after save. `MeasurementsView` reuses the body-composition and custom
   measurement stores, shows recent values, and accepts manual body/custom adds.
@@ -20,6 +21,9 @@ root tab.
   `PrayerTimeEngine`, ensures a rolling cache on launch/foreground, resumes
   authorized location updates, recalculates after a location/method change, and
   pauses location updates in the background.
+- `FastingView` is reachable from More. `FastingModel` runs the existing
+  `ReligiousFastingService.ensureDay` orchestration after prayer-cache refresh,
+  shows the day's religious session/window state, and can be refreshed manually.
 - `TrackingCalendarModel` provides a native graphical date picker on Today. A
   selected calendar date is converted to Almanac's explicit logical-day label
   (04:00 boundary), then `TrackingTimeline` merges the module-provided laboratory,
@@ -96,8 +100,8 @@ called the importer. A fresh install therefore had an empty food catalogue.
   count at one.
 - Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
   tests (1 opt-in skip); the full Swift run passed 325 XCTest tests (1 skip) and
-  419 Swift Testing tests; the Debug simulator build and all eight UI tests pass,
-  including the new More destinations, Today tracking calendar, and Prayer screen coverage.
+  419 Swift Testing tests; the Debug simulator build and all nine UI tests pass,
+  including the new More destinations, Today tracking calendar, Prayer, and Fasting screen coverage.
 
 Still not done: owner-supplied Saudi/Gulf dish data, and the derived
 `edibleGrams`/specific-gravity calculation recorded as to-do #17.
