@@ -18,17 +18,18 @@ root tab.
   measurement stores, shows recent values, and accepts manual body/custom adds.
 - `TrackingCalendarModel` provides a native graphical date picker on Today. A
   selected calendar date is converted to Almanac's explicit logical-day label
-  (04:00 boundary), then existing timeline and tracker-store queries provide a
-  read-only history for Laboratory, Nutrition, Hydration, Training, body/custom
-  measurements, mood, soreness, sleep and vitals. Viewing history never writes
-  historical readiness data.
+  (04:00 boundary), then `TrackingTimeline` merges the existing module-provided
+  laboratory, nutrition, hydration and HealthSample providers into one ordered,
+  value-preserving read-only history. Viewing history never writes historical
+  readiness data.
 - HealthKit body-composition and vitals bridges now derive logical days through
   the same DST-safe `TimeModel` as sleep/workouts. Migration 037 stores a
   timezone identifier for new samples; identified rows are re-bucketed on app
   configuration; legacy offset-only rows are repaired only when their stored
   offset still matches the sample's current zone, otherwise they wait for a
-  safe re-sync. A 03:30 sample on a fallback transition remains in the previous
-  Almanac day.
+  safe re-sync. Migration 038 carries the same zone context for custom
+  measurement timestamps. A 03:30 sample on a fallback transition remains in
+  the previous Almanac day.
 
 ## 2026-09-25 — Production nutrition reference bundle ships
 
@@ -65,7 +66,7 @@ called the importer. A fresh install therefore had an empty food catalogue.
   2,941 food factors and one import audit row. A second launch left the audit
   count at one.
 - Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
-  tests (1 opt-in skip); the full Swift run passed 316 XCTest tests (1 skip) and
+  tests (1 opt-in skip); the full Swift run passed 318 XCTest tests (1 skip) and
   407 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
   including the new More destinations and Today tracking calendar coverage.
 

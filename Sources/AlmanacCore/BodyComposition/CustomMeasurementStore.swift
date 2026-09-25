@@ -21,12 +21,17 @@ public struct CustomMeasurementLogDraft: Sendable {
     public var value: Double
     public var timestamp: Date
     public var notes: String?
+    public var timezoneOffset: Int?
+    public var timezoneIdentifier: String?
 
-    public init(definitionId: Int64, value: Double, timestamp: Date, notes: String? = nil) {
+    public init(definitionId: Int64, value: Double, timestamp: Date, notes: String? = nil,
+                timezoneOffset: Int? = nil, timezoneIdentifier: String? = nil) {
         self.definitionId = definitionId
         self.value = value
         self.timestamp = timestamp
         self.notes = notes
+        self.timezoneOffset = timezoneOffset
+        self.timezoneIdentifier = timezoneIdentifier
     }
 }
 
@@ -38,16 +43,22 @@ public struct CustomMeasurementLogEntry: Sendable, Hashable, Identifiable {
     public let timestamp: Date
     public let logicalDay: String
     public let notes: String?
+    public let timezoneOffset: Int?
+    public let timezoneIdentifier: String?
     public let createdAt: Date
 
     public init(id: Int64, definitionId: Int64, value: Double, timestamp: Date,
-                logicalDay: String, notes: String? = nil, createdAt: Date = Date()) {
+                logicalDay: String, notes: String? = nil,
+                timezoneOffset: Int? = nil, timezoneIdentifier: String? = nil,
+                createdAt: Date = Date()) {
         self.id = id
         self.definitionId = definitionId
         self.value = value
         self.timestamp = timestamp
         self.logicalDay = logicalDay
         self.notes = notes
+        self.timezoneOffset = timezoneOffset
+        self.timezoneIdentifier = timezoneIdentifier
         self.createdAt = createdAt
     }
 }
@@ -103,14 +114,17 @@ public struct CustomMeasurementStore: @unchecked Sendable {
     @discardableResult
     public func log(_ draft: CustomMeasurementLogDraft, logicalDay: String) throws -> Int64 {
         try db.run("""
-        INSERT INTO custom_measurement_log (definitionId, timestamp, logicalDay, value, notes, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?);
+        INSERT INTO custom_measurement_log
+            (definitionId, timestamp, logicalDay, value, notes, timezoneOffset, timezoneIdentifier, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .integer(draft.definitionId),
             .text(iso(draft.timestamp)),
             .text(logicalDay),
             .real(draft.value),
             draft.notes.map { SQLValue.text($0) } ?? .null,
+            draft.timezoneOffset.map { SQLValue.integer(Int64($0)) } ?? .null,
+            draft.timezoneIdentifier.map { SQLValue.text($0) } ?? .null,
             .text(nowText)
         ])
 
@@ -124,7 +138,8 @@ public struct CustomMeasurementStore: @unchecked Sendable {
     /// History for a definition within a logical-day range, ordered by timestamp — for charting.
     public func history(definitionId: Int64, from: String, to: String) throws -> [CustomMeasurementLogEntry] {
         try db.query("""
-        SELECT id, definitionId, value, timestamp, logicalDay, notes, createdAt
+        SELECT id, definitionId, value, timestamp, logicalDay, notes,
+               timezoneOffset, timezoneIdentifier, createdAt
         FROM custom_measurement_log WHERE definitionId = ? AND logicalDay >= ? AND logicalDay < ?
         ORDER BY timestamp;
         """, [.integer(definitionId), .text(from), .text(to)]).compactMap(rowToLogEntry)
@@ -151,6 +166,9 @@ public struct CustomMeasurementStore: @unchecked Sendable {
         return CustomMeasurementLogEntry(
             id: id, definitionId: definitionId, value: value, timestamp: timestamp,
             logicalDay: logicalDay, notes: row.string("notes"),
+            timezoneOffset: row.int("timezoneOffset").map(Int.init)
+                ?? row.string("timezoneOffset").flatMap(Int.init),
+            timezoneIdentifier: row.string("timezoneIdentifier"),
             createdAt: row.string("createdAt").flatMap(iso8601ToDate) ?? Date())
     }
 

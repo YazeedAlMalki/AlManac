@@ -1,10 +1,10 @@
 # Body Composition & Wellness — Slice 7 design, v1
 
-**Status:** built 2026-09-16 (migration 018, TDD). All five stores/bridges in
-§5/§6 exist and are green: `BodyCompositionMeasurementStore` +
-`BodyCompositionMeasurementHealthBridge`, `CustomMeasurementStore`,
-`SupplementPlanStore` + `SupplementLogStore`, `ContextEventStore` — 23 tests
-across 6 suites. Schema is transcribed verbatim from
+**Status:** built 2026-09-16 (migration 018, TDD; timezone context added by
+migrations 037–038). All five stores/bridges in §5/§6 exist and are green:
+`BodyCompositionMeasurementStore` + `BodyCompositionMeasurementHealthBridge`,
+`CustomMeasurementStore`, `SupplementPlanStore` + `SupplementLogStore`,
+`ContextEventStore` — 23 tests across 6 suites. Schema is transcribed from
 `../../../almanac-tech-spec-v1.0.md` (the recovered, authoritative Technical
 Spec — see `docs/architecture/spec-reconciliation.md`), narrowed to what Slice
 2 didn't already build and what the owner didn't defer, plus a `deletedAt`
@@ -41,17 +41,20 @@ What's genuinely at 0% and in scope for this design:
 Out of scope for this doc (already done or already decided elsewhere):
 mood, soreness, injuries, lab results.
 
-## 2. Schema — Migration 018, transcribed verbatim
+## 2. Schema — Migration 018 base, migrations 037–038 timezone context
 
-Exact column shapes from spec §5.18 and §5.20, minus `progress_photo` (deferred)
-and `lab_result` (superseded). CamelCase, matching the convention Migration014
-onward already established (`spec-reconciliation.md` §5).
+The base column shapes come from spec §5.18 and §5.20, minus `progress_photo`
+(deferred) and `lab_result` (superseded). Migrations 037–038 add nullable zone
+identifiers so later reconciliation can resolve daylight-saving history safely.
+CamelCase matches the convention Migration014 onward established
+(`spec-reconciliation.md` §5).
 
 ```sql
 CREATE TABLE body_composition_measurement (
     id              INTEGER PRIMARY KEY,
     timestamp       TEXT NOT NULL,
     timezoneOffset  TEXT NOT NULL,
+    timezoneIdentifier TEXT,
     logicalDay      TEXT NOT NULL,
     metric          TEXT NOT NULL,  -- weight | body_fat_pct | lean_mass_kg |
                                     -- skeletal_muscle_kg | visceral_rating
@@ -81,6 +84,8 @@ CREATE TABLE custom_measurement_log (
     logicalDay      TEXT NOT NULL,
     value           REAL NOT NULL,
     notes           TEXT,
+    timezoneOffset  TEXT,
+    timezoneIdentifier TEXT,
     createdAt       TEXT NOT NULL
 );
 

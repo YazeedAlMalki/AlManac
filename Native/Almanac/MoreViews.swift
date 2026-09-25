@@ -309,7 +309,9 @@ private struct BodyMeasurementEditor: View {
                     unit: option.unit,
                     timestamp: now,
                     source: "manual",
-                    conditions: conditions
+                    conditions: conditions,
+                    timezoneOffset: TimeZone.current.secondsFromGMT(for: now) / 60,
+                    timezoneIdentifier: TimeZone.current.identifier
                 ),
                 logicalDay: day
             )
@@ -387,7 +389,9 @@ private struct CustomMeasurementEditor: View {
                     definitionId: definitionID,
                     value: number,
                     timestamp: now,
-                    notes: optionalText(notes.trimmingCharacters(in: .whitespacesAndNewlines))
+                    notes: optionalText(notes.trimmingCharacters(in: .whitespacesAndNewlines)),
+                    timezoneOffset: TimeZone.current.secondsFromGMT(for: now) / 60,
+                    timezoneIdentifier: TimeZone.current.identifier
                 ),
                 logicalDay: day
             )
@@ -399,15 +403,9 @@ private struct CustomMeasurementEditor: View {
     }
 }
 
-struct TrackingItem: Identifiable, Hashable {
-    let id: String
-    let title: String
-    let detail: String?
-}
-
 struct TrackingDaySummary: Hashable {
     let day: String
-    let items: [TrackingItem]
+    let items: [TrackingTimelineItem]
 
     var isEmpty: Bool { items.isEmpty }
 }
@@ -421,7 +419,7 @@ final class TrackingCalendarModel: ObservableObject {
     @Published private(set) var error: String?
 
     private var db: Database?
-    private let timeModel: TimeModel
+    private var timeModel: TimeModel { TimeModel(timeZone: .current) }
     private var lastToday: LogicalDay
     private var followsToday = true
 
@@ -429,7 +427,6 @@ final class TrackingCalendarModel: ObservableObject {
         let model = TimeModel(timeZone: .current)
         let today = model.logicalDay(Date())
         let todayDate = Self.date(on: today, timeZone: model.timeZone)
-        timeModel = model
         lastToday = today
         self.todayDate = todayDate
         selectedDate = todayDate
@@ -471,8 +468,7 @@ final class TrackingCalendarModel: ObservableObject {
 
         let day = calendarDayLabel(selectedDate)
         let logicalDay = LogicalDay(day)
-        guard let nextDay = timeModel.day(after: logicalDay),
-              let bounds = timeModel.bounds(of: logicalDay) else {
+        guard let bounds = timeModel.bounds(of: logicalDay) else {
             error = "That calendar date is invalid."
             return
         }
@@ -480,90 +476,7 @@ final class TrackingCalendarModel: ObservableObject {
         do {
             let range = DateRange(start: bounds.start, end: bounds.end)
             let utcBounds = range.utcTextBounds
-            var items: [TrackingItem] = []
-
-            for entry in try HydrationStore(db: db).logs(from: utcBounds.start, to: utcBounds.end) {
-                items.append(TrackingItem(
-                    id: "hydration-\(entry.id)",
-                    title: "Hydration",
-                    detail: "\(format(entry.amount.value)) ml"
-                ))
-            }
-
-            for placed in try NutritionLogStore(db: db).logged(from: utcBounds.start, to: utcBounds.end) {
-                let food = placed.entry.foodNameText ?? placed.entry.foodRef.description
-                let amount = placed.entry.grams.map { "\(format($0)) g" }
-                items.append(TrackingItem(
-                    id: "nutrition-\(placed.entry.id)",
-                    title: food,
-                    detail: [amount, placed.entry.quantityText].compactMap { $0 }.joined(separator: " · ")
-                ))
-            }
-
-            for entry in try LabStore(db: db).entries(from: utcBounds.start, to: utcBounds.end) {
-                items.append(TrackingItem(
-                    id: "lab-\(entry.recordID)",
-                    title: entry.title,
-                    detail: entry.rangeFit == .potential ? "Date may overlap this day" : entry.detail
-                ))
-            }
-
-            for session in try WorkoutSessionStore(db: db).sessions(date: day) {
-                let detail = [
-                    session.sessionType,
-                    session.durationMinutes.map { "\($0) min" },
-                    session.rpe.map { "RPE \($0)/10" }
-                ].compactMap { $0 }.joined(separator: " · ")
-                items.append(TrackingItem(
-                    id: "training-\(session.id)",
-                    title: session.sessionType ?? "Training",
-                    detail: detail.isEmpty ? nil : detail
-                ))
-            }
-
-            let bodyStore = BodyCompositionMeasurementStore(db: db)
-            for metric in bodyMetricOptions.map(\.id) {
-                for record in try bodyStore.records(metric: metric, from: day, to: nextDay.value) {
-                    items.append(TrackingItem(
-                        id: "body-\(record.id)",
-                        title: bodyMetricTitle(record.metric),
-                        detail: "\(format(record.value)) \(record.unit) · \(readable(record.source))"
-                    ))
-                }
-            }
-
-            let customStore = CustomMeasurementStore(db: db)
-            for definition in try customStore.definitions() {
-                for record in try customStore.history(definitionId: definition.id, from: day, to: nextDay.value) {
-                    items.append(TrackingItem(
-                        id: "custom-\(record.id)",
-                        title: definition.name,
-                        detail: "\(format(record.value)) \(definition.unit)"
-                    ))
-                }
-            }
-
-            for mood in try MoodLogStore(db: db).logs(for: day) {
-                items.append(TrackingItem(id: "mood-\(mood.id)", title: "Mood", detail: "\(mood.score)/10"))
-            }
-            for soreness in try SorenessLogStore(db: db).logs(for: day) {
-                items.append(TrackingItem(id: "soreness-\(soreness.id)", title: "Soreness", detail: "\(soreness.overallScore)/10"))
-            }
-            for episode in try SleepEpisodeStore(db: db).episodes(for: day) {
-                items.append(TrackingItem(
-                    id: "sleep-\(episode.id)",
-                    title: "Sleep",
-                    detail: "\(episode.durationMinutes) min"
-                ))
-            }
-            for vital in try VitalsRecordStore(db: db).records(for: day) {
-                items.append(TrackingItem(
-                    id: "vitals-\(vital.id)",
-                    title: readable(vital.metric),
-                    detail: "\(format(vital.value)) \(vital.unit)"
-                ))
-            }
-
+            let items = try TrackingTimeline(db: db).items(from: utcBounds.start, to: utcBounds.end)
             summary = TrackingDaySummary(day: day, items: items)
             error = nil
         } catch {
@@ -627,6 +540,9 @@ struct TrackingCalendarView: View {
                 ForEach(model.summary.items) { item in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(item.title)
+                        if let value = item.value, !value.isEmpty {
+                            Text(value).font(.caption)
+                        }
                         if let detail = item.detail, !detail.isEmpty {
                             Text(detail).font(.caption).foregroundStyle(.secondary)
                         }
@@ -650,7 +566,7 @@ private struct BodyMetricOption: Identifiable {
 
 private let bodyMetricOptions = [
     BodyMetricOption(id: "weight", title: "Weight", unit: "kg"),
-    BodyMetricOption(id: "body_fat_pct", title: "Body fat", unit: "%"),
+    BodyMetricOption(id: "body_fat_pct", title: "Body fat", unit: "pct"),
     BodyMetricOption(id: "lean_mass_kg", title: "Lean mass", unit: "kg"),
     BodyMetricOption(id: "skeletal_muscle_kg", title: "Skeletal muscle", unit: "kg"),
     BodyMetricOption(id: "visceral_rating", title: "Visceral rating", unit: "rating")

@@ -51,6 +51,35 @@ final class TimelineTests: XCTestCase {
         XCTAssertEqual(entries, reversed)
     }
 
+    func testTrackingTimelineKeepsModuleValuesInOccurrenceOrder() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let clock = FixedClock(Date(timeIntervalSince1970: 1_772_000_000))
+        let lab = LabStore(db: db, clock: clock)
+        try LabCatalogSeed.seed(into: LabCatalogStore(db: db, clock: clock))
+
+        let sampleStore = HealthSampleStore(db: db, healthDomain: .bodyMass, clock: clock)
+        let sample = HealthSample(externalID: "timeline-weight", domain: .bodyMass,
+                                  start: Date(timeIntervalSince1970: 1_771_995_000),
+                                  end: Date(timeIntervalSince1970: 1_771_995_000),
+                                  value: 81.2, unit: "kg")
+        try sampleStore.apply(HealthChangeSet(added: [sample], deletedExternalIDs: [], nextAnchor: nil), in: db)
+
+        var content = LabRevisionContent()
+        content.valueType = .quantitative
+        content.numericValue = 42
+        content.unitText = "ng/mL"
+        content.sourceAnalyteText = "Ferritin"
+        content.sourceValueText = "42"
+        var draft = LabObservationDraft()
+        draft.collectedAt = PartialDateTime(text: "2026-02-25T08:10:00Z", precision: .instant)
+        try lab.record(draft, content: content)
+
+        let items = try TrackingTimeline(db: db).items(from: "2026-02-01", to: "2026-03-01")
+        XCTAssertEqual(items.map(\.title), ["bodyMass", "Ferritin"])
+        XCTAssertEqual(items.first?.value, "81.2 kg")
+    }
+
     // An entry with no occurrence and no report time falls back to when it was
     // entered, and says so rather than passing as an occurrence.
     func testEntryDateFallbackIsDistinguished() throws {

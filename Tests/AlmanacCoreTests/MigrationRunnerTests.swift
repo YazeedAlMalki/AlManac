@@ -121,4 +121,15 @@ final class MigrationRunnerTests: XCTestCase {
         XCTAssertTrue(bodyColumns.contains("timezoneIdentifier"))
         XCTAssertTrue(vitalsColumns.contains("timezoneIdentifier"))
     }
+
+    func testMigration038AddsCustomMeasurementTimezoneColumns() throws {
+        let (db, path) = try tempDB()
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+
+        let columns = Set(try db.query("PRAGMA table_info(custom_measurement_log);")
+            .compactMap { $0.string("name") })
+        XCTAssertTrue(columns.contains("timezoneOffset"))
+        XCTAssertTrue(columns.contains("timezoneIdentifier"))
+    }
 }

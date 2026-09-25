@@ -12,7 +12,8 @@ struct BodyCompositionMeasurementStoreTests {
         let draft = BodyCompositionMeasurementDraft(
             metric: "weight", value: 82.4, unit: "kg",
             timestamp: Date(timeIntervalSince1970: 1_000_000),
-            source: "manual", conditions: "fasted")
+            source: "manual", conditions: "fasted",
+            timezoneOffset: 180, timezoneIdentifier: "Asia/Riyadh")
 
         let id = try store.log(draft, logicalDay: "2026-09-16")
         let measurement = try store.measurement(id: id)
@@ -23,6 +24,8 @@ struct BodyCompositionMeasurementStoreTests {
         #expect(measurement?.source == "manual")
         #expect(measurement?.conditions == "fasted")
         #expect(measurement?.logicalDay == "2026-09-16")
+        #expect(measurement?.timezoneOffset == 180)
+        #expect(measurement?.timezoneIdentifier == "Asia/Riyadh")
     }
 
     @Test("Conditions defaults to unknown when not given")

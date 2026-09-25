@@ -10,10 +10,12 @@ public struct BodyCompositionMeasurementDraft: Sendable {
     public var conditions: String  // fasted | non_fasted | unknown
     public var healthKitUUID: String?
     public var timezoneOffset: Int?  // offset in minutes from UTC
+    public var timezoneIdentifier: String?
 
     public init(metric: String, value: Double, unit: String, timestamp: Date,
                 source: String, conditions: String = "unknown",
-                healthKitUUID: String? = nil, timezoneOffset: Int? = nil) {
+                healthKitUUID: String? = nil, timezoneOffset: Int? = nil,
+                timezoneIdentifier: String? = nil) {
         self.metric = metric
         self.value = value
         self.unit = unit
@@ -22,6 +24,7 @@ public struct BodyCompositionMeasurementDraft: Sendable {
         self.conditions = conditions
         self.healthKitUUID = healthKitUUID
         self.timezoneOffset = timezoneOffset
+        self.timezoneIdentifier = timezoneIdentifier
     }
 }
 
@@ -36,11 +39,14 @@ public struct BodyCompositionMeasurement: Sendable, Hashable, Identifiable {
     public let source: String
     public let conditions: String
     public let healthKitUUID: String?
+    public let timezoneOffset: Int?
+    public let timezoneIdentifier: String?
     public let createdAt: Date
 
     public init(id: Int64, metric: String, value: Double, unit: String,
                 timestamp: Date, logicalDay: String, source: String,
                 conditions: String, healthKitUUID: String? = nil,
+                timezoneOffset: Int? = nil, timezoneIdentifier: String? = nil,
                 createdAt: Date = Date()) {
         self.id = id
         self.metric = metric
@@ -51,6 +57,8 @@ public struct BodyCompositionMeasurement: Sendable, Hashable, Identifiable {
         self.source = source
         self.conditions = conditions
         self.healthKitUUID = healthKitUUID
+        self.timezoneOffset = timezoneOffset
+        self.timezoneIdentifier = timezoneIdentifier
         self.createdAt = createdAt
     }
 }
@@ -85,11 +93,12 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
 
         try db.run("""
         INSERT INTO body_composition_measurement
-            (timestamp, timezoneOffset, logicalDay, metric, value, unit, source, conditions, healthKitUUID, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            (timestamp, timezoneOffset, timezoneIdentifier, logicalDay, metric, value, unit, source, conditions, healthKitUUID, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(timestamp),
             draft.timezoneOffset.map { SQLValue.integer(Int64($0)) } ?? .null,
+            draft.timezoneIdentifier.map { SQLValue.text($0) } ?? .null,
             .text(logicalDay),
             .text(draft.metric),
             .real(draft.value),
@@ -111,7 +120,7 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
 
     public func measurement(id: Int64) throws -> BodyCompositionMeasurement? {
         try db.query("""
-        SELECT id, metric, value, unit, timestamp, logicalDay, source, conditions, healthKitUUID, createdAt
+        SELECT id, metric, value, unit, timestamp, logicalDay, source, conditions, healthKitUUID, timezoneOffset, timezoneIdentifier, createdAt
         FROM body_composition_measurement WHERE id = ?;
         """, [.integer(id)]).first.flatMap(rowToMeasurement)
     }
@@ -120,7 +129,7 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
     /// Excludes soft-deleted (e.g. HealthKit-retracted) entries.
     public func latestValue(for metric: String) throws -> BodyCompositionMeasurement? {
         try db.query("""
-        SELECT id, metric, value, unit, timestamp, logicalDay, source, conditions, healthKitUUID, createdAt
+        SELECT id, metric, value, unit, timestamp, logicalDay, source, conditions, healthKitUUID, timezoneOffset, timezoneIdentifier, createdAt
         FROM body_composition_measurement WHERE metric = ? AND deletedAt IS NULL
         ORDER BY timestamp DESC LIMIT 1;
         """, [.text(metric)]).first.flatMap(rowToMeasurement)
@@ -130,7 +139,7 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
     /// Excludes soft-deleted (e.g. HealthKit-retracted) entries.
     public func records(metric: String, from: String, to: String) throws -> [BodyCompositionMeasurement] {
         try db.query("""
-        SELECT id, metric, value, unit, timestamp, logicalDay, source, conditions, healthKitUUID, createdAt
+        SELECT id, metric, value, unit, timestamp, logicalDay, source, conditions, healthKitUUID, timezoneOffset, timezoneIdentifier, createdAt
         FROM body_composition_measurement WHERE metric = ? AND logicalDay >= ? AND logicalDay < ? AND deletedAt IS NULL
         ORDER BY timestamp;
         """, [.text(metric), .text(from), .text(to)]).compactMap(rowToMeasurement)
@@ -159,6 +168,9 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
             source: source,
             conditions: conditions,
             healthKitUUID: row.string("healthKitUUID"),
+            timezoneOffset: row.int("timezoneOffset").map(Int.init)
+                ?? row.string("timezoneOffset").flatMap(Int.init),
+            timezoneIdentifier: row.string("timezoneIdentifier"),
             createdAt: row.string("createdAt").flatMap(iso8601ToDate) ?? Date()
         )
     }
