@@ -169,7 +169,7 @@ private struct AlmanacNavigationBar: View {
         .frame(height: 66)
         .padding(.horizontal, 8)
         .padding(.top, 6)
-        .background(AlmanacPalette.surface.opacity(0.98))
+        .background(AlmanacPalette.surface)
         .overlay(alignment: .top) {
             Rectangle().fill(AlmanacPalette.divider).frame(height: 1)
         }

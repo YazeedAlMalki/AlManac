@@ -39,7 +39,7 @@ Debug:
   milestones. The first two are implemented; goal crossing and milestone
   animation remain deliberately reserved rather than adding generic motion.
 - Verification: `swift test` passes 421 Swift Testing tests, the Debug
-  simulator build succeeds, and all 10 `AttributionsUITests` pass on the
+  simulator build succeeds, and all 11 `AttributionsUITests` pass on the
   iPhone 16e simulator. Large Dynamic Type was checked separately; the calendar
   and readiness card reflow instead of using a fixed-width score layout.
 
