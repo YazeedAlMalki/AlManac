@@ -205,6 +205,33 @@ struct NotificationTriggerAssemblerTests {
         #expect(try assembler.readinessTrigger(for: day) == nil)
     }
 
+    @Test("Wake-time averaging crosses midnight as a circular time of day")
+    func readinessAverageCrossesMidnight() throws {
+        let store = SleepEpisodeStore(db: db)
+        for prior in [("2025-09-16", 23, 30), ("2025-09-17", 0, 30)] {
+            let end = riyadh(prior.1, prior.2, day: prior.0)
+            let episode = SleepEpisode(start: end.addingTimeInterval(-8 * 3600), end: end,
+                                        type: .primary, source: .healthkit, asleepMinutes: 480)
+            try store.upsert(episode, timezoneOffset: 180, logicalDay: prior.0)
+        }
+
+        // Circular mean of 23:30 and 00:30 is midnight, not noon.
+        #expect(try assembler.readinessTrigger(for: day) == riyadh(0, 0))
+    }
+
+    @Test("Opposite wake times do not invent a circular midpoint")
+    func readinessOppositeWakeTimesHaveNoPrediction() throws {
+        let store = SleepEpisodeStore(db: db)
+        for prior in [("2025-09-16", 6, 0), ("2025-09-17", 18, 0)] {
+            let end = riyadh(prior.1, prior.2, day: prior.0)
+            let episode = SleepEpisode(start: end.addingTimeInterval(-8 * 3600), end: end,
+                                        type: .primary, source: .healthkit, asleepMinutes: 480)
+            try store.upsert(episode, timezoneOffset: 180, logicalDay: prior.0)
+        }
+
+        #expect(try assembler.readinessTrigger(for: day) == nil)
+    }
+
     // MARK: - Contextual hydration
 
     @Test("Contextual hydration fires 60 minutes before the 14-day average time for that meal type")

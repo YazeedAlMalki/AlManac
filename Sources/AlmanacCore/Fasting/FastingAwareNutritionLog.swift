@@ -52,16 +52,22 @@ public struct FastingAwareNutritionLog: Sendable {
             return (try log.update(id: logID, edit), .noOp)
         }
         let previousCalories = try energyKilocalories(foodRef: previous.foodRef, grams: previous.grams)
-        let previousTimestamp = previous.eatenAt.isKnown ? (previous.eatenAt.span?.start ?? clock.now) : clock.now
+        let previousTimestamp = timestamp(for: previous)
         let outcome = try log.update(id: logID, edit)
         if case .unchanged = outcome {
+            return (outcome, .noOp)
+        }
+        let changedFields = Set(outcome.changedFields)
+        guard changedFields.contains("food_ref")
+                || changedFields.contains("grams")
+                || changedFields.contains("eaten_at") else {
             return (outcome, .noOp)
         }
         guard let entry = try log.entry(id: logID) else {
             return (outcome, .noOp)
         }
         let calories = try energyKilocalories(foodRef: entry.foodRef, grams: entry.grams)
-        let timestamp = entry.eatenAt.isKnown ? (entry.eatenAt.span?.start ?? clock.now) : clock.now
+        let timestamp = timestamp(for: entry)
         let fastingOutcome = try sessions.reconcileNutritionEdit(
             previousCalories: previousCalories,
             previousTimestamp: previousTimestamp,
@@ -69,6 +75,15 @@ public struct FastingAwareNutritionLog: Sendable {
             currentTimestamp: timestamp
         )
         return (outcome, fastingOutcome)
+    }
+
+    private func timestamp(for entry: NutritionLogEntry) -> Date {
+        if entry.eatenAt.isKnown, let instant = entry.eatenAt.span?.start {
+            return instant
+        }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: entry.recordedAt) ?? clock.now
     }
 
     /// No amount stated, or an unrecognised food, contributes zero — the same

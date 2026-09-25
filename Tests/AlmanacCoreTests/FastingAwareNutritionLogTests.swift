@@ -210,5 +210,101 @@ struct FastingAwareNutritionLogTests {
         _ = try bridge.update(id: shortened.outcome.logID, edit)
 
         #expect(try sessions.session(id: sessionID)?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 10_800))
+        #expect(try sessions.session(id: sessionID)?.correctionHistory.last?.action == .extended)
+
+        var clear = NutritionLogEdit()
+        clear.grams = .clear
+        let restored = try bridge.update(id: shortened.outcome.logID, clear)
+        #expect(restored.fastingOutcome == .restored(sessionId: sessionID))
+        #expect(try sessions.session(id: sessionID)?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 7200))
+        #expect(try sessions.session(id: sessionID)?.isActive == false)
+    }
+
+    @Test("An old meal edit does not reopen over a newer active fast")
+    func oldMealEditDoesNotConflictWithNewActiveFast() throws {
+        try seedKnownFood()
+        let oldSession = try startSession(at: 1_000_000)
+        let recorded = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 3600)
+        ))
+        let newSession = try sessions.start(FastingSessionDraft(
+            startTimestamp: Date(timeIntervalSince1970: 1_000_000 + 7200),
+            sessionType: .ifPlanned
+        ), logicalDay: "2026-09-16")
+
+        var edit = NutritionLogEdit()
+        edit.grams = .clear
+        let result = try bridge.update(id: recorded.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .noOp)
+        #expect(try sessions.session(id: oldSession)?.isActive == false)
+        #expect(try sessions.activeSession()?.id == newSession)
+    }
+
+    @Test("Moving an invalidated meal after an ended fast does not extend it")
+    func movingInvalidatedMealAfterEndedFastDoesNotExtend() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        _ = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 7200)
+        ))
+        let invalidated = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 900_000)
+        ))
+
+        var edit = NutritionLogEdit()
+        edit.eatenAt = .set(PartialDateTime(
+            instant: Date(timeIntervalSince1970: 1_000_000 + 10_800),
+            zone: ZoneContext(TimeZone(identifier: "UTC")!)
+        ))
+        let result = try bridge.update(id: invalidated.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .noOp)
+        #expect(try sessions.session(id: sessionID)?.isInvalidated == false)
+        #expect(try sessions.session(id: sessionID)?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 7200))
+    }
+
+    @Test("An unknown eaten time uses the original recorded time when edited")
+    func unknownEatenTimeUsesRecordedTime() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        let recorded = try bridge.record(NutritionLogDraft(
+            foodRef: knownFood, grams: 200, eatenAt: .unknown
+        ))
+        #expect(try sessions.session(id: sessionID)?.isActive == false)
+        clock.advance(by: 3600)
+
+        var edit = NutritionLogEdit()
+        edit.grams = .clear
+        let result = try bridge.update(id: recorded.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .restored(sessionId: sessionID))
+        #expect(try sessions.activeSession()?.id == sessionID)
+    }
+
+    @Test("A metadata-only meal edit does not reconcile fasting state")
+    func metadataOnlyEditDoesNotTouchFasting() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        let recorded = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 900_000)
+        ))
+        #expect(try sessions.session(id: sessionID)?.isInvalidated == true)
+
+        var edit = NutritionLogEdit()
+        edit.foodNameText = .set("Corrected label only")
+        edit.grams = .set(200)
+        let result = try bridge.update(id: recorded.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .noOp)
+        #expect(try sessions.session(id: sessionID)?.isInvalidated == true)
     }
 }

@@ -218,7 +218,7 @@ reconciles the edited occurrence. A correction that removes the calories can
 restore a normally-ended or recently shortened fast; moving a previously
 invalidated meal back into the session re-breaks it. The scope remains the
 active session or the single most-recently-started affected session, as above.
-Six edit-reconciliation tests were added to the four create-path tests.
+Edit-path regression tests were added to the four create-path tests.
 
 ## 6. Build plan (religious fasting + prayer-time engine, next)
 

@@ -65,12 +65,12 @@ final class TimelineTests: XCTestCase {
         let lab = LabStore(db: db, clock: clock)
         try LabCatalogSeed.seed(into: LabCatalogStore(db: db, clock: clock))
 
-        let sampleStore = HealthSampleStore(db: db, healthDomain: .bodyMass, clock: clock)
-        let sample = HealthSample(externalID: "timeline-weight", domain: .bodyMass,
-                                  start: Date(timeIntervalSince1970: 1_771_995_000),
-                                  end: Date(timeIntervalSince1970: 1_771_995_000),
-                                  value: 81.2, unit: "kg")
-        try sampleStore.apply(HealthChangeSet(added: [sample], deletedExternalIDs: [], nextAnchor: nil), in: db)
+        let body = BodyCompositionMeasurementStore(db: db, clock: clock)
+        _ = try body.log(BodyCompositionMeasurementDraft(
+            metric: "weight", value: 81.2, unit: "kg",
+            timestamp: Date(timeIntervalSince1970: 1_771_995_000),
+            source: "manual", timezoneOffset: 0, timezoneIdentifier: "UTC"
+        ), logicalDay: "2026-02-25")
 
         var content = LabRevisionContent()
         content.valueType = .quantitative
@@ -82,8 +82,10 @@ final class TimelineTests: XCTestCase {
         draft.collectedAt = PartialDateTime(text: "2026-02-25T08:10:00Z", precision: .instant)
         try lab.record(draft, content: content)
 
-        let items = try TrackingTimeline(db: db).items(from: "2026-02-01", to: "2026-03-01")
-        XCTAssertEqual(items.map(\.title), ["bodyMass", "Ferritin"])
+        let items = try TrackingTimeline(db: db).items(
+            for: "2026-02-25", timeModel: TimeModel(timeZone: TimeZone(identifier: "UTC")!)
+        )
+        XCTAssertEqual(items.map(\.title), ["Weight", "Ferritin"])
         XCTAssertEqual(items.first?.value, "81.2 kg")
     }
 
@@ -127,6 +129,23 @@ final class TimelineTests: XCTestCase {
         XCTAssertTrue(items.contains { $0.title == "Weight" })
         XCTAssertTrue(items.contains { $0.title == "waist" })
         XCTAssertEqual(Set(items.map(\.id)).count, items.count)
+    }
+
+    func testTrackingTimelineDoesNotDoublePresentSleepSamples() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel(timeZone: TimeZone(identifier: "UTC")!)
+        let timestamp = Date(timeIntervalSince1970: 1_772_000_000)
+        let sampleStore = HealthSampleStore(db: db, healthDomain: .sleep)
+        let sample = HealthSample(externalID: "raw-sleep", domain: .sleep,
+                                  start: timestamp, end: timestamp, value: nil, unit: nil)
+        try sampleStore.apply(HealthChangeSet(added: [sample], deletedExternalIDs: [], nextAnchor: nil), in: db)
+        let episode = SleepEpisode(start: timestamp.addingTimeInterval(-8 * 3600), end: timestamp,
+                                    type: .primary, source: .healthkit, asleepMinutes: 480)
+        try SleepEpisodeStore(db: db).upsert(episode, timezoneOffset: 0, logicalDay: "2026-02-25")
+
+        let items = try TrackingTimeline(db: db).items(for: "2026-02-25", timeModel: timeModel)
+        XCTAssertEqual(items.filter { $0.title.hasPrefix("Sleep") }.count, 1)
     }
 
     // An entry with no occurrence and no report time falls back to when it was

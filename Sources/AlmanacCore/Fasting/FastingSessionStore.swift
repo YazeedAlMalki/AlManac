@@ -110,9 +110,11 @@ public struct FastingSessionStore: @unchecked Sendable {
         }
 
         if let ended = try mostRecentEndedSession(), ended.endTimestamp == previousTimestamp {
+            guard try activeSession() == nil else { return .noOp }
             let restoredEnd: Date?
             if let correction = ended.correctionHistory.last(where: {
-                $0.action == .shortened && $0.entryTimestamp == previousTimestamp
+                ($0.action == .shortened || $0.action == .extended)
+                    && $0.entryTimestamp == previousTimestamp
             }) {
                 restoredEnd = correction.previousEndTimestamp
                 try restore(ended, to: restoredEnd)
@@ -122,18 +124,20 @@ public struct FastingSessionStore: @unchecked Sendable {
             }
             guard currentCalories > 0 else { return .restored(sessionId: ended.id) }
             if let restoredEnd, currentTimestamp > restoredEnd {
-                let minutes = try extend(ended, at: currentTimestamp)
+                let minutes = try extend(ended, from: restoredEnd, at: currentTimestamp)
                 return .ended(sessionId: ended.id, durationMinutes: minutes)
             }
             return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
         }
 
         if let invalidated = try invalidatedSession(affectedBy: previousTimestamp) {
+            guard try activeSession() == nil else { return .noOp }
             let restoredEnd = try restore(invalidated, previousTimestamp: previousTimestamp)
             guard currentCalories > 0 else { return .restored(sessionId: invalidated.id) }
             if let restoredEnd, currentTimestamp > restoredEnd {
-                let minutes = try extend(invalidated, at: currentTimestamp)
-                return .ended(sessionId: invalidated.id, durationMinutes: minutes)
+                // The old session had already ended before this meal was
+                // backdated. Moving the meal later does not extend that fast.
+                return .noOp
             }
             return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
         }
@@ -200,13 +204,16 @@ public struct FastingSessionStore: @unchecked Sendable {
               .text(nowText), .integer(session.id)])
     }
 
-    private func extend(_ session: FastingSession, at timestamp: Date) throws -> Int {
+    private func extend(_ session: FastingSession, from previousEnd: Date, at timestamp: Date) throws -> Int {
         let minutes = minutesBetween(session.startTimestamp, timestamp)
+        let history = appendCorrection(to: session, action: .extended, entryTimestamp: timestamp,
+                                       previousEndTimestamp: previousEnd)
         try db.run("""
         UPDATE fasting_session
-        SET endTimestamp = ?, finalDurationMinutes = ?, updatedAt = ?
+        SET endTimestamp = ?, finalDurationMinutes = ?, correctionHistory = ?, updatedAt = ?
         WHERE id = ?;
-        """, [.text(iso(timestamp)), .integer(Int64(minutes)), .text(nowText), .integer(session.id)])
+        """, [.text(iso(timestamp)), .integer(Int64(minutes)), .text(history),
+              .text(nowText), .integer(session.id)])
         return minutes
     }
 
@@ -264,9 +271,11 @@ public struct FastingSessionStore: @unchecked Sendable {
     }
 
     private func appendCorrection(to session: FastingSession, action: FastingCorrection.Action,
-                                   entryTimestamp: Date) -> String {
+                                   entryTimestamp: Date,
+                                   previousEndTimestamp: Date? = nil) -> String {
         let correction = FastingCorrection(action: action, entryTimestamp: entryTimestamp,
-                                            previousEndTimestamp: session.endTimestamp, recordedAt: clock.now)
+                                            previousEndTimestamp: previousEndTimestamp ?? session.endTimestamp,
+                                            recordedAt: clock.now)
         let history = session.correctionHistory + [correction]
         guard let data = try? JSONEncoder().encode(history),
               let json = String(data: data, encoding: .utf8) else { return "[]" }

@@ -13,6 +13,7 @@ public struct FastingCorrection: Sendable, Hashable, Codable {
     public enum Action: String, Sendable, Hashable, Codable {
         case invalidated
         case shortened
+        case extended
     }
 
     public let action: Action

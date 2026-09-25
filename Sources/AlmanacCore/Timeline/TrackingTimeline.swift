@@ -16,9 +16,9 @@ public struct TrackingTimeline {
             NutritionLogStore(db: db),
             HydrationStore(db: db)
         ]
-        for domain in HealthDomain.allCases where domain != .water {
-            providers.append(HealthSampleStore(db: db, healthDomain: domain))
-        }
+        // The supplement provider below owns the health domains that have
+        // specialised stores (sleep, workouts, body composition and vitals),
+        // so raw health samples are not added here as a second representation.
         self.providers = providers
     }
 

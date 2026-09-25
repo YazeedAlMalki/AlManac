@@ -18,10 +18,10 @@ root tab.
   measurement stores, shows recent values, and accepts manual body/custom adds.
 - `TrackingCalendarModel` provides a native graphical date picker on Today. A
   selected calendar date is converted to Almanac's explicit logical-day label
-  (04:00 boundary), then `TrackingTimeline` merges the existing module-provided
-  laboratory, nutrition, hydration and HealthSample providers into one ordered,
-  value-preserving read-only history. Viewing history never writes historical
-  readiness data.
+  (04:00 boundary), then `TrackingTimeline` merges the module-provided laboratory,
+  nutrition and hydration providers with the specialised training, measurement,
+  mood, soreness, sleep and vitals stores into one ordered, value-preserving
+  read-only history. Viewing history never writes historical readiness data.
 - HealthKit body-composition and vitals bridges now derive logical days through
   the same DST-safe `TimeModel` as sleep/workouts. Migration 037 stores a
   timezone identifier for new samples; identified rows are re-bucketed on app
@@ -39,8 +39,16 @@ root tab.
   invalidated fast; moving a shortened or invalidated meal later/into the fast
   re-applies the correct end or invalidation. The existing active/recent-session
   scope is explicit.
-- Six edit-path tests cover timestamp, amount, restoration, invalidation and
-  extension cases.
+- Edit-path regression tests cover timestamp, amount, restoration, invalidation,
+  extension, unknown-time and metadata-only cases.
+
+## 2026-09-25 — Circular wake-time averaging
+
+- `NotificationTriggerAssembler` now uses a circular mean for the seven-day
+  fallback wake time, so observations straddling midnight average to the
+  correct time-of-day. Exactly opposed observations return no prediction rather
+  than an arbitrary midpoint.
+- Added ordinary, across-midnight and undefined-midpoint regression tests.
 
 ## 2026-09-25 — Production nutrition reference bundle ships
 
@@ -77,8 +85,8 @@ called the importer. A fresh install therefore had an empty food catalogue.
   2,941 food factors and one import audit row. A second launch left the audit
   count at one.
 - Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
-  tests (1 opt-in skip); the full Swift run passed 320 XCTest tests (1 skip) and
-  413 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
+  tests (1 opt-in skip); the full Swift run passed 321 XCTest tests (1 skip) and
+  419 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
   including the new More destinations and Today tracking calendar coverage.
 
 Still not done: owner-supplied Saudi/Gulf dish data, and the derived

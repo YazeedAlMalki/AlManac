@@ -144,11 +144,9 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
     /// `day`'s own calendar date. Nil when none of those days has a primary
     /// episode.
     ///
-    /// Plain arithmetic mean of seconds-since-midnight, not a circular
-    /// mean: correct for the ordinary case (a wake time that clusters well
-    /// away from midnight) and not attempted for someone whose wake time
-    /// straddles midnight, which needs a circular average to average
-    /// correctly and isn't handled here — flagged, not silently wrong.
+    /// Circular mean of seconds-since-local-midnight, so observations on
+    /// either side of midnight average to the correct time-of-day. Exactly
+    /// opposed observations have no meaningful midpoint and produce nil.
     private func averageWakeTime(before day: LogicalDay) throws -> Date? {
         var wakeSecondsOfDay: [Double] = []
         var cursor = day
@@ -160,9 +158,26 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
                 wakeSecondsOfDay.append(secondsSinceLocalMidnight(end))
             }
         }
-        guard !wakeSecondsOfDay.isEmpty, let dayStart = midnight(of: day) else { return nil }
-        let average = wakeSecondsOfDay.reduce(0, +) / Double(wakeSecondsOfDay.count)
+        guard !wakeSecondsOfDay.isEmpty,
+              let average = circularMeanTimeOfDay(wakeSecondsOfDay),
+              let dayStart = midnight(of: day) else { return nil }
         return dayStart.addingTimeInterval(average)
+    }
+
+    /// Circular mean of seconds since local midnight. A plain arithmetic mean
+    /// maps 23:30 and 00:30 to noon; the vector mean keeps midnight as the
+    /// midpoint. An exactly opposed set has no meaningful circular midpoint,
+    /// so it yields no prediction rather than an arbitrary time.
+    private func circularMeanTimeOfDay(_ seconds: [Double]) -> Double? {
+        guard !seconds.isEmpty else { return nil }
+        let radians = seconds.map { ($0 / 86_400) * 2 * .pi }
+        let x = radians.reduce(0) { $0 + cos($1) } / Double(radians.count)
+        let y = radians.reduce(0) { $0 + sin($1) } / Double(radians.count)
+        guard hypot(x, y) > 1e-12 else { return nil }
+        var angle = atan2(y, x)
+        if angle < 0 { angle += 2 * .pi }
+        if angle > 2 * .pi - 1e-12 { angle = 0 }
+        return (angle / (2 * .pi) * 86_400).rounded()
     }
 
     private func secondsSinceLocalMidnight(_ instant: Date) -> Double {
