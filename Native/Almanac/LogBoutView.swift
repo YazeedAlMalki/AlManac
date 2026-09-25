@@ -10,6 +10,7 @@ import AlmanacCore
 struct LogBoutView: View {
     @ObservedObject var model: TrainingModel
     @Environment(\.dismiss) private var dismiss
+    private let onSaved: () -> Void
 
     @State private var selectedExercise: ExerciseCatalogEntry?
     @State private var setsText = ""
@@ -21,6 +22,11 @@ struct LogBoutView: View {
     @State private var rpe = 5
     @State private var notes = ""
     @State private var error: String?
+
+    init(model: TrainingModel, onSaved: @escaping () -> Void = {}) {
+        self.model = model
+        self.onSaved = onSaved
+    }
 
     var body: some View {
         NavigationStack {
@@ -106,6 +112,7 @@ struct LogBoutView: View {
                 sets: Int(setsText), reps: Int(repsText), loadKg: Double(loadText),
                 durationSeconds: Double(durationText), distanceMeters: Double(distanceText),
                 rounds: Int(roundsText), rpe: rpe, notes: optionalText(notes))
+            onSaved()
             dismiss()
         } catch { self.error = String(describing: error) }
     }

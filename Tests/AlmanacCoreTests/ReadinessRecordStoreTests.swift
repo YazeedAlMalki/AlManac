@@ -80,6 +80,22 @@ struct ReadinessRecordStoreTests {
         #expect(stored?.feedbackTimestamp != nil)
     }
 
+    @Test("Recent records are bounded and returned oldest to newest for charting")
+    func recentRecordsAreChronologicalAndBounded() throws {
+        let store = ReadinessRecordStore(db: db)
+        let cycleStore = ReadinessCycleStore(db: db)
+        let twoDaysAgo = try cycleStore.createCycle(anchorDate: "2026-09-15")
+        let yesterday = try cycleStore.createCycle(anchorDate: "2026-09-16")
+        try store.record(outcome(score: 40), cycleId: twoDaysAgo, anchorDate: "2026-09-15")
+        try store.record(outcome(score: 55), cycleId: yesterday, anchorDate: "2026-09-16")
+        try store.record(outcome(score: 72), cycleId: cycleId, anchorDate: "2026-09-17")
+
+        let recent = try store.records(limit: 2)
+
+        #expect(recent.map(\.anchorDate) == ["2026-09-16", "2026-09-17"])
+        #expect(try store.records(limit: 0).isEmpty)
+    }
+
     @Test("The most recent unrated scored record before a date is found for the feedback prompt")
     func latestUnratedRecordBefore() throws {
         let store = ReadinessRecordStore(db: db)

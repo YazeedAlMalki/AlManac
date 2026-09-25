@@ -8,6 +8,8 @@ struct MoreView: View {
     let db: Database?
     let labModel: LaboratoryModel
     let hydrationModel: HydrationModel
+    let nutritionModel: NutritionModel
+    let trainingModel: TrainingModel
     let healthModel: HealthModel
     let readinessModel: ReadinessModel
     let trackingModel: TrackingCalendarModel
@@ -17,48 +19,86 @@ struct MoreView: View {
     var body: some View {
         NavigationStack {
             List {
-                NavigationLink {
-                    ReportListView(model: labModel)
-                } label: {
-                    Label("Laboratory", systemImage: "cross.case")
+                Section {
+                    Text("Everything you enter stays in Almanac’s local database on this device. Apple Health is used only for the connections you enable.")
+                        .font(AlmanacTypography.font(.body))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                        .listRowBackground(AlmanacPalette.surface)
                 }
 
-                NavigationLink {
-                    ProfileView(db: db, readinessModel: readinessModel)
-                } label: {
-                    Label("Profile", systemImage: "person.crop.circle")
+                Section("Track") {
+                    NavigationLink {
+                        TrainingDashboardView(model: trainingModel, embedded: true)
+                    } label: {
+                        Label("Training", systemImage: AlmanacIcon.training)
+                    }
+
+                    NavigationLink {
+                        HydrationDashboardView(model: hydrationModel, embedded: true)
+                    } label: {
+                        Label("Hydration", systemImage: AlmanacIcon.hydration)
+                    }
+
+                    NavigationLink {
+                        NutritionQuickEntryView(model: nutritionModel, embedded: true)
+                    } label: {
+                        Label("Nutrition", systemImage: AlmanacIcon.nutrition)
+                    }
+
+                    NavigationLink {
+                        FastingView(model: fastingModel)
+                    } label: {
+                        Label("Fasting", systemImage: AlmanacIcon.fasting)
+                    }
                 }
 
-                NavigationLink {
-                    MeasurementsView(db: db, trackingModel: trackingModel)
-                } label: {
-                    Label("Measurements", systemImage: "ruler")
+                Section("Daily context") {
+                    NavigationLink {
+                        PrayerView(model: prayerModel)
+                    } label: {
+                        Label("Prayer", systemImage: AlmanacIcon.prayer)
+                    }
                 }
 
-                NavigationLink {
-                    PrayerView(model: prayerModel)
-                } label: {
-                    Label("Prayer", systemImage: "sun.horizon")
+                Section("Records") {
+                    NavigationLink {
+                        ReportListView(model: labModel)
+                    } label: {
+                        Label("Laboratory", systemImage: AlmanacIcon.laboratory)
+                    }
+
+                    NavigationLink {
+                        MeasurementsView(db: db, trackingModel: trackingModel)
+                    } label: {
+                        Label("Measurements", systemImage: AlmanacIcon.body)
+                    }
+
+                    NavigationLink {
+                        ProfileView(db: db, readinessModel: readinessModel)
+                    } label: {
+                        Label("Profile", systemImage: AlmanacIcon.profile)
+                    }
                 }
 
-                NavigationLink {
-                    FastingView(model: fastingModel)
-                } label: {
-                    Label("Fasting", systemImage: "moon.stars")
-                }
-
-                NavigationLink {
-                    SettingsView(
-                        model: hydrationModel,
-                        labModel: labModel,
-                        healthModel: healthModel,
-                        trackingModel: trackingModel
-                    )
-                } label: {
-                    Label("Settings", systemImage: "gear")
+                Section("App") {
+                    NavigationLink {
+                        SettingsView(
+                            model: hydrationModel,
+                            labModel: labModel,
+                            healthModel: healthModel,
+                            trackingModel: trackingModel
+                        )
+                    } label: {
+                        Label("Settings", systemImage: AlmanacIcon.settings)
+                    }
                 }
             }
-            .navigationTitle("More")
+            .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
+            .background(AlmanacPalette.canvas)
+            .navigationTitle("Modules")
+            .toolbarBackground(AlmanacPalette.canvas, for: .navigationBar)
+            .almanacScreen()
         }
     }
 }

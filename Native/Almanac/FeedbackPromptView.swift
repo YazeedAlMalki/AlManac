@@ -3,10 +3,8 @@ import AlmanacCore
 
 /// §9.10's feedback question, shown for a *previous* cycle's outcome — never
 /// directly under today's score, which is the one thing the spec explicitly
-/// forbids ("NEVER shown immediately after the readiness score is
-/// displayed"). `ReadinessModel.pendingFeedback` only ever holds a past,
-/// already-scored, not-yet-rated cycle, so this view has nothing to check
-/// beyond "is there one to show."
+/// forbids. The rendering is a standalone card so it can live in Today’s
+/// scrolling editorial layout without depending on `List` sections.
 @MainActor
 struct FeedbackPromptView: View {
     @ObservedObject var model: ReadinessModel
@@ -14,24 +12,28 @@ struct FeedbackPromptView: View {
 
     var body: some View {
         if let record = model.pendingFeedback {
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Was \(record.anchorDate)'s guidance helpful?")
-                        .font(.subheadline)
-                    HStack(spacing: 16) {
+            AlmanacCard {
+                VStack(alignment: .leading, spacing: 14) {
+                    AlmanacSectionHeader(title: "A note from yesterday")
+                    Text("Was \(record.anchorDate)’s guidance helpful?")
+                        .font(AlmanacTypography.font(.bodyMedium))
+                        .foregroundStyle(AlmanacPalette.textPrimary)
+                    HStack(spacing: 12) {
                         Button {
                             submit("thumbs_up")
                         } label: {
                             Label("Yes", systemImage: "hand.thumbsup")
-                        }.buttonStyle(.bordered)
+                        }
+                        .buttonStyle(AlmanacSecondaryButtonStyle())
+
                         Button {
                             submit("thumbs_down")
                         } label: {
                             Label("No", systemImage: "hand.thumbsdown")
-                        }.buttonStyle(.bordered)
+                        }
+                        .buttonStyle(AlmanacSecondaryButtonStyle())
                     }
                 }
-                .padding(.vertical, 4)
             }
             .editorError($error)
         }

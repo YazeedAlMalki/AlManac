@@ -36,8 +36,10 @@ struct ExercisePickerView: View {
                         }
                     }
                 }
+                .accessibilityIdentifier("exercise-row-\(exercise.id)")
             }
         }
+        .accessibilityIdentifier("exercise-catalog")
         .searchable(text: $query, prompt: "Search exercises")
         .navigationTitle("Choose Exercise")
         .navigationBarTitleDisplayMode(.inline)

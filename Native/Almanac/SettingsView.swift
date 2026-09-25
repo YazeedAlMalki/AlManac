@@ -16,11 +16,20 @@ struct SettingsView: View {
     @State private var didLoadSettings = false
     @State private var healthKitStatus: String?
     @State private var error: String?
+    @AppStorage("almanac.appearance") private var appearanceRaw = AlmanacAppearance.system.rawValue
 
     private let scheduler = NotificationScheduler()
 
     var body: some View {
         Form {
+            Section("Appearance") {
+                Picker("Appearance", selection: $appearanceRaw) {
+                    ForEach(AlmanacAppearance.allCases) { option in
+                        Text(option.title).tag(option.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
             Section("Daily goal") {
                 Stepper("\(Int(dailyGoal)) mL", value: $dailyGoal, in: 500...5000, step: 250)
                     .onChange(of: dailyGoal) { _, newValue in
@@ -78,7 +87,10 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(AlmanacPalette.canvas)
         .navigationTitle("Settings")
+        .toolbarBackground(AlmanacPalette.canvas, for: .navigationBar)
         .editorError($error)
         .task {
             guard !didLoadSettings else { return }

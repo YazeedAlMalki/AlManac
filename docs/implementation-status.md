@@ -8,6 +8,41 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-25 — Editorial design foundation and shell
+
+The first vertical slice of the approved UI Design Reference v1.0 is live in
+Debug:
+
+- `Native/Almanac/DesignSystem.swift` centralizes the canvas/surface/text/accent
+  tokens, Dynamic Type roles, status tones, card/button primitives and the
+  appearance override. Fraunces and Almarai ship under the SIL Open Font
+  License with their licence files; Neue Montreal is intentionally not
+  redistributed and falls back to the system face until licensed files are
+  supplied.
+- The root shell is now Today, Trends, an always-available Quick Log action and
+  Modules. Modules owns the full module index; the three former domain tabs are
+  reachable there and use embedded navigation stacks rather than nesting a
+  second stack inside Modules.
+- Today is a scrolling editorial ledger: readiness headline, explicit waiting
+  state, recommendation, check-in, daily signals, input provenance and the
+  Activity Rings rhythm calendar. The calendar keeps the existing model and
+  editor seam, adds non-color states/VoiceOver labels, and switches to a list
+  layout at accessibility text sizes.
+- Trends reads bounded, chronological readiness records through a new core
+  store seam and renders a Swift Charts line with scrub selection, summary
+  statistics and an honest empty state. Correlations are not implied.
+- Quick Log provides one-tap water presets plus focused food, training and body
+  entry sheets; the existing domain forms accept an optional completion hook so
+  the sheet remains usable for a second entry.
+- Verification: `swift test` passes 421 Swift Testing tests, the Debug
+  simulator build succeeds, and all 10 `AttributionsUITests` pass on the
+  iPhone 16e simulator. Large Dynamic Type was checked separately; the calendar
+  and readiness card reflow instead of using a fixed-width score layout.
+
+Outstanding product/design decisions remain: licensed Neue Montreal files,
+custom icon artwork, final on-device status colors, and the final quick-log
+default action.
+
 ## 2026-09-25 — More navigation and Today tracking calendar
 
 The app now owns its navigation instead of relying on iOS to overflow the sixth

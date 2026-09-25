@@ -9,6 +9,8 @@ import AlmanacCore
 @MainActor
 struct NutritionQuickEntryView: View {
     @ObservedObject var model: NutritionModel
+    private let embedded: Bool
+    private let onSaved: () -> Void
     @State private var selectedRef: SourceIdentifier?
     @State private var selectedName = ""
     @State private var gramsText = ""
@@ -17,6 +19,12 @@ struct NutritionQuickEntryView: View {
     @State private var showingSearch = false
     @State private var showingSavedMeals = false
     @State private var error: String?
+
+    init(model: NutritionModel, embedded: Bool = false, onSaved: @escaping () -> Void = {}) {
+        self.model = model
+        self.embedded = embedded
+        self.onSaved = onSaved
+    }
 
     /// Breakfast/lunch/dinner/snack, in the order a day runs, then whatever
     /// has no meal type at all — grouped last, not dropped, since "logged
@@ -39,61 +47,68 @@ struct NutritionQuickEntryView: View {
         }
     }
 
+    @ViewBuilder
     var body: some View {
-        NavigationStack {
-            Form {
-                totalsSection
-                if model.isPreparingReference {
-                    Section {
-                        HStack {
-                            ProgressView()
-                            Text("Preparing the food catalogue…")
-                        }
-                    }
-                } else if let error = model.referencePreparationError {
-                    Section {
-                        Text("Food catalogue unavailable: \(error)")
-                            .foregroundStyle(.secondary)
-                        Button("Try again") { model.retryReferencePreparation() }
-                    }
-                }
-                ForEach(mealGroups) { group in
-                    Section(group.type?.displayName ?? "Other") {
-                        ForEach(group.foods, id: \.entry.id) { logged in
-                            foodRow(logged)
-                                .swipeActions {
-                                    Button("Delete", role: .destructive) {
-                                        deleteEntry(logged.entry.id)
-                                    }
-                                }
-                        }
-                    }
-                }
-                logSection
-            }
-            .navigationTitle("Nutrition")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Saved meals") { showingSavedMeals = true }
-                        .disabled(!model.isReferenceAvailable)
-                }
-            }
-            .sheet(isPresented: $showingSearch) {
-                NutritionFoodSearchView(model: model) { food in
-                    selectedRef = food.ref
-                    selectedName = food.primaryName
-                }
-            }
-            .sheet(isPresented: $showingSavedMeals) {
-                NutritionSavedMealsView(model: model) { ref, name, defaultGrams in
-                    selectedRef = ref
-                    selectedName = name
-                    if let defaultGrams { gramsText = String(Int(defaultGrams)) }
-                }
-            }
-            .editorError($error)
-            .onAppear { model.refresh() }
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
         }
+    }
+
+    private var content: some View {
+        Form {
+            totalsSection
+            if model.isPreparingReference {
+                Section {
+                    HStack {
+                        ProgressView()
+                        Text("Preparing the food catalogue…")
+                    }
+                }
+            } else if let error = model.referencePreparationError {
+                Section {
+                    Text("Food catalogue unavailable: \(error)")
+                        .foregroundStyle(.secondary)
+                    Button("Try again") { model.retryReferencePreparation() }
+                }
+            }
+            ForEach(mealGroups) { group in
+                Section(group.type?.displayName ?? "Other") {
+                    ForEach(group.foods, id: \.entry.id) { logged in
+                        foodRow(logged)
+                            .swipeActions {
+                                Button("Delete", role: .destructive) {
+                                    deleteEntry(logged.entry.id)
+                                }
+                            }
+                    }
+                }
+            }
+            logSection
+        }
+        .navigationTitle("Nutrition")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Saved meals") { showingSavedMeals = true }
+                    .disabled(!model.isReferenceAvailable)
+            }
+        }
+        .sheet(isPresented: $showingSearch) {
+            NutritionFoodSearchView(model: model) { food in
+                selectedRef = food.ref
+                selectedName = food.primaryName
+            }
+        }
+        .sheet(isPresented: $showingSavedMeals) {
+            NutritionSavedMealsView(model: model) { ref, name, defaultGrams in
+                selectedRef = ref
+                selectedName = name
+                if let defaultGrams { gramsText = String(Int(defaultGrams)) }
+            }
+        }
+        .editorError($error)
+        .onAppear { model.refresh() }
     }
 
     private var totalsSection: some View {
@@ -170,6 +185,7 @@ struct NutritionQuickEntryView: View {
             }
             try model.log(foodRef: ref, foodName: selectedName, grams: grams,
                           quantityText: optionalText(quantityText), mealType: mealType)
+            onSaved()
             selectedRef = nil; selectedName = ""; gramsText = ""; quantityText = ""; mealType = nil
         } catch {
             self.error = String(describing: error)

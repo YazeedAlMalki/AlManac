@@ -132,6 +132,20 @@ public struct ReadinessRecordStore: @unchecked Sendable {
         """, [.integer(cycleId)]).first.flatMap(rowToRecord)
     }
 
+    /// Recent records in chronological order for the Trends surface. The
+    /// limit is interpolated only after clamping it to a small positive
+    /// integer, so it remains a bound value rather than caller SQL.
+    public func records(limit: Int = 90) throws -> [StoredReadinessRecord] {
+        guard limit > 0 else { return [] }
+        let boundedLimit = min(limit, 3_660)
+        let recent = try db.query("""
+        \(Self.columns) FROM readiness_record
+        ORDER BY anchorDate DESC
+        LIMIT \(boundedLimit);
+        """).compactMap(rowToRecord)
+        return Array(recent.reversed())
+    }
+
     /// The most recent scored record strictly before `anchorDate` that has no
     /// feedback yet — what a feedback prompt shown "at the start of the next
     /// cycle" (§9.10) should ask about. A record with no score (insufficient

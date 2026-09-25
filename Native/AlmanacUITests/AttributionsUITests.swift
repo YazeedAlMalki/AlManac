@@ -76,7 +76,10 @@ final class AttributionsUITests: XCTestCase {
     /// graphic" — the rendering half. The rule is enforced against the bundle
     /// by `ExerciseGraphicAudit`; this checks the rows actually draw one.
     func testEveryOfferedExerciseShowsADemonstrationGraphic() {
-        app.tabBars.buttons["Training"].tap()
+        openModules()
+        let training = app.buttons["Training"]
+        XCTAssertTrue(training.waitForExistence(timeout: 5))
+        training.tap()
         app.buttons["Log training"].tap()
         XCTAssertTrue(app.buttons["Choose an exercise"].waitForExistence(timeout: 10))
         app.buttons["Choose an exercise"].tap()
@@ -84,15 +87,16 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Choose Exercise"].waitForExistence(timeout: 10),
                       "the exercise picker never appeared")
 
-        let first = app.cells.firstMatch
-        XCTAssertTrue(first.waitForExistence(timeout: 15), "the catalogue rendered no exercises")
-        XCTAssertGreaterThan(app.cells.count, 1, "expected a seeded catalogue, not one row")
+        let rows = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "exercise-row-"))
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15), "the catalogue rendered no exercises")
+        XCTAssertGreaterThan(rows.count, 1, "expected a seeded catalogue, not one row")
 
         // Every visible row must draw a graphic rather than the placeholder.
-        for index in 0..<min(app.cells.count, 5) {
-            let cell = app.cells.element(boundBy: index)
-            XCTAssertGreaterThan(cell.images.count, 0,
-                                 "row \(index) ('\(cell.staticTexts.firstMatch.label)') has no graphic")
+        for index in 0..<min(rows.count, 5) {
+            let row = rows.element(boundBy: index)
+            XCTAssertGreaterThan(row.images.count, 0,
+                                 "row \(index) ('\(row.staticTexts.firstMatch.label)') has no graphic")
         }
     }
 
@@ -122,19 +126,27 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testMorePageContainsTheRequestedDestinations() {
-        let more = app.tabBars.buttons["More"]
+        let more = app.buttons["Modules"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))
         more.tap()
 
         XCTAssertTrue(app.staticTexts["Laboratory"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Profile"].exists)
         XCTAssertTrue(app.staticTexts["Measurements"].exists)
+        scrollTo("Settings")
         XCTAssertTrue(app.staticTexts["Settings"].exists)
     }
 
     func testTodayShowsTheActivityRingsCalendar() {
-        XCTAssertTrue(app.staticTexts["Activity rings"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["RHYTHM"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.datePickers.firstMatch.exists, "the free-date picker was superseded")
+
+        let initialMonthFormatter = DateFormatter()
+        initialMonthFormatter.dateFormat = "yyyy-MM"
+        let initialMonthID = initialMonthFormatter.string(from: Date())
+        for _ in 0..<8 where !app.buttons["activity-ring-day-\(initialMonthID)-01"].exists {
+            app.swipeUp()
+        }
 
         let previous = app.buttons["Previous month"]
         XCTAssertTrue(previous.waitForExistence(timeout: 5))
@@ -180,7 +192,7 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testMoreDestinationsOpen() {
-        let more = app.tabBars.buttons["More"]
+        let more = app.buttons["Modules"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))
         more.tap()
 
@@ -202,7 +214,7 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testFastingScreenOpensFromMore() {
-        let more = app.tabBars.buttons["More"]
+        let more = app.buttons["Modules"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))
         more.tap()
 
@@ -214,7 +226,7 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testPrayerScreenOpensFromMore() {
-        let more = app.tabBars.buttons["More"]
+        let more = app.buttons["Modules"]
         XCTAssertTrue(more.waitForExistence(timeout: 5))
         more.tap()
 
@@ -238,28 +250,19 @@ final class AttributionsUITests: XCTestCase {
         }
     }
 
-    /// Settings is reached through the app-owned More tab. The button lookup is
-    /// preferred because a NavigationLink is a button; the static-text fallback
-    /// keeps this helper usable on iPad's older accessibility shape.
+    /// Modules is the app-owned full-module index in the new shell.
+    private func openModules() {
+        let modules = app.buttons["Modules"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 5), "the Modules destination is missing")
+        modules.tap()
+    }
+
     private func openSettings() {
-        let inTabBar = app.tabBars.buttons["Settings"]
-        if inTabBar.exists && inTabBar.isHittable {
-            inTabBar.tap()
-            return
-        }
-        let more = app.tabBars.buttons["More"]
-        XCTAssertTrue(more.waitForExistence(timeout: 5), "no tab bar to reach Settings from")
-        more.tap()
-
-        let inMorePage = app.buttons["Settings"]
-        if inMorePage.waitForExistence(timeout: 5) {
-            inMorePage.tap()
-            return
-        }
-
-        let inOverflow = app.staticTexts["Settings"]
-        XCTAssertTrue(inOverflow.waitForExistence(timeout: 5),
-                      "Settings is not reachable from the More page")
-        inOverflow.tap()
+        openModules()
+        scrollTo("Settings")
+        let settings = app.buttons["Settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 5),
+                      "Settings is not reachable from Modules")
+        settings.tap()
     }
 }

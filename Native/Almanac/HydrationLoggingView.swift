@@ -10,6 +10,12 @@ struct HydrationLoggingView: View {
     @State private var amountText = ""
     @State private var note = ""
     @State private var error: String?
+    private let onSaved: () -> Void
+
+    init(model: HydrationModel, onSaved: @escaping () -> Void = {}) {
+        self.model = model
+        self.onSaved = onSaved
+    }
 
     var body: some View {
         NavigationStack {
@@ -44,6 +50,7 @@ struct HydrationLoggingView: View {
                 throw EditorFailure(message: "Enter an amount greater than zero.")
             }
             try model.log(amount: Milliliters(amount), note: optionalText(note))
+            onSaved()
             dismiss()
         } catch { self.error = String(describing: error) }
     }

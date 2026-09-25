@@ -3,10 +3,8 @@ import AlmanacCore
 
 private enum AppTab: Hashable {
     case today
-    case training
-    case hydration
-    case nutrition
-    case more
+    case trends
+    case modules
 }
 
 @main
@@ -22,59 +20,23 @@ struct AlmanacApp: App {
     @StateObject private var fastingModel = FastingModel()
     @StateObject private var trackingModel = TrackingCalendarModel()
     @State private var selectedTab = AppTab.today
+    @State private var quickLogging = false
+    @AppStorage("almanac.appearance") private var appearanceRaw = AlmanacAppearance.system.rawValue
     @Environment(\.scenePhase) private var scenePhase
+
+    private var appearance: AlmanacAppearance {
+        AlmanacAppearance(rawValue: appearanceRaw) ?? .system
+    }
+
+    init() {
+        AlmanacFontRegistration.registerBundledFonts()
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
                 if model.store != nil {
-                    TabView(selection: $selectedTab) {
-                        ReadinessDashboardView(
-                            model: readinessModel,
-                            trainingModel: trainingModel,
-                            trackingModel: trackingModel
-                        )
-                        .tag(AppTab.today)
-                        .tabItem { Label("Today", systemImage: "gauge.with.dots.needle.67percent") }
-                        TrainingDashboardView(model: trainingModel)
-                            .tag(AppTab.training)
-                            .tabItem { Label("Training", systemImage: "dumbbell") }
-                        HydrationDashboardView(model: hydrationModel)
-                            .tag(AppTab.hydration)
-                            .tabItem { Label("Hydration", systemImage: "drop") }
-                        NutritionQuickEntryView(model: nutritionModel)
-                            .tag(AppTab.nutrition)
-                            .tabItem { Label("Nutrition", systemImage: "fork.knife") }
-                        MoreView(
-                            db: model.db,
-                            labModel: model,
-                            hydrationModel: hydrationModel,
-                            healthModel: healthModel,
-                            readinessModel: readinessModel,
-                            trackingModel: trackingModel,
-                            prayerModel: prayerModel,
-                            fastingModel: fastingModel
-                        )
-                        .tag(AppTab.more)
-                        .tabItem { Label("More", systemImage: "ellipsis.circle") }
-                    }
-                    .onChange(of: selectedTab) { _, tab in
-                        if tab == .today { trackingModel.refresh() }
-                    }
-                    // The database is opened synchronously in LaboratoryModel.open(),
-                    // so `model.db` is already set by the time this branch first
-                    // renders. Configuring here (rather than at hydrationModel's own
-                    // init) keeps both models sharing one connection instead of
-                    // HydrationModel opening a second one to the same file.
-                    .onAppear {
-                        readinessModel.configure(db: model.db)
-                        hydrationModel.configure(db: model.db)
-                        nutritionModel.configure(db: model.db)
-                        trainingModel.configure(db: model.db)
-                        healthModel.configure(db: model.db)
-                        trackingModel.configure(db: model.db)
-                        prayerModel.configure(db: model.db)
-                         fastingModel.configure(db: model.db)
-                    }
+                    appShell
                 } else {
                     ContentUnavailableView {
                         Label("Almanac could not open", systemImage: "externaldrive.badge.exclamationmark")
@@ -83,18 +45,15 @@ struct AlmanacApp: App {
                     } actions: {
                         Button("Try again") { model.open() }
                     }
+                    .almanacScreen()
                 }
             }
-            .tint(.teal)
+            .preferredColorScheme(appearance.colorScheme)
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     prayerModel.ensureCache()
                     fastingModel.ensureToday()
                     prayerModel.resumeLocationIfAuthorized()
-                    // Await both syncs before refreshing: sleep, vitals and water
-                    // all feed the homepage, and a fire-and-forget hydration
-                    // sync would leave the tracking calendar one refresh behind.
-                    // Both syncs are no-ops until HealthKit is connected.
                     Task {
                         await hydrationModel.syncOnForeground()
                         await healthModel.syncNow()
@@ -106,6 +65,129 @@ struct AlmanacApp: App {
                 }
             }
         }
+    }
+
+    private var appShell: some View {
+        selectedDestination
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                AlmanacNavigationBar(selection: $selectedTab, quickLog: { quickLogging = true })
+            }
+            .sheet(isPresented: $quickLogging) {
+                QuickLogView(
+                    db: model.db,
+                    hydrationModel: hydrationModel,
+                    nutritionModel: nutritionModel,
+                    trainingModel: trainingModel,
+                    trackingModel: trackingModel
+                )
+            }
+            .onChange(of: selectedTab) { _, tab in
+                if tab == .today { trackingModel.refresh() }
+            }
+            // The database is opened synchronously in LaboratoryModel.open(),
+            // so `model.db` is ready before this branch first renders. Keeping
+            // configuration here preserves the app's one shared connection.
+            .onAppear {
+                readinessModel.configure(db: model.db)
+                hydrationModel.configure(db: model.db)
+                nutritionModel.configure(db: model.db)
+                trainingModel.configure(db: model.db)
+                healthModel.configure(db: model.db)
+                trackingModel.configure(db: model.db)
+                prayerModel.configure(db: model.db)
+                fastingModel.configure(db: model.db)
+            }
+            .background(AlmanacPalette.canvas.ignoresSafeArea())
+    }
+
+    @ViewBuilder
+    private var selectedDestination: some View {
+        switch selectedTab {
+        case .today:
+            ReadinessDashboardView(
+                model: readinessModel,
+                trainingModel: trainingModel,
+                hydrationModel: hydrationModel,
+                nutritionModel: nutritionModel,
+                trackingModel: trackingModel
+            )
+        case .trends:
+            TrendsView(db: model.db)
+        case .modules:
+            MoreView(
+                db: model.db,
+                labModel: model,
+                hydrationModel: hydrationModel,
+                nutritionModel: nutritionModel,
+                trainingModel: trainingModel,
+                healthModel: healthModel,
+                readinessModel: readinessModel,
+                trackingModel: trackingModel,
+                prayerModel: prayerModel,
+                fastingModel: fastingModel
+            )
+        }
+    }
+}
+
+private struct AlmanacNavigationBar: View {
+    @Binding var selection: AppTab
+    let quickLog: () -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            destinationButton(.today, title: "Today", icon: AlmanacIcon.today)
+            destinationButton(.trends, title: "Trends", icon: AlmanacIcon.trends)
+
+            Button(action: quickLog) {
+                Image(systemName: AlmanacIcon.quickAdd)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(AlmanacPalette.onAccent)
+                    .frame(width: 52, height: 52)
+                    .background(AlmanacPalette.accent)
+                    .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+                    .shadow(color: AlmanacPalette.accent.opacity(0.22), radius: 12, y: 6)
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+            .offset(y: -12)
+            .accessibilityLabel("Quick log")
+            .accessibilityHint("Choose water, food, training, or a body measurement")
+            .accessibilityIdentifier("quick-log")
+
+            destinationButton(.modules, title: "Modules", icon: AlmanacIcon.modules)
+        }
+        .frame(height: 66)
+        .padding(.horizontal, 8)
+        .padding(.top, 6)
+        .background(AlmanacPalette.surface.opacity(0.98))
+        .overlay(alignment: .top) {
+            Rectangle().fill(AlmanacPalette.divider).frame(height: 1)
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func destinationButton(_ tab: AppTab, title: String, icon: String) -> some View {
+        Button {
+            selection = tab
+        } label: {
+            VStack(spacing: 3) {
+                Image(systemName: icon)
+                    .font(.system(size: 18, weight: selection == tab ? .semibold : .regular))
+                    .frame(width: 36, height: 28)
+                    .background(selection == tab ? AlmanacPalette.surfaceMuted : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                Text(title)
+                    .font(AlmanacTypography.font(.caption))
+                    .dynamicTypeSize(...DynamicTypeSize.xLarge)
+            }
+            .foregroundStyle(selection == tab ? AlmanacPalette.accent : AlmanacPalette.textSecondary)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(selection == tab ? [.isSelected, .isButton] : .isButton)
     }
 }
 

@@ -4,34 +4,47 @@ import AlmanacCore
 @MainActor
 struct TrainingDashboardView: View {
     @ObservedObject var model: TrainingModel
+    private let embedded: Bool
     @State private var logging = false
     @State private var error: String?
 
+    init(model: TrainingModel, embedded: Bool = false) {
+        self.model = model
+        self.embedded = embedded
+    }
+
+    @ViewBuilder
     var body: some View {
-        NavigationStack {
-            List {
-                if let summary = model.todaysSummary {
-                    Section("Today's Load") {
-                        summaryRows(summary)
-                    }
-                }
-                Section("Today") {
-                    if model.todaysBouts.isEmpty {
-                        Text("Nothing logged yet today.").foregroundStyle(.secondary)
-                    }
-                    ForEach(model.todaysBouts) { bout in
-                        boutRow(bout)
-                    }
-                    .onDelete(perform: delete)
+        if embedded {
+            dashboard
+        } else {
+            NavigationStack { dashboard }
+        }
+    }
+
+    private var dashboard: some View {
+        List {
+            if let summary = model.todaysSummary {
+                Section("Today's Load") {
+                    summaryRows(summary)
                 }
             }
-            .navigationTitle("Training")
-            .toolbar { Button("Log training", systemImage: "plus") { logging = true } }
-            .sheet(isPresented: $logging) { LogBoutView(model: model) }
-            .task { model.refresh() }
-            .refreshable { model.refresh() }
-            .editorError($error)
+            Section("Today") {
+                if model.todaysBouts.isEmpty {
+                    Text("Nothing logged yet today.").foregroundStyle(.secondary)
+                }
+                ForEach(model.todaysBouts) { bout in
+                    boutRow(bout)
+                }
+                .onDelete(perform: delete)
+            }
         }
+        .navigationTitle("Training")
+        .toolbar { Button("Log training", systemImage: "plus") { logging = true } }
+        .sheet(isPresented: $logging) { LogBoutView(model: model) }
+        .task { model.refresh() }
+        .refreshable { model.refresh() }
+        .editorError($error)
     }
 
     @ViewBuilder
