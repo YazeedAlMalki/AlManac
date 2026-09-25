@@ -36,18 +36,47 @@ public struct FastingAwareNutritionLog: Sendable {
     @discardableResult
     public func record(_ draft: NutritionLogDraft) throws -> (outcome: NutritionLogOutcome, fastingOutcome: FastingBreakOutcome) {
         let outcome = try log.record(draft)
-        let calories = try energyKilocalories(for: draft)
+        let calories = try energyKilocalories(foodRef: draft.foodRef, grams: draft.grams)
         let timestamp = draft.eatenAt.isKnown ? (draft.eatenAt.span?.start ?? clock.now) : clock.now
         let fastingOutcome = try sessions.recordNutritionEntry(calories: calories, at: timestamp)
+        return (outcome, fastingOutcome)
+    }
+
+    /// Applies a correction and re-runs the same fasting decision against the
+    /// edited entry's current food, amount and occurrence time. The stored
+    /// revision remains owned by `NutritionLogStore`; this layer only keeps the
+    /// dependent fasting state in sync.
+    @discardableResult
+    public func update(id logID: String, _ edit: NutritionLogEdit) throws -> (outcome: NutritionLogOutcome, fastingOutcome: FastingBreakOutcome) {
+        guard let previous = try log.entry(id: logID) else {
+            return (try log.update(id: logID, edit), .noOp)
+        }
+        let previousCalories = try energyKilocalories(foodRef: previous.foodRef, grams: previous.grams)
+        let previousTimestamp = previous.eatenAt.isKnown ? (previous.eatenAt.span?.start ?? clock.now) : clock.now
+        let outcome = try log.update(id: logID, edit)
+        if case .unchanged = outcome {
+            return (outcome, .noOp)
+        }
+        guard let entry = try log.entry(id: logID) else {
+            return (outcome, .noOp)
+        }
+        let calories = try energyKilocalories(foodRef: entry.foodRef, grams: entry.grams)
+        let timestamp = entry.eatenAt.isKnown ? (entry.eatenAt.span?.start ?? clock.now) : clock.now
+        let fastingOutcome = try sessions.reconcileNutritionEdit(
+            previousCalories: previousCalories,
+            previousTimestamp: previousTimestamp,
+            currentCalories: calories,
+            currentTimestamp: timestamp
+        )
         return (outcome, fastingOutcome)
     }
 
     /// No amount stated, or an unrecognised food, contributes zero — the same
     /// "no amount stated contributes nothing" rule `NutritionTotals` already
     /// applies. Never a guess: an uncomputable entry never breaks a fast.
-    private func energyKilocalories(for draft: NutritionLogDraft) throws -> Double {
-        guard let grams = draft.grams, try catalog.food(draft.foodRef) != nil else { return 0 }
-        let values = try catalog.values(for: draft.foodRef, basis: .per100g)
+    private func energyKilocalories(foodRef: SourceIdentifier, grams: Double?) throws -> Double {
+        guard let grams, try catalog.food(foodRef) != nil else { return 0 }
+        let values = try catalog.values(for: foodRef, basis: .per100g)
         guard let energy = EnergyEstimate.preferred(from: values, basis: .per100g)?.scaled(toGrams: grams) else {
             return 0
         }

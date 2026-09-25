@@ -77,6 +77,8 @@ public enum FastingBreakOutcome: Sendable, Hashable {
     case shortened(sessionId: Int64, durationMinutes: Int)
     /// A backdated entry landed before a session's start — the session never really happened as recorded.
     case invalidated(sessionId: Int64)
+    /// An edit removed the calorie-bearing entry that had ended this session.
+    case restored(sessionId: Int64)
 }
 
 /// Spec §11.1: "No calories have been logged for [N] hours. Are you

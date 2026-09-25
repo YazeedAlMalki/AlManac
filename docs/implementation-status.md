@@ -31,6 +31,17 @@ root tab.
   measurement timestamps. A 03:30 sample on a fallback transition remains in
   the previous Almanac day.
 
+## 2026-09-25 — Fasting edit reconciliation
+
+- `FastingAwareNutritionLog.update` now revises the stored meal and reruns the
+  fasting decision against the edited food, amount and occurrence time.
+- Removing a meal's calories restores an affected normally-ended, shortened or
+  invalidated fast; moving a shortened or invalidated meal later/into the fast
+  re-applies the correct end or invalidation. The existing active/recent-session
+  scope is explicit.
+- Six edit-path tests cover timestamp, amount, restoration, invalidation and
+  extension cases.
+
 ## 2026-09-25 — Production nutrition reference bundle ships
 
 The generator, cross-language importer and Nutrition UI already existed, but the
@@ -66,8 +77,8 @@ called the importer. A fresh install therefore had an empty food catalogue.
   2,941 food factors and one import audit row. A second launch left the audit
   count at one.
 - Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
-  tests (1 opt-in skip); the full Swift run passed 318 XCTest tests (1 skip) and
-  407 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
+  tests (1 opt-in skip); the full Swift run passed 320 XCTest tests (1 skip) and
+  413 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
   including the new More destinations and Today tracking calendar coverage.
 
 Still not done: owner-supplied Saudi/Gulf dish data, and the derived

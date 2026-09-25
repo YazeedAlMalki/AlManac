@@ -28,6 +28,17 @@ public struct Timeline: Sendable {
     // placement from a real occurrence.
 
     static func precedes(_ a: TimelineEntry, _ b: TimelineEntry) -> Bool {
+        if let aStart = a.occurrence.span?.start,
+           let bStart = b.occurrence.span?.start,
+           aStart != bStart {
+            return aStart < bStart
+        }
+        if a.occurrence.span?.start != nil, b.occurrence.span?.start == nil {
+            return true
+        }
+        if a.occurrence.span?.start == nil, b.occurrence.span?.start != nil {
+            return false
+        }
         if a.occurrence != b.occurrence { return a.occurrence < b.occurrence }
         if a.domain != b.domain { return a.domain < b.domain }
         if a.kind != b.kind { return a.kind < b.kind }

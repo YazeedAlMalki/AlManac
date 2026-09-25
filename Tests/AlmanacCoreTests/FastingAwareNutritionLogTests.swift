@@ -82,4 +82,133 @@ struct FastingAwareNutritionLogTests {
 
         #expect(result.fastingOutcome == .invalidated(sessionId: id))
     }
+
+    @Test("Editing a logged meal reconciles its edited timestamp")
+    func editingMealReconcilesFastingState() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        let recorded = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 3600)
+        ))
+
+        var edit = NutritionLogEdit()
+        edit.eatenAt = .set(PartialDateTime(
+            instant: Date(timeIntervalSince1970: 900_000),
+            zone: ZoneContext(TimeZone(identifier: "UTC")!)
+        ))
+        let result = try bridge.update(id: recorded.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .invalidated(sessionId: sessionID))
+        #expect(try sessions.session(id: sessionID)?.isInvalidated == true)
+    }
+
+    @Test("Editing a meal's amount recomputes its energy before reconciling fasting")
+    func editingAmountRecomputesEnergy() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        let recorded = try bridge.record(meal(
+            knownFood,
+            grams: nil,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 3600)
+        ))
+
+        var edit = NutritionLogEdit()
+        edit.grams = .set(200)
+        let result = try bridge.update(id: recorded.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .ended(sessionId: sessionID, durationMinutes: 60))
+        #expect(try sessions.activeSession() == nil)
+    }
+
+    @Test("Removing a meal's calories restores the fast it had ended")
+    func removingCaloriesRestoresEndedFast() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        let recorded = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 3600)
+        ))
+
+        var edit = NutritionLogEdit()
+        edit.grams = .clear
+        let result = try bridge.update(id: recorded.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .restored(sessionId: sessionID))
+        #expect(try sessions.activeSession()?.id == sessionID)
+    }
+
+    @Test("Moving an invalidated meal into the fast reopens and re-breaks it")
+    func movingInvalidatedMealReconcilesAgain() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        let recorded = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 900_000)
+        ))
+        #expect(try sessions.session(id: sessionID)?.isInvalidated == true)
+
+        var edit = NutritionLogEdit()
+        edit.eatenAt = .set(PartialDateTime(
+            instant: Date(timeIntervalSince1970: 1_000_000 + 3600),
+            zone: ZoneContext(TimeZone(identifier: "UTC")!)
+        ))
+        let result = try bridge.update(id: recorded.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .ended(sessionId: sessionID, durationMinutes: 60))
+        #expect(try sessions.session(id: sessionID)?.isInvalidated == false)
+        #expect(try sessions.activeSession() == nil)
+    }
+
+    @Test("Removing a shortened meal restores the previous end")
+    func removingShortenedMealRestoresPreviousEnd() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        _ = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 7200)
+        ))
+        let shortened = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 3600)
+        ))
+
+        var edit = NutritionLogEdit()
+        edit.grams = .clear
+        let result = try bridge.update(id: shortened.outcome.logID, edit)
+
+        #expect(result.fastingOutcome == .restored(sessionId: sessionID))
+        #expect(try sessions.session(id: sessionID)?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 7200))
+        #expect(try sessions.session(id: sessionID)?.isActive == false)
+    }
+
+    @Test("Moving a shortened meal later extends the restored end")
+    func movingShortenedMealLaterExtendsEnd() throws {
+        try seedKnownFood()
+        let sessionID = try startSession(at: 1_000_000)
+        _ = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 7200)
+        ))
+        let shortened = try bridge.record(meal(
+            knownFood,
+            grams: 200,
+            eatenAt: Date(timeIntervalSince1970: 1_000_000 + 3600)
+        ))
+
+        var edit = NutritionLogEdit()
+        edit.eatenAt = .set(PartialDateTime(
+            instant: Date(timeIntervalSince1970: 1_000_000 + 10_800),
+            zone: ZoneContext(TimeZone(identifier: "UTC")!)
+        ))
+        _ = try bridge.update(id: shortened.outcome.logID, edit)
+
+        #expect(try sessions.session(id: sessionID)?.endTimestamp == Date(timeIntervalSince1970: 1_000_000 + 10_800))
+    }
 }

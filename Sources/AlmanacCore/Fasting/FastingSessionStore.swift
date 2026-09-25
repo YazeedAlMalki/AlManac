@@ -90,6 +90,57 @@ public struct FastingSessionStore: @unchecked Sendable {
         return .noOp
     }
 
+    /// Reconciles an edit to the meal that previously ended the most recent
+    /// session. The normal edit case is reversible: if that meal is no longer
+    /// calorie-bearing, reopen the session; if it still is, reopen first and
+    /// apply the new occurrence through the ordinary decision tree.
+    ///
+    /// This deliberately follows the existing active/recent-session scope. A
+    /// full historical rebuild would need a durable link from every correction
+    /// to its nutrition-log id, which this store does not yet have.
+    @discardableResult
+    public func reconcileNutritionEdit(
+        previousCalories: Double,
+        previousTimestamp: Date,
+        currentCalories: Double,
+        currentTimestamp: Date
+    ) throws -> FastingBreakOutcome {
+        guard previousCalories > 0 else {
+            return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
+        }
+
+        if let ended = try mostRecentEndedSession(), ended.endTimestamp == previousTimestamp {
+            let restoredEnd: Date?
+            if let correction = ended.correctionHistory.last(where: {
+                $0.action == .shortened && $0.entryTimestamp == previousTimestamp
+            }) {
+                restoredEnd = correction.previousEndTimestamp
+                try restore(ended, to: restoredEnd)
+            } else {
+                restoredEnd = nil
+                try reopen(ended)
+            }
+            guard currentCalories > 0 else { return .restored(sessionId: ended.id) }
+            if let restoredEnd, currentTimestamp > restoredEnd {
+                let minutes = try extend(ended, at: currentTimestamp)
+                return .ended(sessionId: ended.id, durationMinutes: minutes)
+            }
+            return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
+        }
+
+        if let invalidated = try invalidatedSession(affectedBy: previousTimestamp) {
+            let restoredEnd = try restore(invalidated, previousTimestamp: previousTimestamp)
+            guard currentCalories > 0 else { return .restored(sessionId: invalidated.id) }
+            if let restoredEnd, currentTimestamp > restoredEnd {
+                let minutes = try extend(invalidated, at: currentTimestamp)
+                return .ended(sessionId: invalidated.id, durationMinutes: minutes)
+            }
+            return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
+        }
+
+        return try recordNutritionEntry(calories: currentCalories, at: currentTimestamp)
+    }
+
     /// A scheduled, non-break end for a fast — §11.2's "at Maghrib(D), set
     /// `endTimestamp = Maghrib(D)`, `isActive = 0`." Unlike
     /// `recordNutritionEntry`'s break/invalidate/shorten decision tree, this
@@ -119,6 +170,45 @@ public struct FastingSessionStore: @unchecked Sendable {
     }
 
     // MARK: - Private mutation
+
+    private func reopen(_ session: FastingSession) throws {
+        try db.run("""
+        UPDATE fasting_session
+        SET endTimestamp = NULL, isActive = 1, finalDurationMinutes = NULL, updatedAt = ?
+        WHERE id = ?;
+        """, [.text(nowText), .integer(session.id)])
+    }
+
+    private func restore(_ session: FastingSession, previousTimestamp: Date) throws -> Date? {
+        let correction = session.correctionHistory.last {
+            $0.action == .invalidated && $0.entryTimestamp == previousTimestamp
+        }
+        let previousEnd = correction?.previousEndTimestamp
+        try restore(session, to: previousEnd)
+        return previousEnd
+    }
+
+    private func restore(_ session: FastingSession, to previousEnd: Date?) throws {
+        let endValue: SQLValue = previousEnd.map { .text(iso($0)) } ?? .null
+        let duration: SQLValue = previousEnd.map { .integer(Int64(minutesBetween(session.startTimestamp, $0))) } ?? .null
+        try db.run("""
+        UPDATE fasting_session
+        SET endTimestamp = ?, isActive = ?, isInvalidated = 0,
+            finalDurationMinutes = ?, updatedAt = ?
+        WHERE id = ?;
+        """, [endValue, .integer(previousEnd == nil ? 1 : 0), duration,
+              .text(nowText), .integer(session.id)])
+    }
+
+    private func extend(_ session: FastingSession, at timestamp: Date) throws -> Int {
+        let minutes = minutesBetween(session.startTimestamp, timestamp)
+        try db.run("""
+        UPDATE fasting_session
+        SET endTimestamp = ?, finalDurationMinutes = ?, updatedAt = ?
+        WHERE id = ?;
+        """, [.text(iso(timestamp)), .integer(Int64(minutes)), .text(nowText), .integer(session.id)])
+        return minutes
+    }
 
     private func end(_ session: FastingSession, at timestamp: Date) throws -> Int {
         let minutes = minutesBetween(session.startTimestamp, timestamp)
@@ -159,6 +249,18 @@ public struct FastingSessionStore: @unchecked Sendable {
         WHERE isActive = 0 AND isInvalidated = 0 AND endTimestamp IS NOT NULL
         ORDER BY startTimestamp DESC LIMIT 1;
         """).first.flatMap(rowToSession)
+    }
+
+    private func invalidatedSession(affectedBy timestamp: Date) throws -> FastingSession? {
+        try db.query("""
+        \(selectColumns) FROM fasting_session
+        WHERE isInvalidated = 1
+        ORDER BY startTimestamp DESC;
+        """).compactMap(rowToSession).first {
+            $0.correctionHistory.contains {
+                $0.action == .invalidated && $0.entryTimestamp == timestamp
+            }
+        }
     }
 
     private func appendCorrection(to session: FastingSession, action: FastingCorrection.Action,

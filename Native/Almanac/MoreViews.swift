@@ -421,6 +421,8 @@ final class TrackingCalendarModel: ObservableObject {
     private var db: Database?
     private var timeModel: TimeModel { TimeModel(timeZone: .current) }
     private var lastToday: LogicalDay
+    private var lastZoneSignature = ""
+    private var selectedDay: LogicalDay
     private var followsToday = true
 
     init() {
@@ -428,6 +430,8 @@ final class TrackingCalendarModel: ObservableObject {
         let today = model.logicalDay(Date())
         let todayDate = Self.date(on: today, timeZone: model.timeZone)
         lastToday = today
+        lastZoneSignature = Self.zoneSignature(model, at: Date())
+        selectedDay = today
         self.todayDate = todayDate
         selectedDate = todayDate
     }
@@ -440,49 +444,63 @@ final class TrackingCalendarModel: ObservableObject {
 
     func select(_ date: Date) {
         let day = calendarDayLabel(date)
-        let today = timeModel.logicalDay(Date())
+        let model = timeModel
+        let today = model.logicalDay(Date())
+        selectedDay = LogicalDay(day)
         followsToday = day == today.value
         selectedDate = date
         refresh()
     }
 
     func tick() {
-        guard timeModel.logicalDay(Date()) != lastToday else { return }
+        let model = timeModel
+        let now = Date()
+        guard model.logicalDay(now) != lastToday
+                || Self.zoneSignature(model, at: now) != lastZoneSignature else { return }
         refresh()
     }
 
     func refresh() {
-        let today = timeModel.logicalDay(Date())
-        let currentTodayDate = Self.date(on: today, timeZone: timeModel.timeZone)
+        let model = timeModel
+        let now = Date()
+        let today = model.logicalDay(now)
+        let currentTodayDate = Self.date(on: today, timeZone: model.timeZone)
+        let zoneChanged = Self.zoneSignature(model, at: now) != lastZoneSignature
         if todayDate != currentTodayDate { todayDate = currentTodayDate }
-        if followsToday, today != lastToday {
-            lastToday = today
+        if followsToday, today != lastToday || zoneChanged {
+            selectedDay = today
             selectedDate = currentTodayDate
-        } else if today != lastToday {
-            lastToday = today
+        } else if !followsToday {
+            // The picker stores a Date for SwiftUI, but the user's choice is a
+            // logical day. Re-materialize it after a timezone/DST change so a
+            // noon date never silently becomes a different calendar day.
+            selectedDate = Self.date(on: selectedDay, timeZone: model.timeZone)
         }
+        lastToday = today
+        lastZoneSignature = Self.zoneSignature(model, at: now)
 
         guard let db else { return }
         isLoading = true
         defer { isLoading = false }
 
-        let day = calendarDayLabel(selectedDate)
-        let logicalDay = LogicalDay(day)
-        guard let bounds = timeModel.bounds(of: logicalDay) else {
+        let logicalDay = selectedDay
+        guard model.bounds(of: logicalDay) != nil else {
             error = "That calendar date is invalid."
             return
         }
 
         do {
-            let range = DateRange(start: bounds.start, end: bounds.end)
-            let utcBounds = range.utcTextBounds
-            let items = try TrackingTimeline(db: db).items(from: utcBounds.start, to: utcBounds.end)
-            summary = TrackingDaySummary(day: day, items: items)
+            let items = try TrackingTimeline(db: db).items(for: logicalDay.value, timeModel: model)
+            summary = TrackingDaySummary(day: logicalDay.value, items: items)
             error = nil
         } catch {
             self.error = String(describing: error)
-            summary = TrackingDaySummary(day: day, items: [])
+            summary = TrackingDaySummary(day: logicalDay.value, items: [])
         }
+    }
+
+    private static func zoneSignature(_ model: TimeModel, at instant: Date) -> String {
+        "\(model.timeZone.identifier)|\(model.timeZone.secondsFromGMT(for: instant))"
     }
 
     private static func date(on day: LogicalDay, timeZone: TimeZone) -> Date {

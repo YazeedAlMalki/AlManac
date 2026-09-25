@@ -1,6 +1,13 @@
 import XCTest
 @testable import AlmanacCore
 
+private struct TestTimelineProvider: TimelineProviding {
+    let domain: String
+    let values: [TimelineEntry]
+
+    func entries(from: String, to: String) throws -> [TimelineEntry] { values }
+}
+
 final class TimelineTests: XCTestCase {
 
     // 9. Both domains appear in one merged, ordered timeline.
@@ -78,6 +85,48 @@ final class TimelineTests: XCTestCase {
         let items = try TrackingTimeline(db: db).items(from: "2026-02-01", to: "2026-03-01")
         XCTAssertEqual(items.map(\.title), ["bodyMass", "Ferritin"])
         XCTAssertEqual(items.first?.value, "81.2 kg")
+    }
+
+    func testTimelineOrdersOffsetInstantsByInstantNotText() throws {
+        let zulu = TimelineEntry(
+            domain: "z", kind: "event", recordTable: "z", recordID: "1",
+            occurrence: PartialDateTime(text: "2026-02-25T10:00:00Z", precision: .instant),
+            basis: .occurrence, title: "Zulu"
+        )
+        let offset = TimelineEntry(
+            domain: "offset", kind: "event", recordTable: "offset", recordID: "1",
+            occurrence: PartialDateTime(text: "2026-02-25T12:00:00+03:00", precision: .instant),
+            basis: .occurrence, title: "Offset"
+        )
+        let entries = try Timeline(providers: [
+            TestTimelineProvider(domain: "z", values: [zulu]),
+            TestTimelineProvider(domain: "offset", values: [offset])
+        ]).entries(from: "2026-02-25T00:00:00Z", to: "2026-02-26T00:00:00Z")
+
+        XCTAssertEqual(entries.map(\.title), ["Offset", "Zulu"])
+    }
+
+    func testTrackingTimelineIncludesManualMeasurementProviders() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel.riyadh()
+        let timestamp = Date(timeIntervalSince1970: 1_772_000_000)
+        let body = BodyCompositionMeasurementStore(db: db)
+        _ = try body.log(BodyCompositionMeasurementDraft(
+            metric: "weight", value: 82, unit: "kg", timestamp: timestamp,
+            source: "manual", timezoneOffset: 180, timezoneIdentifier: "Asia/Riyadh"
+        ), logicalDay: "2026-02-25")
+        let custom = CustomMeasurementStore(db: db)
+        let definition = try custom.createDefinition(name: "waist", unit: "cm")
+        _ = try custom.log(CustomMeasurementLogDraft(
+            definitionId: definition, value: 81, timestamp: timestamp,
+            timezoneOffset: 180, timezoneIdentifier: "Asia/Riyadh"
+        ), logicalDay: "2026-02-25")
+
+        let items = try TrackingTimeline(db: db).items(for: "2026-02-25", timeModel: timeModel)
+        XCTAssertTrue(items.contains { $0.title == "Weight" })
+        XCTAssertTrue(items.contains { $0.title == "waist" })
+        XCTAssertEqual(Set(items.map(\.id)).count, items.count)
     }
 
     // An entry with no occurrence and no report time falls back to when it was

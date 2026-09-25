@@ -212,10 +212,13 @@ exists, same dependency direction as `IFSuggestionService`). 4 tests,
 including a real Atwater/publisher-energy fixture (no existing test seeded
 one before this).
 
-Not built: the same wiring for `NutritionLogStore.update` (editing an
-existing meal's timestamp or amount is arguably the *more* central backdating
-case — this pass only covers the initial `record`), and everything below
-this section.
+`FastingAwareNutritionLog.update` now mirrors that wiring for corrections:
+it reads the held entry, recomputes energy from the edited food/amount, and
+reconciles the edited occurrence. A correction that removes the calories can
+restore a normally-ended or recently shortened fast; moving a previously
+invalidated meal back into the session re-breaks it. The scope remains the
+active session or the single most-recently-started affected session, as above.
+Six edit-reconciliation tests were added to the four create-path tests.
 
 ## 6. Build plan (religious fasting + prayer-time engine, next)
 
