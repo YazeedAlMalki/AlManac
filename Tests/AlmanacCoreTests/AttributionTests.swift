@@ -18,6 +18,50 @@ struct AttributionTests {
         try AttributionAudit.assertAttributed(AttributionCatalog.bundledSourceIds)
     }
 
+    @Test("Every shipped nutrition source has its publisher and licence details")
+    func nutritionSourcesAreCredited() {
+        let expected: [String: (title: String, author: String, notice: String, url: String,
+                                licenses: [String: String], modified: Bool)] = [
+            "usda": ("USDA FoodData Central, Foundation Foods",
+                     "U.S. Department of Agriculture, Agricultural Research Service",
+                     "U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov.",
+                     "https://fdc.nal.usda.gov/",
+                     ["CC0 1.0 Universal": "https://creativecommons.org/publicdomain/zero/1.0/"], false),
+            "ciqual": ("ANSES-CIQUAL French food composition table 2025", "ANSES",
+                       "ANSES. Table de composition nutritionnelle des aliments Ciqual 2025. Licensed under CC BY 4.0.",
+                       "https://doi.org/10.5281/zenodo.17550133",
+                       ["CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/",
+                        "Etalab Open Licence 2.0": "https://www.etalab.gouv.fr/licence-ouverte-open-licence"], true),
+            "cofid": ("McCance and Widdowson's Composition of Foods Integrated Dataset 2021",
+                      "Public Health England",
+                      "Contains public sector information licensed under the Open Government Licence v3.0. Source: McCance and Widdowson's The Composition of Foods Integrated Dataset 2021, Public Health England.",
+                      "https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid",
+                      ["Open Government Licence v3.0": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"], true),
+            "afcd": ("Australian Food Composition Database, Release 3",
+                     "Food Standards Australia New Zealand",
+                     "Food Standards Australia New Zealand. Australian Food Composition Database, Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work.",
+                     "https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd",
+                     ["CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/"], true)
+        ]
+
+        #expect(Set(expected.keys).isSubset(of: Set(AttributionCatalog.bundledSourceIds)))
+        for (id, details) in expected {
+            let entry = AttributionCatalog.entry(for: id)
+            #expect(entry?.title == details.title, "\(id) title")
+            #expect(entry?.author == details.author, "\(id) author")
+            #expect(entry?.sourceNotice == details.notice, "\(id) source notice")
+            #expect(entry?.sourceURL == details.url, "\(id) source URL")
+            #expect(Set(entry?.licenses.map(\.name) ?? []) == Set(details.licenses.keys), "\(id) licences")
+            #expect(Dictionary(uniqueKeysWithValues: entry?.licenses.map { ($0.name, $0.url) } ?? [])
+                    == details.licenses, "\(id) licence links")
+            #expect(entry?.isModified == details.modified, "\(id) modification status")
+            if details.modified {
+                let note = entry?.modificationNote ?? ""
+                #expect(note.isEmpty == false, "\(id) change note")
+            }
+        }
+    }
+
     @Test("A bundled source with no entry fails the build")
     func missingEntryFailsTheBuild() {
         #expect(throws: MissingAttribution.self) {

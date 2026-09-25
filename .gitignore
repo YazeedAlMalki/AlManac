@@ -1,6 +1,7 @@
 .build/
 .swiftpm/
 *.sqlite
+!Sources/AlmanacCore/Nutrition/Resources/almanac.sqlite
 *.sqlite-wal
 *.sqlite-shm
 __pycache__/

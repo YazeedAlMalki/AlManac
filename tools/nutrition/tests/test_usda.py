@@ -187,7 +187,10 @@ class AgainstTheRealLake(unittest.TestCase):
             # Read the real raw data, write into a scratch lake that mirrors it by symlink.
             scratch = Lake(out)
             (Path(out) / "manifests").symlink_to(REAL_LAKE.manifests)
-            (Path(out) / LOCAL).symlink_to(REAL_LAKE.root / LOCAL)
+            local_path = REAL_LAKE.manifest("usda")["local_path"]
+            link = Path(out) / local_path
+            link.parent.mkdir(parents=True)
+            link.symlink_to(REAL_LAKE.root / local_path)
             usda.extract(scratch)
             manifest = usda.canonicalise(scratch, DICTIONARY)
         self.assertEqual(manifest["counts"]["foods"], 395)

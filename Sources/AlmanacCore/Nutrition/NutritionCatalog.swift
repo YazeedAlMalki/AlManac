@@ -118,6 +118,10 @@ public struct NutritionCatalog: @unchecked Sendable {
         self.db = db
     }
 
+    public func hasReferenceFoods() throws -> Bool {
+        try !db.query("SELECT 1 FROM nutrition_food LIMIT 1;").isEmpty
+    }
+
     public func food(_ ref: SourceIdentifier) throws -> NutritionFood? {
         guard let row = try db.query("""
             SELECT licence_group, food_group_code, food_group_name, source_record

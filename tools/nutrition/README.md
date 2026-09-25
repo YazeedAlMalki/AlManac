@@ -233,12 +233,9 @@ inserted into it by any route.
 Bundle schema version 1 (`bundle.schema_sql`): `bundle_meta`,
 `nutrition_source`, `nutrition_nutrient`, `nutrition_qualifier`,
 `nutrition_food`, `nutrition_food_name`, `nutrition_value`, `nutrition_portion`.
-AlmanacCore's `NutritionReferenceImporter` reads the first seven and
-re-asserts the licence groups itself; `nutrition_portion` is written by the
-bundle (household-measure, specific-gravity and edible-proportion rows, see
-"Canonical format" above) but is not yet imported — AlmanacCore has its own
-`nutrition_portion` table (household measures only, migration 010) that this
-has not been reconciled with.
+AlmanacCore's `NutritionReferenceImporter` reads all eight and re-asserts the
+licence groups itself. Household measures are copied into `nutrition_portion`;
+specific gravity and edible proportion are copied into `nutrition_food_factor`.
 
 ## Energy: stored vs calculated
 

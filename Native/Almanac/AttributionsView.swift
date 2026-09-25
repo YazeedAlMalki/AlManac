@@ -46,6 +46,9 @@ struct AttributionsView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(entry.title).font(.headline)
             Text(entry.author).font(.subheadline).foregroundStyle(.secondary)
+            if let notice = entry.sourceNotice {
+                Text(notice).font(.caption).foregroundStyle(.secondary)
+            }
             if let url = URL(string: entry.sourceURL) {
                 Link(entry.sourceURL, destination: url).font(.footnote)
             }

@@ -43,6 +43,20 @@ struct NutritionQuickEntryView: View {
         NavigationStack {
             Form {
                 totalsSection
+                if model.isPreparingReference {
+                    Section {
+                        HStack {
+                            ProgressView()
+                            Text("Preparing the food catalogue…")
+                        }
+                    }
+                } else if let error = model.referencePreparationError {
+                    Section {
+                        Text("Food catalogue unavailable: \(error)")
+                            .foregroundStyle(.secondary)
+                        Button("Try again") { model.retryReferencePreparation() }
+                    }
+                }
                 ForEach(mealGroups) { group in
                     Section(group.type?.displayName ?? "Other") {
                         ForEach(group.foods, id: \.entry.id) { logged in
@@ -61,6 +75,7 @@ struct NutritionQuickEntryView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Saved meals") { showingSavedMeals = true }
+                        .disabled(!model.isReferenceAvailable)
                 }
             }
             .sheet(isPresented: $showingSearch) {
@@ -133,6 +148,7 @@ struct NutritionQuickEntryView: View {
                 Button("Log", action: save)
             }
         }
+        .disabled(!model.isReferenceAvailable)
     }
 
     private func deleteEntry(_ id: String) {

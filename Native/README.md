@@ -27,6 +27,9 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   a dashboard of today's total against a settings-configurable daily goal,
   and delete. Backed by `HydrationLoggingService`/`HydrationStore` in the
   core; `LaboratoryModel` and `HydrationModel` share one `Database` connection.
+  Nutrition's first-install reference import is the one temporary exception:
+  it uses a second connection on a utility task so its long write transaction
+  does not block the main actor from opening the dashboard.
 - HealthKit: read and write for the `.water` domain only, via the one file
   permitted to `import HealthKit` (`HealthKitProvider.swift`). Inbound sync
   reuses the core's `HealthSyncService` unmodified; outbound uses
@@ -38,8 +41,10 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   `NotificationScheduler`. No Info.plist key is required for local
   notifications; only runtime authorization is requested, from Settings.
 
-The connection is owned on the main actor. Saving an existing result calls the
-core's atomic value/metadata edit API. The application uses
+The app's interactive connection is owned on the main actor. The temporary
+nutrition-reference connection is the narrow background exception described
+above. Saving an existing result calls the core's atomic value/metadata edit
+API. The application uses
 `Application Support/Almanac/almanac.sqlite`, migrates in sequence, and seeds
 idempotently. An open/migration failure displays an error; it never resets data.
 The actor is `user` because this is the existing local personal database model,

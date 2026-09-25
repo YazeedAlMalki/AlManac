@@ -4,11 +4,9 @@ import AlmanacCore
 /// Chooses how much of a selected food to log, and previews the energy and
 /// macros that amount would add before it is logged.
 ///
-/// Tapping a saved household portion fills the grams and quantity fields
-/// rather than replacing them: portions are rare today (the reference
-/// pipeline does not ship them yet — see `NutritionCatalog.NutritionPortion`'s
-/// header), so the common case is typing grams directly, and the fields stay
-/// editable either way rather than the view switching between two modes.
+/// Tapping an imported or saved household portion fills the grams and quantity
+/// fields rather than replacing them. Most foods have no listed measure, so the
+/// fields stay directly editable instead of switching the view between modes.
 @MainActor
 struct NutritionPortionPickerView: View {
     let model: NutritionModel

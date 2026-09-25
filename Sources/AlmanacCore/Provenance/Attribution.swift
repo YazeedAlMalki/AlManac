@@ -21,16 +21,19 @@ public struct Attribution: Sendable, Hashable {
     public let sourceId: String
     public let title: String
     public let author: String
+    public let sourceNotice: String?
     public let sourceURL: String
     public let licenses: [LicenseReference]
     public let isModified: Bool
     public let modificationNote: String?
 
     public init(sourceId: String, title: String, author: String, sourceURL: String,
-                licenses: [LicenseReference], isModified: Bool = false, modificationNote: String? = nil) {
+                licenses: [LicenseReference], isModified: Bool = false, modificationNote: String? = nil,
+                sourceNotice: String? = nil) {
         self.sourceId = sourceId
         self.title = title
         self.author = author
+        self.sourceNotice = sourceNotice
         self.sourceURL = sourceURL
         self.licenses = licenses
         self.isModified = isModified
@@ -62,8 +65,7 @@ public struct IncompleteAttribution: Error, CustomStringConvertible, Sendable {
 ///
 /// `bundledSourceIds` is the set of sources the build actually ships — it is
 /// deliberately separate from `entries` so that a source can be vetted and
-/// documented here without being claimed as shipped. `wger` is the only
-/// third-party exercise source in the app today (its 21-row CC0 seed).
+/// documented here without being claimed as shipped.
 public enum AttributionCatalog {
     public static let cc0 = LicenseReference(name: "CC0 1.0",
         url: "https://creativecommons.org/publicdomain/zero/1.0/")
@@ -71,6 +73,14 @@ public enum AttributionCatalog {
         url: "https://creativecommons.org/licenses/by-sa/3.0/")
     public static let ccBySa40 = LicenseReference(name: "CC BY-SA 4.0",
         url: "https://creativecommons.org/licenses/by-sa/4.0/")
+    public static let cc0Universal = LicenseReference(name: "CC0 1.0 Universal",
+        url: "https://creativecommons.org/publicdomain/zero/1.0/")
+    public static let ccBy40 = LicenseReference(name: "CC BY 4.0",
+        url: "https://creativecommons.org/licenses/by/4.0/")
+    public static let etalabOpen2 = LicenseReference(name: "Etalab Open Licence 2.0",
+        url: "https://www.etalab.gouv.fr/licence-ouverte-open-licence")
+    public static let openGovernment3 = LicenseReference(name: "Open Government Licence v3.0",
+        url: "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/")
     public static let unlicense = LicenseReference(name: "Unlicense",
         url: "https://unlicense.org/")
     public static let mit = LicenseReference(name: "MIT",
@@ -78,7 +88,9 @@ public enum AttributionCatalog {
 
     /// Sources the build ships. Append-only; adding an id here without a
     /// matching `entries` row fails `AttributionAudit`.
-    public static let bundledSourceIds: [String] = ["workout-guide", "everkinetic"]
+    public static let bundledSourceIds: [String] = [
+        "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd"
+    ]
 
     public static let entries: [Attribution] = [
         Attribution(
@@ -104,6 +116,52 @@ public enum AttributionCatalog {
                 + "rasterized on a transparent 512 × 512 canvas, recoloured for monochrome "
                 + "display, and vector-traced by workout-guide. Those 76 files are released by "
                 + "workout-guide under CC BY-SA 4.0 and are shipped here unmodified."
+        ),
+        Attribution(
+            sourceId: "usda",
+            title: "USDA FoodData Central, Foundation Foods",
+            author: "U.S. Department of Agriculture, Agricultural Research Service",
+            sourceURL: "https://fdc.nal.usda.gov/",
+            licenses: [cc0Universal],
+            sourceNotice: "U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov."
+        ),
+        Attribution(
+            sourceId: "ciqual",
+            title: "ANSES-CIQUAL French food composition table 2025",
+            author: "ANSES",
+            sourceURL: "https://doi.org/10.5281/zenodo.17550133",
+            licenses: [ccBy40, etalabOpen2],
+            isModified: true,
+            modificationNote: "Converted from ANSES's release XML into Almanac's normalized nutrition "
+                + "schema; only mapped foods, nutrients and portions are retained. Published nutrient "
+                + "values are preserved.",
+            sourceNotice: "ANSES. Table de composition nutritionnelle des aliments Ciqual 2025. Licensed under CC BY 4.0."
+        ),
+        Attribution(
+            sourceId: "cofid",
+            title: "McCance and Widdowson's Composition of Foods Integrated Dataset 2021",
+            author: "Public Health England",
+            sourceURL: "https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid",
+            licenses: [openGovernment3],
+            isModified: true,
+            modificationNote: "Converted from the integrated dataset into Almanac's normalized nutrition "
+                + "schema; only mapped foods, nutrients and portions are retained. Published nutrient "
+                + "values are preserved.",
+            sourceNotice: "Contains public sector information licensed under the Open Government Licence v3.0. "
+                + "Source: McCance and Widdowson's The Composition of Foods Integrated Dataset 2021, Public Health England."
+        ),
+        Attribution(
+            sourceId: "afcd",
+            title: "Australian Food Composition Database, Release 3",
+            author: "Food Standards Australia New Zealand",
+            sourceURL: "https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd",
+            licenses: [ccBy40],
+            isModified: true,
+            modificationNote: "Converted into Almanac's normalized nutrition schema; only mapped foods, "
+                + "nutrients and portions are retained. Published energy values were converted from kJ "
+                + "to kcal.",
+            sourceNotice: "Food Standards Australia New Zealand. Australian Food Composition Database, "
+                + "Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work."
         )
     ]
 

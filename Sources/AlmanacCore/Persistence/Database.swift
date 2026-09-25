@@ -99,6 +99,21 @@ public final class Database: @unchecked Sendable {
         return Int(sqlite3_changes(handle))
     }
 
+    /// Runs the same statement for many parameter sets while preparing it only once.
+    func run(_ sql: String, each parameters: [[SQLValue]]) throws {
+        let stmt = try prepareStatement(sql)
+        defer { sqlite3_finalize(stmt) }
+        for values in parameters {
+            sqlite3_reset(stmt)
+            sqlite3_clear_bindings(stmt)
+            try bind(values, to: stmt, sql: sql)
+            let rc = sqlite3_step(stmt)
+            guard rc == SQLITE_DONE || rc == SQLITE_ROW else {
+                throw SQLiteError.from(handle, code: rc, sql: sql)
+            }
+        }
+    }
+
     public func query(_ sql: String, _ parameters: [SQLValue] = []) throws -> [Row] {
         let stmt = try prepare(sql, parameters)
         defer { sqlite3_finalize(stmt) }
@@ -141,30 +156,41 @@ public final class Database: @unchecked Sendable {
     }
 
     private func prepare(_ sql: String, _ parameters: [SQLValue]) throws -> OpaquePointer? {
+        let stmt = try prepareStatement(sql)
+        do {
+            try bind(parameters, to: stmt, sql: sql)
+            return stmt
+        } catch {
+            sqlite3_finalize(stmt)
+            throw error
+        }
+    }
+
+    private func prepareStatement(_ sql: String) throws -> OpaquePointer? {
         var stmt: OpaquePointer?
         let rc = sqlite3_prepare_v2(handle, sql, -1, &stmt, nil)
         guard rc == SQLITE_OK else { throw SQLiteError.from(handle, code: rc, sql: sql) }
+        return stmt
+    }
+
+    private func bind(_ parameters: [SQLValue], to stmt: OpaquePointer?, sql: String) throws {
         for (offset, value) in parameters.enumerated() {
             let i = Int32(offset + 1)
-            let brc: Int32
+            let rc: Int32
             switch value {
-            case .null:            brc = sqlite3_bind_null(stmt, i)
-            case .integer(let v):  brc = sqlite3_bind_int64(stmt, i, v)
-            case .real(let v):     brc = sqlite3_bind_double(stmt, i, v)
-            case .text(let v):     brc = sqlite3_bind_text(stmt, i, v, -1, SQLITE_TRANSIENT)
+            case .null:            rc = sqlite3_bind_null(stmt, i)
+            case .integer(let v):  rc = sqlite3_bind_int64(stmt, i, v)
+            case .real(let v):     rc = sqlite3_bind_double(stmt, i, v)
+            case .text(let v):     rc = sqlite3_bind_text(stmt, i, v, -1, SQLITE_TRANSIENT)
             case .blob(let bytes):
-                brc = bytes.isEmpty
+                rc = bytes.isEmpty
                     ? sqlite3_bind_zeroblob(stmt, i, 0)
                     : bytes.withUnsafeBufferPointer {
                         sqlite3_bind_blob(stmt, i, $0.baseAddress, Int32(bytes.count), SQLITE_TRANSIENT)
                       }
             }
-            guard brc == SQLITE_OK else {
-                sqlite3_finalize(stmt)
-                throw SQLiteError.from(handle, code: brc, sql: sql)
-            }
+            guard rc == SQLITE_OK else { throw SQLiteError.from(handle, code: rc, sql: sql) }
         }
-        return stmt
     }
 
     /// Runs `body` inside a transaction, rolling back on any thrown error.

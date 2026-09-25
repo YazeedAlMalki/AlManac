@@ -18,6 +18,9 @@ struct MacroPreview: Hashable {
 final class NutritionModel: ObservableObject {
     @Published private(set) var todaysFoods: [LoggedFood] = []
     @Published private(set) var todaysTotals: NutritionTotals?
+    @Published private(set) var isPreparingReference = false
+    @Published private(set) var isReferenceAvailable = false
+    @Published private(set) var referencePreparationError: String?
 
     private var catalog: NutritionCatalog?
     private var logStore: NutritionLogStore?
@@ -29,11 +32,40 @@ final class NutritionModel: ObservableObject {
     func configure(db: Database?) {
         guard let db, self.db == nil else { return } // already configured
         self.db = db
-        catalog = NutritionCatalog(db: db)
+        let catalog = NutritionCatalog(db: db)
+        self.catalog = catalog
+        isReferenceAvailable = (try? catalog.hasReferenceFoods()) ?? false
         logStore = NutritionLogStore(db: db)
         summary = NutritionSummary(db: db)
         dishEditor = NutritionDishEditor(db: db)
         refresh()
+        prepareReference()
+    }
+
+    func retryReferencePreparation() {
+        prepareReference()
+    }
+
+    private func prepareReference() {
+        guard let db, !isPreparingReference else { return }
+        isPreparingReference = !isReferenceAvailable
+        referencePreparationError = nil
+        let path = db.path
+        // A second connection lets the rest of the app read through WAL while
+        // this one owns the long first-install write transaction.
+        Task { [weak self] in
+            do {
+                _ = try await Task.detached(priority: .utility) { () throws -> NutritionImportReport? in
+                    let referenceDatabase = try Database(path: path)
+                    return try NutritionReferenceBundle.installIfNeeded(into: referenceDatabase)
+                }.value
+                self?.isReferenceAvailable = true
+                self?.refresh()
+            } catch {
+                self?.referencePreparationError = String(describing: error)
+            }
+            self?.isPreparingReference = false
+        }
     }
 
     func refresh() {
@@ -67,10 +99,8 @@ final class NutritionModel: ObservableObject {
         try dishEditor?.dishes() ?? []
     }
 
-    /// Household measures held for a food — empty for most foods today, since
-    /// the reference pipeline does not ship portions yet (see
-    /// `NutritionCatalog.NutritionPortion`'s header); a picker over this list
-    /// must handle "nothing to pick from" as the common case, not an error.
+    /// Household measures imported for a food. Most foods have none, so the
+    /// picker also accepts a directly typed gram amount.
     func portions(for ref: SourceIdentifier) throws -> [NutritionPortion] {
         try catalog?.portions(of: ref) ?? []
     }

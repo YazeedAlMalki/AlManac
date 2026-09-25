@@ -32,6 +32,21 @@ final class NutritionBundleImportTests: XCTestCase {
 
     private func ref(_ text: String) -> SourceIdentifier { SourceIdentifier(parsing: text)! }
 
+    func testTheShippedReferenceInstallsOnceAndBecomesSearchable() throws {
+        let db = try migrated()
+
+        let report = try XCTUnwrap(NutritionReferenceBundle.installIfNeeded(into: db))
+        XCTAssertEqual(report.namespaces, [.afcd, .ciqual, .cofid, .usda])
+        XCTAssertGreaterThan(report.foodCount, 1_000)
+        let catalog = NutritionCatalog(db: db)
+        XCTAssertFalse(try catalog.search("apple").isEmpty)
+        let foodBefore = try XCTUnwrap(catalog.food(ref("usda:2346403")))
+
+        XCTAssertNil(try NutritionReferenceBundle.installIfNeeded(into: db))
+        XCTAssertEqual(try catalog.food(ref("usda:2346403")), foodBefore)
+        XCTAssertEqual(try db.query("SELECT COUNT(*) AS n FROM nutrition_reference_import;").first?.int("n"), 1)
+    }
+
     func testEveryBundledFoodIsReadableThroughTheCatalog() throws {
         let db = try migrated()
         let report = try NutritionReferenceImporter(db: db).importBundle(at: bundle())

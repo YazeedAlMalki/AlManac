@@ -1,5 +1,25 @@
 import Foundation
 
+/// Installs the production nutrition reference packaged with AlmanacCore.
+public enum NutritionReferenceBundle {
+    /// Imports the bundled reference when it is missing or its contents changed.
+    /// Returns `nil` when the installed bundle already has the same SHA-256.
+    @discardableResult
+    public static func installIfNeeded(
+        into db: Database,
+        clock: any Clock = SystemClock()
+    ) throws -> NutritionImportReport? {
+        let path = Bundle.module.bundleURL.appendingPathComponent("almanac.sqlite").path
+        let sha256 = try SHA256File.hex(ofFileAt: path)
+        let installedSHA256 = try db.query("""
+            SELECT bundle_sha256 FROM nutrition_reference_import ORDER BY rowid DESC LIMIT 1;
+            """).first?.string("bundle_sha256")
+        guard installedSHA256 != sha256 else { return nil }
+        return try NutritionReferenceImporter(db: db, clock: clock)
+            .importBundle(at: path, bundleSHA256: sha256)
+    }
+}
+
 public struct NutritionImportReport: Sendable, Hashable {
     public let bundleSHA256: String
     public let schemaVersion: Int
@@ -57,7 +77,10 @@ public struct NutritionReferenceImporter: @unchecked Sendable {
         guard FileManager.default.fileExists(atPath: path) else {
             throw NutritionImportError.bundleMissing(path: path)
         }
-        let sha256 = try SHA256File.hex(ofFileAt: path)
+        return try importBundle(at: path, bundleSHA256: SHA256File.hex(ofFileAt: path))
+    }
+
+    func importBundle(at path: String, bundleSHA256 sha256: String) throws -> NutritionImportReport {
         try db.run("ATTACH DATABASE ? AS bundle;", [.text(path)])
         defer { try? db.execute("DETACH DATABASE bundle;") }
 
@@ -156,35 +179,43 @@ public struct NutritionReferenceImporter: @unchecked Sendable {
                 SELECT food_ref, namespace, local_id, licence_group, food_group_code, food_group_name,
                        source_record
                 FROM bundle.nutrition_food;
-            INSERT INTO nutrition_food_name (food_ref, language, name, is_primary)
-                SELECT food_ref, language, name, is_primary FROM bundle.nutrition_food_name;
             INSERT INTO nutrition_value (food_ref, nutrient_id, basis, amount, qualifier, confidence,
                                          source_value, source_nutrient_id, source_unit, licence_group)
                 SELECT food_ref, nutrient_id, basis, amount, qualifier, confidence, source_value,
                        source_nutrient_id, source_unit, licence_group
                 FROM bundle.nutrition_value;
             """)
+            let foodNames = try db.query("SELECT food_ref, language, name, is_primary FROM bundle.nutrition_food_name;")
+                .map { row -> [SQLValue] in
+                    let name = row.string("name") ?? ""
+                    return [.text(row.string("food_ref") ?? ""), .text(row.string("language") ?? ""),
+                            .text(name), .integer(row.int("is_primary") ?? 0), .text(TextFold.fold(name))]
+                }
+            try db.run("""
+                INSERT INTO nutrition_food_name (food_ref, language, name, is_primary, name_fold)
+                VALUES (?, ?, ?, ?, ?);
+                """, each: foodNames)
             // Household measures (kind = 'household_measure') go into the existing
             // nutrition_portion table — a real quantity of a named unit, the
-            // shape it was already built for (Migration010). One row at a
-            // time, not INSERT...SELECT, because unit_fold needs TextFold
-            // (Swift), the same reason nutrition_food_name's fold is a
-            // second pass below rather than part of the bulk insert. Bundle
+            // shape it was already built for (Migration010). The insert statement
+            // is prepared once because unit_fold needs TextFold in Swift. Bundle
             // rows use '' for "no modifier" (a NOT NULL column); the device
             // table uses NULL, matching what addPortion already writes.
-            for row in try db.query("SELECT * FROM bundle.nutrition_portion WHERE kind = 'household_measure';") {
-                let unit = row.string("unit") ?? ""
-                let modifier = row.string("modifier").flatMap { $0.isEmpty ? nil : $0 }
-                try db.run("""
+            let householdMeasures = try db.query("SELECT * FROM bundle.nutrition_portion WHERE kind = 'household_measure';")
+                .map { row -> [SQLValue] in
+                    let unit = row.string("unit") ?? ""
+                    let modifier = row.string("modifier").flatMap { $0.isEmpty ? nil : $0 }
+                    return [.text(UUID().uuidString), .text(row.string("food_ref") ?? ""),
+                            .real(row.double("amount") ?? 0), .text(unit), .text(TextFold.fold(unit)),
+                            modifier.map { SQLValue.text($0) } ?? .null, .real(row.double("value") ?? 0),
+                            .text(row.string("licence_group") ?? ""), .text(row.string("source_value") ?? "")]
+                }
+            try db.run("""
                 INSERT INTO nutrition_portion
                     (id, food_ref, amount, unit_text, unit_fold, modifier_text,
                      gram_weight, sequence, licence_group, source_value)
                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?);
-                """, [.text(UUID().uuidString), .text(row.string("food_ref") ?? ""),
-                      .real(row.double("amount") ?? 0), .text(unit), .text(TextFold.fold(unit)),
-                      modifier.map { SQLValue.text($0) } ?? .null, .real(row.double("value") ?? 0),
-                      .text(row.string("licence_group") ?? ""), .text(row.string("source_value") ?? "")])
-            }
+                """, each: householdMeasures)
             // specific_gravity and edible_proportion are a food-level factor, not a
             // quantity — nutrition_food_factor (Migration027), a plain bulk copy since
             // no Swift-side computation is needed for these two kinds.
@@ -194,12 +225,6 @@ public struct NutritionReferenceImporter: @unchecked Sendable {
                 SELECT food_ref, kind, value, qualifier, source_value, source_record, licence_group
                 FROM bundle.nutrition_portion WHERE kind <> 'household_measure';
             """)
-            // Search matches folded names, folded the way Laboratory folds its aliases.
-            for name in try db.query("SELECT food_ref, language, name FROM nutrition_food_name;") {
-                try db.run("UPDATE nutrition_food_name SET name_fold = ? WHERE food_ref = ? AND language = ?;",
-                           [.text(TextFold.fold(name.string("name") ?? "")),
-                            .text(name.string("food_ref") ?? ""), .text(name.string("language") ?? "")])
-            }
             let foods = try count("nutrition_food")
             let values = try count("nutrition_value")
             try db.run("""

@@ -1,8 +1,8 @@
 # Almanac Requirement: In-App Attribution Page
 
 **Date:** 2026-09-23
-**Status:** Required before any third-party exercise content ships
-**Related:** `almanac_exercise-sources-commercial-with-graphics.md`
+**Status:** Required before any third-party exercise or nutrition content ships
+**Related:** `almanac_exercise-sources-commercial-with-graphics.md`, `docs/features/nutrition.md`
 
 ## Requirement
 
@@ -78,5 +78,16 @@ could not satisfy the graphic-per-exercise rule, so the bundle is now
 workout-guide (Bryl Lim, CC BY-SA 4.0) plus an Everkinetic entry for the 76
 frames derived from its art. See `docs/exercise-sources.md` and
 `WorkoutGuideSeed`'s header.
+
+### Nutrition addendum (2026-09-25)
+
+The production nutrition bundle added four more required build-guard IDs:
+`usda`, `ciqual`, `cofid` and `afcd`. Their entries credit the USDA, ANSES,
+Public Health England and Food Standards Australia New Zealand, preserve each
+publisher's source notice, link CC0, CC BY 4.0, Etalab Open Licence 2.0 or Open
+Government Licence v3.0 as applicable, and describe the normalized-schema changes
+made to the transformed releases. The existing `AttributionTests` suite now pins
+all publisher, notice and licence details in addition to running
+`AttributionAudit` over the real bundled-source list.
 
 *This is a product requirement based on a reading of the license terms, not legal advice.*

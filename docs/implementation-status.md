@@ -1,8 +1,49 @@
 # Almanac implementation status
 
-Updated 2026-09-24. The exercise catalogue now ships a demonstration graphic
-with every exercise, and the in-app Attributions page is live
-(`docs/attribution-requirement.md`, `docs/exercise-sources.md`).
+Updated 2026-09-25. The production nutrition reference bundle now ships as an
+AlmanacCore resource and installs into the app database on first launch.
+
+## 2026-09-25 — Production nutrition reference bundle ships
+
+The generator, cross-language importer and Nutrition UI already existed, but the
+only generated database lived outside the repository and no app launch path
+called the importer. A fresh install therefore had an empty food catalogue.
+
+- Rebuilt from the exact official USDA 2026-04-30, CIQUAL 2025, CoFID 2021 and
+  AFCD Release 3 inputs. The resulting 8.5 MB SQLite resource contains **8,354
+  foods and 49,036 values**; pipeline QA reports zero fidelity, token, licence
+  or portion-fidelity problems.
+- The real `.sqlite` file is committed at
+  `Sources/AlmanacCore/Nutrition/Resources/almanac.sqlite` through one targeted
+  `.gitignore` exception. `Package.swift` copies it into AlmanacCore's resource
+  bundle, so the app and tests resolve the same artefact.
+- `AttributionCatalog` now guards all four shipped nutrition datasets as well as
+  the exercise sources. USDA, CIQUAL, CoFID and AFCD each carry publisher,
+  source-provided notice, source and licence links; the three transformed
+  datasets state what the normalization changed.
+- `NutritionReferenceBundle.installIfNeeded(into:)` imports on first launch and
+  after a bundle SHA change, while returning without mutation for an unchanged
+  bundle. `NutritionModel.configure()` starts the first install on a utility
+  task using a second SQLite connection. WAL lets the rest of the app remain
+  usable while the long reference write transaction runs. An existing catalogue
+  remains searchable while its SHA is checked; a first install shows preparation
+  progress, and a failure offers retry without discarding a valid old catalogue.
+- The public seam test installs the real resource into a migrated in-memory
+  database, searches the resulting catalogue and proves a second install is a
+  no-op. The existing fixture and real-bundle tests continue to cover importer
+  transactions, licence guards, portions and user-dish preservation.
+- Fresh-install simulator verification: the Today dashboard was already visible
+  4.26 seconds after launch while the background import continued, then finished
+  at 34.32 seconds with 8,354 foods, 49,036 values, 123 household measures,
+  2,941 food factors and one import audit row. A second launch left the audit
+  count at one.
+- Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
+  tests (1 opt-in skip); the full Swift run passed 314 XCTest tests (1 skip) and
+  403 Swift Testing tests; the Debug simulator build and all four UI tests pass,
+  plus focused UI reruns after the final catalogue and attribution changes.
+
+Still not done: owner-supplied Saudi/Gulf dish data, and the derived
+`edibleGrams`/specific-gravity calculation recorded as to-do #17.
 
 ## 2026-09-24 — Exercise graphics + Attributions page
 

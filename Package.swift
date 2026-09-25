@@ -36,7 +36,8 @@ let package = Package(
             exclude: ["LICENSE", "VENDORED.md"]
         ),
         .target(name: "AlmanacCore", dependencies: ["CSQLite", "Adhan"], path: "Sources/AlmanacCore",
-                resources: [.copy("Prayer/Resources/manual-cities.json"),
+                resources: [.copy("Nutrition/Resources/almanac.sqlite"),
+                            .copy("Prayer/Resources/manual-cities.json"),
                             .copy("Training/Resources/workout-guide")]),
         .testTarget(name: "AlmanacCoreTests", dependencies: ["AlmanacCore"], path: "Tests/AlmanacCoreTests")
     ]

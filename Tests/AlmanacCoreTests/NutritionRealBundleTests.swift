@@ -1,9 +1,10 @@
 import XCTest
 @testable import AlmanacCore
 
-/// The real bundle, end to end: tools/nutrition's output imported through the
-/// device-side licence assertion and read back. Opt-in, because the bundle lives in
-/// the food-data lake rather than the repository:
+/// A freshly rebuilt external bundle, end to end: tools/nutrition's output
+/// imported through the device-side licence assertion and read back. Opt-in
+/// because the committed production resource is already covered by
+/// `NutritionBundleImportTests`; this additionally checks exact source counts:
 ///
 ///     ALMANAC_NUTRITION_BUNDLE=~/ALManac-food-data/build/almanac.sqlite swift test \
 ///         --filter NutritionRealBundleTests
