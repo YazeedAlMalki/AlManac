@@ -15,6 +15,7 @@ import Foundation
 public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable {
     let db: Database
     private let clock: any Clock
+    private let timeModel: TimeModel
     private let zone: ZoneContext
     private let sourceSystem = "healthkit"
 
@@ -28,9 +29,11 @@ public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable
     ]
 
     public init(db: Database, clock: any Clock = SystemClock(),
+                timeModel: TimeModel = TimeModel(timeZone: .current),
                 zone: ZoneContext = ZoneContext(TimeZone.current)) {
         self.db = db
         self.clock = clock
+        self.timeModel = timeModel
         self.zone = zone
     }
 
@@ -41,6 +44,51 @@ public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable
         return f.string(from: date)
     }
 
+    private func parse(_ text: String) -> Date? {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: text)
+    }
+
+    /// Repairs rows written by the pre-04:00 bridge when their timezone
+    /// identifier is known. This is deliberately callable without a HealthKit
+    /// provider so an upgrade is corrected even before the next sync; legacy
+    /// offset-only rows are repaired only when their offset still matches the
+    /// sample's current zone.
+    public func reconcileLogicalDays() throws {
+        let rows = try db.query("""
+        SELECT id, timestamp, timezoneOffset, timezoneIdentifier, logicalDay
+        FROM vitals_record
+        WHERE source = ? AND deletedAt IS NULL;
+        """, [.text(sourceSystem)])
+
+        for row in rows {
+            guard let id = row.int("id"),
+                  let timestamp = row.string("timestamp"),
+                  let instant = parse(timestamp) else { continue }
+            let model: TimeModel
+            if let identifier = row.string("timezoneIdentifier"),
+               let zone = TimeZone(identifier: identifier) {
+                model = TimeModel(timeZone: zone, boundary: timeModel.boundary)
+            } else {
+                // Legacy rows have only an offset. It is safe to use the
+                // current zone only when that offset still matches at the
+                // sample instant; otherwise DST history is unknowable.
+                guard let offset = row.int("timezoneOffset")
+                    ?? row.string("timezoneOffset").flatMap({ Int64($0) }) else { continue }
+                let currentOffset = timeModel.timeZone.secondsFromGMT(for: instant) / 60
+                guard offset == Int64(currentOffset) else { continue }
+                model = timeModel
+            }
+            let day = model.logicalDay(instant).value
+            guard row.string("logicalDay") != day else { continue }
+            try db.run(
+                "UPDATE vitals_record SET logicalDay = ? WHERE id = ?;",
+                [.text(day), .integer(id)]
+            )
+        }
+    }
+
     @discardableResult
     public func apply(_ changeSet: HealthChangeSet, in db: Database) throws -> HealthApplyCounts {
         var inserted = 0, updated = 0, deleted = 0
@@ -49,9 +97,8 @@ public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable
             guard let (metricName, unitName) = metricMap[sample.domain],
                   let value = sample.value else { continue }
             
-            // Determine logical day from sample.start
-            let logicalDayText = iso(sample.start).prefix(10)  // YYYY-MM-DD
-            
+            let logicalDayText = timeModel.logicalDay(sample.start).value
+
             let existingRow = try db.query("""
                 SELECT id FROM vitals_record
                 WHERE source = ? AND healthKitUUID = ?;
@@ -61,15 +108,19 @@ public struct VitalsRecordHealthBridge: HealthSampleWriting, @unchecked Sendable
 
             try db.run("""
             INSERT INTO vitals_record
-                (timestamp, timezoneOffset, logicalDay, metric, value, unit, source, healthKitUUID, createdAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (timestamp, timezoneOffset, timezoneIdentifier, logicalDay, metric, value, unit, source, healthKitUUID, createdAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(source, healthKitUUID) WHERE healthKitUUID IS NOT NULL DO UPDATE SET
                 timestamp = excluded.timestamp,
+                timezoneOffset = excluded.timezoneOffset,
+                timezoneIdentifier = excluded.timezoneIdentifier,
+                logicalDay = excluded.logicalDay,
                 value = excluded.value,
                 createdAt = excluded.createdAt;
             """, [
                 .text(iso(sample.start)),
                 zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
+                zone.identifier.map { SQLValue.text($0) } ?? .null,
                 .text(String(logicalDayText)),
                 .text(metricName),
                 .real(value),

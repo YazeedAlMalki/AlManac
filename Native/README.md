@@ -6,6 +6,14 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
 
 ## Authored
 
+- Navigation: five explicit tabs — Today, Training, Hydration, Nutrition and
+  More. The app-owned More page links to Laboratory, Profile, Measurements and
+  Settings, so Laboratory and Settings are no longer system-overflow tabs.
+- Today includes a native graphical tracking calendar. Selecting a past date
+  shows a read-only history assembled from the existing tracker stores; the
+  04:00 Almanac logical-day boundary is shown in the UI.
+- Profile edits the existing local `ProfileStore` fields. Measurements shows
+  recent body-composition and custom measurements and can add manual values.
 - Reports: list, paginate, create, reopen, edit laboratory name and report date.
 - Results: canonical/alias search, unmatched source names, create and edit.
 - Numeric, qualitative, text, ratio, titer and absent values. Comparators,

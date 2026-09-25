@@ -38,8 +38,14 @@ final class HealthModel: ObservableObject {
         let timeModel = TimeModel(timeZone: .current)
         sleepBridge = SleepEpisodeHealthBridge(db: db, timeModel: timeModel, zone: zone)
         workoutBridge = WorkoutSessionHealthBridge(db: db, timeModel: timeModel, zone: zone)
-        vitalsBridge = VitalsRecordHealthBridge(db: db, zone: zone)
-        bodyBridge = BodyCompositionMeasurementHealthBridge(db: db, zone: zone)
+        vitalsBridge = VitalsRecordHealthBridge(db: db, timeModel: timeModel, zone: zone)
+        bodyBridge = BodyCompositionMeasurementHealthBridge(db: db, timeModel: timeModel, zone: zone)
+        do {
+            try vitalsBridge?.reconcileLogicalDays()
+            try bodyBridge?.reconcileLogicalDays()
+        } catch {
+            problem = "Existing health data could not be re-bucketed: \(error.localizedDescription)"
+        }
         refresh()
     }
 

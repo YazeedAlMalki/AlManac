@@ -1,7 +1,34 @@
 # Almanac implementation status
 
 Updated 2026-09-25. The production nutrition reference bundle now ships as an
-AlmanacCore resource and installs into the app database on first launch.
+AlmanacCore resource and installs into the app database on first launch. The
+app-owned More navigation and Today tracking calendar are also live.
+
+## 2026-09-25 — More navigation and Today tracking calendar
+
+The app now owns its navigation instead of relying on iOS to overflow the sixth
+root tab.
+
+- The root `TabView` has exactly five destinations: Today, Training, Hydration,
+  Nutrition and More. More is an app-owned `NavigationStack` with Laboratory,
+  Profile, Measurements and Settings links. Existing Laboratory and Settings
+  screens were made embeddable so More does not create nested navigation stacks.
+- `ProfileView` edits the existing `ProfileStore` fields and refreshes the Today
+  greeting after save. `MeasurementsView` reuses the body-composition and custom
+  measurement stores, shows recent values, and accepts manual body/custom adds.
+- `TrackingCalendarModel` provides a native graphical date picker on Today. A
+  selected calendar date is converted to Almanac's explicit logical-day label
+  (04:00 boundary), then existing timeline and tracker-store queries provide a
+  read-only history for Laboratory, Nutrition, Hydration, Training, body/custom
+  measurements, mood, soreness, sleep and vitals. Viewing history never writes
+  historical readiness data.
+- HealthKit body-composition and vitals bridges now derive logical days through
+  the same DST-safe `TimeModel` as sleep/workouts. Migration 037 stores a
+  timezone identifier for new samples; identified rows are re-bucketed on app
+  configuration; legacy offset-only rows are repaired only when their stored
+  offset still matches the sample's current zone, otherwise they wait for a
+  safe re-sync. A 03:30 sample on a fallback transition remains in the previous
+  Almanac day.
 
 ## 2026-09-25 — Production nutrition reference bundle ships
 
@@ -38,9 +65,9 @@ called the importer. A fresh install therefore had an empty food catalogue.
   2,941 food factors and one import audit row. A second launch left the audit
   count at one.
 - Final checks: pipeline QA passed; Python 3.14 real-lake integration passed 102
-  tests (1 opt-in skip); the full Swift run passed 314 XCTest tests (1 skip) and
-  403 Swift Testing tests; the Debug simulator build and all four UI tests pass,
-  plus focused UI reruns after the final catalogue and attribution changes.
+  tests (1 opt-in skip); the full Swift run passed 316 XCTest tests (1 skip) and
+  407 Swift Testing tests; the Debug simulator build and all seven UI tests pass,
+  including the new More destinations and Today tracking calendar coverage.
 
 Still not done: owner-supplied Saudi/Gulf dish data, and the derived
 `edibleGrams`/specific-gravity calculation recorded as to-do #17.
@@ -115,11 +142,9 @@ The gap above ("not driven interactively") is now closed by a UI test target.
     -destination 'platform=iOS Simulator,id=<simulator-udid>' ONLY_ACTIVE_ARCH=YES
   ```
 
-- Note for whoever writes the next UI test: iOS collapses the sixth tab into
-  **More**, and that overflow menu is a *table* — its tabs are static texts
-  inside cells, not tab-bar buttons. The helper in this suite handles both
-  layouts; the first version looked for a button and failed, which is how the
-  real shape got pinned down.
+- Historical note: when this target had six roots, iOS collapsed the sixth tab
+  into **More** and presented the overflow as a table. The app now owns a
+  five-tab shell and an app-owned More page; the UI helper covers both shapes.
 
 
 ## 2026-09-24 — HealthKit non-water domains: sleep, vitals, body composition
@@ -169,8 +194,8 @@ for every domain except `.water`, and nothing in `Native/` ever called
   each spec carries its own scope predicate.
 
 - **`Native/Almanac/HealthModel.swift` / `HealthView.swift`** — the sync driver
-  and Settings → Health data. Placed in Settings rather than as a seventh tab:
-  the tab bar already overflows into "More" at six.
+  and Settings → Health data. It was placed in Settings rather than as a
+  seventh tab; the current app-owned More page now carries that navigation.
 
 ### Two mappings that are not the obvious identifier
 

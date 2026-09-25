@@ -58,8 +58,16 @@ public struct TimeModel: Sendable {
 
     /// The logical day an instant belongs to.
     public func logicalDay(_ instant: Date) -> LogicalDay {
-        let shifted = instant.addingTimeInterval(-Double(boundary.offsetHours) * 3600)
-        let parts = calendar.dateComponents([.year, .month, .day], from: shifted)
+        // Compare local wall-clock time to the boundary, then move by a
+        // calendar day. Subtracting elapsed hours would be wrong across a DST
+        // transition because the local clock is what the boundary describes.
+        let local = calendar.dateComponents([.hour, .minute, .second], from: instant)
+        let seconds = (local.hour ?? 0) * 3600 + (local.minute ?? 0) * 60 + (local.second ?? 0)
+        let startOfDay = calendar.startOfDay(for: instant)
+        let day = seconds < boundary.offsetHours * 3600
+            ? calendar.date(byAdding: .day, value: -1, to: startOfDay) ?? startOfDay
+            : startOfDay
+        let parts = calendar.dateComponents([.year, .month, .day], from: day)
         return LogicalDay(String(format: "%04d-%02d-%02d",
                                  parts.year ?? 0, parts.month ?? 0, parts.day ?? 0))
     }

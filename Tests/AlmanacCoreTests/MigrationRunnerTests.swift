@@ -108,4 +108,17 @@ final class MigrationRunnerTests: XCTestCase {
         XCTAssertTrue(tables.contains("backup_manifest"))
         XCTAssertTrue(tables.contains("schema_migrations"))
     }
+
+    func testMigration037AddsHealthSampleTimezoneIdentifiers() throws {
+        let (db, path) = try tempDB()
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+
+        let bodyColumns = Set(try db.query("PRAGMA table_info(body_composition_measurement);")
+            .compactMap { $0.string("name") })
+        let vitalsColumns = Set(try db.query("PRAGMA table_info(vitals_record);")
+            .compactMap { $0.string("name") })
+        XCTAssertTrue(bodyColumns.contains("timezoneIdentifier"))
+        XCTAssertTrue(vitalsColumns.contains("timezoneIdentifier"))
+    }
 }

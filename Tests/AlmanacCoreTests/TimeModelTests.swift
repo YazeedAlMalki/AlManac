@@ -30,6 +30,14 @@ final class TimeModelTests: XCTestCase {
         XCTAssertEqual(tm.logicalDay(instant("2026-09-05T01:00:00Z")).value, "2026-09-05")
     }
 
+    func testWakeOffsetAcrossDSTFallbackUsesLocalWallClock() {
+        let tm = TimeModel(timeZone: TimeZone(identifier: "America/New_York")!)
+        // 03:30 EST on the fallback date is still before Almanac's 04:00
+        // boundary, even though subtracting four elapsed hours crosses the
+        // offset change and lands on the following civil date.
+        XCTAssertEqual(tm.logicalDay(instant("2026-11-01T08:30:00Z")).value, "2026-10-31")
+    }
+
     func testBoundsAreHalfOpenAndRoundTrip() {
         let tm = TimeModel.riyadh(boundary: .wakeOffset(hours: 4))
         let day = LogicalDay("2026-09-04")

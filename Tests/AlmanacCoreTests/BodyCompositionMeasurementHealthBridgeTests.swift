@@ -76,6 +76,50 @@ struct BodyCompositionMeasurementHealthBridgeTests {
         #expect(try store.latestValue(for: "weight") == nil)
     }
 
+    @Test("A sample before the 04:00 boundary belongs to the previous logical day")
+    func logicalDayUsesAlmanacBoundary() throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let timestamp = formatter.date(from: "2026-09-05T00:30:00Z")!
+        let sample = HealthSample(externalID: "hk-weight-boundary", domain: .bodyMass,
+                                  start: timestamp, end: timestamp, value: 82.0, unit: "kg")
+        let bridge = BodyCompositionMeasurementHealthBridge(
+            db: db,
+            timeModel: TimeModel.riyadh(),
+            zone: ZoneContext(offsetMinutes: 180, identifier: "Asia/Riyadh")
+        )
+
+        _ = try bridge.apply(
+            HealthChangeSet(added: [sample], deletedExternalIDs: [], nextAnchor: nil),
+            in: db
+        )
+
+        #expect(try BodyCompositionMeasurementStore(db: db).latestValue(for: "weight")?.logicalDay == "2026-09-04")
+    }
+
+    @Test("Existing HealthKit rows are re-bucketed to the Almanac boundary")
+    func reconcilesExistingLogicalDays() throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let timestamp = formatter.date(from: "2026-01-01T08:30:00Z")!
+        let sample = HealthSample(externalID: "hk-weight-reconcile", domain: .bodyMass,
+                                  start: timestamp, end: timestamp, value: 82.0, unit: "kg")
+        let bridge = BodyCompositionMeasurementHealthBridge(
+            db: db,
+            timeModel: TimeModel(timeZone: TimeZone(identifier: "America/New_York")!),
+            zone: ZoneContext(offsetMinutes: -300, identifier: "America/New_York")
+        )
+        _ = try bridge.apply(
+            HealthChangeSet(added: [sample], deletedExternalIDs: [], nextAnchor: nil),
+            in: db
+        )
+        try db.run("UPDATE body_composition_measurement SET timezoneIdentifier = NULL, logicalDay = '2026-01-01';")
+
+        try bridge.reconcileLogicalDays()
+
+        #expect(try BodyCompositionMeasurementStore(db: db).latestValue(for: "weight")?.logicalDay == "2025-12-31")
+    }
+
     @Test("Samples without values are not inserted")
     func samplesWithoutValues() throws {
         let timestamp = Date(timeIntervalSince1970: 1000)

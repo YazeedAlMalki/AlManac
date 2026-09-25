@@ -8,9 +8,14 @@ across 6 suites. Schema is transcribed verbatim from
 `../../../almanac-tech-spec-v1.0.md` (the recovered, authoritative Technical
 Spec — see `docs/architecture/spec-reconciliation.md`), narrowed to what Slice
 2 didn't already build and what the owner didn't defer, plus a `deletedAt`
-column beyond the spec's literal text (§3). Not built: UI (SwiftUI screens),
-notification wiring for supplement reminders (depends on Slice 11's
-scheduler), progress photos (deferred by owner decision).
+column beyond the spec's literal text (§3). A first SwiftUI Measurements page
+now exists under More; full CRUD, supplement/context screens, notification wiring
+and progress photos remain future work.
+
+The native app now has a first Measurements surface under More: it lists recent
+body-composition and custom measurements and accepts manual values. The complete
+Slice 7 UI (plans, adherence, context tags, editing and historical exploration)
+remains future work.
 
 ## 1. What Slice 7 actually still needs (most of it is already done)
 
@@ -221,9 +226,10 @@ most-requested path):
 5. `ContextEventStore` — tag logging + read-by-date. ✅
    `ContextEventStoreTests`, 3 tests.
 
-Not built: any UI, and supplement reminders (needs Slice 11's notification
-scheduler — the `supplement` row in the spec's Appendix B suppression matrix
-is ready for it, but nothing schedules notifications yet in this codebase).
+Not built: the full body-composition UI, and supplement reminders (needs Slice
+11's notification scheduler — the `supplement` row in the spec's Appendix B
+suppression matrix is ready for it, but nothing schedules notifications yet in
+this codebase).
 
 ## 7. Bugs found and fixed while building §6.2
 

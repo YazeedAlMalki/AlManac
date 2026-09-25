@@ -56,6 +56,50 @@ struct VitalsRecordHealthBridgeTests {
         #expect(counts.updated == 1)
     }
     
+    @Test("A sample before the 04:00 boundary belongs to the previous logical day")
+    func logicalDayUsesAlmanacBoundary() throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let timestamp = formatter.date(from: "2026-09-05T00:30:00Z")!
+        let sample = HealthSample(externalID: "hk-rhr-boundary", domain: .heartRate,
+                                  start: timestamp, end: timestamp, value: 62.0, unit: "bpm")
+        let bridge = VitalsRecordHealthBridge(
+            db: db,
+            timeModel: TimeModel.riyadh(),
+            zone: ZoneContext(offsetMinutes: 180, identifier: "Asia/Riyadh")
+        )
+
+        _ = try bridge.apply(
+            HealthChangeSet(added: [sample], deletedExternalIDs: [], nextAnchor: nil),
+            in: db
+        )
+
+        #expect(try VitalsRecordStore(db: db).latestValue(for: "rhr")?.logicalDay == "2026-09-04")
+    }
+
+    @Test("Existing HealthKit rows are re-bucketed to the Almanac boundary")
+    func reconcilesExistingLogicalDays() throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let timestamp = formatter.date(from: "2026-09-05T00:30:00Z")!
+        let sample = HealthSample(externalID: "hk-rhr-reconcile", domain: .heartRate,
+                                  start: timestamp, end: timestamp, value: 62.0, unit: "bpm")
+        let bridge = VitalsRecordHealthBridge(
+            db: db,
+            timeModel: TimeModel.riyadh(),
+            zone: ZoneContext(offsetMinutes: 180, identifier: "Asia/Riyadh")
+        )
+        _ = try bridge.apply(
+            HealthChangeSet(added: [sample], deletedExternalIDs: [], nextAnchor: nil),
+            in: db
+        )
+        try db.run("UPDATE vitals_record SET logicalDay = '2026-09-05';")
+
+        try bridge.reconcileLogicalDays()
+
+        #expect(try VitalsRecordStore(db: db).latestValue(for: "rhr")?.logicalDay == "2026-09-04")
+    }
+
     @Test("Handle samples without values")
     func samplesWithoutValues() throws {
         let timestamp = Date(timeIntervalSince1970: 1000)

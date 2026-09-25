@@ -127,8 +127,9 @@ final class HydrationModel: ObservableObject {
     /// becomes active, so water logged in Health while Almanac was
     /// backgrounded appears without re-tapping Connect. A no-op until
     /// HealthKit has been configured via `configureHealthKit`.
-    func syncOnForeground() {
-        runHealthSync()
+    func syncOnForeground() async {
+        await syncInbound()
+        await drainOutbound()
     }
 
     /// After any local change, pull new HealthKit water samples in and then

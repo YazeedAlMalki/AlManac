@@ -5,6 +5,7 @@ import AlmanacCore
 struct ReadinessDashboardView: View {
     @ObservedObject var model: ReadinessModel
     @ObservedObject var trainingModel: TrainingModel
+    @ObservedObject var trackingModel: TrackingCalendarModel
     @State private var checkingIn = false
 
     var body: some View {
@@ -14,6 +15,10 @@ struct ReadinessDashboardView: View {
 
                 Section {
                     scoreHeader
+                }
+
+                Section("Tracking calendar") {
+                    TrackingCalendarView(model: trackingModel)
                 }
 
                 if let outcome = model.outcome {
@@ -44,9 +49,21 @@ struct ReadinessDashboardView: View {
                 }
             }
             .navigationTitle("Hi, \(model.displayName)")
-            .sheet(isPresented: $checkingIn) { MoodSorenessCheckInView(model: model) }
-            .task { model.refresh(); trainingModel.refresh() }
-            .refreshable { model.refresh(); trainingModel.refresh() }
+            .sheet(isPresented: $checkingIn) {
+                MoodSorenessCheckInView(model: model) {
+                    trackingModel.refresh()
+                }
+            }
+            .task {
+                model.refresh()
+                trainingModel.refresh()
+                trackingModel.refresh()
+            }
+            .refreshable {
+                model.refresh()
+                trainingModel.refresh()
+                trackingModel.refresh()
+            }
         }
     }
 

@@ -11,45 +11,44 @@ struct ReportListView: View {
     @State private var limit = 50
 
     var body: some View {
-        NavigationStack {
-            List {
-                if reports.isEmpty {
-                    ContentUnavailableView("Your laboratory reports", systemImage: "cross.case",
-                        description: Text("Create a report, then record its results exactly as reported."))
-                    Button("Create your first report") { create = true }
-                }
-                ForEach(reports, id: \.id) { report in
-                    NavigationLink {
-                        ReportDetailView(model: model, reportID: report.id)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(report.laboratoryNameText ?? "Laboratory report").font(.headline)
-                            Text("\(dateLabel(report.reportedAt)) · \(report.resultCount) results")
-                                .font(.subheadline).foregroundStyle(.secondary)
-                            if report.hasUnresolvedConflict {
-                                Label("Needs review", systemImage: "exclamationmark.bubble").font(.caption)
-                            }
-                        }.padding(.vertical, 4)
-                    }
-                }
-                if reports.count == limit {
-                    Button("Load more reports") { limit += 50; reload() }
+        List {
+            if reports.isEmpty {
+                ContentUnavailableView("Your laboratory reports", systemImage: "cross.case",
+                    description: Text("Create a report, then record its results exactly as reported."))
+                Button("Create your first report") { create = true }
+            }
+            ForEach(reports, id: \.id) { report in
+                NavigationLink {
+                    ReportDetailView(model: model, reportID: report.id)
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(report.laboratoryNameText ?? "Laboratory report").font(.headline)
+                        Text("\(dateLabel(report.reportedAt)) · \(report.resultCount) results")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        if report.hasUnresolvedConflict {
+                            Label("Needs review", systemImage: "exclamationmark.bubble").font(.caption)
+                        }
+                    }.padding(.vertical, 4)
                 }
             }
-            .navigationTitle("Laboratory")
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button("Import CSV", systemImage: "square.and.arrow.down") { importing = true }
-                    Button("New report", systemImage: "plus") { create = true }
-                }
+            if reports.count == limit {
+                Button("Load more reports") { limit += 50; reload() }
             }
-            .sheet(isPresented: $create) { ReportEditor(model: model, report: nil) }
-            .sheet(isPresented: $importing) { CSVImportView(model: model) }
-            .task { reload() }
-            .onChange(of: model.generation) { _, _ in reload() }
-            .editorError($error)
         }
+        .navigationTitle("Laboratory")
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button("Import CSV", systemImage: "square.and.arrow.down") { importing = true }
+                Button("New report", systemImage: "plus") { create = true }
+            }
+        }
+        .sheet(isPresented: $create) { ReportEditor(model: model, report: nil) }
+        .sheet(isPresented: $importing) { CSVImportView(model: model) }
+        .task { reload() }
+        .onChange(of: model.generation) { _, _ in reload() }
+        .editorError($error)
     }
+
     private func reload() {
         do { reports = try model.store?.reports(limit: limit) ?? [] }
         catch { self.error = String(describing: error) }

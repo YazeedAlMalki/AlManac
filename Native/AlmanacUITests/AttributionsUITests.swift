@@ -56,11 +56,16 @@ final class AttributionsUITests: XCTestCase {
         app.buttons["Attributions"].tap()
         XCTAssertTrue(app.navigationBars["Attributions"].waitForExistence(timeout: 10))
 
-        // "Bryl Lim" appears once as the source author and again in the
-        // per-exercise author list.
-        let authors = app.staticTexts.matching(identifier: "Bryl Lim")
-        XCTAssertGreaterThanOrEqual(authors.count, 2,
-                                    "the per-exercise author list is missing")
+        // The nutrition notices make the source list longer, so the per-exercise
+        // author section is below the initial viewport.
+        let authorSection = app.staticTexts[
+            "workout-guide exercise illustrations and exercise list — exercise authors"
+        ]
+        for _ in 0..<30 where !authorSection.exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(authorSection.exists, "the per-exercise author section is missing")
+        XCTAssertTrue(app.staticTexts["Bryl Lim"].exists)
     }
 
     // MARK: - Graphics
@@ -114,6 +119,44 @@ final class AttributionsUITests: XCTestCase {
                       "the screen must list synced domains or explain that there are none")
     }
 
+    func testMorePageContainsTheRequestedDestinations() {
+        let more = app.tabBars.buttons["More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        more.tap()
+
+        XCTAssertTrue(app.staticTexts["Laboratory"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Profile"].exists)
+        XCTAssertTrue(app.staticTexts["Measurements"].exists)
+        XCTAssertTrue(app.staticTexts["Settings"].exists)
+    }
+
+    func testTodayShowsTheTrackingCalendar() {
+        XCTAssertTrue(app.staticTexts["Tracking calendar"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.datePickers.firstMatch.exists)
+    }
+
+    func testMoreDestinationsOpen() {
+        let more = app.tabBars.buttons["More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        more.tap()
+
+        let profile = app.buttons["Profile"]
+        XCTAssertTrue(profile.waitForExistence(timeout: 5))
+        profile.tap()
+        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
+        let back = app.navigationBars.buttons["More"]
+        if back.exists {
+            back.tap()
+        } else {
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+
+        let measurements = app.buttons["Measurements"]
+        XCTAssertTrue(measurements.waitForExistence(timeout: 5))
+        measurements.tap()
+        XCTAssertTrue(app.navigationBars["Measurements"].waitForExistence(timeout: 5))
+    }
+
     // MARK: - Helpers
 
     /// Scrolls a lazily-built Form until `label` appears. A fixed number of
@@ -126,10 +169,11 @@ final class AttributionsUITests: XCTestCase {
         }
     }
 
-    /// iOS collapses a sixth tab into "More", so Settings may be one tap or two
-    /// depending on width; handle both rather than pin one layout. The overflow
-    /// tabs are presented outside the tab bar, hence the second lookup.
-    private func openSettings() {        let inTabBar = app.tabBars.buttons["Settings"]
+    /// Settings is reached through the app-owned More tab. The button lookup is
+    /// preferred because a NavigationLink is a button; the static-text fallback
+    /// keeps this helper usable on iPad's older accessibility shape.
+    private func openSettings() {
+        let inTabBar = app.tabBars.buttons["Settings"]
         if inTabBar.exists && inTabBar.isHittable {
             inTabBar.tap()
             return
@@ -137,11 +181,16 @@ final class AttributionsUITests: XCTestCase {
         let more = app.tabBars.buttons["More"]
         XCTAssertTrue(more.waitForExistence(timeout: 5), "no tab bar to reach Settings from")
         more.tap()
-        // The overflow menu is a table, so the tab shows up as a static text
-        // inside a cell rather than as a tab-bar button.
+
+        let inMorePage = app.buttons["Settings"]
+        if inMorePage.waitForExistence(timeout: 5) {
+            inMorePage.tap()
+            return
+        }
+
         let inOverflow = app.staticTexts["Settings"]
         XCTAssertTrue(inOverflow.waitForExistence(timeout: 5),
-                      "Settings is not reachable from the More menu")
+                      "Settings is not reachable from the More page")
         inOverflow.tap()
     }
 }

@@ -1,6 +1,14 @@
 import SwiftUI
 import AlmanacCore
 
+private enum AppTab: Hashable {
+    case today
+    case training
+    case hydration
+    case nutrition
+    case more
+}
+
 @main
 @MainActor
 struct AlmanacApp: App {
@@ -10,24 +18,43 @@ struct AlmanacApp: App {
     @StateObject private var nutritionModel = NutritionModel()
     @StateObject private var trainingModel = TrainingModel()
     @StateObject private var healthModel = HealthModel()
+    @StateObject private var trackingModel = TrackingCalendarModel()
+    @State private var selectedTab = AppTab.today
     @Environment(\.scenePhase) private var scenePhase
     var body: some Scene {
         WindowGroup {
             Group {
                 if model.store != nil {
-                    TabView {
-                        ReadinessDashboardView(model: readinessModel, trainingModel: trainingModel)
-                            .tabItem { Label("Today", systemImage: "gauge.with.dots.needle.67percent") }
+                    TabView(selection: $selectedTab) {
+                        ReadinessDashboardView(
+                            model: readinessModel,
+                            trainingModel: trainingModel,
+                            trackingModel: trackingModel
+                        )
+                        .tag(AppTab.today)
+                        .tabItem { Label("Today", systemImage: "gauge.with.dots.needle.67percent") }
                         TrainingDashboardView(model: trainingModel)
+                            .tag(AppTab.training)
                             .tabItem { Label("Training", systemImage: "dumbbell") }
-                        ReportListView(model: model)
-                            .tabItem { Label("Laboratory", systemImage: "cross.case") }
                         HydrationDashboardView(model: hydrationModel)
+                            .tag(AppTab.hydration)
                             .tabItem { Label("Hydration", systemImage: "drop") }
                         NutritionQuickEntryView(model: nutritionModel)
+                            .tag(AppTab.nutrition)
                             .tabItem { Label("Nutrition", systemImage: "fork.knife") }
-                        SettingsView(model: hydrationModel, labModel: model, healthModel: healthModel)
-                            .tabItem { Label("Settings", systemImage: "gear") }
+                        MoreView(
+                            db: model.db,
+                            labModel: model,
+                            hydrationModel: hydrationModel,
+                            healthModel: healthModel,
+                            readinessModel: readinessModel,
+                            trackingModel: trackingModel
+                        )
+                        .tag(AppTab.more)
+                        .tabItem { Label("More", systemImage: "ellipsis.circle") }
+                    }
+                    .onChange(of: selectedTab) { _, tab in
+                        if tab == .today { trackingModel.refresh() }
                     }
                     // The database is opened synchronously in LaboratoryModel.open(),
                     // so `model.db` is already set by the time this branch first
@@ -40,6 +67,7 @@ struct AlmanacApp: App {
                         nutritionModel.configure(db: model.db)
                         trainingModel.configure(db: model.db)
                         healthModel.configure(db: model.db)
+                        trackingModel.configure(db: model.db)
                     }
                 } else {
                     ContentUnavailableView {
@@ -54,14 +82,15 @@ struct AlmanacApp: App {
             .tint(.teal)
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
-                    hydrationModel.syncOnForeground()
-                    // Awaited rather than fired and forgotten: sleep episodes and
-                    // vitals feed the readiness score, so the dashboard must be
-                    // refreshed *after* the sync that fills them. Both syncs are
-                    // no-ops until HealthKit is connected.
+                    // Await both syncs before refreshing: sleep, vitals and water
+                    // all feed the homepage, and a fire-and-forget hydration
+                    // sync would leave the tracking calendar one refresh behind.
+                    // Both syncs are no-ops until HealthKit is connected.
                     Task {
+                        await hydrationModel.syncOnForeground()
                         await healthModel.syncNow()
                         readinessModel.refresh()
+                        trackingModel.refresh()
                     }
                 }
             }

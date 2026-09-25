@@ -7,6 +7,7 @@ import AlmanacCore
 @MainActor
 struct MoodSorenessCheckInView: View {
     @ObservedObject var model: ReadinessModel
+    let onSaved: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     @State private var moodScore = 5
@@ -50,6 +51,7 @@ struct MoodSorenessCheckInView: View {
             try model.logMoodAndSoreness(
                 moodScore: moodScore, moodNotes: optionalText(moodNotes),
                 sorenessScore: sorenessScore, bodyAreas: Array(selectedAreas), sorenessNotes: optionalText(sorenessNotes))
+            onSaved()
             dismiss()
         } catch { self.error = String(describing: error) }
     }
