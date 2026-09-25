@@ -23,6 +23,7 @@ public struct BackupService: Sendable {
         case corruptBundle(reason: String)
         case missingPayload(String)
         case cannotWriteDocument(relativePath: String, underlying: String)
+        case rollbackFailed(String)
         case cannotReadDirectory(String)
 
         public var description: String {
@@ -35,6 +36,7 @@ public struct BackupService: Sendable {
             case .corruptBundle(let reason): return "Backup is damaged: \(reason)"
             case .missingPayload(let kind): return "Backup is missing its \(kind) payload"
             case .cannotWriteDocument(let path, let underlying): return "Could not restore document \(path): \(underlying)"
+            case .rollbackFailed(let detail): return "Restore rollback was incomplete: \(detail)"
             case .cannotReadDirectory(let d): return "Could not read the folder at \(d)"
             }
         }

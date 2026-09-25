@@ -89,6 +89,7 @@ final class BackupBundleTests: XCTestCase {
         try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: sourceDocs, note: nil)
 
         try FileManager.default.createDirectory(at: targetDocs, withIntermediateDirectories: true)
+        try writeDoc(targetDocs, "a.txt", "old document")
         try Data("not a directory".utf8).write(to: targetDocs.appendingPathComponent("nested"), options: .atomic)
         let target = try makeDB(targetPath, anchors: [("steps", [9])])
 
@@ -101,10 +102,44 @@ final class BackupBundleTests: XCTestCase {
             XCTFail("unexpected error: \(error)")
         }
 
-        XCTAssertFalse(FileManager.default.fileExists(atPath: targetDocs.appendingPathComponent("a.txt").path),
-                       "a failed restore must not leave an earlier document behind")
+        XCTAssertEqual(try String(contentsOf: targetDocs.appendingPathComponent("a.txt"), encoding: .utf8),
+                       "old document", "rollback must restore an overwritten document")
         XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9],
                        "a failed document restore must not replace the database")
+    }
+
+    func testSymlinkedDocumentParentCannotEscapeTheDocumentRoot() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/snapshot.almanac-backup"
+        let targetPath = dir + "/tgt.sqlite"
+        let sourceDocs = URL(fileURLWithPath: dir + "/src-docs", isDirectory: true)
+        let targetDocs = URL(fileURLWithPath: dir + "/tgt-docs", isDirectory: true)
+        let outside = URL(fileURLWithPath: dir + "/outside", isDirectory: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        try writeDoc(sourceDocs, "link/escaped.txt", "must not escape")
+        let source = try makeDB(sourcePath)
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: sourceDocs, note: nil)
+        try FileManager.default.createDirectory(at: targetDocs, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            at: targetDocs.appendingPathComponent("link"),
+            withDestinationURL: outside
+        )
+        let target = try makeDB(targetPath, anchors: [("steps", [9])])
+
+        do {
+            try BackupService(db: target).restoreBundle(at: bundlePath, documentsRoot: targetDocs)
+            XCTFail("a symlinked parent must not escape the document root")
+        } catch BackupService.BackupError.corruptBundle(let reason) {
+            XCTAssertTrue(reason.contains("escapes"), "unexpected reason: \(reason)")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: outside.appendingPathComponent("escaped.txt").path))
+        XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9])
     }
 
     func testRestoreReplacesDatabaseWholesaleAndLeavesExtraFiles() throws {
@@ -203,6 +238,49 @@ final class BackupBundleTests: XCTestCase {
 
         XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9],
                        "a corrupt bundle must not touch the live database")
+    }
+
+    func testValidButNonAlmanacDatabaseIsRejectedBeforeDocumentsCommit() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/snapshot.almanac-backup"
+        let targetPath = dir + "/tgt.sqlite"
+        let sourceDocs = URL(fileURLWithPath: dir + "/src-docs", isDirectory: true)
+        let targetDocs = URL(fileURLWithPath: dir + "/tgt-docs", isDirectory: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        try writeDoc(sourceDocs, "a.txt", "new document")
+        let source = try makeDB(sourcePath)
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: sourceDocs, note: nil)
+
+        let foreignPath = dir + "/foreign.sqlite"
+        let foreign = try Database(path: foreignPath)
+        try foreign.run("CREATE TABLE unrelated (id INTEGER PRIMARY KEY);")
+        let foreignBytes = try Data(contentsOf: URL(fileURLWithPath: foreignPath))
+        do {
+            let bundle = try Database(path: bundlePath)
+            try bundle.run("UPDATE bundle_db SET bytes = ?;", [.blob(Array(foreignBytes))])
+            try bundle.run("UPDATE bundle_meta SET db_sha256 = ?;", [
+                .text(SHA256File.hex(of: Array(foreignBytes)))
+            ])
+        }
+
+        try FileManager.default.createDirectory(at: targetDocs, withIntermediateDirectories: true)
+        try writeDoc(targetDocs, "a.txt", "old document")
+        let target = try makeDB(targetPath, anchors: [("steps", [9])])
+
+        do {
+            try BackupService(db: target).restoreBundle(at: bundlePath, documentsRoot: targetDocs)
+            XCTFail("restore must reject a non-Almanac database payload")
+        } catch BackupService.BackupError.corruptBundle(let reason) {
+            XCTAssertTrue(reason.contains("Almanac database"), "unexpected reason: \(reason)")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+
+        XCTAssertEqual(try String(contentsOf: targetDocs.appendingPathComponent("a.txt"), encoding: .utf8),
+                       "old document")
+        XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9])
     }
 
     func testCorruptAndMissingFilesAreRejected() throws {

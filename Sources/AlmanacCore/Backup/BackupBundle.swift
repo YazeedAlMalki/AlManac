@@ -181,6 +181,29 @@ public extension BackupService {
             throw BackupError.incompatibleSchemaVersion(found: meta.schemaVersion, expected: expected)
         }
 
+        // Materialize and validate the database before committing any live
+        // document. HealthKit de-duplication also happens on this private copy,
+        // so the only remaining database operation is the final swap.
+        let tmpDir = fm.temporaryDirectory.appendingPathComponent("AlmanacRestore-\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: tmpDir) }
+        let restoredFile = tmpDir.appendingPathComponent("restored.sqlite")
+        try Data(dbBytes).write(to: restoredFile, options: .atomic)
+        let restored = try Database(path: restoredFile.path)
+        do {
+            _ = try restored.query("SELECT COUNT(*) AS n FROM schema_migrations;")
+        } catch {
+            throw BackupError.corruptBundle(reason: "database payload is not an Almanac database")
+        }
+        try HydrationStore(db: restored).reconcileAfterRestore()
+
+        let rollbackFile = tmpDir.appendingPathComponent("rollback.sqlite")
+        let rollback = try Database(path: rollbackFile.path)
+        try db.backup(into: rollback)
+
+        var attemptedDocumentTargets: [URL] = []
+        var originalDocuments: [(target: URL, data: Data?)] = []
+
         // Documents first; database last (see file header for the asymmetry).
         // Stage every payload before touching the live document root, then
         // commit with a small rollback journal so a write/move failure cannot
@@ -192,7 +215,6 @@ public extension BackupService {
             } catch {
                 throw BackupError.notABackupFile(path)
             }
-            let base = documentsRoot.standardizedFileURL.path
             let staging = fm.temporaryDirectory.appendingPathComponent(
                 "AlmanacDocuments-\(UUID().uuidString)", isDirectory: true
             )
@@ -205,10 +227,7 @@ public extension BackupService {
                       case .blob(let bytes)? = row["bytes"] else {
                     throw BackupError.corruptBundle(reason: "unreadable document payload")
                 }
-                let target = URL(fileURLWithPath: relativePath, relativeTo: documentsRoot).standardizedFileURL
-                guard target.path.hasPrefix(base + "/") else {
-                    throw BackupError.corruptBundle(reason: "document path escapes the document root: \(relativePath)")
-                }
+                let target = try validatedDocumentTarget(relativePath: relativePath, under: documentsRoot)
                 do {
                     let stagedURL = staging.appendingPathComponent(relativePath)
                     try fm.createDirectory(at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -220,14 +239,13 @@ public extension BackupService {
                 }
             }
 
-            var originals: [(target: URL, data: Data?)] = []
             for document in staged {
                 do {
                     try validateDocumentTarget(document.target, under: documentsRoot)
                     if fm.fileExists(atPath: document.target.path) {
-                        originals.append((document.target, try Data(contentsOf: document.target)))
+                        originalDocuments.append((document.target, try Data(contentsOf: document.target)))
                     } else {
-                        originals.append((document.target, nil))
+                        originalDocuments.append((document.target, nil))
                     }
                 } catch {
                     throw BackupError.cannotWriteDocument(relativePath: document.relativePath,
@@ -235,50 +253,60 @@ public extension BackupService {
                 }
             }
 
-            var written: [URL] = []
             var currentRelativePath = "document"
             do {
                 for document in staged {
                     currentRelativePath = document.relativePath
+                    attemptedDocumentTargets.append(document.target)
                     try fm.createDirectory(at: document.target.deletingLastPathComponent(),
                                            withIntermediateDirectories: true)
                     try Data(document.bytes).write(to: document.target, options: .atomic)
-                    written.append(document.target)
                 }
             } catch {
-                for target in written.reversed() {
-                    if let original = originals.first(where: { $0.target == target })?.data {
-                        try? Data(original).write(to: target, options: .atomic)
-                    } else {
-                        try? fm.removeItem(at: target)
-                    }
+                let rollbackFailures = rollbackDocuments(
+                    attemptedDocumentTargets, originals: originalDocuments
+                )
+                if !rollbackFailures.isEmpty {
+                    throw BackupError.rollbackFailed(rollbackFailures.joined(separator: "; "))
                 }
                 throw BackupError.cannotWriteDocument(relativePath: currentRelativePath,
                                                       underlying: String(describing: error))
             }
         }
 
-        // Database last, wholesale: the target's current contents are replaced.
-        let tmpDir = fm.temporaryDirectory.appendingPathComponent("AlmanacRestore-\(UUID().uuidString)", isDirectory: true)
-        try fm.createDirectory(at: tmpDir, withIntermediateDirectories: true)
-        defer { try? fm.removeItem(at: tmpDir) }
-        let restoredFile = tmpDir.appendingPathComponent("restored.sqlite")
-        try Data(dbBytes).write(to: restoredFile, options: .atomic)
-        let restored = try Database(path: restoredFile.path)
         do {
-            _ = try restored.query("SELECT COUNT(*) AS n FROM schema_migrations;")
+            // Database last, wholesale: the target's current contents are replaced.
+            try restored.backup(into: db)
         } catch {
-            throw BackupError.corruptBundle(reason: "database payload is not an Almanac database")
+            var failures = rollbackDocuments(
+                attemptedDocumentTargets, originals: originalDocuments
+            )
+            do {
+                try rollback.backup(into: db)
+            } catch {
+                failures.append("database rollback: \(String(describing: error))")
+            }
+            if !failures.isEmpty {
+                throw BackupError.rollbackFailed(failures.joined(separator: "; "))
+            }
+            throw error
         }
-        try restored.backup(into: db)
+    }
 
-        // HealthKit de-duplication (Slice 12 handoff §6.18): a manual hydration
-        // entry pushed to HealthKit carries `healthkit_external_id`, and the
-        // bundled snapshot can also hold the HealthKit-sourced echo of that same
-        // sample. After restore they are the same drink twice — collapse the
-        // machine-imported copy, keeping the richer manual row. This runs on the
-        // shared restore seam so *every* restore path de-duplicates.
-        try HydrationStore(db: db).reconcileAfterRestore()
+    private func validatedDocumentTarget(relativePath: String, under root: URL) throws -> URL {
+        let target = URL(fileURLWithPath: relativePath, relativeTo: root).standardizedFileURL
+        let rootPath = root.resolvingSymlinksInPath().standardizedFileURL.path
+        let resolvedParent = target.deletingLastPathComponent().resolvingSymlinksInPath()
+        let targetPath = resolvedParent
+            .appendingPathComponent(target.lastPathComponent)
+            .resolvingSymlinksInPath()
+            .standardizedFileURL.path
+        guard targetPath.hasPrefix(rootPath + "/") else {
+            throw BackupError.corruptBundle(
+                reason: "document path escapes the document root: \(relativePath)"
+            )
+        }
+        return target
     }
 
     private func validateDocumentTarget(_ target: URL, under root: URL) throws {
@@ -290,25 +318,29 @@ public extension BackupService {
                 NSLocalizedDescriptionKey: "document root is not a directory"
             ])
         }
-
-        var current = target.standardizedFileURL
-        while current.path != rootPath {
-            if fm.fileExists(atPath: current.path, isDirectory: &isDirectory) {
-                if current == target, isDirectory.boolValue {
-                    throw NSError(domain: "AlmanacBackup", code: 2, userInfo: [
-                        NSLocalizedDescriptionKey: "document target is a directory"
-                    ])
-                }
-                guard isDirectory.boolValue else {
-                    throw NSError(domain: "AlmanacBackup", code: 3, userInfo: [
-                        NSLocalizedDescriptionKey: "document parent is not a directory"
-                    ])
-                }
-            }
-            let parent = current.deletingLastPathComponent()
-            guard parent.path != current.path else { break }
-            current = parent
+        if fm.fileExists(atPath: target.path, isDirectory: &isDirectory), isDirectory.boolValue {
+            throw NSError(domain: "AlmanacBackup", code: 2, userInfo: [
+                NSLocalizedDescriptionKey: "document target is a directory"
+            ])
         }
+    }
+
+    private func rollbackDocuments(_ targets: [URL],
+                                   originals: [(target: URL, data: Data?)]) -> [String] {
+        let fm = FileManager.default
+        var failures: [String] = []
+        for target in targets.reversed() {
+            do {
+                if let original = originals.first(where: { $0.target == target })?.data {
+                    try Data(original).write(to: target, options: .atomic)
+                } else if fm.fileExists(atPath: target.path) {
+                    try fm.removeItem(at: target)
+                }
+            } catch {
+                failures.append("\(target.path): \(String(describing: error))")
+            }
+        }
+        return failures
     }
 
     /// Enumerates the valid bundles in a directory, newest first.
