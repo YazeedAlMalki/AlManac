@@ -43,6 +43,37 @@ root tab.
   measurement timestamps. A 03:30 sample on a fallback transition remains in
   the previous Almanac day.
 
+## 2026-09-25 — BRD v1.6 Activity Rings Calendar
+
+The Today tracking surface now implements the v1.6 §6.16 product surface rather
+than the superseded free-date picker:
+
+- `ActivityRingCalendar` is a derived, local-first month reader. It uses the
+  existing hydration settings/logs, live workout sessions, and nutrition logs;
+  it does not persist a second ring-state cache.
+- Hydration and training are binary rings. The month query uses `TimeModel` and
+  the 04:00 logical-day boundary, including month-end and DST-safe bounds.
+  Civil calendar dates are rendered as calendar dates, while records are
+  assigned to their logical day.
+- A logged nutrition day reports `dietProfileRequired`; the ring does not invent
+  hit/off/mess thresholds before the separate Diet Profile spec exists. A day
+  with no nutrition log renders no nutrition ring. Golden completion requires a
+  Nutrition `hit`, so the current dependency cannot produce a false golden day.
+- Digestion has a persisted Settings toggle. Its visual indicator is distinct and
+  explicitly unavailable because the daily fill rule is intentionally undefined.
+- The current explicit hydration goal is used for the displayed month until the
+  separate §6.10 historical target-snapshot work exists; no retroactive target
+  history is invented here.
+- Today now has previous/next month controls, a selectable month grid, a
+  separate today halo, non-color ring states plus VoiceOver labels, day detail,
+  and a correction surface for hydration, nutrition, and training logs. The
+  correction surface recalculates the rings through the owning stores.
+- Migration 039 adds the singleton Activity Rings display preference. Core
+  tests cover the public month seam; UI tests cover the grid, navigation,
+  day-detail/editor path, and the Settings toggle.
+- Final verification: 332 XCTest tests (1 skipped), 420 Swift Testing tests,
+  simulator build, and all 10 UI tests pass.
+
 ## 2026-09-25 — Fasting edit reconciliation
 
 - `FastingAwareNutritionLog.update` now revises the stored meal and reruns the

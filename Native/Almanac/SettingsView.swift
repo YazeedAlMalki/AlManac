@@ -6,11 +6,14 @@ struct SettingsView: View {
     @ObservedObject var model: HydrationModel
     @ObservedObject var labModel: LaboratoryModel
     @ObservedObject var healthModel: HealthModel
+    @ObservedObject var trackingModel: TrackingCalendarModel
     @State private var dailyGoal: Double = 2000
     @State private var remindersEnabled = false
     @State private var reminderIntervalMinutes = 60
     @State private var reminderStartHour = 7
     @State private var reminderEndHour = 22
+    @State private var digestionRingEnabled = false
+    @State private var didLoadSettings = false
     @State private var healthKitStatus: String?
     @State private var error: String?
 
@@ -65,16 +68,43 @@ struct SettingsView: View {
                     }
                 }
             }
+            Section("Activity rings") {
+                Toggle("Show digestion ring", isOn: Binding(
+                    get: { digestionRingEnabled },
+                    set: setDigestionRingEnabled
+                ))
+                Text("The digestion display is separate. Its daily fill rule remains undefined, so no completion state is inferred.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .navigationTitle("Settings")
         .editorError($error)
         .task {
+            guard !didLoadSettings else { return }
+            didLoadSettings = true
             dailyGoal = model.hydrationSettings?.dailyGoalMilliliters ?? 2000
-            guard let settings = model.hydrationSettings else { return }
-            remindersEnabled = settings.remindersEnabled
-            reminderIntervalMinutes = settings.reminderIntervalMinutes
-            reminderStartHour = settings.reminderStartHour
-            reminderEndHour = settings.reminderEndHour
+            if let db = labModel.db {
+                digestionRingEnabled = (try? ActivityRingSettingsStore(db: db).isDigestionEnabled()) ?? false
+            }
+            if let settings = model.hydrationSettings {
+                remindersEnabled = settings.remindersEnabled
+                reminderIntervalMinutes = settings.reminderIntervalMinutes
+                reminderStartHour = settings.reminderStartHour
+                reminderEndHour = settings.reminderEndHour
+            }
+        }
+    }
+
+    private func setDigestionRingEnabled(_ enabled: Bool) {
+        digestionRingEnabled = enabled
+        do {
+            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+            try ActivityRingSettingsStore(db: db).setDigestionEnabled(enabled)
+            trackingModel.refresh()
+        } catch {
+            digestionRingEnabled = !enabled
+            self.error = String(describing: error)
         }
     }
 

@@ -413,7 +413,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
     /// about which meals fall in a range.
     public func logged(from: String, to: String) throws -> [PlacedLogEntry] {
         guard let range = DateRange(from: from, to: to) else { return [] }
-        return try liveRows().compactMap { NutritionLogStore.placed($0, in: range) }
+        return try liveRows(in: range).compactMap { NutritionLogStore.placed($0, in: range) }
     }
 
     /// A log entry with the time the timeline would place it at.
@@ -424,11 +424,27 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
         public let rangeFit: RangeFit
     }
 
-    private func liveRows() throws -> [Row] {
-        try db.query("""
+    private func liveRows(in range: DateRange) throws -> [Row] {
+        // Prefilter by the requested range before the exact PartialDateTime
+        // placement pass. The two-day margin covers stored offsets; coarse
+        // year/month values stay in the candidate set because their prefix
+        // cannot be compared as an instant.
+        let margin: TimeInterval = 2 * 24 * 60 * 60
+        let bounds = DateRange(
+            start: range.start.addingTimeInterval(-margin),
+            end: range.end.addingTimeInterval(margin)
+        ).utcTextBounds
+        return try db.query("""
             SELECT \(NutritionLogStore.columns) FROM nutrition_log
-            WHERE deleted_at IS NULL;
-            """)
+            WHERE deleted_at IS NULL AND (
+                eaten_precision IN ('year', 'month')
+                OR (eaten_at IS NOT NULL AND eaten_at >= ? AND eaten_at < ?)
+                OR (eaten_at IS NULL AND recorded_at >= ? AND recorded_at < ?)
+            );
+            """, [
+                .text(bounds.start), .text(bounds.end),
+                .text(bounds.start), .text(bounds.end)
+            ])
     }
 
     /// Placement is the eaten time, else when it was recorded. There is no
@@ -457,7 +473,7 @@ public struct NutritionLogStore: TimelineProviding, @unchecked Sendable {
 
     public func entries(from: String, to: String) throws -> [TimelineEntry] {
         guard let range = DateRange(from: from, to: to) else { return [] }
-        return try liveRows().compactMap { row in
+        return try liveRows(in: range).compactMap { row in
             guard let placed = NutritionLogStore.placed(row, in: range) else { return nil }
             let held = placed.entry
 

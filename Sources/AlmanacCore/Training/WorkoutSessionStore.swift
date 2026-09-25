@@ -110,6 +110,13 @@ public struct WorkoutSessionStore: @unchecked Sendable {
         return changes > 0
     }
 
+    public func updateDate(id: Int64, to date: String) throws -> Bool {
+        try db.run("""
+            UPDATE workoutSession SET date = ?, updatedAt = ?
+            WHERE id = ? AND deletedAt IS NULL;
+            """, [.text(date), .text(nowText), .integer(id)]) > 0
+    }
+
     // MARK: - Read
 
     public func session(id: Int64) throws -> WorkoutSessionEntry? {

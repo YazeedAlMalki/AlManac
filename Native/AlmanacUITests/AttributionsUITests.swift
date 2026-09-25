@@ -27,6 +27,7 @@ final class AttributionsUITests: XCTestCase {
     /// a derived image is marked as modified with the change described.
     func testAttributionsPageCreditsEveryBundledSource() {
         openSettings()
+        scrollTo("Attributions")
         app.buttons["Attributions"].tap()
         XCTAssertTrue(app.navigationBars["Attributions"].waitForExistence(timeout: 10),
                       "the Attributions page never appeared")
@@ -53,6 +54,7 @@ final class AttributionsUITests: XCTestCase {
     /// row-level author attribution.
     func testAttributionsPageListsExerciseAuthors() {
         openSettings()
+        scrollTo("Attributions")
         app.buttons["Attributions"].tap()
         XCTAssertTrue(app.navigationBars["Attributions"].waitForExistence(timeout: 10))
 
@@ -130,9 +132,51 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Settings"].exists)
     }
 
-    func testTodayShowsTheTrackingCalendar() {
-        XCTAssertTrue(app.staticTexts["Tracking calendar"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.datePickers.firstMatch.exists)
+    func testTodayShowsTheActivityRingsCalendar() {
+        XCTAssertTrue(app.staticTexts["Activity rings"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.datePickers.firstMatch.exists, "the free-date picker was superseded")
+
+        let previous = app.buttons["Previous month"]
+        XCTAssertTrue(previous.waitForExistence(timeout: 5))
+
+        let monthTitle = app.staticTexts["activity-ring-month-title"]
+        XCTAssertTrue(monthTitle.waitForExistence(timeout: 5))
+        let monthFormatter = DateFormatter()
+        monthFormatter.dateFormat = "yyyy-MM"
+        let previousMonth = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
+        let previousMonthID = monthFormatter.string(from: previousMonth)
+        previous.press(forDuration: 0.1)
+        XCTAssertTrue(app.buttons["activity-ring-day-\(previousMonthID)-01"].waitForExistence(timeout: 3))
+
+        let day = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", "activity-ring-day-")
+        ).firstMatch
+        XCTAssertTrue(day.waitForExistence(timeout: 5), "the month grid rendered no selectable days")
+        let selectedDay = String(day.identifier.dropFirst("activity-ring-day-".count))
+        day.tap()
+        XCTAssertTrue(app.staticTexts["Rings for \(selectedDay)"].waitForExistence(timeout: 5))
+        let edit = app.buttons["Edit selected day's logs"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 5))
+        edit.tap()
+        XCTAssertTrue(app.navigationBars["Edit \(selectedDay)"].waitForExistence(timeout: 5))
+    }
+
+    func testSettingsCanToggleTheDigestionActivityRing() {
+        openSettings()
+        scrollTo("Activity rings")
+        let toggle = app.switches["Show digestion ring"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        let original = toggle.value as? String
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        let changed = expectation(for: NSPredicate { _, _ in
+            (toggle.value as? String) != original
+        }, evaluatedWith: toggle)
+        wait(for: [changed], timeout: 3)
+        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        let restored = expectation(for: NSPredicate { _, _ in
+            (toggle.value as? String) == original
+        }, evaluatedWith: toggle)
+        wait(for: [restored], timeout: 3)
     }
 
     func testMoreDestinationsOpen() {
@@ -187,8 +231,9 @@ final class AttributionsUITests: XCTestCase {
     /// swipes rather than a loop on the element query, so a genuinely missing
     /// row still fails instead of spinning.
     private func scrollTo(_ label: String, maxSwipes: Int = 6) {
-        let target = app.buttons[label]
-        for _ in 0..<maxSwipes where !target.exists || !target.isHittable {
+        let button = app.buttons[label]
+        let text = app.staticTexts[label]
+        for _ in 0..<maxSwipes where !button.exists && !text.exists {
             app.swipeUp()
         }
     }

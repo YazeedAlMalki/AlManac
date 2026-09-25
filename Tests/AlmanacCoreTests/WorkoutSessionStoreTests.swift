@@ -64,6 +64,16 @@ struct WorkoutSessionStoreTests {
         #expect(try store.session(id: id)?.sessionType == nil)
     }
 
+    @Test("A session can move to another logical day")
+    func updatesLogicalDay() throws {
+        let id = try store.log(WorkoutSessionDraft(date: "2026-09-16", durationMinutes: 30))
+
+        #expect(try store.updateDate(id: id, to: "2026-09-17") == true)
+        #expect(try store.sessions(date: "2026-09-16").isEmpty)
+        #expect(try store.sessions(date: "2026-09-17").count == 1)
+        #expect(try store.updateDate(id: -1, to: "2026-09-18") == false)
+    }
+
     @Test("Soft delete removes a session from date listings")
     func softDelete() throws {
         let id = try store.log(WorkoutSessionDraft(date: "2026-09-16", durationMinutes: 30))

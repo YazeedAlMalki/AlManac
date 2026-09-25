@@ -17,7 +17,7 @@ struct ReadinessDashboardView: View {
                     scoreHeader
                 }
 
-                Section("Tracking calendar") {
+                Section("Activity rings") {
                     TrackingCalendarView(model: trackingModel)
                 }
 

@@ -48,7 +48,12 @@ struct MoreView: View {
                 }
 
                 NavigationLink {
-                    SettingsView(model: hydrationModel, labModel: labModel, healthModel: healthModel)
+                    SettingsView(
+                        model: hydrationModel,
+                        labModel: labModel,
+                        healthModel: healthModel,
+                        trackingModel: trackingModel
+                    )
                 } label: {
                     Label("Settings", systemImage: "gear")
                 }
@@ -413,179 +418,6 @@ private struct CustomMeasurementEditor: View {
             dismiss()
         } catch {
             self.error = String(describing: error)
-        }
-    }
-}
-
-struct TrackingDaySummary: Hashable {
-    let day: String
-    let items: [TrackingTimelineItem]
-
-    var isEmpty: Bool { items.isEmpty }
-}
-
-@MainActor
-final class TrackingCalendarModel: ObservableObject {
-    @Published var selectedDate: Date
-    @Published private(set) var todayDate: Date
-    @Published private(set) var summary = TrackingDaySummary(day: "", items: [])
-    @Published private(set) var isLoading = false
-    @Published private(set) var error: String?
-
-    private var db: Database?
-    private var timeModel: TimeModel { TimeModel(timeZone: .current) }
-    private var lastToday: LogicalDay
-    private var lastZoneSignature = ""
-    private var selectedDay: LogicalDay
-    private var followsToday = true
-
-    init() {
-        let model = TimeModel(timeZone: .current)
-        let today = model.logicalDay(Date())
-        let todayDate = Self.date(on: today, timeZone: model.timeZone)
-        lastToday = today
-        lastZoneSignature = Self.zoneSignature(model, at: Date())
-        selectedDay = today
-        self.todayDate = todayDate
-        selectedDate = todayDate
-    }
-
-    func configure(db: Database?) {
-        guard let db, self.db == nil else { return }
-        self.db = db
-        refresh()
-    }
-
-    func select(_ date: Date) {
-        let day = calendarDayLabel(date)
-        let model = timeModel
-        let today = model.logicalDay(Date())
-        selectedDay = LogicalDay(day)
-        followsToday = day == today.value
-        selectedDate = date
-        refresh()
-    }
-
-    func tick() {
-        let model = timeModel
-        let now = Date()
-        guard model.logicalDay(now) != lastToday
-                || Self.zoneSignature(model, at: now) != lastZoneSignature else { return }
-        refresh()
-    }
-
-    func refresh() {
-        let model = timeModel
-        let now = Date()
-        let today = model.logicalDay(now)
-        let currentTodayDate = Self.date(on: today, timeZone: model.timeZone)
-        let zoneChanged = Self.zoneSignature(model, at: now) != lastZoneSignature
-        if todayDate != currentTodayDate { todayDate = currentTodayDate }
-        if followsToday, today != lastToday || zoneChanged {
-            selectedDay = today
-            selectedDate = currentTodayDate
-        } else if !followsToday {
-            // The picker stores a Date for SwiftUI, but the user's choice is a
-            // logical day. Re-materialize it after a timezone/DST change so a
-            // noon date never silently becomes a different calendar day.
-            selectedDate = Self.date(on: selectedDay, timeZone: model.timeZone)
-        }
-        lastToday = today
-        lastZoneSignature = Self.zoneSignature(model, at: now)
-
-        guard let db else { return }
-        isLoading = true
-        defer { isLoading = false }
-
-        let logicalDay = selectedDay
-        guard model.bounds(of: logicalDay) != nil else {
-            error = "That calendar date is invalid."
-            return
-        }
-
-        do {
-            let items = try TrackingTimeline(db: db).items(for: logicalDay.value, timeModel: model)
-            summary = TrackingDaySummary(day: logicalDay.value, items: items)
-            error = nil
-        } catch {
-            self.error = String(describing: error)
-            summary = TrackingDaySummary(day: logicalDay.value, items: [])
-        }
-    }
-
-    private static func zoneSignature(_ model: TimeModel, at instant: Date) -> String {
-        "\(model.timeZone.identifier)|\(model.timeZone.secondsFromGMT(for: instant))"
-    }
-
-    private static func date(on day: LogicalDay, timeZone: TimeZone) -> Date {
-        let parts = day.value.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return Date() }
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-        var components = DateComponents()
-        components.year = parts[0]
-        components.month = parts[1]
-        components.day = parts[2]
-        components.hour = 12
-        return calendar.date(from: components) ?? Date()
-    }
-
-    private func calendarDayLabel(_ date: Date) -> String {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeModel.timeZone
-        let parts = calendar.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
-    }
-}
-
-@MainActor
-struct TrackingCalendarView: View {
-    @ObservedObject var model: TrackingCalendarModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            DatePicker(
-                "Tracking date",
-                selection: Binding(
-                    get: { model.selectedDate },
-                    set: { model.select($0) }
-                ),
-                in: Date(timeIntervalSince1970: 0)...model.todayDate,
-                displayedComponents: .date
-            )
-            .datePickerStyle(.graphical)
-            .labelsHidden()
-            .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
-                model.tick()
-            }
-
-            if model.isLoading {
-                ProgressView().frame(maxWidth: .infinity)
-            } else if let error = model.error {
-                Text(error).font(.caption).foregroundStyle(.red)
-            } else if model.summary.isEmpty {
-                Text("No tracked records on \(model.summary.day).")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Tracked on \(model.summary.day)")
-                    .font(.headline)
-                ForEach(model.summary.items) { item in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.title)
-                        if let value = item.value, !value.isEmpty {
-                            Text(value).font(.caption)
-                        }
-                        if let detail = item.detail, !detail.isEmpty {
-                            Text(detail).font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    .accessibilityElement(children: .combine)
-                }
-            }
-
-            Text("Almanac logical days start at 04:00 local time.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 }
