@@ -4,6 +4,10 @@ Updated 2026-09-25. The production nutrition reference bundle now ships as an
 AlmanacCore resource and installs into the app database on first launch. The
 app-owned More navigation and Today tracking calendar are also live.
 
+The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
+Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
+and is not a current implementation target.
+
 ## 2026-09-25 — More navigation and Today tracking calendar
 
 The app now owns its navigation instead of relying on iOS to overflow the sixth
@@ -2071,20 +2075,22 @@ Xcode/Apple SDK here).
   - `CorrelationEngine.pearson(_:minimumSampleSize:)` — Pearson r with a
     14-sample floor (BRD's own "14+ days of paired data" example) below
     which it returns `.insufficientData` rather than a number — the
-    "Limited/insufficient state" guardrail from BRD §6.16. Zero-variance
+    "Limited/insufficient state" guardrail from BRD §6.15. Zero-variance
     inputs return `r = 0`, not NaN. 4 tests: perfect positive/negative
     correlation against hand-computable series, the zero-variance edge
     case, and the insufficient-sample gate.
   - `TrendEngine.snapshot(of:)` — average/min/max plus an up/down/flat
     direction from comparing the older half of the series to the newer
     half (steadier than first-vs-last against one noisy point). 4 tests.
-  - `AchievementEngine.badges(for:)` — the five BRD §6.16 badges (steps,
-    high load, fasted day, nutrition targets, perfect log) as a pure
-    function over a `DailyAchievementInputs` struct. `isPerfectLog` is
-    taken as a given boolean, not computed here — the handoff explicitly
-    leaves "all Wellness data filled in, or all recommended entries
-    logged?" as an open, undecided question, and this session isn't
-    picking an answer on the doc's behalf. 4 tests.
+  - `AchievementEngine.badges(for:)` — the five legacy badges from the
+    superseded BRD ≤ v1.5 §6.16 (steps, high load, fasted day, nutrition
+    targets, perfect log) as a pure function over a
+    `DailyAchievementInputs` struct. This remains as legacy core data, not
+    a v1.6 product surface; the current calendar is Activity Rings §6.16.
+    `isPerfectLog` is taken as a given boolean, not computed here — the
+    handoff explicitly leaves "all Wellness data filled in, or all
+    recommended entries logged?" as an open, undecided question, and this
+    session isn't picking an answer on the doc's behalf. 4 tests.
 - Schema: **Migration033_InsightsSchema** creates `correlation_pair`,
   `trend_snapshot`, `achievement_record` (all three named and shaped per
   the handoff's own schema sketch). `correlation_pair.pValue` is nullable
@@ -2110,6 +2116,8 @@ Full suite after both slices: 266 XCTest + **370 Swift Testing** (up from
 dish reference material); final Slice 9 medical wording and clinician
 review; Slice 10's correlation-approach sign-off (this session proceeded
 on the handoff's own stated recommendation, Option A/Pearson, since it
-was already a concrete default, not an open question); Slice 10 UI and
-real metric-query wiring, deferred alongside Slice 2/4 UI per the
-handoff's sequencing note.
+was already a concrete default, not an open question); Slice 10 Insights
+UI and real metric-query wiring, deferred alongside Slice 2/4 UI per the
+handoff's sequencing note. The former Slice 10 achievement-calendar
+surface is superseded by Activity Rings Calendar and is no longer part of
+that UI scope.
