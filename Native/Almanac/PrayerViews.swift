@@ -33,7 +33,10 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         defer { isLoading = false }
         do {
             let settings = try PrayerSettingsStore(db: db).settings()
-            let timeZone = TimeZone(identifier: settings.timezone) ?? .current
+            // The device's current zone is the location source of truth. The
+            // settings row has a legacy default timezone, but it is not a
+            // location observation and must not split cache day keys.
+            let timeZone = TimeZone.current
             _ = try PrayerTimeEngine.ensureCache(
                 PrayerTimeCacheStore(db: db),
                 settings: settings,
@@ -55,7 +58,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         do {
             let settingsStore = PrayerSettingsStore(db: db)
             let settings = try settingsStore.settings()
-            let timeZone = TimeZone(identifier: settings.timezone) ?? .current
+            let timeZone = TimeZone.current
             _ = try PrayerTimeEngine.recalculateCache(
                 PrayerTimeCacheStore(db: db),
                 settings: settings,
@@ -112,7 +115,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             settings = try settingsStore.settings()
             let formatter = DateFormatter()
             formatter.calendar = Calendar(identifier: .gregorian)
-            formatter.timeZone = TimeZone(identifier: settings?.timezone ?? "") ?? .current
+            formatter.timeZone = .current
             formatter.dateFormat = "yyyy-MM-dd"
             today = try cache.cachedDay(formatter.string(from: Date()))
         } catch {
