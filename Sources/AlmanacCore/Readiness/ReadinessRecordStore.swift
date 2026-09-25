@@ -39,6 +39,8 @@ public struct StoredReadinessRecord: Sendable, Hashable, Identifiable {
 /// the same cycle being re-evaluated as its own day's inputs arrive; that
 /// distinction is why this upserts instead of appending.
 public struct ReadinessRecordStore: @unchecked Sendable {
+    private static let maximumHistoryLimit = 3_660
+
     let db: Database
     private let clock: any Clock
 
@@ -137,7 +139,7 @@ public struct ReadinessRecordStore: @unchecked Sendable {
     /// parameter rather than interpolated into caller SQL.
     public func records(limit: Int = 90) throws -> [StoredReadinessRecord] {
         guard limit > 0 else { return [] }
-        let boundedLimit = min(limit, 3_660)
+        let boundedLimit = min(limit, Self.maximumHistoryLimit)
         let recent = try db.query("""
         \(Self.columns) FROM readiness_record
         ORDER BY anchorDate DESC

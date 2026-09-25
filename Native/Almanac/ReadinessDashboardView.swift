@@ -205,8 +205,8 @@ struct ReadinessDashboardView: View {
                     AlmanacMetricRow(
                         icon: AlmanacIcon.hydration,
                         title: "Hydration",
-                        value: "\(AlmanacNumber.short(hydrationModel.todayTotal.value)) mL",
-                        detail: "of \(AlmanacNumber.short(hydrationGoal)) mL",
+                        value: "\(AlmanacNumber.compact(hydrationModel.todayTotal.value)) mL",
+                        detail: "of \(AlmanacNumber.compact(hydrationGoal)) mL",
                         tone: hydrationTone
                     )
                     Divider().overlay(AlmanacPalette.divider).padding(.leading, 62)
@@ -259,9 +259,9 @@ struct ReadinessDashboardView: View {
         VStack(spacing: 0) {
             inputRow("Sleep", value: model.sleepDurationMinutes.map(durationLabel), missingValue: "Not available")
             Divider().overlay(AlmanacPalette.divider)
-            inputRow("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.short($0)) bpm" }, missingValue: "Not available")
+            inputRow("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.compact($0)) bpm" }, missingValue: "Not available")
             Divider().overlay(AlmanacPalette.divider)
-            inputRow("HRV", value: model.latestHRV.map { "\(AlmanacNumber.short($0)) ms" }, missingValue: "Not available")
+            inputRow("HRV", value: model.latestHRV.map { "\(AlmanacNumber.compact($0)) ms" }, missingValue: "Not available")
             Divider().overlay(AlmanacPalette.divider)
             inputRow("Mood", value: model.todayMood.map { "\($0.score)/10" }, missingValue: "Not logged")
             Divider().overlay(AlmanacPalette.divider)
@@ -276,11 +276,11 @@ struct ReadinessDashboardView: View {
                 VStack(spacing: 0) {
                     if let summary = trainingModel.todaysSummary {
                         if let tonnage = summary.totalTonnageKg {
-                            inputRow("Tonnage", value: "\(AlmanacNumber.short(tonnage)) kg", missingValue: nil)
+                            inputRow("Tonnage", value: "\(AlmanacNumber.compact(tonnage)) kg", missingValue: nil)
                         }
                         if let distance = summary.totalDistanceMeters {
                             Divider().overlay(AlmanacPalette.divider)
-                            inputRow("Distance", value: "\(AlmanacNumber.short(distance)) m", missingValue: nil)
+                            inputRow("Distance", value: "\(AlmanacNumber.compact(distance)) m", missingValue: nil)
                         }
                         if let duration = summary.totalDurationSeconds {
                             Divider().overlay(AlmanacPalette.divider)
@@ -328,7 +328,7 @@ struct ReadinessDashboardView: View {
 
     private var nutritionValue: String {
         guard let totals = nutritionModel.todaysTotals, totals.mealsCounted > 0 else { return "—" }
-        return "\(AlmanacNumber.short(totals.kcal)) kcal"
+        return "\(AlmanacNumber.compact(totals.kcal)) kcal"
     }
 
     private var nutritionDetail: String {
@@ -342,8 +342,8 @@ struct ReadinessDashboardView: View {
         guard let summary = trainingModel.todaysSummary else { return "—" }
         if let duration = summary.totalDurationSeconds { return durationLabel(Int(duration.rounded())) }
         if let rounds = summary.totalRounds { return "\(rounds) rounds" }
-        if let tonnage = summary.totalTonnageKg { return "\(AlmanacNumber.short(tonnage)) kg" }
-        if let distance = summary.totalDistanceMeters { return "\(AlmanacNumber.short(distance)) m" }
+        if let tonnage = summary.totalTonnageKg { return "\(AlmanacNumber.compact(tonnage)) kg" }
+        if let distance = summary.totalDistanceMeters { return "\(AlmanacNumber.compact(distance)) m" }
         return "Logged"
     }
 

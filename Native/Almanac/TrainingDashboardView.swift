@@ -35,6 +35,7 @@ struct TrainingDashboardView: View {
             }
         }
         .navigationTitle("Training")
+        .almanacModuleSurface()
         .toolbar { Button("Log training", systemImage: "plus") { logging = true } }
         .sheet(isPresented: $logging) { LogBoutView(model: model) }
         .task { model.refresh() }

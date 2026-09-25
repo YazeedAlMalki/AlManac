@@ -75,7 +75,7 @@ struct FastingView: View {
             Section("Today") {
                 if model.isFastDay {
                     Label("Religious fast day", systemImage: "moon.stars")
-                        .foregroundStyle(.teal)
+                        .foregroundStyle(AlmanacPalette.accent)
                 } else {
                     Text("No religious fast is scheduled for today")
                         .foregroundStyle(.secondary)
@@ -122,6 +122,7 @@ struct FastingView: View {
             }
         }
         .navigationTitle("Fasting")
+        .almanacModuleSurface()
         .task { model.ensureToday() }
     }
 }

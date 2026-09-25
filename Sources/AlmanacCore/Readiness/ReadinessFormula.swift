@@ -10,6 +10,12 @@ public enum ReadinessFormula {
 
     public static let version = "1.0"
 
+    /// §9.3 presentation bands. These are domain thresholds, not UI copy:
+    /// charts and status surfaces should read them from here so a formula
+    /// change cannot silently leave a stale reference line behind.
+    public static let compromisedThreshold = 40
+    public static let readyThreshold = 70
+
     // MARK: - Weights (Appendix A)
 
     public struct Weights: Sendable {
@@ -120,8 +126,8 @@ public enum ReadinessFormula {
 
     public static func color(for score: Int?) -> ReadinessColor {
         guard let score else { return .none }
-        if score >= 70 { return .green }
-        if score >= 40 { return .yellow }
+        if score >= readyThreshold { return .green }
+        if score >= compromisedThreshold { return .yellow }
         return .red
     }
 

@@ -36,6 +36,7 @@ struct ReportListView: View {
             }
         }
         .navigationTitle("Laboratory")
+        .almanacModuleSurface()
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("Import CSV", systemImage: "square.and.arrow.down") { importing = true }

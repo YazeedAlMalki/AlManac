@@ -186,19 +186,6 @@ struct QuickLogView: View {
 
 @MainActor
 private struct QuickBodyLogView: View {
-    private struct Metric: Identifiable {
-        let id: String
-        let title: String
-        let unit: String
-    }
-
-    private let metrics = [
-        Metric(id: "weight", title: "Weight", unit: "kg"),
-        Metric(id: "body_fat_pct", title: "Body fat", unit: "%"),
-        Metric(id: "lean_mass_kg", title: "Lean mass", unit: "kg"),
-        Metric(id: "skeletal_muscle_kg", title: "Skeletal muscle", unit: "kg")
-    ]
-
     let db: Database?
     @ObservedObject var trackingModel: TrackingCalendarModel
     let onSaved: () -> Void
@@ -214,7 +201,7 @@ private struct QuickBodyLogView: View {
             Form {
                 Section("Measurement") {
                     Picker("Metric", selection: $metric) {
-                        ForEach(metrics) { option in
+                        ForEach(bodyMetricOptions) { option in
                             Text(option.title).tag(option.id)
                         }
                     }
@@ -227,8 +214,7 @@ private struct QuickBodyLogView: View {
                     }
                 }
             }
-            .scrollContentBackground(.hidden)
-            .background(AlmanacPalette.canvas)
+            .almanacModuleSurface()
             .navigationTitle("Log body")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -244,7 +230,7 @@ private struct QuickBodyLogView: View {
               let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
               number.isFinite,
               number > 0,
-              let option = metrics.first(where: { $0.id == metric }) else {
+              let option = bodyMetricOptions.first(where: { $0.id == metric }) else {
             error = "Enter a positive measurement value."
             return
         }

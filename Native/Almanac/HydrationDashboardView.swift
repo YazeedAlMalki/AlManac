@@ -51,6 +51,7 @@ struct HydrationDashboardView: View {
             }
         }
         .navigationTitle("Hydration")
+        .almanacModuleSurface()
         .toolbar { Button("Log water", systemImage: "plus") { logging = true } }
         .sheet(isPresented: $logging) { HydrationLoggingView(model: model) }
         .task { model.refresh() }

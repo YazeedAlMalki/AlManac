@@ -106,7 +106,6 @@ enum AlmanacTypography {
     }
 
     private static let frauncesRegular = ["Fraunces-Regular", "Fraunces"]
-    private static let frauncesMedium = ["Fraunces-Medium", "Fraunces-SemiBold", "Fraunces"]
     private static let neueRegular = ["PPNeueMontreal-Regular", "NeueMontreal-Regular", "Neue Montreal"]
     private static let neueMedium = ["PPNeueMontreal-Medium", "NeueMontreal-Medium", "Neue Montreal"]
     private static let almaraiRegular = ["Almarai-Regular", "Almarai"]
@@ -119,7 +118,7 @@ enum AlmanacTypography {
         } else {
             switch role {
             case .display, .screenTitle, .sectionTitle:
-                candidates = role.usesMediumFamily ? frauncesMedium : frauncesRegular
+                candidates = frauncesRegular
             case .body, .bodyMedium, .label, .data:
                 candidates = role.usesMediumFamily ? neueMedium : neueRegular
             case .caption, .dayNumber:
@@ -169,7 +168,7 @@ enum AlmanacReadinessPresentation {
 }
 
 enum AlmanacNumber {
-    static func short(_ value: Double) -> String {
+    static func compact(_ value: Double) -> String {
         value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
     }
 }
@@ -420,6 +419,13 @@ extension View {
         } else {
             NavigationStack { self }
         }
+    }
+
+    func almanacModuleSurface() -> some View {
+        self
+            .scrollContentBackground(.hidden)
+            .background(AlmanacPalette.canvas)
+            .tint(AlmanacPalette.accent)
     }
 
     func almanacScreen() -> some View {

@@ -13,6 +13,14 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
 - Today includes a native graphical tracking calendar. Selecting a past date
   shows a read-only, chronologically merged history from the module-provided
   `Timeline` providers; the 04:00 Almanac logical-day boundary is shown in the UI.
+- The editorial foundation is applied to the shell, Today, Trends, Quick Log and
+  Modules index. Training, Hydration, Nutrition, Fasting, Prayer, Laboratory,
+  Profile, Measurements and Settings remain native module screens for now; a
+  later pass will bring them onto the same tokens and components.
+- Quick Log provides water presets plus focused food, training and body entry;
+  the Settings appearance picker persists System/Light/Dark across launches.
+  Fraunces and Almarai ship with their OFL files; Neue Montreal remains a
+  licensed-font dependency until approved files are supplied.
 - Profile edits the existing local `ProfileStore` fields. Measurements shows
   recent body-composition and custom measurements and can add manual values.
 - Reports: list, paginate, create, reopen, edit laboratory name and report date.
@@ -130,7 +138,9 @@ manual edit further. It still uses no document picker.
 7. Clear an optional unit/range/date, save and reopen. Confirm the prior value
    is still accessible in history. Cancel an edit and confirm no save occurs.
 8. Exercise compact/large Dynamic Type, VoiceOver, iPhone keyboard dismissal
-   and iPad navigation. These interaction checks require the actual app.
+   and iPad navigation. Large Dynamic Type and the shell/calendar reflow are
+   verified in the simulator; VoiceOver, keyboard dismissal and iPad remain
+   human interaction checks.
 9. Log water via a preset and via a custom amount; confirm the dashboard total
    and progress bar update and the entry appears in today's list. Delete an
    entry and confirm the total drops accordingly.
@@ -146,6 +156,9 @@ manual edit further. It still uses no document picker.
     appears, then confirm a reminder fires at a configured time
     (fast-forward the simulator clock or pick a near-future time to verify
     without waiting).
+13. Open Quick Log from the shell, log a water preset, then open Trends and
+    confirm the empty state or bounded chart; open Modules and verify every
+    destination remains reachable.
 
 The HealthKit paths in items 10 and 11 are code-verified and now run from
 three places — Connect in Settings, after each local log/delete, and on scene

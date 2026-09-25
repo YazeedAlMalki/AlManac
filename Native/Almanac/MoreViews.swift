@@ -137,6 +137,7 @@ struct ProfileView: View {
             }
         }
         .navigationTitle("Profile")
+        .almanacModuleSurface()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save", action: save).disabled(db == nil)
@@ -250,6 +251,7 @@ struct MeasurementsView: View {
             }
         }
         .navigationTitle("Measurements")
+        .almanacModuleSurface()
         .task { reload() }
         .sheet(isPresented: $addingBody) {
             BodyMeasurementEditor(db: db) {
@@ -462,13 +464,13 @@ private struct CustomMeasurementEditor: View {
     }
 }
 
-private struct BodyMetricOption: Identifiable {
+struct BodyMetricOption: Identifiable {
     let id: String
     let title: String
     let unit: String
 }
 
-private let bodyMetricOptions = [
+let bodyMetricOptions = [
     BodyMetricOption(id: "weight", title: "Weight", unit: "kg"),
     BodyMetricOption(id: "body_fat_pct", title: "Body fat", unit: "pct"),
     BodyMetricOption(id: "lean_mass_kg", title: "Lean mass", unit: "kg"),

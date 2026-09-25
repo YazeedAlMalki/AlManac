@@ -2,7 +2,8 @@
 
 Updated 2026-09-25. The production nutrition reference bundle now ships as an
 AlmanacCore resource and installs into the app database on first launch. The
-app-owned More navigation and Today tracking calendar are also live.
+editorial shell, Today tracking calendar, Trends surface and Quick Log are also
+live.
 
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
@@ -33,7 +34,13 @@ Debug:
   statistics and an honest empty state. Correlations are not implied.
 - Quick Log provides one-tap water presets plus focused food, training and body
   entry sheets; the existing domain forms accept an optional completion hook so
-  the sheet remains usable for a second entry.
+  the sheet remains usable for a second entry. The body metric catalogue is
+  shared with the Measurements editor so the two write paths cannot diverge.
+- The foundation is intentionally applied to the shell, Today, Trends, Quick Log
+  and Modules index first. Training, Hydration, Nutrition, Fasting, Prayer,
+  Laboratory, Profile, Measurements and Settings remain native module screens
+  until a later styling pass; this is a recorded scope boundary, not an
+  assumption that they already share the new visual language.
 - The named motion budget for this slice is: readiness-score reveal, quick-log
   save confirmation, hydration/nutrition goal crossing, and golden-day/streak
   milestones. The first two are implemented; goal crossing and milestone

@@ -83,6 +83,7 @@ struct NutritionQuickEntryView: View {
             logSection
         }
         .navigationTitle("Nutrition")
+        .almanacModuleSurface()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Saved meals") { showingSavedMeals = true }

@@ -236,6 +236,7 @@ struct PrayerView: View {
             }
         }
         .navigationTitle("Prayer")
+        .almanacModuleSurface()
         .onAppear {
             model.resumeLocationIfAuthorized()
             model.ensureCache()

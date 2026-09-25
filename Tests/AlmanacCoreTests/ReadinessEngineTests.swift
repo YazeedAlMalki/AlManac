@@ -148,10 +148,10 @@ final class ReadinessEngineTests: XCTestCase {
     // MARK: - §9.3 / §9.4
 
     func testColourBands() {
-        XCTAssertEqual(ReadinessFormula.color(for: 70), .green)
-        XCTAssertEqual(ReadinessFormula.color(for: 69), .yellow)
-        XCTAssertEqual(ReadinessFormula.color(for: 40), .yellow)
-        XCTAssertEqual(ReadinessFormula.color(for: 39), .red)
+        XCTAssertEqual(ReadinessFormula.color(for: ReadinessFormula.readyThreshold), .green)
+        XCTAssertEqual(ReadinessFormula.color(for: ReadinessFormula.readyThreshold - 1), .yellow)
+        XCTAssertEqual(ReadinessFormula.color(for: ReadinessFormula.compromisedThreshold), .yellow)
+        XCTAssertEqual(ReadinessFormula.color(for: ReadinessFormula.compromisedThreshold - 1), .red)
         XCTAssertEqual(ReadinessFormula.color(for: nil), .none)
     }
 

@@ -116,10 +116,10 @@ struct EditorialRhythmCalendarView: View {
                     model.select(day)
                 } label: {
                     HStack(spacing: 14) {
-                        Text(day.day.value)
-                            .font(AlmanacTypography.font(.data).monospacedDigit())
+                        Text(displayDay(day.day))
+                            .font(AlmanacTypography.font(.data))
                             .foregroundStyle(AlmanacPalette.textPrimary)
-                            .frame(width: 92, alignment: .leading)
+                            .frame(width: 118, alignment: .leading)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(accessibilityLabel(for: day))
                                 .font(AlmanacTypography.font(.body))
@@ -128,7 +128,7 @@ struct EditorialRhythmCalendarView: View {
                             if day.isGolden {
                                 Text("All visible rings complete")
                                     .font(AlmanacTypography.font(.caption))
-                                    .foregroundStyle(AlmanacPalette.warning)
+                                    .foregroundStyle(AlmanacPalette.good)
                             }
                         }
                         Spacer(minLength: 8)
@@ -154,7 +154,7 @@ struct EditorialRhythmCalendarView: View {
             ringRow(
                 title: "Hydration",
                 state: day.hydration == .complete ? "Target met" : "Target not met",
-                detail: "\(AlmanacNumber.short(day.hydrationTotalMilliliters.value)) of \(AlmanacNumber.short(day.hydrationTargetMilliliters.value)) mL",
+                detail: "\(AlmanacNumber.compact(day.hydrationTotalMilliliters.value)) of \(AlmanacNumber.compact(day.hydrationTargetMilliliters.value)) mL",
                 complete: day.hydration == .complete
             )
             ringRow(
@@ -170,6 +170,23 @@ struct EditorialRhythmCalendarView: View {
                 detail: nutrition.detail,
                 complete: nutrition.complete
             )
+            if day.nutrition == .dietProfileRequired {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Per-value status")
+                        .font(AlmanacTypography.font(.bodyMedium))
+                        .foregroundStyle(AlmanacPalette.textPrimary)
+                    ForEach(["Calories", "Carbohydrates", "Protein", "Fat", "Fiber"], id: \.self) { name in
+                        Label("\(name): unavailable", systemImage: "questionmark")
+                            .font(AlmanacTypography.font(.caption))
+                            .foregroundStyle(AlmanacPalette.textSecondary)
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(AlmanacPalette.surfaceMuted)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityElement(children: .combine)
+            }
             ringRow(
                 title: "Digestion",
                 state: day.digestion == .disabled ? "Off" : "Fill rule unavailable",
@@ -189,10 +206,14 @@ struct EditorialRhythmCalendarView: View {
             .disabled(model.database == nil)
 
             if day.isGolden {
-                AlmanacStatusMark(text: "All visible rings complete — golden day", tone: .warning)
+                AlmanacStatusMark(text: "All visible rings complete — golden day", tone: .good)
             }
 
-            if !model.summary.isEmpty {
+            if model.summary.isEmpty {
+                Text("No other tracked records on \(displayDay(LogicalDay(model.summary.day))).")
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
+            } else {
                 DisclosureGroup("Tracked records") {
                     VStack(alignment: .leading, spacing: 12) {
                         ForEach(model.summary.items) { item in
@@ -259,11 +280,21 @@ struct EditorialRhythmCalendarView: View {
         let training = day.training == .complete ? "complete" : "incomplete"
         let nutrition = nutritionPresentation(day.nutrition).state
         let digestion = day.digestion == .disabled ? "off" : "fill rule unavailable"
-        var parts = [day.day.value, "Hydration \(hydration)", "Training \(training)", "Nutrition \(nutrition)", "Digestion \(digestion)"]
+        var parts = [displayDay(day.day), "Hydration \(hydration)", "Training \(training)", "Nutrition \(nutrition)", "Digestion \(digestion)"]
         if day.isGolden { parts.append("golden day") }
         if day.day == model.todayDay { parts.append("today") }
         if day.day == model.selectedDay { parts.append("selected") }
         return parts.joined(separator: ", ")
+    }
+
+    private func displayDay(_ day: LogicalDay) -> String {
+        let parts = day.value.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return day.value }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
+        guard let date else { return day.value }
+        return date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
     }
 }
 
@@ -314,7 +345,7 @@ private struct EditorialActivityRingDayCell: View {
             if day.isGolden {
                 Image(systemName: "sparkle")
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(AlmanacPalette.warning)
+                    .foregroundStyle(AlmanacPalette.good)
                     .offset(x: 1, y: -1)
             }
         }

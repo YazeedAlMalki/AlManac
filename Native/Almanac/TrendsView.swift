@@ -126,9 +126,9 @@ struct TrendsView: View {
         let snapshot = snapshot
         return AlmanacCard(padding: 0) {
             HStack(spacing: 0) {
-                summaryCell("Average", snapshot.map { AlmanacNumber.short($0.average) } ?? "—")
+                summaryCell("Average", snapshot.map { AlmanacNumber.compact($0.average) } ?? "—")
                 Divider().frame(height: 52)
-                summaryCell("Low", snapshot.map { AlmanacNumber.short($0.minimum) } ?? "—")
+                summaryCell("Low", snapshot.map { AlmanacNumber.compact($0.minimum) } ?? "—")
                 Divider().frame(height: 52)
                 summaryCell("Direction", snapshot.map { directionLabel($0.direction) } ?? "—")
             }
@@ -156,10 +156,10 @@ struct TrendsView: View {
             VStack(alignment: .leading, spacing: 14) {
                 AlmanacSectionHeader(title: "Readiness", detail: "0–100")
                 Chart {
-                    RuleMark(y: .value("Reference band", 40))
+                    RuleMark(y: .value("Reference band", ReadinessFormula.compromisedThreshold))
                         .foregroundStyle(AlmanacPalette.warning.opacity(0.55))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                    RuleMark(y: .value("Reference band", 70))
+                    RuleMark(y: .value("Reference band", ReadinessFormula.readyThreshold))
                         .foregroundStyle(AlmanacPalette.good.opacity(0.55))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
 
@@ -221,7 +221,7 @@ struct TrendsView: View {
                 .accessibilityLabel("Readiness trend chart")
                 .accessibilityHint("Drag across the chart to inspect individual days.")
 
-                Text("Reference bands: below 40 compromised · 40–69 moderate · 70+ ready. Provisional and final observations share the scale; gaps remain visible.")
+                Text("Reference bands: below \(ReadinessFormula.compromisedThreshold) compromised · \(ReadinessFormula.compromisedThreshold)–\(ReadinessFormula.readyThreshold - 1) moderate · \(ReadinessFormula.readyThreshold)+ ready. Provisional and final observations share the scale; gaps remain visible.")
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }
