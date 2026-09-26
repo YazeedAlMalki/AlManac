@@ -98,4 +98,16 @@ final class TrainingModel: ObservableObject {
         try boutStore.delete(id: id)
         refresh()
     }
+
+    /// One exercise's logged history, oldest session first, for the progress
+    /// view. `ExerciseProgressStore` has existed as a core-layer query since
+    /// 2026-09-18 with nothing reaching it; this is the seam. Read failures
+    /// return an empty history rather than throwing, because the caller is a
+    /// chart and an empty chart is a truthful answer to "no history yet",
+    /// while a thrown error would only be rendered as that same empty state
+    /// with a worse message.
+    func progress(for exerciseCatalogId: Int64) -> [ExerciseProgressPoint] {
+        guard let db else { return [] }
+        return (try? ExerciseProgressStore(db: db).history(exerciseCatalogId: exerciseCatalogId)) ?? []
+    }
 }

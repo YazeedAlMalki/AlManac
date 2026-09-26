@@ -1,0 +1,20 @@
+# XcodeBuildMCP project defaults.
+#
+# Set here so every call is short: without these, each tool call has to repeat
+# the scheme, the project path and the simulator. The workflows decide which
+# tools are exposed at all — `simulator` alone is the default, and without
+# `ui-automation` there is no `snapshot_ui`, `tap` or `swipe`.
+#
+# This is what closes the gap left by `docs/ui/capture.sh`: `xcrun simctl`
+# cannot tap or swipe, so the capture script can only photograph the launch
+# screen. With this server the Quick Log sheet, Settings, the exercise picker
+# and every editor become reachable, and `snapshot_ui` returns the whole
+# accessibility tree as text.
+schemaVersion: 1
+enabledWorkflows:
+  - simulator
+  - ui-automation
+sessionDefaults:
+  scheme: Almanac
+  projectPath: Native/Almanac.xcodeproj
+  simulatorName: iPhone 16e

@@ -424,6 +424,11 @@ struct AlmanacStatusMark: View {
     let tone: AlmanacStatusTone
 
     var body: some View {
+        // A wrapped continuation line aligns with the word, not the icon: the
+        // title is laid out after the symbol, so at accessibility type sizes
+        // "Insufficient data" puts "data" under "Insufficient" rather than
+        // under the left edge of the mark. That is the correct reading of the
+        // row, so do not "fix" it by centring.
         Label(text, systemImage: tone.symbol)
             .font(AlmanacTypography.font(.label))
             .foregroundStyle(tone.color)

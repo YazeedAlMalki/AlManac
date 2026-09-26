@@ -28,13 +28,25 @@ struct SorenessCheckInView: View {
                 }
                 Slider(value: Binding(get: { Double(overallScore) }, set: { overallScore = Int($0.rounded()) }),
                        in: 1...10, step: 1)
+                // The "/10" readout above is a sibling, not a label, so
+                // VoiceOver reached the control as an unnamed "adjustable"
+                // element with no way to say where it was. Both are stated
+                // on the slider itself instead.
+                .accessibilityLabel("Overall soreness")
+                .accessibilityValue("\(overallScore) of 10")
             }
             TextField("Notes (optional)", text: $notes, axis: .vertical)
         }
         Section("Where?") {
-            if selectedAreas.isEmpty {
-                Text("Tap any areas that feel sore.").foregroundStyle(.secondary).font(.caption)
-            }
+            // The count is the only feedback a sighted reader gets that the
+            // grid is multi-select. Without it a selection is invisible
+            // outside the chip's own fill, which is the same information
+            // VoiceOver gets from the selected trait.
+            Text(selectedAreas.isEmpty
+                 ? "Tap any areas that feel sore."
+                 : "\(selectedAreas.count) of \(sorenessBodyAreas.count) selected")
+                .foregroundStyle(.secondary)
+                .font(AlmanacTypography.font(.caption))
             AreaFlowGrid(areas: sorenessBodyAreas, selected: $selectedAreas)
         }
     }
@@ -51,16 +63,33 @@ private struct AreaFlowGrid: View {
         LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
             ForEach(areas, id: \.self) { area in
                 let isOn = selected.contains(area)
-                Text(area)
-                    .font(.subheadline)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(isOn ? Color.accentColor : Color.secondary.opacity(0.15),
-                                in: Capsule())
-                    .foregroundStyle(isOn ? Color.white : Color.primary)
-                    .onTapGesture {
-                        if isOn { selected.remove(area) } else { selected.insert(area) }
-                    }
+                // A real `Button`, not `Text` + `.onTapGesture`. The tap-gesture
+                // version was announced as a static text, carried no selected
+                // state, and could only be hit on the glyph bounds — the
+                // capsule around it was not part of the target. A button is
+                // the whole capsule and the selection is a trait, which is
+                // also what lets the grid be skipped as a single group.
+                Button {
+                    if isOn { selected.remove(area) } else { selected.insert(area) }
+                } label: {
+                    Text(area)
+                        .font(AlmanacTypography.font(.body))
+                        .foregroundStyle(isOn ? AlmanacPalette.onAccent : AlmanacPalette.textPrimary)
+                        .padding(.horizontal, 12)
+                        // The design system's own control floor, not a new
+                        // number: `.subheadline` plus 6pt of padding came to
+                        // ~31pt, under the 44pt minimum.
+                        .frame(minHeight: AlmanacMetrics.minimumControl)
+                        .background(isOn ? AlmanacPalette.accent : AlmanacPalette.surfaceMuted,
+                                    in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(area)
+                .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Body areas")
     }
 }

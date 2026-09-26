@@ -143,10 +143,30 @@ final class AttributionsUITests: XCTestCase {
                       "the Health screen never appeared")
         XCTAssertTrue(app.buttons["Sync now"].exists, "there must be a way to sync by hand")
 
+        // Every title `HealthSummaryStore` can produce. This used to assert
+        // only "Sleep", which held solely on a virgin simulator database: the
+        // simulator's Almanac.sqlite is shared across runs and never reset, so
+        // as soon as any other test logged a body measurement or a training
+        // bout, `summaries` became non-empty, "No health data yet" stopped
+        // rendering, and "Sleep" was absent because there is still no Health
+        // app to sync an episode from. The test then failed for a reason that
+        // has nothing to do with the Health screen.
+        //
+        // What it is actually for is the comment above it: the screen is
+        // reachable and never renders a blank list. So assert that — the empty
+        // state, or at least one real domain row.
+        let domainTitles = [
+            "Resting heart rate", "Heart rate variability", "Steps",
+            "Active energy", "Resting energy",
+            "Weight", "Body fat", "Lean mass",
+            "Sleep", "Workouts",
+        ]
         let noneYet = app.staticTexts["No health data yet"]
-        let firstDomain = app.staticTexts["Sleep"]
-        XCTAssertTrue(noneYet.exists || firstDomain.exists,
-                      "the screen must list synced domains or explain that there are none")
+        let listed = app.staticTexts.matching(
+            NSPredicate(format: "label IN %@", domainTitles))
+        XCTAssertTrue(noneYet.exists || listed.count > 0,
+                      "the screen must list synced domains or explain that there are none; "
+                      + "found neither. Visible: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
     }
 
     func testMorePageContainsTheRequestedDestinations() {

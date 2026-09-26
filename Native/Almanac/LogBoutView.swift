@@ -13,8 +13,9 @@ struct LogBoutView: View {
     private let onSaved: () -> Void
 
     @State private var selectedExercise: ExerciseCatalogEntry?
-    @State private var setsText = ""
-    @State private var repsText = ""
+    @State private var sets = 3
+    @State private var reps = 6
+    @State private var repeatSets: Int?
     @State private var loadText = ""
     @State private var durationText = ""
     @State private var distanceText = ""
@@ -22,6 +23,20 @@ struct LogBoutView: View {
     @State private var rpe = 5
     @State private var notes = ""
     @State private var error: String?
+
+    /// Sets is a choice from a fixed list, not a free number. No spec anywhere
+    /// bounds it — `workoutBout.actualSets` is an unconstrained nullable
+    /// INTEGER — so this list is the owner's decision (2026-09-26) and not a
+    /// spec rule. A picker also removes the empty-by-default state the old
+    /// free-text field had, where forgetting the field logged a silent NULL
+    /// instead of a number.
+    private static let setChoices = [1, 2, 3, 4, 5]
+
+    /// Reps open at 6 because that is the common working-set default the owner
+    /// asked for, and step down to 1. The upper bound is a UI affordance only:
+    /// nothing in the spec caps reps, and a stepper needs a closed range, so
+    /// this is set well above any real set rather than asserting a limit.
+    private static let repRange = 1...999
 
     init(model: TrainingModel, onSaved: @escaping () -> Void = {}) {
         self.model = model
@@ -33,7 +48,7 @@ struct LogBoutView: View {
             Form {
                 Section("Exercise") {
                     NavigationLink {
-                        ExercisePickerView(exercises: model.exercises) { exercise in
+                        ExercisePickerView(model: model, exercises: model.exercises) { exercise in
                             selectedExercise = exercise
                         }
                     } label: {
@@ -84,18 +99,20 @@ struct LogBoutView: View {
     private func detailFields(for prescriptionType: String) -> some View {
         switch prescriptionType {
         case "reps_load":
-            TextField("Sets", text: $setsText).keyboardType(.numberPad)
-            TextField("Reps", text: $repsText).keyboardType(.numberPad)
+            setPicker
+            repStepper
             TextField("Load (kg)", text: $loadText).keyboardType(.decimalPad)
+            volumeReadout
         case "reps_bodyweight":
-            TextField("Sets", text: $setsText).keyboardType(.numberPad)
-            TextField("Reps", text: $repsText).keyboardType(.numberPad)
+            setPicker
+            repStepper
+            volumeReadout
         case "distance":
             TextField("Distance (m)", text: $distanceText).keyboardType(.decimalPad)
-            TextField("Sets (optional)", text: $setsText).keyboardType(.numberPad)
+            optionalSetsField
         case "duration", "time_under_load", "hold_stretch":
             TextField("Duration (seconds)", text: $durationText).keyboardType(.decimalPad)
-            TextField("Sets (optional)", text: $setsText).keyboardType(.numberPad)
+            optionalSetsField
         case "work_in_time", "rounds_for_time":
             TextField("Rounds completed", text: $roundsText).keyboardType(.numberPad)
         default:
@@ -104,12 +121,78 @@ struct LogBoutView: View {
         }
     }
 
+    private var setPicker: some View {
+        Picker("Sets", selection: $sets) {
+            ForEach(Self.setChoices, id: \.self) { Text("\($0)").tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .accessibilityLabel("Sets")
+        .accessibilityValue("\(sets)")
+    }
+
+    private var repStepper: some View {
+        Stepper(value: $reps, in: Self.repRange) {
+            HStack {
+                Text("Reps")
+                Spacer()
+                Text("\(reps)").font(.body).monospacedDigit()
+            }
+        }
+        .accessibilityValue("\(reps)")
+    }
+
+    /// The load the bout will add to today's total, shown while logging rather
+    /// than only afterwards on the dashboard. Nil — not zero — when the
+    /// numbers don't combine into a volume, so a bodyweight set never claims
+    /// to be "0 kg" of work.
+    @ViewBuilder
+    private var volumeReadout: some View {
+        if let tonnage = boutTonnageKg {
+            Section {
+                HStack {
+                    Text("Volume")
+                    Spacer()
+                    Text("\(AlmanacNumber.compact(tonnage)) kg")
+                        .font(AlmanacTypography.font(.data).monospacedDigit())
+                }
+            } header: {
+                Text("This set")
+            } footer: {
+                Text("Sets × reps × load. This is the tonnage added to today's training total.")
+            }
+        }
+    }
+
+    private var boutTonnageKg: Double? {
+        guard let load = Double(loadText), load > 0 else { return nil }
+        return Double(sets * reps) * load
+    }
+
+    /// The repeat count for the types where sets multiply a duration or a
+    /// distance (3×400m, 4×30s). Optional there, so the same fixed 1–5 list
+    /// applies with a "not repeated" option rather than an empty text field.
+    private var optionalSetsField: some View {
+        Picker("Repeated", selection: $repeatSets) {
+            Text("Not repeated").tag(Int?.none)
+            ForEach(Self.setChoices, id: \.self) { Text("\($0)×").tag(Int?.some($0)) }
+        }
+        .pickerStyle(.segmented)
+        .accessibilityLabel("Sets")
+        .accessibilityValue(repeatSets.map { "\($0)" } ?? "Not repeated")
+    }
+
     private func save() {
         guard let selectedExercise else { return }
+        // `reps_load` and `reps_bodyweight` always carry the chosen set count;
+        // the repeat-multiplier types carry it only when one was chosen.
+        let isRepsType = selectedExercise.prescriptionType == "reps_load"
+            || selectedExercise.prescriptionType == "reps_bodyweight"
         do {
             try model.logBout(
                 exercise: selectedExercise,
-                sets: Int(setsText), reps: Int(repsText), loadKg: Double(loadText),
+                sets: isRepsType ? sets : repeatSets,
+                reps: isRepsType ? reps : nil,
+                loadKg: Double(loadText),
                 durationSeconds: Double(durationText), distanceMeters: Double(distanceText),
                 rounds: Int(roundsText), rpe: rpe, notes: optionalText(notes))
             onSaved()

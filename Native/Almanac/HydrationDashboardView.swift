@@ -40,19 +40,58 @@ struct HydrationDashboardView: View {
                 ForEach(model.todaysEntries) { entry in
                     HStack {
                         VStack(alignment: .leading) {
-                            Text("\(Int(entry.amount.value)) mL")
+                            HStack(spacing: 6) {
+                                Text("\(Int(entry.amount.value)) mL")
+                                if let drink = entry.drink {
+                                    Text(drink.drinkName)
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            // The drink's own provenance, on the row it applies
+                            // to. A catalog figure is a typical value for a
+                            // named product, not a measured one, and a number
+                            // shown without that reads as measured.
+                            if let drink = entry.drink {
+                                Text(drink.qualifier == .userEntered
+                                     ? "Your figures for this drink"
+                                     : "Typical value, not measured")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                             if let note = entry.note { Text(note).font(.caption).foregroundStyle(.secondary) }
                         }
                         Spacer()
-                        Text(timeLabel(entry.loggedAt)).font(.caption).foregroundStyle(.secondary)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            if let calories = entry.drink?.caloriesKcal, calories > 0 {
+                                Text("\(AlmanacNumber.compact(calories)) kcal")
+                                    .font(AlmanacTypography.font(.data).monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                            }
+                            Text(timeLabel(entry.loggedAt)).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .onDelete(perform: delete)
             }
+            // A separate line from food's `NutritionTotals.kcal`, on purpose.
+            // Merging them would put an uncited catalog estimate inside a
+            // number that otherwise means cited composition data, which is the
+            // distinction `Migration013` exists to keep.
+            if let drinkCalories = model.todaysDrinkCalories, drinkCalories > 0 {
+                Section {
+                    HStack {
+                        Text("From drinks")
+                        Spacer()
+                        Text("\(AlmanacNumber.compact(drinkCalories)) kcal")
+                            .font(AlmanacTypography.font(.data).monospacedDigit())
+                    }
+                } footer: {
+                    Text("Kept apart from your food calories on purpose: a catalog drink is a typical value, not a measured or cited figure.")
+                }
+            }
         }
         .navigationTitle("Hydration")
         .almanacModuleSurface()
-        .toolbar { Button("Log water", systemImage: "plus") { logging = true } }
+        .toolbar { Button("Log a drink", systemImage: "plus") { logging = true } }
         .sheet(isPresented: $logging) { HydrationLoggingView(model: model) }
         .task { model.refresh() }
         .editorError($error)

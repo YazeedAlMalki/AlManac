@@ -1,0 +1,15 @@
+{
+  "mcp": {
+    "servers": {
+      "XcodeBuildMCP": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "xcodebuildmcp@2.7.0",
+          "mcp"
+        ]
+      }
+    }
+  }
+}

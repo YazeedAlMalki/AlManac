@@ -91,7 +91,8 @@ struct AlmanacApp: App {
                     hydrationModel: hydrationModel,
                     nutritionModel: nutritionModel,
                     trainingModel: trainingModel,
-                    trackingModel: trackingModel
+                    trackingModel: trackingModel,
+                    fastingModel: fastingModel
                 )
             }
             .onChange(of: selectedTab) { _, tab in
@@ -147,31 +148,41 @@ private struct AlmanacNavigationBar: View {
     @Binding var selection: AppTab
     let quickLog: () -> Void
 
+    /// The quick-log action's own column. The bar has three destinations and
+    /// one action, so the action gets a fixed column and the three tabs share
+    /// what is left. Today and Trends sit in one half-width group and Modules
+    /// in the other, which is what puts the action on the bar's true
+    /// centreline: two equal halves with a fixed column between them.
+    private static let quickLogColumn: CGFloat = 68
+
+    /// A destination's icon well, the gap under it, and the one caption line
+    /// below that. These three are the tab row's vertical geometry, and both
+    /// the destination buttons and the quick-log action are placed from them,
+    /// so the action's centreline is derived rather than eyeballed.
+    private static let iconWell: CGFloat = 28
+    private static let iconGap: CGFloat = 3
+    private static let captionLine: CGFloat = 15
+
+    /// How far the quick-log action is lifted to sit on the tab icons' line.
+    /// A destination column is `iconWell + iconGap + captionLine` tall and is
+    /// centred in the row, which leaves its icon well sitting high in that
+    /// column; the action is full height, so it is raised by half of
+    /// everything below the icon well to share that line rather than hang low
+    /// against its neighbours.
+    private static let iconLineLift: CGFloat = (iconGap + captionLine) / 2
+
     var body: some View {
-        // The quick-log action is the bar's one memorable element, so it sits on
-        // the exact centre rather than in a fourth equal column. A fixed-width
-        // spacer holds the centre while Today and Trends share the left half and
-        // Modules takes the right, which puts the icon on a real centreline.
         HStack(spacing: 0) {
-            destinationButton(.today, title: "Today", icon: AlmanacIcon.today)
-            destinationButton(.trends, title: "Trends", icon: AlmanacIcon.trends)
-            Color.clear.frame(width: 84, height: 1)
-            destinationButton(.modules, title: "Modules", icon: AlmanacIcon.modules)
-        }
-        .overlay(alignment: .top) {
-            Button(action: quickLog) {
-                Image(systemName: AlmanacIcon.quickAdd)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(AlmanacPalette.onAccent)
-                    .frame(width: 52, height: 52)
-                    .background(AlmanacPalette.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+            HStack(spacing: 0) {
+                destinationButton(.today, title: "Today", icon: AlmanacIcon.today)
+                destinationButton(.trends, title: "Trends", icon: AlmanacIcon.trends)
             }
-            .buttonStyle(.plain)
-            .offset(y: -14)
-            .accessibilityLabel("Quick log")
-            .accessibilityHint("Choose water, food, training, or a body measurement")
-            .accessibilityIdentifier("quick-log")
+            .frame(maxWidth: .infinity)
+
+            quickLogButton
+
+            destinationButton(.modules, title: "Modules", icon: AlmanacIcon.modules)
+                .frame(maxWidth: .infinity)
         }
         .frame(height: 66)
         .padding(.horizontal, 8)
@@ -187,14 +198,43 @@ private struct AlmanacNavigationBar: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// The quick-log action, in the bar's own flow rather than floated above
+    /// it. It used to be an overlay offset upward out of the bar, which put
+    /// the top of a 52pt target over the scrolling content underneath — a tap
+    /// there went to quick log instead of the row that owned it — and
+    /// overlapped the right edge of the Trends button, because a
+    /// fixed-width spacer between three `.frame(maxWidth: .infinity)`
+    /// buttons cannot centre anything. In the flow the column is 68pt, so no
+    /// destination can sit under it. The shadow replaces the overlap as the
+    /// thing that lifts the action off the bar.
+    private var quickLogButton: some View {
+        Button(action: quickLog) {
+            Image(systemName: AlmanacIcon.quickAdd)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(AlmanacPalette.onAccent)
+                .frame(width: 52, height: 52)
+                .background(AlmanacPalette.accent)
+                .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+                .shadow(color: AlmanacPalette.accent.opacity(0.28), radius: 10, y: 4)
+        }
+        .buttonStyle(.plain)
+        .frame(width: Self.quickLogColumn)
+        .alignmentGuide(VerticalAlignment.center) { dim in
+            dim.height / 2 + Self.iconLineLift
+        }
+        .accessibilityLabel("Quick log")
+        .accessibilityHint("Choose water, food, training, or a body measurement")
+        .accessibilityIdentifier("quick-log")
+    }
+
     private func destinationButton(_ tab: AppTab, title: String, icon: String) -> some View {
         Button {
             selection = tab
         } label: {
-            VStack(spacing: 3) {
+            VStack(spacing: Self.iconGap) {
                 Image(systemName: icon)
                     .font(.system(size: 18, weight: selection == tab ? .semibold : .regular))
-                    .frame(width: 36, height: 28)
+                    .frame(width: 36, height: Self.iconWell)
                     .background(selection == tab ? AlmanacPalette.surfaceMuted : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 Text(title)

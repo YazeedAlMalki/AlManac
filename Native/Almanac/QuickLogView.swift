@@ -1,6 +1,25 @@
 import SwiftUI
 import AlmanacCore
 
+/// The icon every section on this sheet wears. It exists because the four
+/// section headers are the same kind of thing and had drifted: Water's was
+/// 22pt with no chip while the other three were 21pt in a 44pt `surfaceMuted`
+/// well, so the first header on the screen read as a different kind of thing
+/// from the three below it. One definition means the next edit cannot break
+/// only one of them.
+private struct QuickLogSectionIcon: View {
+    let systemName: String
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 21, weight: .medium))
+            .foregroundStyle(AlmanacPalette.accent)
+            .frame(width: 44, height: 44)
+            .background(AlmanacPalette.surfaceMuted)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
 @MainActor
 struct QuickLogView: View {
     private enum Destination: String, Identifiable {
@@ -17,6 +36,7 @@ struct QuickLogView: View {
     @ObservedObject var nutritionModel: NutritionModel
     @ObservedObject var trainingModel: TrainingModel
     @ObservedObject var trackingModel: TrackingCalendarModel
+    @ObservedObject var fastingModel: FastingModel
 
     @Environment(\.dismiss) private var dismiss
     @State private var destination: Destination?
@@ -65,8 +85,11 @@ struct QuickLogView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.hidden)
-            .navigationTitle("Quick log")
-            .navigationBarTitleDisplayMode(.inline)
+            // No navigation title. It and the Fraunces heading above said the
+            // same two words about 24pt apart, in two different faces, and the
+            // sheet was visibly repeating itself before the user had read
+            // anything. The heading is the one that belongs: it is the screen's
+            // voice, and the bar's only job here is the Close action.
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
@@ -81,7 +104,8 @@ struct QuickLogView: View {
                 case .training:
                     LogBoutView(model: trainingModel, onSaved: finishFlow)
                 case .body:
-                    QuickBodyLogView(db: db, trackingModel: trackingModel, onSaved: finishFlow)
+                    QuickBodyLogView(db: db, trackingModel: trackingModel,
+                                      isFastDay: fastingModel.isFastDay, onSaved: finishFlow)
                 }
             }
             .sensoryFeedback(.success, trigger: feedbackTrigger)
@@ -93,10 +117,8 @@ struct QuickLogView: View {
     private var waterCard: some View {
         AlmanacCard {
             VStack(alignment: .leading, spacing: 16) {
-                HStack(spacing: 12) {
-                    Image(systemName: AlmanacIcon.hydration)
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(AlmanacPalette.accent)
+                HStack(spacing: 14) {
+                    QuickLogSectionIcon(systemName: AlmanacIcon.hydration)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Water")
                             .font(AlmanacTypography.font(.sectionTitle))
@@ -135,12 +157,7 @@ struct QuickLogView: View {
         } label: {
             AlmanacCard {
                 HStack(spacing: 14) {
-                    Image(systemName: icon)
-                        .font(.system(size: 21, weight: .medium))
-                        .foregroundStyle(AlmanacPalette.accent)
-                        .frame(width: 44, height: 44)
-                        .background(AlmanacPalette.surfaceMuted)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    QuickLogSectionIcon(systemName: icon)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title)
                             .font(AlmanacTypography.font(.sectionTitle))
@@ -185,6 +202,7 @@ struct QuickLogView: View {
 private struct QuickBodyLogView: View {
     let db: Database?
     @ObservedObject var trackingModel: TrackingCalendarModel
+    let isFastDay: Bool?
     let onSaved: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -192,6 +210,20 @@ private struct QuickBodyLogView: View {
     @State private var value = ""
     @State private var conditions = "unknown"
     @State private var error: String?
+
+    /// Set from the real fasting state when FastingView already knows it, so
+    /// the user is not asked to re-declare in two places what the Fasting
+    /// module records. Left `unknown` when there is no session today — the
+    /// measurement is still valid, just not comparable, and saying so beats
+    /// guessing.
+    func seedConditions(fromFasting isFastDay: Bool?) {
+        guard conditions == "unknown" else { return }
+        switch isFastDay {
+        case true: conditions = "fasted"
+        case false: conditions = "non_fasted"
+        case nil: break
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -204,11 +236,23 @@ private struct QuickBodyLogView: View {
                     }
                     TextField("Value", text: $value)
                         .keyboardType(.decimalPad)
-                    Picker("Conditions", selection: $conditions) {
+                }
+                // Its own section, not a third field of the measurement. The
+                // owner asked (2026-09-26) that fasting state stop being
+                // lumped in with logging a body number: the two are different
+                // facts about different things, and a reader scanning this form
+                // should not see "conditions" as part of what was measured.
+                Section {
+                    Picker("Fasting state", selection: $conditions) {
                         Text("Unknown").tag("unknown")
                         Text("Fasted").tag("fasted")
                         Text("Not fasted").tag("non_fasted")
                     }
+                    .pickerStyle(.segmented)
+                } header: {
+                    Text("Conditions")
+                } footer: {
+                    Text("Body composition is only comparable between measurements taken in the same state. This is recorded separately from the measurement, and is not a fasting session — Fasting keeps that.")
                 }
             }
             .almanacModuleSurface()
@@ -220,6 +264,7 @@ private struct QuickBodyLogView: View {
             }
             .editorError($error)
         }
+        .task { seedConditions(fromFasting: isFastDay) }
     }
 
     private func save() {

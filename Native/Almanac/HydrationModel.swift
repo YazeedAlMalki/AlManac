@@ -115,6 +115,65 @@ final class HydrationModel: ObservableObject {
         syncAfterChange()
     }
 
+    // MARK: - Drinks
+
+    /// The logging service behind drink logging. `HydrationLoggingService` and
+    /// `DrinkCatalog` have been fully built and tested in `AlmanacCore` since
+    /// Migration013 — volume scaling, the `catalogUnsourcedEstimate` vs
+    /// `userEntered` qualifier, duplicate-tap detection, and the high-sugar /
+    /// high-sodium warnings — with nothing in the app reaching any of it. These
+    /// are the seam that makes it reachable.
+    private func loggingService() throws -> HydrationLoggingService {
+        guard let db, let settingsStore else {
+            throw EditorFailure(message: "The database is unavailable.")
+        }
+        return HydrationLoggingService(store: HydrationStore(db: db), settingsStore: settingsStore)
+    }
+
+    /// Every drink available to log: the built-in catalog first, then the
+    /// user's own saved drinks.
+    func allDrinks() -> [Drink] {
+        (try? loggingService().allDrinks()) ?? CatalogDrinks.all
+    }
+
+    /// Logs a catalog or custom drink, returning the service's warnings so the
+    /// caller can show them. The warnings are the service's decision, not the
+    /// UI's — a duplicate tap or a 40g sugar load is a fact about the entry,
+    /// and re-deriving it here would let the two drift.
+    @discardableResult
+    func logDrink(_ drink: Drink, volume: Milliliters?, note: String?) throws -> [DrinkLoggingWarning] {
+        let result = try loggingService().logDrink(drink, volume: volume, note: note)
+        refresh()
+        syncAfterChange()
+        return result.warnings
+    }
+
+    /// Saves a user-authored drink. The service tags it `.userEntered`
+    /// itself, so a custom drink can never be presented as a catalog estimate.
+    @discardableResult
+    func saveCustomDrink(name: String, liquidType: LiquidType, volumeMilliliters: Double,
+                         caloriesKcal: Double, sodiumMilligrams: Double,
+                         sugarGrams: Double?) throws -> Drink {
+        let drink = try loggingService().saveCustomDrink(
+            name: name, liquidType: liquidType, volumeMilliliters: volumeMilliliters,
+            caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams, sugarGrams: sugarGrams)
+        objectWillChange.send()
+        return drink
+    }
+
+    /// Calories from logged drinks today, summed separately from food.
+    ///
+    /// Deliberately NOT folded into `NutritionTotals.kcal`. A catalog drink is
+    /// an uncited typical value (`DrinkValueQualifier.catalogUnsourcedEstimate`)
+    /// and food is a cited composition figure; merging them would launder an
+    /// estimate into a measurement, which is the exact distinction
+    /// `Migration013` was written to protect. Two labelled numbers keep it.
+    var todaysDrinkCalories: Double? {
+        let withDrinks = todaysEntries.compactMap { $0.drink?.caloriesKcal }
+        guard !withDrinks.isEmpty else { return nil }
+        return withDrinks.reduce(0, +)
+    }
+
     func delete(id: String) throws {
         guard let store else { throw EditorFailure(message: "The database is unavailable.") }
         try store.delete(id: id)

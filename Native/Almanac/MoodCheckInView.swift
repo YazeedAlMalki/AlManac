@@ -17,6 +17,10 @@ struct MoodCheckInView: View {
                 }
                 Slider(value: Binding(get: { Double(score) }, set: { score = Int($0.rounded()) }),
                        in: 1...10, step: 1)
+                // The "/10" readout above is a sibling, not a label, so
+                // VoiceOver reached this as an unnamed "adjustable" element.
+                .accessibilityLabel("Mood")
+                .accessibilityValue("\(score) of 10")
             }
             TextField("Notes (optional)", text: $notes, axis: .vertical)
         }
