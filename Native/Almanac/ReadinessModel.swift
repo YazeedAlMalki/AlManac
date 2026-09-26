@@ -38,6 +38,18 @@ final class ReadinessModel: ObservableObject {
     /// than showing right under the score that produced it, so this is
     /// always about a *previous* day's outcome, never today's.
     @Published private(set) var pendingFeedback: StoredReadinessRecord?
+    /// Set when a read from the database failed, cleared the moment one
+    /// succeeds. Distinct from an empty result: "nothing logged yet" and "could
+    /// not read the log" are different claims, and a screen that shows the
+    /// first when the second is true is as wrong as one that renders a missing
+    /// reading as zero.
+    @Published private(set) var readProblem: String?
+    /// Set when today's score was worked out but could not be written down.
+    /// Separate from `readProblem` because the two are not the same event and
+    /// the user cannot act on them the same way: a failed read means today's
+    /// number is missing, a failed save means it is correct on screen and will
+    /// be gone by morning. One message for both would misdescribe one of them.
+    @Published private(set) var saveProblem: String?
 
     private var db: Database?
     private var profileStore: ProfileStore?
@@ -67,9 +79,15 @@ final class ReadinessModel: ObservableObject {
     func refresh() {
         guard let profileStore, let vitalsStore, let moodStore, let sorenessStore,
               let sleepStore, let injuryStore, let cycleStore, let recordStore else { return }
+        // Hoisted out of the `do` so the save below can run on its own. Reading
+        // and saving fail for different reasons and the user can do different
+        // things about them, so they get different words — see below.
+        var cycle: Int64?
+        var result: ReadinessOutcome?
+        let today = timeModel.logicalDay(Date())
+
         do {
             let now = Date()
-            let today = timeModel.logicalDay(now)
 
             displayName = try profileStore.profile().displayName
 
@@ -87,7 +105,7 @@ final class ReadinessModel: ObservableObject {
 
             let injuries = try injuryStore.injuriesAffectingTraining()
 
-            let cycle = try cycleStore.ensureCycle(anchorDate: today.value, at: now)
+            cycle = try cycleStore.ensureCycle(anchorDate: today.value, at: now)
             cycleId = cycle
 
             let inputs = ReadinessInputs(
@@ -103,14 +121,34 @@ final class ReadinessModel: ObservableObject {
                 injuryAffectsTraining: !injuries.isEmpty
             )
             let state: ReadinessState = (todayMood != nil && todaySoreness != nil) ? .final : .provisional
-            let result = ReadinessEngine.evaluate(state: state, inputs: inputs, baseline: baseline, context: context)
+            result = ReadinessEngine.evaluate(state: state, inputs: inputs, baseline: baseline, context: context)
             outcome = result
-            try recordStore.record(result, cycleId: cycle, anchorDate: today.value)
-
-            pendingFeedback = try recordStore.latestUnratedRecord(before: today.value)
+            readProblem = nil
         } catch {
-            // A read/compute failure here should not crash the dashboard; it
-            // simply keeps showing whatever was last successfully computed.
+            // Not crashing is the easy half. The old comment said it "simply
+            // keeps showing whatever was last successfully computed", which
+            // describes the worst case honestly: on a first run that is
+            // nothing, so the dashboard shows the empty state that goes with
+            // "we don't know yet" — and a read failure and a missing baseline
+            // are indistinguishable to the user. Say which one it is.
+            readProblem = "Could not read today's readiness data."
+        }
+
+        // Saving is separate from reading, and deliberately so. The score is
+        // already assigned above, so if only the *save* fails then the number on
+        // screen is correct and "could not read today's readiness data" would be
+        // a fresh falsehood — in a change whose entire purpose is to stop the
+        // app making exactly those. What the user needs to know then is that
+        // their history is not being kept, which is a different and more
+        // alarming sentence, so it gets its own.
+        if let result, let cycle {
+            do {
+                try recordStore.record(result, cycleId: cycle, anchorDate: today.value)
+                pendingFeedback = try recordStore.latestUnratedRecord(before: today.value)
+                saveProblem = nil
+            } catch {
+                saveProblem = "Today's readiness was worked out, but Almanac could not save it."
+            }
         }
     }
 

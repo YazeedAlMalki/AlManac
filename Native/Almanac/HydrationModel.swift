@@ -9,6 +9,16 @@ final class HydrationModel: ObservableObject {
     @Published private(set) var store: HydrationStore?
     @Published private(set) var todayTotal: Milliliters = .zero
     @Published private(set) var todaysEntries: [HydrationEntry] = []
+    /// Set when a read from the database failed, cleared the moment one
+    /// succeeds. Distinct from an empty result: "nothing logged yet" and "could
+    /// not read the log" are different claims, and a screen that shows the
+    /// first when the second is true is as wrong as one that renders a missing
+    /// reading as zero.
+    @Published private(set) var readProblem: String?
+    /// Set when pulling from Apple Health failed. Distinct from `readProblem`:
+    /// the log was readable, the figures are just going stale, and the fix is
+    /// different. Shown on the dashboard.
+    @Published private(set) var syncProblem: String?
     /// Reminder settings, persisted in `hydration_settings` — the single
     /// source of truth `SettingsView`'s reminder controls read from and
     /// write to, replacing the `@AppStorage` copy that used to drift
@@ -96,9 +106,17 @@ final class HydrationModel: ObservableObject {
             let range = (start: isoDay(bounds.start), end: isoDay(bounds.end))
             todayTotal = try store.total(from: range.start, to: range.end)
             todaysEntries = try store.logs(from: range.start, to: range.end)
+            readProblem = nil
         } catch {
-            // A read failure here should not crash the dashboard; it will
-            // simply show stale figures until the next refresh() succeeds.
+            // Do not crash the dashboard — but do not pretend either. This used
+            // to carry only a comment saying it "will simply show stale figures
+            // until the next refresh() succeeds", which described a self-heal
+            // with no mechanism behind it: the next `refresh()` fails the same
+            // way, and the user is left looking at a screen that is
+            // indistinguishable from one that genuinely has nothing logged.
+            // Read the failure, say it, and let the note clear itself the moment
+            // a read does succeed.
+            readProblem = "Could not read today's hydration log."
         }
     }
 
@@ -201,8 +219,12 @@ final class HydrationModel: ObservableObject {
     /// The shared sync driver: inbound goes through `HealthSyncService`
     /// (rows and the anchor commit atomically), outbound through
     /// `HydrationWriteback`'s pending queue. Both halves guard on their own
-    /// configuration and swallow their own errors, so a failed push simply
-    /// retries on the next run.
+    /// configuration, and a failure in either retries on the next run because
+    /// neither half leaves anything half-written. They differ in whether the
+    /// user is told: an inbound failure means the figures on screen have quietly
+    /// stopped updating, so it is surfaced, while an outbound failure changes
+    /// nothing they can see — the entry is already saved here — so it is
+    /// deliberately silent. See `drainOutbound`.
     private func runHealthSync() {
         guard healthProvider != nil || healthWriter != nil else { return }
         Task { [weak self] in
@@ -218,10 +240,17 @@ final class HydrationModel: ObservableObject {
         do {
             _ = try await HealthSyncService(db: db, provider: healthProvider, writer: store,
                                             healthDomain: .water).syncOnce()
+            syncProblem = nil
             refresh()
         } catch {
-            // HealthSyncService already preserves the last good anchor on
-            // failure; nothing further to do here but leave the dashboard as-is.
+            // `HealthSyncService` does preserve the last good anchor, so nothing
+            // is corrupted and the next run does retry — that part of the old
+            // comment was true. What it missed is the user: a sync that keeps
+            // failing leaves the dashboard showing figures that quietly stop
+            // updating, which is the same silence as an unreadable log even
+            // though the cause and the fix differ. Said out loud, and cleared
+            // by the first sync that works.
+            syncProblem = "Apple Health sync is not going through. The figures below may be out of date."
         }
     }
 
@@ -229,7 +258,16 @@ final class HydrationModel: ObservableObject {
     /// HealthKit has been authorised via `configureHealthKit`.
     func drainOutbound() async {
         guard let db, let healthWriter else { return }
+        defer { refresh() }
+        // Silence here is the correct answer, and it is the one place in this
+        // file where a swallowed error is not a defect. A push to HealthKit
+        // failing changes nothing the user can see: the entry is already saved
+        // in Almanac, which is the log of record, and `HydrationWriteback`'s
+        // queue retries it. A note here would report a problem they cannot see
+        // and cannot fix, which is how a dashboard teaches people to ignore the
+        // notes that matter. Deliberately not recorded on the model either —
+        // a published property nothing reads is a channel that looks handled
+        // while telling nobody anything.
         _ = try? await HydrationWriteback(db: db, writer: healthWriter).drainOnce()
-        refresh()
     }
 }

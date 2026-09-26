@@ -50,3 +50,178 @@ jobs:
 
       - name: Test
         run: swift test --skip-build
+
+  # The Swift job above is the fast gate and stays on Linux, which is cheaper
+  # and has no Xcode. It only ever saw Sources/ — every file under Native/ was
+  # built by hand, on whichever machine happened to open the project, or not at
+  # all. That gap let four hand-found `fix(ui)` bugs in, and it left ~1,500
+  # lines of new view code from 2026-09-26 with no automated check of any kind.
+  #
+  # The two jobs below close it, split by cost. `build-app` compiles the app and
+  # the widget extension and is the cheap, low-flake gate on every push. Only
+  # `test-ios` needs a simulator, so only it is allowed to be slow.
+  build-app:
+    name: xcodebuild (app + widget)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+
+      # GitHub ships one major Xcode per macOS image and rotates the patch
+      # release underneath it, so `macos-26` is the pin that actually holds: a
+      # major bump is a real change and fails loudly, while a patch rotation
+      # does not block every push.
+      #
+      # The selected app is resolved rather than hard-coded to
+      # `/Applications/Xcode_26.app`. That path is a guess: image manifests have
+      # used both `Xcode_26.app` and a fully versioned `Xcode_26.3.app`, and
+      # `xcode-select -s` on a path that does not exist fails the whole job with
+      # a message that says nothing about the cause. So: prefer any Xcode 26,
+      # fall back to whatever the image defaults to, and print what is actually
+      # installed either way so a mismatch is legible instead of mysterious.
+      - name: Select an Xcode 26
+        run: |
+          set -uo pipefail
+          echo "installed:"
+          ls -1 /Applications | grep -i '^Xcode' || echo "  (none found)"
+          SELECTED=""
+          for candidate in /Applications/Xcode_26*.app; do
+            if [ -d "$candidate" ]; then SELECTED="$candidate"; break; fi
+          done
+          if [ -n "$SELECTED" ]; then
+            sudo xcode-select -s "$SELECTED"
+            echo "selected $SELECTED"
+          else
+            echo "::warning::no Xcode 26 found; falling back to the image default"
+          fi
+          xcodebuild -version
+
+      # `generic/platform=iOS Simulator` rather than a named device: it needs no
+      # simulator to exist, and there is no device name in this file to go stale.
+      # CODE_SIGNING_ALLOWED=NO because a CI runner has no signing identity, and
+      # no target here needs one.
+      - name: Build
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project Native/Almanac.xcodeproj \
+            -scheme Almanac \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO
+
+      # The widget is not in the scheme's build action; xcodebuild inserts the
+      # dependency implicitly because Almanac.app has an "Embed App Extensions"
+      # phase. Asserting the artefact rather than trusting that: a scheme edit
+      # that drops the phase would otherwise leave the widget silently unbuilt,
+      # which is exactly the class of thing this job exists to catch.
+      - name: Assert the widget was embedded
+        run: |
+          set -euo pipefail
+          APPEX=$(find "$HOME/Library/Developer/Xcode/DerivedData" \
+            -name Almanac.app -path '*Debug-iphonesimulator*' -print -quit)
+          test -n "$APPEX"
+          test -d "$APPEX/PlugIns/AlmanacWidgets.appex" || {
+            echo "AlmanacWidgets.appex is missing from $APPEX/PlugIns — the widget was not built or not embedded"
+            exit 1
+          }
+          echo "widget present: $APPEX/PlugIns/AlmanacWidgets.appex"
+
+  test-ios:
+    name: AlmanacUITests
+    runs-on: macos-26
+    needs: build-app
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Select an Xcode 26
+        run: |
+          set -uo pipefail
+          SELECTED=""
+          for candidate in /Applications/Xcode_26*.app; do
+            if [ -d "$candidate" ]; then SELECTED="$candidate"; break; fi
+          done
+          if [ -n "$SELECTED" ]; then
+            sudo xcode-select -s "$SELECTED"
+            echo "selected $SELECTED"
+          else
+            echo "::warning::no Xcode 26 found; falling back to the image default"
+          fi
+          xcodebuild -version
+
+      # The simulator is discovered rather than named. A hard-coded
+      # `-destination name=iPhone 16e` silently stops matching the moment GitHub
+      # rotates the device set, and a destination that matches nothing does not
+      # fail — the job queues and reports nothing. This prefers the newest
+      # available iOS runtime and the newest iPhone in it, and says which it
+      # picked so a surprising result is legible in the log.
+      #
+      # Two details of `simctl list -j` that are easy to get wrong, and were:
+      # the top-level keys are full runtime *identifiers*
+      # (`com.apple.CoreSimulator.SimRuntime.iOS-26-3`), not display names, so a
+      # `startswith("iOS")` filter silently matches nothing; and the values are
+      # lists of devices, so a `.get("isAvailable")` on the value raises. The
+      # script below was run against real `simctl` output and against an empty
+      # runtime set, a watchOS-only set, and an unavailable device before being
+      # committed here.
+      - name: Pick a simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, re, sys
+
+          def rank(runtime_id):
+              # "com.apple.CoreSimulator.SimRuntime.iOS-26-3" -> (26, 3)
+              tail = runtime_id.rsplit(".", 1)[-1]
+              return tuple(int(n) for n in re.findall(r"\d+", tail)) or (0,)
+
+          candidates = []
+          for runtime_id, devices in json.load(sys.stdin)["devices"].items():
+              if ".iOS" not in runtime_id:
+                  continue
+              for d in devices:
+                  if d.get("isAvailable") and d.get("name", "").startswith("iPhone"):
+                      candidates.append((rank(runtime_id), d["name"], d["udid"]))
+          if not candidates:
+              sys.exit("no available iPhone simulator")
+          candidates.sort(key=lambda c: (c[0], c[1]))
+          print(candidates[-1][2])
+          ')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      # This runs against a *virgin* simulator, which is the stricter of the two
+      # states and not the same thing as "the only state that matters". Both
+      # were found the hard way here, and each hid a bug the other did not:
+      #
+      # - On a populated database, `testSettingsCanToggleTheDigestionActivityRing`
+      #   passed while on an empty one it failed, because the Form is lazily
+      #   built and the row sat two screens further down with nothing above it.
+      # - On an *empty* database it then passed while on a second, populated
+      #   run it failed, because the drink logger deliberately stays open when
+      #   the service returns warnings, and the test had assumed it dismissed
+      #   itself.
+      #
+      # CI only ever sees the first state, so it cannot catch the second class
+      # on its own. That is worth remembering before deleting a local re-run.
+      #
+      # `-resultBundlePath` is set explicitly so a failure can be attached to
+      # the run. Without it the bundle lands in DerivedData under a name that
+      # includes a UUID, which is not something a workflow can name.
+      - name: Test
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -project Native/Almanac.xcodeproj \
+            -scheme Almanac \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -resultBundlePath "$RUNNER_TEMP/AlmanacUITests.xcresult" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Attach the result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlmanacUITests.xcresult
+          path: ${{ runner.temp }}/AlmanacUITests.xcresult
+          if-no-files-found: ignore
+          retention-days: 7

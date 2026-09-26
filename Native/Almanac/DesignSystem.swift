@@ -305,6 +305,60 @@ struct AlmanacCard<Content: View>: View {
     }
 }
 
+/// Something went wrong, said in words, in the place it happened.
+///
+/// This exists because the same note was being written six times inline, and
+/// every one of the six picked its colour by hand — four `.red`, one `.orange`,
+/// one `.green` — rather than taking it from `AlmanacPalette`. So the one
+/// colour allowed to carry judgement was being chosen by eye, six times, and
+/// had drifted to SwiftUI's defaults rather than Almanac's. It is a component
+/// rather than a snippet because the *wording* matters more than the paint, and
+/// the wording is the part that was being wrong.
+///
+/// A note is not an empty state. "Nothing logged yet today." and "couldn't
+/// read your log" are different claims, and a screen that shows the first when
+/// the second is true is lying by omission — the same failure as substituting a
+/// zero for a missing reading, which the design doctrine's rule 10 ("never
+/// replace a missing reading with zero", in
+/// `.opencode/skills/almanac-design-system/SKILL.md`) forbids for values. So this
+/// never substitutes for an empty state; it sits beside one.
+struct AlmanacProblemNote: View {
+    let text: String
+    /// What the user can do. Omitted when there is nothing useful to offer,
+    /// which is better than offering "try again" where retrying cannot help.
+    var action: String?
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: AlmanacMetrics.screenInset / 2) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(AlmanacTypography.font(.caption))
+                .foregroundStyle(AlmanacPalette.critical)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(text)
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.critical)
+                if let action {
+                    Text(action)
+                        .font(AlmanacTypography.font(.caption))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // `.ignore` plus an explicit label, not `.combine`. When the only
+        // labelled child is the note's own `Text` — which is the case whenever
+        // `action` is nil — `.combine` leaves the container carrying the same
+        // label as the child it swallowed, and the note then exists *twice* in
+        // the accessibility tree. VoiceOver reads it twice, and any lookup by
+        // that label raises "Multiple matching elements found" rather than
+        // answering. Ignoring the children and setting the label here makes it
+        // exactly one element, and lets the action be appended in the same pass.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel([text, action].compactMap { $0 }.joined(separator: ". "))
+    }
+}
+
 /// A section heading. Sentence case, no tracking, no uppercase: a daybook
 /// separates its entries with a plain name, and a tracked-out all-caps eyebrow
 /// above every heading is the oldest template tell there is. `detail` carries

@@ -137,7 +137,7 @@ struct ProfileView: View {
             if saved {
                 Section {
                     Label("Profile saved", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(AlmanacPalette.good)
                 }
             }
         }

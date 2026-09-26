@@ -26,6 +26,9 @@ struct TrainingDashboardView: View {
                 }
             }
             Section("Today") {
+                if let problem = model.readProblem {
+                    AlmanacProblemNote(text: problem, action: "Figures below may be out of date.")
+                }
                 if model.todaysBouts.isEmpty {
                     Text("Nothing logged yet today.").foregroundStyle(.secondary)
                 }

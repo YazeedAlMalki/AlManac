@@ -68,6 +68,11 @@ struct NutritionQuickEntryView: View {
                     Button("Try again") { model.retryReferencePreparation() }
                 }
             }
+            if let problem = model.readProblem {
+                Section {
+                    AlmanacProblemNote(text: problem)
+                }
+            }
             ForEach(mealGroups) { group in
                 Section(group.type?.displayName ?? "Other") {
                     ForEach(group.foods, id: \.entry.id) { logged in

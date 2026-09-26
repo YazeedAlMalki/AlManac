@@ -127,6 +127,16 @@ struct ReadinessDashboardView: View {
                         .font(AlmanacTypography.font(.body))
                         .foregroundStyle(AlmanacPalette.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    // A failed read belongs here rather than below the card,
+                    // because the detail line above gives *advice* — "connect
+                    // Apple Health or log your check-in" — that is worse than
+                    // useless when the actual problem is that the read failed.
+                    if let problem = model.readProblem {
+                        AlmanacProblemNote(text: problem)
+                    }
+                    if let problem = model.saveProblem {
+                        AlmanacProblemNote(text: problem)
+                    }
                 }
 
                 if let outcome {
@@ -382,6 +392,14 @@ struct ReadinessDashboardView: View {
     }
 
     private func readinessDetail(_ outcome: ReadinessOutcome?) -> String {
+        // A read failure produces no outcome, so without this the user is told
+        // to connect Health or log a check-in — advice for a different problem,
+        // given because a failed read and a missing baseline look identical from
+        // here. The note below carries the real reason; this line stops giving
+        // instructions that cannot help.
+        if model.readProblem != nil {
+            return "The signals below could not be read just now."
+        }
         guard let outcome else {
             return "Connect Apple Health or log today’s check-in. Almanac will not replace missing readings with zero."
         }

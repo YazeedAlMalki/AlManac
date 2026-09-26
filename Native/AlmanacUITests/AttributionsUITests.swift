@@ -254,27 +254,38 @@ final class AttributionsUITests: XCTestCase {
         openSettings()
         scrollTo("Activity rings")
         let toggle = app.switches["Show digestion ring"]
-        XCTAssertTrue(toggle.waitForExistence(timeout: 5))
         // A section or row added above can leave the switch below the custom
-        // bottom bar, where it exists but cannot be tapped. Bring it into
-        // reach. The budget was raised from 6 when the "Which source wins" link
-        // was added to HealthKit: Settings is a lazily-built Form, so each new
-        // row above pushes this one further down and a fixed budget silently
-        // becomes too small. The failure message below is the real assertion —
-        // the loop is just how far to try first.
-        for _ in 0..<12 where !toggle.isHittable { app.swipeUp() }
-        XCTAssertTrue(toggle.isHittable, "the digestion-ring switch must be reachable")
+        // bottom bar, where it exists but cannot be tapped. `reveal` scrolls
+        // until it is genuinely in the window rather than swiping a fixed
+        // number of times: how far down this switch sits depends on the data in
+        // the Form, so it is two screens down on a virgin simulator and
+        // already visible on a populated one.
+        XCTAssertTrue(app.reveal(toggle), "the digestion-ring switch must be reachable")
         let original = toggle.value as? String
-        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-        let changed = expectation(for: NSPredicate { _, _ in
-            (toggle.value as? String) != original
-        }, evaluatedWith: toggle)
-        wait(for: [changed], timeout: 3)
-        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-        let restored = expectation(for: NSPredicate { _, _ in
-            (toggle.value as? String) == original
-        }, evaluatedWith: toggle)
-        wait(for: [restored], timeout: 3)
+        toggle.tapSwitchControl()
+
+        // Waited for by polling rather than by `expectation`, so a failure can
+        // report *why*: "the switch did not change" has two very different
+        // causes — the tap missed, or the write was rejected and the row
+        // reverted itself — and they need different fixes. `expectation` would
+        // collapse both into "Exceeded timeout".
+        XCTAssertTrue(
+            app.waitUntil(timeout: 5) { (toggle.value as? String) != original },
+            """
+            toggling the digestion ring changed nothing
+            from \(original ?? "nil") to \(toggle.value as? String ?? "nil")
+            frame \(toggle.frame)
+            problems on screen: \(app.staticTexts.allElementsBoundByIndex
+                .map(\.label).filter { $0.contains("Could not") || $0.contains("unavailable") })
+            """)
+
+        // Restore, so the suite leaves the setting as it found it. A suite that
+        // silently leaves a setting flipped makes the next run's result depend
+        // on run order.
+        toggle.tapSwitchControl()
+        XCTAssertTrue(
+            app.waitUntil(timeout: 5) { (toggle.value as? String) == original },
+            "the digestion-ring switch did not return to \(original ?? "nil")")
     }
 
     func testMoreDestinationsOpen() {
@@ -327,10 +338,17 @@ final class AttributionsUITests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Scrolls a lazily-built Form until `label` appears. A fixed number of
-    /// swipes rather than a loop on the element query, so a genuinely missing
-    /// row still fails instead of spinning.
-    private func scrollTo(_ label: String, maxSwipes: Int = 6) {
+    /// Scrolls a lazily-built Form until `label` appears. Bounded rather than a
+    /// `while`, so a genuinely missing row fails instead of spinning — but the
+    /// bound is generous (was 6) because the length of a lazily-built Form
+    /// depends on the *data*, and a virgin simulator has none of it: the same
+    /// row can be two screens down on a fresh install and already visible on a
+    /// populated one. A budget tuned against one of those states silently
+    /// becomes too small for the other.
+    ///
+    /// This only waits for the element to *exist*; `reveal(_:)` in
+    /// `UIScrollSupport.swift` is what puts it on screen.
+    private func scrollTo(_ label: String, maxSwipes: Int = 20) {
         let button = app.buttons[label]
         let text = app.staticTexts[label]
         let toggle = app.switches[label]
@@ -346,9 +364,8 @@ final class AttributionsUITests: XCTestCase {
     func testTheLastModulesRowClearsTheBottomBar() {
         openModules()
         let settings = app.buttons["Settings"]
-        for _ in 0..<6 where !settings.isHittable { app.swipeUp() }
-        XCTAssertTrue(settings.waitForExistence(timeout: 5))
-        XCTAssertTrue(settings.isHittable, "Settings must be reachable, not trapped behind the bar")
+        XCTAssertTrue(app.reveal(settings),
+                      "Settings must be reachable, not trapped behind the bar")
 
         // The bar's own buttons give its top edge; the row has to end above it.
         let todayTab = app.buttons["Today"]

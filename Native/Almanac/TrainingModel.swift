@@ -17,6 +17,12 @@ final class TrainingModel: ObservableObject {
     @Published private(set) var exercises: [ExerciseCatalogEntry] = []
     @Published private(set) var todaysBouts: [WorkoutBoutEntry] = []
     @Published private(set) var todaysSummary: WorkoutLoadSummary?
+    /// Set when a read from the database failed, cleared the moment one
+    /// succeeds. Distinct from an empty result: "nothing logged yet" and "could
+    /// not read the log" are different claims, and a screen that shows the
+    /// first when the second is true is as wrong as one that renders a missing
+    /// reading as zero.
+    @Published private(set) var readProblem: String?
 
     private var db: Database?
     private var catalogStore: ExerciseCatalogStore?
@@ -49,9 +55,15 @@ final class TrainingModel: ObservableObject {
             // when one is auto-logged.
             let summary = WorkloadComputer.summary(for: sessions, bouts: bouts)
             todaysSummary = (bouts.isEmpty && summary == WorkoutLoadSummary.empty) ? nil : summary
+            readProblem = nil
         } catch {
-            // A read failure here should not crash the dashboard; it will
-            // simply show stale figures until the next refresh() succeeds.
+            // Do not crash the dashboard — but do not pretend either. The old
+            // comment here promised the figures would be "stale until the next
+            // refresh() succeeds", which is not a self-heal: the next refresh
+            // fails identically, and the user is left reading a normal-looking
+            // zero-load day that is really an unreadable one. That is the
+            // training equivalent of rendering a missing reading as zero.
+            readProblem = "Could not read today's training log."
         }
     }
 

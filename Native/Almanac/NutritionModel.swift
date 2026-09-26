@@ -21,6 +21,11 @@ final class NutritionModel: ObservableObject {
     @Published private(set) var isPreparingReference = false
     @Published private(set) var isReferenceAvailable = false
     @Published private(set) var referencePreparationError: String?
+    /// Set when a read of today's log failed, cleared when one succeeds.
+    /// Separate from `referencePreparationError`, which is about the bundled
+    /// catalogue and offers a retry; this one is about the user's own entries
+    /// and there is nothing to retry but the next read.
+    @Published private(set) var readProblem: String?
 
     private var catalog: NutritionCatalog?
     private var logStore: NutritionLogStore?
@@ -74,9 +79,14 @@ final class NutritionModel: ObservableObject {
         do {
             todaysFoods = try summary.loggedFoods(on: today, in: timeModel) ?? []
             todaysTotals = try summary.totals(on: today, in: timeModel)
+            readProblem = nil
         } catch {
-            // A read failure here should not crash the screen; it will
-            // simply show stale figures until the next refresh() succeeds.
+            // The same defect the hydration, training and readiness models had:
+            // this comment promised the screen would "simply show stale figures
+            // until the next refresh() succeeds", and the next `refresh()` fails
+            // the same way — so there was no recovery here, only a screen that
+            // looked the same whether it had no data or could not load it.
+            readProblem = "Could not read today's food log."
         }
     }
 

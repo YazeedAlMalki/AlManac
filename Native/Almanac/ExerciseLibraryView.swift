@@ -1,155 +1,153 @@
 import SwiftUI
 import AlmanacCore
 
-/// The exercise library, browsable as **muscle group → method of training**.
+/// The exercise library as pages inside pages: muscle → method → exercises.
 ///
-/// Asked for 2026-09-26. Both halves of the grouping were already in the data
-/// — `exerciseCatalog.category` is a muscle (Chest, Quads, Lats, Rear Delts,
-/// …) and `exerciseCatalog.equipment` is the method (17 distinct values across
-/// the shipped catalogue) — so this is a browse view over existing rows rather
-/// than a new classification.
+/// The first version was one long list of collapsible sections, which the owner
+/// rejected (2026-09-26): with 16 muscles and up to 17 methods each it read as a
+/// wall. Each level is now its own pushed screen, so a screen only ever answers
+/// one question — which muscle, then which method, then which exercise.
 ///
-/// An exercise is listed under **every** muscle in `exerciseMuscle`, so a
-/// movement that works two groups appears in both, and `Migration042` made
-/// that many-to-many real. Only the primary muscle is populated today:
-/// naming the secondary movers of 300-odd movements is a claim about
-/// physiology, and this repo's rule is that a guessed value written into user
-/// data is worse than an absent one. Adding secondaries is a data import
-/// (`addMuscle(to:muscle:)`); nothing here has to change when it arrives.
+/// The data is `ExerciseCatalogStore.groupedByMuscleThenEquipment()`, loaded
+/// once at the top and passed down, so drilling in never re-queries. An exercise
+/// with several muscles in `exerciseMuscle` appears under each of them.
 struct ExerciseLibraryView: View {
     @ObservedObject var model: TrainingModel
     var onPick: ((ExerciseCatalogEntry) -> Void)?
 
     @State private var groups: [MuscleGroup] = []
     @State private var loaded = false
-    @State private var collapsed: Set<String> = []
-    @State private var historyFor: ExerciseCatalogEntry?
 
     var body: some View {
         List {
             if !loaded {
-                Section { ProgressView("Loading catalogue").frame(maxWidth: .infinity) }
+                ProgressView("Loading exercises").frame(maxWidth: .infinity)
             } else if groups.isEmpty {
-                Section {
-                    Text("No exercises in the catalogue yet.")
-                        .foregroundStyle(.secondary)
-                }
+                Text("No exercises in the catalogue yet.")
+                    .foregroundStyle(AlmanacPalette.textSecondary)
             } else {
                 ForEach(groups) { group in
-                    muscleSection(group)
+                    NavigationLink {
+                        MuscleMethodsView(model: model, group: group, onPick: onPick)
+                    } label: {
+                        LibraryRow(title: group.muscle,
+                                   detail: group.hasSecondaryOnly
+                                       ? "Nothing here is primarily this muscle"
+                                       : nil,
+                                   count: group.byEquipment.reduce(0) { $0 + $1.exercises.count })
+                    }
+                    .accessibilityIdentifier("muscle-\(group.muscle)")
                 }
             }
         }
-        .navigationTitle("Exercises")
+        .navigationTitle("Muscle groups")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(item: $historyFor) { exercise in
-            ExerciseProgressView(model: model, exercise: exercise)
-        }
+        .almanacModuleSurface()
         .task {
+            guard !loaded else { return }
             groups = model.muscleGroups()
             loaded = true
         }
     }
+}
 
-    // MARK: - Muscle group
+/// Second page: the methods of training for one muscle.
+private struct MuscleMethodsView: View {
+    @ObservedObject var model: TrainingModel
+    let group: MuscleGroup
+    var onPick: ((ExerciseCatalogEntry) -> Void)?
 
-    private func muscleSection(_ group: MuscleGroup) -> some View {
-        let isCollapsed = collapsed.contains(group.muscle)
-        return Section {
-            if isCollapsed {
-                // Collapsed still shows the count, so a collapsed group is a
-                // deliberate skip rather than a group that looks empty.
-                Text("\(count(in: group)) exercises")
-                    .font(AlmanacTypography.font(.caption))
-                    .foregroundStyle(AlmanacPalette.textSecondary)
-            } else {
-                ForEach(group.byEquipment) { equipment in
-                    equipmentSection(equipment, in: group)
+    var body: some View {
+        List {
+            ForEach(group.byEquipment) { method in
+                NavigationLink {
+                    MethodExercisesView(model: model, muscle: group.muscle,
+                                        method: method, onPick: onPick)
+                } label: {
+                    LibraryRow(title: method.equipment, detail: nil,
+                               count: method.exercises.count)
+                }
+                .accessibilityIdentifier("method-\(method.equipment)")
+            }
+        }
+        .navigationTitle(group.muscle)
+        .navigationBarTitleDisplayMode(.inline)
+        .almanacModuleSurface()
+    }
+}
+
+/// Third page: the exercises for one muscle and one method.
+private struct MethodExercisesView: View {
+    @ObservedObject var model: TrainingModel
+    let muscle: String
+    let method: EquipmentGroup
+    var onPick: ((ExerciseCatalogEntry) -> Void)?
+
+    var body: some View {
+        List {
+            ForEach(method.exercises) { exercise in
+                NavigationLink {
+                    ExerciseDetailPage(model: model, exercise: exercise, onPick: onPick)
+                } label: {
+                    Text(exercise.name)
+                        .foregroundStyle(AlmanacPalette.textPrimary)
+                }
+                .accessibilityIdentifier("exercise-row-\(exercise.id)")
+            }
+        }
+        .navigationTitle("\(muscle) · \(method.equipment)")
+        .navigationBarTitleDisplayMode(.inline)
+        .almanacModuleSurface()
+    }
+}
+
+/// Last page: one exercise — its history and graph, and the way to log it.
+/// Putting "Log this" here rather than on the row means a tap on an exercise
+/// always does the same thing (open it), and logging is a deliberate second tap.
+private struct ExerciseDetailPage: View {
+    @ObservedObject var model: TrainingModel
+    let exercise: ExerciseCatalogEntry
+    var onPick: ((ExerciseCatalogEntry) -> Void)?
+
+    var body: some View {
+        ExerciseProgressView(model: model, exercise: exercise)
+            .safeAreaInset(edge: .bottom) {
+                if let onPick {
+                    Button("Log this exercise") { onPick(exercise) }
+                        .buttonStyle(AlmanacPrimaryButtonStyle())
+                        .padding(.horizontal, AlmanacMetrics.screenInset)
+                        .padding(.vertical, 12)
+                        .background(AlmanacPalette.canvas)
+                        .accessibilityIdentifier("log-this-exercise")
                 }
             }
-        } header: {
-            Button {
-                toggle(group.muscle)
-            } label: {
-                HStack {
-                    Text(group.muscle)
-                    if group.hasSecondaryOnly {
-                        // Listed here only because the movement also works this
-                        // group. Saying so is the difference between a main entry
-                        // and an "also".
-                        Text("also works")
-                            .font(AlmanacTypography.font(.caption))
-                            .foregroundStyle(AlmanacPalette.textSecondary)
-                    }
-                    Spacer(minLength: 8)
-                    Text(isCollapsed ? "\(count(in: group))" : "−")
+    }
+}
+
+/// One row at any level: a name and how many exercises are underneath it.
+private struct LibraryRow: View {
+    let title: String
+    let detail: String?
+    let count: Int
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(AlmanacTypography.font(.body))
+                    .foregroundStyle(AlmanacPalette.textPrimary)
+                if let detail {
+                    Text(detail)
                         .font(AlmanacTypography.font(.caption))
                         .foregroundStyle(AlmanacPalette.textSecondary)
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(group.muscle), \(count(in: group)) exercises")
-            .accessibilityHint(isCollapsed ? "Expands the group" : "Collapses the group")
+            Spacer(minLength: 12)
+            Text("\(count)")
+                .font(AlmanacTypography.font(.data).monospacedDigit())
+                .foregroundStyle(AlmanacPalette.textSecondary)
         }
-    }
-
-    // MARK: - Method of training
-
-    private func equipmentSection(_ equipment: EquipmentGroup, in group: MuscleGroup) -> some View {
-        Section {
-            ForEach(equipment.exercises) { exercise in
-                row(exercise)
-            }
-        } header: {
-            Text(equipment.equipment)
-        }
-    }
-
-    // MARK: - Row
-
-    private func row(_ exercise: ExerciseCatalogEntry) -> some View {
-        HStack(spacing: 12) {
-            Button {
-                onPick?(exercise)
-            } label: {
-                HStack(spacing: 12) {
-                    Text(exercise.name)
-                        .foregroundStyle(AlmanacPalette.textPrimary)
-                        .multilineTextAlignment(.leading)
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(onPick == nil)
-            .accessibilityIdentifier("exercise-row-\(exercise.id)")
-
-            // A second, separate action: the graph is a look-back, not part of
-            // choosing an exercise, so it gets its own target rather than
-            // turning every row into a two-in-one control.
-            Button {
-                historyFor = exercise
-            } label: {
-                Image(systemName: "chart.xyaxis.line")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(AlmanacPalette.textSecondary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("History for \(exercise.name)")
-            .accessibilityIdentifier("exercise-history-\(exercise.id)")
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func count(in group: MuscleGroup) -> Int {
-        group.byEquipment.reduce(0) { $0 + $1.exercises.count }
-    }
-
-    private func toggle(_ muscle: String) {
-        if collapsed.contains(muscle) { collapsed.remove(muscle) } else { collapsed.insert(muscle) }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title), \(count) exercises")
     }
 }

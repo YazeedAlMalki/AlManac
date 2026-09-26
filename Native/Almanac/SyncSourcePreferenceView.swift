@@ -36,8 +36,7 @@ struct SyncSourcePreferenceView: View {
 
             if let error {
                 Section {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .foregroundStyle(.red)
+                    AlmanacProblemNote(text: error)
                 }
             }
         }

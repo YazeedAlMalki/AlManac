@@ -30,9 +30,7 @@ struct HealthView: View {
                         .foregroundStyle(.secondary)
                 }
                 if let problem = model.problem {
-                    Text(problem)
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    AlmanacProblemNote(text: problem)
                 }
             }
 

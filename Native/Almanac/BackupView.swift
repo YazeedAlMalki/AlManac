@@ -87,7 +87,7 @@ struct BackupView: View {
                             Text(summary(for: bundle)).font(.caption).foregroundStyle(.secondary)
                             if bundle.schemaVersion != currentSchemaVersion {
                                 Text("Made by an older version of Almanac — restore is not available.")
-                                    .font(.caption).foregroundStyle(.orange)
+                                    .font(.caption).foregroundStyle(AlmanacPalette.warning)
                             }
                         }
                         Spacer()

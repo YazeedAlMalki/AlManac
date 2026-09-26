@@ -68,22 +68,23 @@ final class BodyCircumferenceUITests: XCTestCase {
     }
 
     private func tapSwitch(_ toggle: XCUIElement) {
-        // SwiftUI exposes the entire labeled row as a switch; hit its control.
-        toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        toggle.tapSwitchControl()
     }
 
     private func openSettings(_ app: XCUIApplication) {
         let settings = app.buttons["Settings"]
-        for _ in 0..<8 where !settings.isHittable { app.swipeUp() }
+        XCTAssertTrue(app.reveal(settings), "Settings is not reachable from Modules")
         settings.tap()
         let toggle = app.switches["Track left/right arms and thighs"]
-        for _ in 0..<8 where !toggle.isHittable { app.swipeUp() }
-        XCTAssertTrue(toggle.isHittable)
+        XCTAssertTrue(app.reveal(toggle), "the sides toggle is not reachable")
     }
 
     private func openCircumferences(_ app: XCUIApplication) {
         let destination = app.buttons["Body circumferences"]
-        for _ in 0..<8 where !destination.isHittable { app.swipeDown() }
+        // Upward, not downward: this is called straight after leaving Settings,
+        // so the list is wherever Settings left it rather than at the top.
+        XCTAssertTrue(app.reveal(destination, direction: .down),
+                      "Body circumferences is not reachable from Modules")
         destination.tap()
         XCTAssertTrue(app.buttons["Log circumference"].waitForExistence(timeout: 5))
     }

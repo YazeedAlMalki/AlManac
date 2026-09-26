@@ -34,6 +34,16 @@ struct HydrationDashboardView: View {
                 }.padding(.vertical, 4)
             }
             Section("Today") {
+                // `else if`, not two notes: if the log cannot be read at all,
+                // the state of the Health sync is not the thing worth the user's
+                // attention. And the sync message already says the figures may
+                // be out of date, so it carries no separate action line — the
+                // advice is only appended where it is not already spoken.
+                if let problem = model.readProblem {
+                    AlmanacProblemNote(text: problem, action: "Figures below may be out of date.")
+                } else if let problem = model.syncProblem {
+                    AlmanacProblemNote(text: problem)
+                }
                 if model.todaysEntries.isEmpty {
                     Text("Nothing logged yet today.").foregroundStyle(.secondary)
                 }
