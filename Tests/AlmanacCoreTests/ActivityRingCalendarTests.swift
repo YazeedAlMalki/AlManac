@@ -135,6 +135,24 @@ final class ActivityRingCalendarTests: XCTestCase {
         XCTAssertFalse(unresolved.isGolden)
     }
 
+    func testHydrationRingUsesTheGoalSnapshotForEachDay() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel.riyadh()
+        let goals = HydrationGoalSnapshotStore(db: db)
+        try goals.save(Milliliters(1_000), effectiveOn: LogicalDay("2026-09-23"))
+        try goals.save(Milliliters(2_000), effectiveOn: LogicalDay("2026-09-24"))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeModel.timeZone
+        let date = calendar.date(from: DateComponents(year: 2026, month: 9, day: 24))!
+
+        let month = try ActivityRingCalendar(db: db, timeModel: timeModel).month(containing: date)
+
+        XCTAssertEqual(try XCTUnwrap(month.day(on: "2026-09-22")).hydrationTargetMilliliters, Milliliters(2_000))
+        XCTAssertEqual(try XCTUnwrap(month.day(on: "2026-09-23")).hydrationTargetMilliliters, Milliliters(1_000))
+        XCTAssertEqual(try XCTUnwrap(month.day(on: "2026-09-24")).hydrationTargetMilliliters, Milliliters(2_000))
+    }
+
     func testMonthContainsTheCivilDatesOfThatMonth() throws {
         let db = try Database.inMemory()
         try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)

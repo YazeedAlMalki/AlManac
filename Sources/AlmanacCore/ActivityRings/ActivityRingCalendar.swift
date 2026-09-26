@@ -103,9 +103,17 @@ public struct ActivityRingCalendar: Sendable {
               let lastBounds = timeModel.bounds(of: afterLast)
         else { return ActivityRingMonth(id: "", days: []) }
 
-        // ponytail: §6.10 target snapshots are not built yet; use the current
-        // explicit goal for the displayed month rather than inventing history.
-        let target = Milliliters(try HydrationSettingsStore(db: db).fetch()?.dailyGoalMilliliters ?? 2_000)
+        // Days before the first snapshot use the current explicit fallback;
+        // later days carry the most recent goal forward.
+        let fallbackTarget = Milliliters(try HydrationSettingsStore(db: db).fetch()?.dailyGoalMilliliters ?? 2_000)
+        let snapshots = try HydrationGoalSnapshotStore(db: db).snapshots(from: first, to: afterLast)
+        let snapshotByDay = Dictionary(uniqueKeysWithValues: snapshots.map { ($0.effectiveDay.value, $0.dailyGoal) })
+        var carriedTarget = fallbackTarget
+        var targets: [String: Milliliters] = [:]
+        for day in logicalDays {
+            if let snapshot = snapshotByDay[day.value] { carriedTarget = snapshot }
+            targets[day.value] = carriedTarget
+        }
         let queryBounds = DateRange(start: firstBounds.start, end: lastBounds.end).utcTextBounds
         var totals = Dictionary(uniqueKeysWithValues: logicalDays.map { ($0.value, 0.0) })
         for entry in try HydrationStore(db: db).logs(from: queryBounds.start, to: queryBounds.end) {
@@ -126,6 +134,7 @@ public struct ActivityRingCalendar: Sendable {
         let monthID = String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 0)
         let days = try logicalDays.map { day in
             let total = Milliliters(totals[day.value, default: 0])
+            let target = targets[day.value, default: fallbackTarget]
             return ActivityRingDay(
                 day: day,
                 hydrationTotalMilliliters: total,

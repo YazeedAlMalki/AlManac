@@ -78,7 +78,10 @@ final class TrackingCalendarModel: ObservableObject {
     var leadingBlankCount: Int {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeModel.timeZone
-        let weekday = calendar.component(.weekday, from: monthDate)
+        var components = calendar.dateComponents([.year, .month], from: monthDate)
+        components.day = 1
+        guard let firstOfMonth = calendar.date(from: components) else { return 0 }
+        let weekday = calendar.component(.weekday, from: firstOfMonth)
         return (weekday - calendar.firstWeekday + 7) % 7
     }
 
@@ -632,6 +635,7 @@ private struct ActivityRingNutritionEditor: View {
     let entry: NutritionLogEntry
     let onSaved: () -> Void
 
+    private let canEditDate: Bool
     @State private var gramsText: String
     @State private var date: Date
     @State private var error: String?
@@ -640,6 +644,7 @@ private struct ActivityRingNutritionEditor: View {
         self.db = db
         self.entry = entry
         self.onSaved = onSaved
+        canEditDate = entry.eatenAt.precision == .instant
         _gramsText = State(initialValue: entry.grams.map { String(format: "%g", $0) } ?? "")
         _date = State(initialValue: entry.eatenAt.span?.start ?? Date())
     }
@@ -648,7 +653,14 @@ private struct ActivityRingNutritionEditor: View {
         Form {
             TextField("Amount (g, leave blank if unknown)", text: $gramsText)
                 .keyboardType(.decimalPad)
-            DatePicker("Eaten", selection: $date)
+            if canEditDate {
+                DatePicker("Eaten", selection: $date)
+            } else {
+                LabeledContent("Original eaten time", value: entry.eatenAt.text)
+                Text("The source did not state a precise time; it is preserved rather than replaced with the current time.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Button("Save correction") { save() }
         }
         .navigationTitle("Edit nutrition")
@@ -669,7 +681,9 @@ private struct ActivityRingNutritionEditor: View {
             error = "Enter a positive amount or leave it blank."
             return
         }
-        edit.eatenAt = .set(PartialDateTime(instant: date, zone: ZoneContext(TimeZone.current)))
+        if canEditDate {
+            edit.eatenAt = .set(PartialDateTime(instant: date, zone: ZoneContext(TimeZone.current)))
+        }
         edit.reasonText = "Corrected from Activity Rings day detail"
         do {
             try NutritionLogStore(db: db).update(id: entry.id, edit)
