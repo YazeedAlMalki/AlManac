@@ -51,15 +51,25 @@ per-module table, existing `DrinkEntryStore` draft/log/query shape and
   left/right arms and thighs**. With tracking on, each side is logged separately.
   The recent-entry list exposes manual edit/delete; imported rows are read-only.
 
-## Owner decisions retained
+## Open-item decisions
 
-- **OI-1 is a reversible stub, not a resolved product decision:** toggle-off
-  preserves all historical left/right rows and makes subsequent arm/thigh
-  entries unsided. No averaging, deletion or conversion. Marked in code and UI.
-- **OI-2/OI-3:** reminder cadence and trend/dashboard presentation are undecided.
-- **OI-6:** this build request explicitly authorizes waist read + write.
-- **OI-7:** the implementation uses the explicitly requested fixed seven points;
-  the wider BRD custom-point question remains separate.
+The owner asked for every remaining item to be closed out on 2026-09-25
+without further input. Where a choice was owed, the default that adds no
+unrequested behaviour was taken, and each is recorded below with the single
+place to change it. None of these are claims of settled product intent.
+
+| Item | Decision taken | To change it |
+| --- | --- | --- |
+| OI-1 (historical sides) | Toggling sides off preserves every historical left/right row unchanged and makes later arm/thigh entries unsided. No averaging, summing or conversion. Stated in the Settings caption. | `ProfileStore.updateBodyMeasurementTrackSides`; a rewrite of existing rows is a data migration, not a settings change. |
+| OI-2 (reminder cadence) | No reminder. Logging stays opportunistic, matching every other manual entry flow in the app. Nothing was built. | A new scheduled prompt; out of scope here. |
+| OI-3 (trend display) | Per-point single-value history only. `BodyMeasurementStore` exposes day and range queries, and the module shows recent entries. No dashboard, and no coupling to the body-weight goal surface. | `BodyCircumferenceView` plus a new aggregation view. |
+| OI-6 (waist write-back) | Authorized by the build request, so waist read **and** write are built. | Removing write-back means dropping the outbound waist path. |
+| OI-7 (fixed vs custom points) | The seven explicitly requested points, as asked. The wider BRD custom-point question stays separate. | The enum in `BodyMeasurementStore` and Migration 041. |
+
+OI-2 and OI-3 are the two that would grow the app rather than finish this
+module. Both were left at "no new surface" because the alternative was to
+invent product behaviour the owner had not chosen. If either is wanted, it is
+additive and does not disturb what is committed.
 
 ## OI-4 permission verification
 
@@ -70,12 +80,48 @@ read and write authorization, in cm. Read/write usage descriptions now mention
 waist. The existing HealthKit entitlement covers the bridge; no
 circumference-specific entitlement is needed.
 
-**Technical Spec verification remains incomplete:** the authoritative path
+**The Technical Spec itself could not be read.** The authoritative path
 recorded in `docs/architecture/spec-reconciliation.md`,
-`../almanac-tech-spec-v1.0.md`, does not exist on this Mac. A search under the
-user's home did not locate another copy, and no MCP document resource was
-available. Consequently this note does not claim waist is absent from §6 or
-Appendix C; only its absence from the pre-change implementation was verified.
+`../almanac-tech-spec-v1.0.md`, does not exist on this Mac, and a re-check on
+2026-09-25 found no copy: the home-directory search returned only the
+Almanac BRD, the design reference and the feature notes; `~/Downloads` holds
+the body-measurements, addendum and attribution notes but no spec; and no MCP
+document resource was available. `docs/implementation-status.md` records the
+same gap independently, so this is a known repository-wide absence rather than
+a search miss here.
+
+Consequently this note does **not** claim waist is absent from §6 or Appendix C.
+What is verified is narrower and still useful: waist was absent from the
+pre-change `HealthDomain` and `HealthKitProvider.quantities`, and the adapter
+requested sharing permission only for dietary water. Waist is now in both the
+read and write sets, in cm, and both usage descriptions name it. Checking §6
+and Appendix C against this is a two-minute read once the file is available.
+
+## Not verified: the real Apple Health round trip
+
+Everything below is covered by tests against the existing fakes. The bridge
+against **real** HealthKit is not, and cannot be, on this machine: the
+simulator has no Health app to author samples in, and the build here is
+unsigned. Nobody has yet watched a waist value cross the boundary in either
+direction on hardware. Treat this as the module's one open risk.
+
+Checklist for whoever runs it on a device with Health access. The app must be
+installed and Health connected via **Settings → Health data → Connect**.
+
+| # | Action | Expected |
+| --- | --- | --- |
+| 1 | In the Health app, add a waist-circumference sample. | — |
+| 2 | In Almanac, **Sync now** on the Health screen. | One new row, badged as imported, value and unit as entered. |
+| 3 | Sync again. | No second row; the sample is deduped by its UUID. |
+| 4 | Delete that sample in the Health app, sync again. | The imported row disappears. Imported-only: manual rows are untouched. |
+| 5 | In Almanac, log a waist value manually. | It appears immediately. |
+| 6 | Sync now, then open the Health app. | A waist sample exists, in cm, with the logged value. |
+| 7 | Delete the Almanac row, then **Sync now**, then open Health. | The row stays deleted; the Health sample is left alone, as the editor states. This is the echo-filter case and the one most likely to be wrong. |
+| 8 | Enter a non-ASCII decimal separator, e.g. `84,5`. | Accepted; no zero or truncated value is stored. |
+
+Steps 2, 4 and 7 are the ones that exercise code the fakes only approximate.
+If step 7 resurrects the row, the own-app filter is matching on the wrong
+identifier and `storedWaistIdentifier` is the place to look.
 
 ## Verification
 
