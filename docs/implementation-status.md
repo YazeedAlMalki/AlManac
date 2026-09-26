@@ -1,13 +1,43 @@
 # Almanac implementation status
 
-Updated 2026-09-25. The production nutrition reference bundle now ships as an
-AlmanacCore resource and installs into the app database on first launch. The
-editorial shell, Today tracking calendar, Trends surface and Quick Log are also
-live.
+Updated 2026-09-26. The Technical Spec is now committed under `docs/`, so the
+references to it resolve from a fresh clone. The production nutrition reference
+bundle ships as an AlmanacCore resource and installs into the app database on
+first launch. The editorial shell, Today tracking calendar, Trends surface and
+Quick Log are also live.
 
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-09-26 — Technical Spec committed to the repository; OI-4 closed
+
+The spec was not lost, but it was not **in** the repository either: it was kept
+outside it, at a path recorded as `../almanac-tech-spec-v1.0.md`. That
+reference had two faults — a separator typo (`v1.0` for `v1_0`) and a location
+that did not exist — so every check for it failed and the file was reported
+absent. Both documents are now committed under `docs/`:
+
+- `docs/almanac-tech-spec-v1_0.md` — the 96 KB, 2,300-line original of
+  2026-08-05, authoritative per `docs/architecture/spec-reconciliation.md` §1.
+- `docs/almanac-technical-spec-v1_0.md` — the 31 KB reconstruction of
+  2026-09-15, kept for the record; it does not supersede the original.
+
+Both were copied byte-for-byte from the owner's files and verified by SHA-256.
+`Migration014`'s header and `spec-reconciliation.md` now point at the in-repo
+paths.
+
+**This closes OI-4** on the body-measurements module. §6.1 and Appendix C list
+seventeen HealthKit types and none is `waistCircumference`; the body types
+present are `bodyMass`, `bodyFatPercentage` and `leanBodyMass`, all
+bi-directional. Waist is unmodelled, not deferred, so the spec needs a
+`waistCircumference` row and the circumference build already exceeds it. Three
+further divergences were found and recorded in
+`docs/features/body-measurements-implementation.md`: no `body_measurement`
+table exists in either spec, §6.1's contextual-permission rule is not how this
+app asks, and the spec's generic `custom_measurement_log` is not the shape
+circumference needs. §7.1 was checked and matches — 04:00 logical day, stored
+on insert, never re-timestamped.
 
 ## 2026-09-25 — Editorial design foundation and shell
 

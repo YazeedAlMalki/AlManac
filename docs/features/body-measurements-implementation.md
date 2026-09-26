@@ -71,31 +71,51 @@ module. Both were left at "no new surface" because the alternative was to
 invent product behaviour the owner had not chosen. If either is wanted, it is
 additive and does not disturb what is committed.
 
-## OI-4 permission verification
+## OI-4 permission verification — closed
 
-Before this change, `HealthDomain` and `HealthKitProvider.quantities` did **not**
-include waist; the adapter requested sharing permission only for dietary water.
-This implementation adds `HKQuantityTypeIdentifier.waistCircumference` to both
-read and write authorization, in cm. Read/write usage descriptions now mention
-waist. The existing HealthKit entitlement covers the bridge; no
-circumference-specific entitlement is needed.
+The Technical Spec was supplied on 2026-09-26 and is now in the repository at
+[docs/almanac-tech-spec-v1_0.md](../almanac-tech-spec-v1_0.md) (the 96 KB,
+2,300-line original of 2026-08-05, which
+[spec-reconciliation.md](../architecture/spec-reconciliation.md) §1 confirms is
+authoritative over the 31 KB reconstruction). Both files were previously
+absent from the machine, which is why this item was open for two days.
 
-**The Technical Spec itself could not be read.** The authoritative path
-recorded in `docs/architecture/spec-reconciliation.md`,
-`../almanac-tech-spec-v1.0.md`, does not exist on this Mac, and a re-check on
-2026-09-25 found no copy: the home-directory search returned only the
-Almanac BRD, the design reference and the feature notes; `~/Downloads` holds
-the body-measurements, addendum and attribution notes but no spec; and no MCP
-document resource was available. `docs/implementation-status.md` records the
-same gap independently, so this is a known repository-wide absence rather than
-a search miss here.
+**Answer: the spec's permission map has no waist row, so it needs one.**
+§6.1 lists `bodyMass`, `bodyFatPercentage` and `leanBodyMass` as bi-directional
+and nothing else body-related; Appendix C's full table is the same seventeen
+types. `waistCircumference` appears in neither, and is not in the "not
+requested / not used" deferral list either, so waist is simply unmodelled.
+This build therefore *exceeds* the spec rather than complying with it.
 
-Consequently this note does **not** claim waist is absent from §6 or Appendix C.
-What is verified is narrower and still useful: waist was absent from the
-pre-change `HealthDomain` and `HealthKitProvider.quantities`, and the adapter
-requested sharing permission only for dietary water. Waist is now in both the
-read and write sets, in cm, and both usage descriptions name it. Checking §6
-and Appendix C against this is a two-minute read once the file is available.
+What the build does about it:
+
+- `HKQuantityTypeIdentifier.waistCircumference` is added to both the read and
+  write authorization sets, in cm, in `HealthKitProvider`.
+- Before this change `HealthDomain` and `HealthKitProvider.quantities` had no
+  waist, and the adapter requested sharing permission only for dietary water.
+- Both `NSHealthShare`/`NSHealthUpdate` usage descriptions now name waist. The
+  existing HealthKit entitlement covers the bridge; no circumference-specific
+  entitlement is needed.
+
+**The spec still needs editing.** A `waistCircumference` row belongs in §6.1
+and Appendix C, with the same "first time Body Composition opened" trigger the
+other body types carry. That is an edit to the owner's document, not to code,
+and is not made here.
+
+## Divergences from the Technical Spec
+
+Found while reading the spec for OI-4. All are net-new, none collide, and none
+break the migration chain.
+
+| # | Spec | This build |
+| --- | --- | --- |
+| 1 | §6.1/App. C permission map has no waist | Waist added to read and write; spec row still owed. |
+| 2 | §6.1 requires permissions be requested **contextually**, "when the user first accesses the relevant feature", not all at launch | Waist rides the existing Settings connection flow, like every other domain already in the app. Not a waist-specific deviation, but it is a deviation from §6.1. |
+| 3 | No `body_measurement` table exists in either spec; §5.18 models body data as a `metric` enum on `body_composition_measurement` (`weight \| body_fat_pct \| lean_mass_kg \| skeletal_muscle_kg \| visceral_rating`) | A dedicated `body_measurement` table, per the body-measurements v0.1 draft and the per-module architecture. Circumference has no `metric` slot and no plausible one. |
+| 4 | §5.18 also defines generic `custom_measurement_definition` / `custom_measurement_log`, already built as `CustomMeasurementStore` | Not used. Fixed named points with sides and a plausible range are a different shape from an arbitrary name/value log, and OI-7 is still the owner's call on whether custom points should ever reuse it. |
+
+§7.1 was checked and matches: the 04:00 local logical-day boundary, stored on
+insert and never re-timestamped.
 
 ## Not verified: the real Apple Health round trip
 

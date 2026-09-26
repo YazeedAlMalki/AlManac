@@ -15,9 +15,13 @@ package, so none of those 48 tables are invented here", and `TimeModel`
 shipped a `.midnight` boundary described in its own doc comment as "a neutral
 placeholder, not a decision".
 
-The full spec is at `../almanac-tech-spec-v1.0.md` — 96 KB, 2,300 lines, dated
-2026-08-05, one directory above the repository root. It contains what the BRD
-defers to it:
+The full spec is at [../almanac-tech-spec-v1_0.md](../almanac-tech-spec-v1_0.md) —
+96 KB, 2,300 lines, dated 2026-08-05. Both it and the 31 KB reconstruction are
+now committed under `docs/`, so the reference resolves from a fresh clone
+instead of depending on a file kept outside the repository. (The path was
+previously written as `almanac-tech-spec-v1.0.md`, a separator typo that never
+matched the real filename, and described as living above the repository root.)
+It contains what the BRD defers to it:
 
 | Section | Content |
 |---|---|
@@ -31,7 +35,8 @@ defers to it:
 | §14, App. B | Notification scheduling and suppression matrix |
 | §15-§17 | Goals engine, backup/restore contract, screen map |
 
-The 31 KB `../almanac-technical-spec-v1.0.md` written on 2026-09-15 is a
+The 31 KB [../almanac-technical-spec-v1_0.md](../almanac-technical-spec-v1_0.md)
+written on 2026-09-15 is a
 reconstruction produced while the original was believed lost. Where the two
 disagree, the 2026-08-05 original is authoritative — it is the document the
 BRD's "per Technical Spec" deferrals point at.

@@ -7,7 +7,8 @@ import Foundation
 /// `docs/architecture/health-data-foundation.md` both record Technical Spec
 /// v1.0 as unavailable, and every table in this codebase up to 013 was
 /// therefore authored from first principles rather than from the spec. The
-/// spec was recovered on 2026-09-15 at `../almanac-tech-spec-v1.0.md` — the
+/// spec was recovered on 2026-09-15 and now lives in the repository at
+/// `docs/almanac-tech-spec-v1_0.md` — the
 /// full 96 KB original, 48 tables, dated 2026-08-05. The fourteen tables below
 /// are transcribed from §5 **verbatim**: column names, types, defaults,
 /// comments and indexes are the spec's, not this codebase's.
