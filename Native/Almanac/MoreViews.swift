@@ -61,6 +61,11 @@ struct ModulesView: View {
                 }
 
                 Section("Records") {
+                    if let db {
+                        NavigationLink("Body circumferences") {
+                            BodyCircumferenceView(db: db, healthModel: healthModel)
+                        }
+                    }
                     NavigationLink {
                         ReportListView(model: labModel)
                     } label: {

@@ -154,11 +154,12 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(more.waitForExistence(timeout: 5))
         more.tap()
 
-        XCTAssertTrue(app.staticTexts["Laboratory"].waitForExistence(timeout: 5))
-        // The bar now takes its own layout space, so fewer rows fit on screen
-        // and the later destinations have to be scrolled to.
+        scrollTo("Laboratory", maxSwipes: 12)
+        XCTAssertTrue(app.staticTexts["Laboratory"].exists, "Laboratory is missing from Modules")
+        // The bar now takes its own layout space, and the Records section
+        // gained a row, so the later destinations have to be scrolled to.
         for destination in ["Profile", "Measurements", "Settings"] {
-            scrollTo(destination)
+            scrollTo(destination, maxSwipes: 12)
             XCTAssertTrue(app.staticTexts[destination].exists,
                           "\(destination) is missing from Modules")
         }
@@ -182,6 +183,31 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(monthTitle.waitForExistence(timeout: 5))
         let monthFormatter = DateFormatter()
         monthFormatter.dateFormat = "yyyy-MM"
+        let currentMonthID = monthFormatter.string(from: Date())
+        let firstDay = app.buttons["activity-ring-day-\(currentMonthID)-01"]
+        let secondDay = app.buttons["activity-ring-day-\(currentMonthID)-02"]
+        XCTAssertTrue(firstDay.waitForExistence(timeout: 5))
+        XCTAssertTrue(secondDay.exists)
+        let calendar = Calendar.current
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: Date()))!
+        let firstColumn = (calendar.component(.weekday, from: monthStart) - calendar.firstWeekday + 7) % 7
+        let stride = secondDay.frame.minX - firstDay.frame.minX
+        var originX: CGFloat?
+        for dayNumber in 1...7 {
+            guard let date = calendar.date(byAdding: .day, value: dayNumber - 1, to: monthStart),
+                  calendar.component(.weekday, from: date) == calendar.firstWeekday else { continue }
+            let identifier = String(format: "%04d-%02d-%02d",
+                                     calendar.component(.year, from: date),
+                                     calendar.component(.month, from: date), dayNumber)
+            originX = app.buttons["activity-ring-day-\(identifier)"].frame.minX
+            break
+        }
+        guard let originX else {
+            XCTFail("could not find the first weekday cell")
+            return
+        }
+        XCTAssertEqual(firstDay.frame.minX, originX + CGFloat(firstColumn) * stride, accuracy: 2,
+                       "the first day must follow the month's leading weekday blanks")
         let previousMonth = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
         let previousMonthID = monthFormatter.string(from: previousMonth)
         previous.press(forDuration: 0.1)
@@ -209,6 +235,10 @@ final class AttributionsUITests: XCTestCase {
         scrollTo("Activity rings")
         let toggle = app.switches["Show digestion ring"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+        // A section added above can leave the switch below the custom bottom
+        // bar, where it exists but cannot be tapped. Bring it into reach.
+        for _ in 0..<6 where !toggle.isHittable { app.swipeUp() }
+        XCTAssertTrue(toggle.isHittable, "the digestion-ring switch must be reachable")
         let original = toggle.value as? String
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         let changed = expectation(for: NSPredicate { _, _ in
@@ -278,7 +308,8 @@ final class AttributionsUITests: XCTestCase {
     private func scrollTo(_ label: String, maxSwipes: Int = 6) {
         let button = app.buttons[label]
         let text = app.staticTexts[label]
-        for _ in 0..<maxSwipes where !button.exists && !text.exists {
+        let toggle = app.switches[label]
+        for _ in 0..<maxSwipes where !button.exists && !text.exists && !toggle.exists {
             app.swipeUp()
         }
     }

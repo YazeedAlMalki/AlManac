@@ -7,16 +7,19 @@ public struct UserProfile: Sendable, Hashable {
     public let biologicalSex: String?  // e.g., "male", "female", "other"
     public let heightCm: Double?
     public let sports: [String]  // JSON array stored as TEXT
+    public let bodyMeasurementTrackSides: Bool
     public let createdAt: String
     public let updatedAt: String
 
     public init(displayName: String, dateOfBirth: String? = nil, biologicalSex: String? = nil,
-                heightCm: Double? = nil, sports: [String] = [], createdAt: String = "", updatedAt: String = "") {
+                heightCm: Double? = nil, sports: [String] = [], createdAt: String = "", updatedAt: String = "",
+                bodyMeasurementTrackSides: Bool = false) {
         self.displayName = displayName
         self.dateOfBirth = dateOfBirth
         self.biologicalSex = biologicalSex
         self.heightCm = heightCm
         self.sports = sports
+        self.bodyMeasurementTrackSides = bodyMeasurementTrackSides
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -44,7 +47,7 @@ public struct ProfileStore: @unchecked Sendable {
     public func profile() throws -> UserProfile {
         // Fetch the singleton profile row (id=1)
         if let row = try db.query("""
-        SELECT displayName, dateOfBirth, biologicalSex, heightCm, sports, createdAt, updatedAt
+        SELECT displayName, dateOfBirth, biologicalSex, heightCm, sports, createdAt, updatedAt, bodyMeasurementTrackSides
         FROM profile WHERE id = 1;
         """).first {
             return rowToProfile(row)
@@ -110,6 +113,13 @@ public struct ProfileStore: @unchecked Sendable {
 
     // MARK: - Private
 
+    public func updateBodyMeasurementTrackSides(_ enabled: Bool) throws {
+        try ensureRowExists()
+        // ponytail: OI-1 stub; preserve historical sides until the owner decides their treatment.
+        try db.run("UPDATE profile SET bodyMeasurementTrackSides = ?, updatedAt = ? WHERE id = 1;",
+                   [.integer(enabled ? 1 : 0), .text(nowText)])
+    }
+
     private func rowToProfile(_ row: Row) -> UserProfile {
         let sports: [String] = (row.string("sports") ?? "[]").decodeJSON() ?? []
         return UserProfile(
@@ -119,7 +129,8 @@ public struct ProfileStore: @unchecked Sendable {
             heightCm: row.double("heightCm"),
             sports: sports,
             createdAt: row.string("createdAt") ?? "",
-            updatedAt: row.string("updatedAt") ?? ""
+            updatedAt: row.string("updatedAt") ?? "",
+            bodyMeasurementTrackSides: row.int("bodyMeasurementTrackSides") == 1
         )
     }
 }

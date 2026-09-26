@@ -23,7 +23,7 @@ public protocol HealthProvider: Sendable {
 /// reading — see `HealthWriter` below.
 public enum HealthDomain: String, Codable, Sendable, CaseIterable, Hashable {
     case sleep, workouts, activeEnergy, restingEnergy, steps, heartRate, hrv, bodyMass, water
-    case bodyFatPercentage, leanBodyMass
+    case bodyFatPercentage, leanBodyMass, waistCircumference
 }
 
 public struct HealthSample: Sendable, Hashable {

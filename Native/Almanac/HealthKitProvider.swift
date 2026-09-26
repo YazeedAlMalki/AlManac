@@ -11,8 +11,7 @@ import AlmanacCore
 /// is the unit the corresponding bridge's metric map already declares, and the
 /// one HealthKit hands out by default for that quantity.
 ///
-/// Water is the only domain Almanac also *writes* (hydration pushes manual
-/// entries out); every other domain is read-only.
+/// Water and waist circumference also write manually logged entries.
 final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable {
     private let store = HKHealthStore()
 
@@ -42,6 +41,7 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
         .bodyMass: (HKQuantityType(.bodyMass), .gramUnit(with: .kilo), "kg"),
         .bodyFatPercentage: (HKQuantityType(.bodyFatPercentage), .percent(), "%"),
         .leanBodyMass: (HKQuantityType(.leanBodyMass), .gramUnit(with: .kilo), "kg"),
+        .waistCircumference: (HKQuantityType(.waistCircumference), .meterUnit(with: .centi), "cm"),
     ]
 
     /// Domains delivered as categories rather than quantities. Sleep is the only
@@ -68,9 +68,8 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     func requestAuthorisation(for domains: [HealthDomain]) async throws {
         let read = Set(domains.compactMap(Self.sampleType(for:)))
         guard !read.isEmpty else { return }
-        // Nothing but water is written back out.
-        let share: Set<HKSampleType> = domains.contains(.water)
-            ? [Self.quantities[.water]!.type] : []
+        let share = Set<HKSampleType>(domains.filter { $0 == .water || $0 == .waistCircumference }
+            .compactMap { Self.quantities[$0]?.type })
         try await store.requestAuthorization(toShare: share, read: read)
     }
 
@@ -88,9 +87,8 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
                     continuation.resume(throwing: error)
                     return
                 }
-                // Filter out this app's own writes — otherwise a manual entry
-                // pushed out by HydrationWriteback would echo straight back
-                // in as a new inbound row.
+                // Own exports already have local rows. Filtering also prevents
+                // an export deleted locally before sync from being resurrected.
                 let added = (samplesOrNil ?? [])
                     .filter { $0.sourceRevision.source.bundleIdentifier != Bundle.main.bundleIdentifier }
                     .compactMap { Self.healthSample($0, domain: domain) }
@@ -171,11 +169,35 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     }
 
     func write(_ sample: HealthSample) async throws -> String {
-        guard let spec = Self.quantities[.water] else { throw HealthProviderError.unavailable }
-        let quantity = HKQuantity(unit: spec.unit, doubleValue: sample.value ?? 0)
+        guard sample.domain == .water || sample.domain == .waistCircumference,
+              let spec = Self.quantities[sample.domain], let value = sample.value,
+              value.isFinite, value > 0, sample.unit == spec.label else { throw HealthProviderError.unavailable }
+        let quantity = HKQuantity(unit: spec.unit, doubleValue: value)
+        // Retrying a waist write after interruption must not create a second Health sample.
+        let metadata: [String: Any]? = sample.domain == .waistCircumference
+            ? [HKMetadataKeySyncIdentifier: sample.externalID, HKMetadataKeySyncVersion: 1] : nil
         let hkSample = HKQuantitySample(type: spec.type, quantity: quantity,
-                                        start: sample.start, end: sample.end)
+                                        start: sample.start, end: sample.end, metadata: metadata)
         try await store.save(hkSample)
+        if sample.domain == .waistCircumference {
+            // An equal-version retry can be ignored by HealthKit. Return the
+            // stored sample's UUID, not the fresh UUID of the ignored object.
+            return try await storedWaistIdentifier(syncIdentifier: sample.externalID, type: spec.type)
+        }
         return hkSample.uuid.uuidString
+    }
+
+    private func storedWaistIdentifier(syncIdentifier: String, type: HKQuantityType) async throws -> String {
+        try await withCheckedThrowingContinuation { continuation in
+            let predicate = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier,
+                                                        allowedValues: [syncIdentifier])
+            let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: 1, sortDescriptors: nil) {
+                _, samples, error in
+                if let error { continuation.resume(throwing: error) }
+                else if let id = samples?.first?.uuid.uuidString { continuation.resume(returning: id) }
+                else { continuation.resume(throwing: HealthProviderError.unavailable) }
+            }
+            store.execute(query)
+        }
     }
 }

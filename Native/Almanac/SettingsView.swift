@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var reminderStartHour = 7
     @State private var reminderEndHour = 22
     @State private var digestionRingEnabled = false
+    @State private var bodyMeasurementTrackSides = false
     @State private var didLoadSettings = false
     @State private var healthKitStatus: String?
     @State private var error: String?
@@ -61,6 +62,18 @@ struct SettingsView: View {
                 }
             }
             Section("Health") {
+                Toggle("Track left/right arms and thighs", isOn: Binding(
+                    get: { bodyMeasurementTrackSides },
+                    set: { enabled in
+                        do {
+                            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+                            try ProfileStore(db: db).updateBodyMeasurementTrackSides(enabled)
+                            bodyMeasurementTrackSides = enabled
+                        } catch { self.error = error.localizedDescription }
+                    }
+                ))
+                Text("Applies to new entries. Existing left/right measurements are kept while their treatment is awaiting a decision.")
+                    .font(.caption)
                 NavigationLink("Health data") {
                     HealthView(model: healthModel)
                 }
@@ -97,6 +110,8 @@ struct SettingsView: View {
             didLoadSettings = true
             dailyGoal = model.hydrationSettings?.dailyGoalMilliliters ?? 2000
             if let db = labModel.db {
+                do { bodyMeasurementTrackSides = try ProfileStore(db: db).profile().bodyMeasurementTrackSides }
+                catch { self.error = error.localizedDescription }
                 digestionRingEnabled = (try? ActivityRingSettingsStore(db: db).isDigestionEnabled()) ?? false
             }
             if let settings = model.hydrationSettings {

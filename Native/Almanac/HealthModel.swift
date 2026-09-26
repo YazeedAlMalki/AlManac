@@ -22,7 +22,7 @@ final class HealthModel: ObservableObject {
     /// race on the same anchor.
     static let domains: [HealthDomain] =
         [.sleep, .workouts, .heartRate, .hrv, .steps, .activeEnergy, .restingEnergy,
-         .bodyMass, .bodyFatPercentage, .leanBodyMass]
+         .bodyMass, .bodyFatPercentage, .leanBodyMass, .waistCircumference]
 
     private var db: Database?
     private var provider: (any HealthProvider)?
@@ -67,10 +67,17 @@ final class HealthModel: ObservableObject {
     /// anchor together, and a domain that fails is skipped rather than allowed
     /// to stop the rest — it keeps its last good anchor and retries next time.
     func syncNow() async {
-        guard let db, let provider else { return }
+        guard let db, let provider, !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
         problem = nil
+
+        if let writer = provider as? any HealthWriter {
+            do { try await BodyMeasurementWriteback(db: db, writer: writer).drainOnce() }
+            catch {
+                problem = "Waist could not be written to Health: \(error.localizedDescription)"
+            }
+        }
 
         for domain in Self.domains {
             do {
@@ -90,6 +97,7 @@ final class HealthModel: ObservableObject {
         case .sleep: return sleepBridge!
         case .workouts: return workoutBridge!
         case .bodyMass, .bodyFatPercentage, .leanBodyMass: return bodyBridge!
+        case .waistCircumference: return BodyMeasurementHealthBridge()
         default: return vitalsBridge!
         }
     }
