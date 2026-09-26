@@ -15,7 +15,13 @@ struct BodyMeasurementTests {
         try MigrationRunner(migrations: AlmanacMigrations.all.filter { $0.version < 41 }).migrate(existing)
         try existing.run("INSERT INTO profile (id, displayName, createdAt, updatedAt) VALUES (1, 'Existing user', 'before', 'before');")
         let runner = try MigrationRunner(migrations: AlmanacMigrations.all)
-        #expect(try runner.migrate(existing) == [41])
+        // Written as a literal rather than derived from `AlmanacMigrations.all`:
+        // a derived `.map(...).filter(...)` expression inside this `#expect`
+        // crashes swift-frontend during AST lowering. The literal also states
+        // the point of the test more plainly — these are the migrations a
+        // profile predating 041 has to be upgraded through, and adding a
+        // migration should make a human edit this line on purpose.
+        #expect(try runner.migrate(existing) == [41, 42, 43])
         #expect(try runner.migrate(existing).isEmpty)
         let profile = try ProfileStore(db: existing).profile()
         #expect(profile.displayName == "Existing user")

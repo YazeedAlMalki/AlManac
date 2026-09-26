@@ -6,6 +6,7 @@ struct TrainingDashboardView: View {
     @ObservedObject var model: TrainingModel
     private let embedded: Bool
     @State private var logging = false
+    @State private var pendingExercise: ExerciseCatalogEntry?
     @State private var error: String?
 
     init(model: TrainingModel, embedded: Bool = false) {
@@ -33,11 +34,31 @@ struct TrainingDashboardView: View {
                 }
                 .onDelete(perform: delete)
             }
+            Section {
+                // The library is the way *into* logging without a search box, so
+                // it belongs on the training screen rather than behind the log
+                // button — a user browsing by muscle should not have to know
+                // they have to open a form first.
+                NavigationLink {
+                    ExerciseLibraryView(model: model) { exercise in
+                        pendingExercise = exercise
+                    }
+                } label: {
+                    Label("Browse exercises", systemImage: "square.grid.2x2")
+                }
+                .accessibilityIdentifier("exercise-library-link")
+            } footer: {
+                Text("Grouped by muscle, then by how you train it — bar, cable, machine, bodyweight.")
+            }
         }
         .navigationTitle("Training")
         .almanacModuleSurface()
         .toolbar { Button("Log training", systemImage: "plus") { logging = true } }
-        .sheet(isPresented: $logging) { LogBoutView(model: model) }
+        .sheet(isPresented: $logging) {
+            LogBoutView(model: model, preselected: pendingExercise) {
+                pendingExercise = nil
+            }
+        }
         .task { model.refresh() }
         .refreshable { model.refresh() }
         .editorError($error)

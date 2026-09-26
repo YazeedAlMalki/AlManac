@@ -99,6 +99,16 @@ final class TrainingModel: ObservableObject {
         refresh()
     }
 
+    /// The catalogue grouped muscle-first, then method of training. Read
+    /// failures return no groups rather than throwing: the caller is a browse
+    /// list, and "nothing to show" is a truthful answer to "the catalogue
+    /// could not be read" only in the sense that it is not a lie about the
+    /// data — an empty catalogue and an unreadable one should not look
+    /// identical, so this is a gap worth revisiting if it ever bites.
+    func muscleGroups() -> [MuscleGroup] {
+        (try? catalogStore?.groupedByMuscleThenEquipment()) ?? []
+    }
+
     /// One exercise's logged history, oldest session first, for the progress
     /// view. `ExerciseProgressStore` has existed as a core-layer query since
     /// 2026-09-18 with nothing reaching it; this is the seam. Read failures

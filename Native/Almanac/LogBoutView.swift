@@ -13,10 +13,15 @@ struct LogBoutView: View {
     private let onSaved: () -> Void
 
     @State private var selectedExercise: ExerciseCatalogEntry?
+    /// Pre-chosen when the user arrived by browsing the library rather than by
+    /// opening this form cold. Kept in `@State` and applied in `.task` so the
+    /// picker, the set/rep fields and the volume readout all agree from the
+    /// first frame instead of flashing empty and filling in.
+    @State private var preselect: ExerciseCatalogEntry?
     @State private var sets = 3
     @State private var reps = 6
     @State private var repeatSets: Int?
-    @State private var loadText = ""
+    @State private var load = 0.0
     @State private var durationText = ""
     @State private var distanceText = ""
     @State private var roundsText = ""
@@ -38,8 +43,10 @@ struct LogBoutView: View {
     /// this is set well above any real set rather than asserting a limit.
     private static let repRange = 1...999
 
-    init(model: TrainingModel, onSaved: @escaping () -> Void = {}) {
+    init(model: TrainingModel, preselected: ExerciseCatalogEntry? = nil,
+         onSaved: @escaping () -> Void = {}) {
         self.model = model
+        self.preselect = preselected
         self.onSaved = onSaved
     }
 
@@ -93,6 +100,7 @@ struct LogBoutView: View {
             }
             .editorError($error)
         }
+        .task { selectedExercise = preselect }
     }
 
     @ViewBuilder
@@ -101,7 +109,7 @@ struct LogBoutView: View {
         case "reps_load":
             setPicker
             repStepper
-            TextField("Load (kg)", text: $loadText).keyboardType(.decimalPad)
+            loadStepper
             volumeReadout
         case "reps_bodyweight":
             setPicker
@@ -141,6 +149,25 @@ struct LogBoutView: View {
         .accessibilityValue("\(reps)")
     }
 
+    /// Load steps by 1 kg. The step is a UI affordance like the rep ceiling —
+    /// nothing in the specs says what a plate increment is — but 1 kg rather
+    /// than 2.5 because fractional plates are common enough that 2.5 would
+    /// strand anyone who does not train in 5s. It is a `Stepper` rather than a
+    /// field because tapping a weight in is faster than typing it, which was
+    /// the point of the request.
+    private var loadStepper: some View {
+        Stepper(value: $load, in: 0...500, step: 1) {
+            HStack {
+                Text("Load")
+                Spacer()
+                Text(load == 0 ? "—" : "\(AlmanacNumber.compact(load)) kg")
+                    .font(AlmanacTypography.font(.body).monospacedDigit())
+            }
+        }
+        .accessibilityLabel("Load")
+        .accessibilityValue(load == 0 ? "Not set" : "\(AlmanacNumber.compact(load)) kilograms")
+    }
+
     /// The load the bout will add to today's total, shown while logging rather
     /// than only afterwards on the dashboard. Nil — not zero — when the
     /// numbers don't combine into a volume, so a bodyweight set never claims
@@ -164,7 +191,7 @@ struct LogBoutView: View {
     }
 
     private var boutTonnageKg: Double? {
-        guard let load = Double(loadText), load > 0 else { return nil }
+        guard load > 0 else { return nil }
         return Double(sets * reps) * load
     }
 
@@ -192,7 +219,7 @@ struct LogBoutView: View {
                 exercise: selectedExercise,
                 sets: isRepsType ? sets : repeatSets,
                 reps: isRepsType ? reps : nil,
-                loadKg: Double(loadText),
+                loadKg: selectedExercise.prescriptionType == "reps_load" && load > 0 ? load : nil,
                 durationSeconds: Double(durationText), distanceMeters: Double(distanceText),
                 rounds: Int(roundsText), rpe: rpe, notes: optionalText(notes))
             onSaved()

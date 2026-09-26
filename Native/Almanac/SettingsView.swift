@@ -43,6 +43,10 @@ struct SettingsView: View {
                 if let healthKitStatus {
                     Text(healthKitStatus).font(.caption).foregroundStyle(.secondary)
                 }
+                NavigationLink("Which source wins") {
+                    SyncSourcePreferenceView(db: labModel.db)
+                }
+                .accessibilityIdentifier("sync-source-preference-link")
             }
             Section("Reminders") {
                 Toggle("Remind me to drink water", isOn: $remindersEnabled)

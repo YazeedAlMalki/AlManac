@@ -62,6 +62,24 @@ public struct ExerciseCatalogEntry: Sendable, Hashable, Identifiable {
     public var isDeleted: Bool { deletedAt != nil }
 }
 
+/// One muscle group, with the method-of-training breakdown inside it.
+public struct MuscleGroup: Sendable, Hashable, Identifiable {
+    public let muscle: String
+    /// True when nothing in this group is the exercise's primary muscle — it is
+    /// listed here only because the movement also works this group. The browse
+    /// UI says so rather than presenting it as a main entry.
+    public let hasSecondaryOnly: Bool
+    public let byEquipment: [EquipmentGroup]
+    public var id: String { muscle }
+}
+
+/// One method of training inside a muscle group.
+public struct EquipmentGroup: Sendable, Hashable, Identifiable {
+    public let equipment: String
+    public let exercises: [ExerciseCatalogEntry]
+    public var id: String { equipment }
+}
+
 /// Exercise library storage over `exerciseCatalog`.
 ///
 /// `(sourceId, exerciseId)` is the identity a re-import de-duplicates on —
@@ -110,6 +128,18 @@ public struct ExerciseCatalogStore: @unchecked Sendable {
            let fetchedID = row.int("id") {
             id = fetchedID
         }
+        // Mirror the primary muscle into `exerciseMuscle` here, at the write
+        // path, rather than relying on Migration042's backfill alone. The
+        // migration only sees rows that existed when it ran; the shipped
+        // catalogue is seeded at launch, *after* migrations, so a backfill-only
+        // approach would leave every real exercise with no muscle row and the
+        // whole browse view reading as one "Unassigned" group. Keeping the
+        // mirror here means the invariant holds for every insert, whenever it
+        // happens.
+        if id != 0, let category = draft.category?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !category.isEmpty {
+            try addMuscle(to: id, muscle: category, isPrimary: true)
+        }
         return id
     }
 
@@ -147,6 +177,95 @@ public struct ExerciseCatalogStore: @unchecked Sendable {
     public func all() throws -> [ExerciseCatalogEntry] {
         try db.query("SELECT * FROM exerciseCatalog WHERE deletedAt IS NULL ORDER BY name;")
             .compactMap(Self.entry(from:))
+    }
+
+    // MARK: - Muscle grouping
+
+    /// The catalogue grouped the way the owner asked to browse it: muscle
+    /// group first, then method of training inside it.
+    ///
+    /// An exercise appears under **every** muscle in `exerciseMuscle`, not just
+    /// its primary one, so a movement that works two muscle groups is listed in
+    /// both. The primary flag is carried through because "also" and "mainly"
+    /// are different claims and the browse UI should be able to say which is
+    /// which. `equipment` is grouped inside the muscle, so the same movement
+    /// reached by different methods reads as one thing rather than as duplicates
+    /// split across sections.
+    ///
+    /// Exercises with no muscle row at all are **not** dropped silently: they
+    /// come back under `"Unassigned"` so a catalogue gap is visible in the UI
+    /// instead of making an exercise unreachable. Same for a missing
+    /// `equipment`, which lands in `"Unspecified"`.
+    public func groupedByMuscleThenEquipment() throws -> [MuscleGroup] {
+        let entries = try all()
+
+        // Primary muscle per exercise, for the fallback and for the flag.
+        var primaryByExercise: [Int64: String] = [:]
+        for row in try db.query("SELECT exerciseCatalogId, muscle FROM exerciseMuscle WHERE isPrimary = 1;") {
+            guard let id = row.int("exerciseCatalogId"), let muscle = row.string("muscle") else { continue }
+            primaryByExercise[id] = muscle
+        }
+        var secondaryByExercise: [Int64: [String]] = [:]
+        for row in try db.query("SELECT exerciseCatalogId, muscle FROM exerciseMuscle WHERE isPrimary = 0;") {
+            guard let id = row.int("exerciseCatalogId"), let muscle = row.string("muscle") else { continue }
+            secondaryByExercise[id, default: []].append(muscle)
+        }
+
+        struct Accumulated { var primary: [ExerciseCatalogEntry] = []
+                             var secondary: [ExerciseCatalogEntry] = [] }
+        var byMuscle: [String: Accumulated] = [:]
+        for entry in entries {
+            let muscles = [primaryByExercise[entry.id]].compactMap { $0 }
+                + (secondaryByExercise[entry.id] ?? [])
+            let target = muscles.isEmpty ? ["Unassigned"] : muscles
+            for muscle in target {
+                let slot = byMuscle[muscle] ?? Accumulated()
+                if muscle == primaryByExercise[entry.id] {
+                    byMuscle[muscle] = Accumulated(primary: slot.primary + [entry],
+                                                    secondary: slot.secondary)
+                } else {
+                    byMuscle[muscle] = Accumulated(primary: slot.primary,
+                                                    secondary: slot.secondary + [entry])
+                }
+            }
+        }
+
+        return byMuscle
+            .map { muscle, slot in
+                var byEquipment: [String: [ExerciseCatalogEntry]] = [:]
+                for entry in slot.primary + slot.secondary {
+                    byEquipment[entry.equipment?.isEmpty == false ? entry.equipment! : "Unspecified",
+                                default: []].append(entry)
+                }
+                return MuscleGroup(
+                    muscle: muscle,
+                    hasSecondaryOnly: slot.primary.isEmpty,
+                    byEquipment: byEquipment
+                        .map { EquipmentGroup(equipment: $0.key,
+                                              exercises: $0.value.sorted { $0.name < $1.name }) }
+                        .sorted { $0.equipment < $1.equipment })
+            }
+            // "Unassigned" is a gap, not a muscle, and sorts last so a real
+            // catalogue gap does not lead the list.
+            .sorted { a, b in
+                if a.muscle == "Unassigned" { return false }
+                if b.muscle == "Unassigned" { return true }
+                return a.muscle < b.muscle
+            }
+    }
+
+    /// Records an additional muscle for an exercise. `isPrimary` is false here
+    /// on purpose — a secondary muscle is by definition not the main one, and
+    /// promoting one is a data decision made deliberately, not as a side effect
+    /// of adding it.
+    public func addMuscle(to exerciseCatalogId: Int64, muscle: String,
+                          isPrimary: Bool = false) throws {
+        try db.run("""
+        INSERT INTO exerciseMuscle (exerciseCatalogId, muscle, isPrimary, createdAt)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(exerciseCatalogId, muscle) DO UPDATE SET isPrimary = excluded.isPrimary;
+        """, [.integer(exerciseCatalogId), .text(muscle),
+              .integer(isPrimary ? 1 : 0), .text(nowText)])
     }
 
     // MARK: - Private

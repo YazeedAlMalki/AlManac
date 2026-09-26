@@ -255,9 +255,14 @@ final class AttributionsUITests: XCTestCase {
         scrollTo("Activity rings")
         let toggle = app.switches["Show digestion ring"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
-        // A section added above can leave the switch below the custom bottom
-        // bar, where it exists but cannot be tapped. Bring it into reach.
-        for _ in 0..<6 where !toggle.isHittable { app.swipeUp() }
+        // A section or row added above can leave the switch below the custom
+        // bottom bar, where it exists but cannot be tapped. Bring it into
+        // reach. The budget was raised from 6 when the "Which source wins" link
+        // was added to HealthKit: Settings is a lazily-built Form, so each new
+        // row above pushes this one further down and a fixed budget silently
+        // becomes too small. The failure message below is the real assertion —
+        // the loop is just how far to try first.
+        for _ in 0..<12 where !toggle.isHittable { app.swipeUp() }
         XCTAssertTrue(toggle.isHittable, "the digestion-ring switch must be reachable")
         let original = toggle.value as? String
         toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()

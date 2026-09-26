@@ -192,3 +192,145 @@ from Whoop will not match, and something has to lose.
   22pt with no chip while Food, Training and Body were 21pt in a 44pt
   `surfaceMuted` well, so the first header read as a different kind of thing
   from the three below it. Now `QuickLogSectionIcon`, used by all four.
+
+---
+
+# Second pass, same day
+
+## 8. Load steps by arrows
+
+**Asked:** "load should have taps".
+
+**Built:** a `Stepper` over `0...500` in 1 kg steps, in place of the free-text
+decimal field. Shows "—" at zero and writes `nil` rather than `0` so an unset
+load is distinguishable from a zero-weight movement.
+
+**On the step size:** 1 kg, not 2.5. Fractional plates are common enough that
+2.5 would strand anyone not training in 5s. Like the rep ceiling, this is a UI
+affordance rather than a decided limit.
+
+## 9. Exercises are already tracked, and the graph already exists
+
+**Asked:** "when an exercise is entered it should be later tracked so user can
+know his past performance in the exercise" and "there should be a graph to make
+the user see his training on the exercise".
+
+**Both were already delivered in the first pass today**, and neither needed new
+work here:
+
+- Tracking is `ExerciseProgressStore`, built 2026-09-18, with
+  `ExerciseProgressView` added to reach it.
+- The graph plots load per set across sessions, plus heaviest load and largest
+  single-session tonnage, and is reachable from the exercise picker and now
+  from the library.
+
+What changed in this pass is only the entry point: the graph button also exists
+on every row of the new library view, so it is reachable without first opening
+a form.
+
+## 10. Exercises grouped muscle → method of training
+
+**Asked:** "exercises should be grouped like this. Muscle group > method of
+training (bar, cable, machine, etc). exercises that activate multiple muscles can
+be grouped in multiple muscle group."
+
+**Both halves of the data already existed**, which is why this was a browse view
+rather than a classification project:
+
+- `exerciseCatalog.category` is a muscle — the shipped catalogue has 16 distinct
+  values (Core 45, Glutes 38, Quads 35, Chest 26, Shoulders 22, Back 19, …).
+- `exerciseCatalog.equipment` is the method — 17 distinct values (Bodyweight 111,
+  Dumbbell 45, Machine 35, Barbell 29, Cable 26, Resistance Band 19, …).
+
+**The many-to-many did not, and could not.** One `category` per row is enough to
+browse by group but structurally cannot express "this movement also works the
+triceps". So `Migration042` adds `exerciseMuscle (exerciseCatalogId, muscle,
+isPrimary)` — one row per pair, primary flag stored rather than inferred, seeded
+from `category`.
+
+**Secondary muscles are deliberately empty.** Naming the secondary movers of 302
+movements is a claim about physiology, and this repo's standing rule is that a
+guessed value written into user data is worse than an absent one. The table is
+the missing half of the structure; populating it is a separate, reviewable data
+import via `addMuscle(to:muscle:)`, and no UI has to change when it arrives. The
+browse view already handles a group in which an exercise appears only as a
+secondary — it says "also works" rather than presenting it as a main entry.
+
+**A bug the tests caught, worth recording because it would have shipped:** the
+migration's seed only covers rows that existed *when the migration ran*, and the
+shipped catalogue is seeded at launch, *after* migrations. A backfill-only
+approach left every real exercise with no muscle row, so the whole library would
+have rendered as a single "Unassigned" group. Fixed by mirroring the primary
+muscle in `ExerciseCatalogStore.insert`, which holds the invariant for every
+write path. Verified against the live simulator database: 302 rows seeded, 0
+categorised exercises missing a row.
+
+## 11. Fasting mode is a toggle
+
+**Asked:** "toggle (religious fasting/intermittent fasting)" — religious counts
+Fajr→Maghrib immediately, intermittent takes the time you last ate and the time
+the fast broke.
+
+**More already existed than expected.** `FastingSessionType` has had `religious`
+*and* `ifPlanned` since the schema, `ReligiousFastingService.ensureDay` already
+maintains the religious session from cached prayer times, `FastingSessionStore`
+has `start`/`endScheduled`, and `ReligiousFastScheduleStore` knows which days are
+fast days. What did not exist was any way to *choose*.
+
+**Built:** a segmented Religious/Intermittent toggle at the top of Fasting, and
+two different bodies beneath it.
+
+- **Religious** shows the session, Fajr, Maghrib, and the window in hours
+  computed from those two cached times. Nil when prayer times are not cached —
+  the screen says so rather than inventing a window, which is the whole reason
+  `Prayer` has to be configured first.
+- **Intermittent** offers a `DatePicker` for "I last ate at" and a start button
+  that writes a *backdated* `ifPlanned` session, plus an "I broke the fast just
+  now" button once one is running. Also protocol (16:8 / 18:6 / OMAD / not set),
+  which the column already had.
+
+**Two deliberate guards.** The break button is scoped to `.ifPlanned`, so it
+cannot close a religious fast and contradict `ReligiousFastingService`'s own
+prayer-driven arithmetic. And the default mode is religious, because that is what
+the screen assumed before — flipping it would silently stop maintaining today's
+religious session on launch.
+
+## 12. Which source wins — the user's call, per domain
+
+**Asked:** "a decision about which source wins when Whoop and HealthKit disagree
+about sleep — user gets to pick when setting up their profile and can change it
+later from settings."
+
+**This closes the blocker recorded in the first pass.** It is deliberately the
+*arbitration layer only*, and it does not make Whoop or Fitbit exist.
+
+- `Migration043` adds `sync_source_preference (domain, sourceId, updatedAt)`,
+  primary key on domain, so re-picking overwrites and "change it later" is an
+  update rather than a second competing opinion.
+- `sourceId` is free text, not a foreign key, because there is no providers
+  table and inventing one for a provider that has not been written would be a
+  table describing a fiction. It also makes adding Whoop a data change rather
+  than a migration.
+- `SyncSourcePreferenceStore` reads and writes per domain across seven domains
+  (sleep, heart rate, HRV, steps, energy, body composition, workouts).
+- Reachable at Settings → HealthKit → "Which source wins".
+
+**An absent row is meaningful**, not a default: it means the user has not been
+asked about that domain, which is different from having been asked and left it
+alone. The UI says "Not decided".
+
+**Why per domain and not one global switch:** there is no defensible default.
+Two providers will not agree about sleep staging — different sensors, different
+epoch definitions — and "prefer the specialist" is wrong for at least one domain
+just as surely as "prefer the phone" is. So the user decides, per domain.
+
+**On "when setting up their profile":** profile setup is a display name and a few
+fields. Grafting a seven-domain arbitration question onto it would be the wrong
+place, so only the Settings route exists. The store is the same either way, and
+adding a setup step later is a small edit.
+
+**Still not built:** the second provider. HealthKit remains the only source
+Almanac can read, which is why every row currently has one real choice. Setting
+the preference now is still worthwhile — a preference recorded before a provider
+starts writing is one recorded against data the user has already formed an
+opinion about, rather than one made blind.
