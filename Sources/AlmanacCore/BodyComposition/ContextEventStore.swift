@@ -84,7 +84,29 @@ public struct ContextEventStore: @unchecked Sendable {
         """, [.text(tagsJSON(tags)), .text(nowText), .integer(id)])
     }
 
+    public func updateNotes(id: Int64, to notes: String?) throws {
+        try db.run("""
+        UPDATE context_event SET notes = ?, updatedAt = ? WHERE id = ?;
+        """, [notes.map { SQLValue.text($0) } ?? .null, .text(nowText), .integer(id)])
+    }
+
     // MARK: - Read
+
+    /// Context events across a logical-day range, oldest first.
+    ///
+    /// A range query rather than a single-day one because the tags exist to
+    /// explain a *reading*, and the reading a user is looking at is usually not
+    /// today's. Note that `context_event.date` has **no unique index**, so a day
+    /// can hold more than one row; this returns all of them, and
+    /// `event(for:)` returns only the first. Which of those a screen should do
+    /// is a product question the store does not settle — see
+    /// `docs/features/body-composition.md`.
+    public func events(from: String, to: String) throws -> [ContextEvent] {
+        try db.query("""
+        SELECT id, date, tags, notes, createdAt, updatedAt
+        FROM context_event WHERE date >= ? AND date < ? ORDER BY date;
+        """, [.text(from), .text(to)]).compactMap(rowToEvent)
+    }
 
     public func event(id: Int64) throws -> ContextEvent? {
         try db.query("""

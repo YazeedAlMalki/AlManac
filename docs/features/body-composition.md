@@ -13,9 +13,76 @@ now exists under More; full CRUD, supplement/context screens, notification wirin
 and progress photos remain future work.
 
 The native app now has a first Measurements surface under More: it lists recent
-body-composition and custom measurements and accepts manual values. The complete
-Slice 7 UI (plans, adherence, context tags, editing and historical exploration)
-remains future work.
+body-composition and custom measurements and accepts manual values.
+
+### Supplements and context tags, built (2026-09-27)
+
+The two surfaces Slice 7 called "not built" and that had complete, tested stores
+with **zero** app call sites are now reachable from Modules → Track.
+
+- **`SupplementView`** — today's adherence is the one prominent card (doctrine
+  rule 2: the screen is about one question, and it is answered first), the plan
+  list is ruled beneath it, and 14 days of history below that. Tapping a plan's
+  row in the card logs it; tapping it again removes the entry, so a mis-tap
+  undoes itself without a confirm dialog.
+- **A discontinued plan stays on the screen.** `deactivate` is this store's
+  substitute for deletion because `supplement_log` keeps pointing at a real
+  plan — so a list of active plans only would show a discontinued supplement as
+  though it had never existed while its history sat in the database
+  unreferenced. Hence `allPlans()`, active first.
+- **The adherence headline does not average a fact into a guess.** "1 of 2
+  taken" needs a frequency that states a count; a `custom` frequency's schedule
+  lives in the plan's own notes, which a screen cannot parse. A list containing
+  both reports no number and says "1 logged today" instead of dividing by a
+  denominator it invented.
+- **`ContextTagsView`** — day navigation, the ten known tags as a two-column
+  grid, notes, and 30 days of history. **No prominent card**: nothing on this
+  screen is a measurement, so the accent is not available and a filled panel
+  would spend the emphasis on decoration.
+- **A day is edited, not appended to.** `context_event.date` has no unique
+  index, so `log` can put a second row on a day and `event(for:)` returns only
+  the first. Saving therefore updates the day's row when there is one and
+  inserts when there is not. **The store's tolerance of two rows for one day
+  remains an open question** — the range query returns both, the single-day
+  read returns one, and a unique index would be a migration plus a decision
+  about what to do with a day that already has two.
+- **The save control is keyed to "differs from what is stored", not to "has
+  something to write".** Those are different conditions, and conflating them
+  costs the user the ability to *clear* a day: a day that had `illness` on it
+  has something to write the moment the tag is removed, and an emptiness-style
+  guard would disable the only control that could record that.
+
+**Store gaps closed to get here** (all were behind §5's own "plan CRUD"
+description): `SupplementPlanStore.allPlans` and `.update` — the latter
+deliberately does *not* touch `isActive` or the reminder, which have their own
+single-purpose methods, so an edit form can never silently clear a reminder by
+omitting it; `SupplementLogStore.setTaken`, `.delete` and an all-plans
+`entries(from:to:)`; `ContextEventStore.events(from:to:)` and `.updateNotes`.
+
+**Still not done:** editing or deleting a body-composition measurement row
+anywhere, progress photos (owner-deferred 2026-09-16), historical exploration
+and charting for any body metric, and supplement reminders — which need Slice
+11's scheduler. The `supplement` row in the spec's Appendix B is ready for it
+and nothing schedules notifications yet.
+
+### Tests
+
+`SupplementStoreTests` and `ContextEventStoreTests` grew to 24 tests covering
+the new methods, including that `update` leaves the reminder and the active flag
+alone. `BodyCompositionWellnessUITests` adds 6 UI tests: the two screens open
+from Modules, the empty states and the adherence headline cannot both be true
+or both be false, a plan can be created and logged as taken, a discontinued plan
+stays visible and marked, all ten tags are reachable, and setting *and clearing*
+a day's tag both persist.
+
+**That UI suite is written against an accumulating database.** The tests share
+one installed app, so a row written by one is still there for the next, and a
+test written against "nothing logged yet" fails on the second run — three of
+these were rewritten after exactly that. Each test drives the app to the state
+it needs first, and assertions that would depend on scroll position are phrased
+against the prominent card, which is always rendered. **Wiping the app's data
+container between runs is a prerequisite, not a nicety**: `xcrun simctl
+uninstall <udid> com.almanac.personal`.
 
 ## 1. What Slice 7 actually still needs (most of it is already done)
 

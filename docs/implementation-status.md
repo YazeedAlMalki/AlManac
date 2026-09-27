@@ -10,6 +10,56 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-27 — Supplements and context tags get screens
+
+Closes the two rows `docs/features/body-composition.md` §1 still listed as
+"Not built". `SupplementPlanStore`, `SupplementLogStore` and `ContextEventStore`
+had been complete and green since 2026-09-16 with **zero** `Native/` call
+sites — a user could not create a plan, log a dose, or record a confounder.
+
+- **`SupplementView`** puts today's adherence in the one prominent card and the
+  plan list and 14 days of history in ruled sections beneath. Tapping a plan
+  logs it, tapping again removes it.
+- **`ContextTagsView`** is day navigation, the ten known tags, notes and 30 days
+  of history — and deliberately has **no prominent card**, because nothing on it
+  is a measurement. The accent means Almanac recorded something, so it is not
+  available on a screen of tags.
+- **A discontinued plan stays listed.** It is deactivated rather than deleted so
+  `supplement_log` keeps a real plan to point at, so showing only active plans
+  would make a discontinued supplement look deleted.
+- **The adherence headline refuses to average a fact into a guess.** A
+  `custom` frequency's schedule is in the plan's own notes, so a list
+  containing one reports no count rather than dividing by a denominator it
+  invented.
+- **Saving a context day edits rather than appends.** `context_event.date` has
+  no unique index, and `event(for:)` returns only the first row, so inserting
+  unconditionally would silently hide half of what the user just said. Update
+  when the day has a row, insert when it does not. **The store's tolerance of
+  two rows for one day stays an open question** — fixing it needs a migration
+  and a decision about existing duplicates.
+- **The context save control is keyed to "differs from stored", not to "has
+  something to write".** Those are different conditions, and conflating them
+  makes it impossible to *clear* a day: a day carrying a tag has something to
+  write the moment that tag is removed, and an emptiness guard would disable
+  the only control that could record it. **This was a real bug, caught by the
+  UI test** — the first version of the screen could only edit a day that already
+  had a row, so it could never create the first one and was unusable.
+
+**Store gaps closed**, all of them behind §5's own "plan CRUD" description:
+`SupplementPlanStore.allPlans` and `.update`; `SupplementLogStore.setTaken`,
+`.delete` and an all-plans `entries(from:to:)`; `ContextEventStore.events(from:to:)`
+and `.updateNotes`. `update` deliberately does not touch `isActive` or the
+reminder — both have their own single-purpose methods, so an edit form cannot
+clear a reminder by omitting it.
+
+**The UI tests need a wiped data container.** The suite shares one installed
+app, so a row written by one test is still there for the next and three tests
+were rewritten after failing on their second run. `xcrun simctl uninstall <udid>
+com.almanac.personal` before a run is a prerequisite, not a nicety.
+
+Full suite: 361 XCTest (1 skipped) + **492 Swift Testing** (up from 481), zero
+failures. UI suite: **27 tests, all passing** (6 new). Simulator build clean.
+
 ## 2026-09-27 — The night nutrition window resolves entries
 
 Closes item 5 of the still-open list in `docs/features/fasting.md`.

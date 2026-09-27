@@ -254,6 +254,8 @@ enum AlmanacIcon {
     static let nutrition = "fork.knife"
     static let training = "dumbbell"
     static let body = "ruler"
+    static let supplement = "pills"
+    static let context = "tag"
     static let check = "checkmark"
     static let edit = "pencil"
     static let previous = "chevron.left"

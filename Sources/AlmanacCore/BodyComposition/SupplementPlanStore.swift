@@ -123,6 +123,42 @@ public struct SupplementPlanStore: @unchecked Sendable {
         ])
     }
 
+    /// Every plan, active first then by name — the list a plan screen shows.
+    ///
+    /// Deactivated plans are included on purpose. `deactivate` is this store's
+    /// substitute for deletion because `supplement_log` has to keep pointing at
+    /// a real plan, so a deactivated plan is still the subject of real adherence
+    /// history; a screen listing only `activePlans()` would make it look
+    /// deleted, which is the opposite of what happened to it.
+    public func allPlans() throws -> [SupplementPlan] {
+        try db.query("""
+        SELECT id, name, doseAmount, doseUnit, frequency, timingNotes, isActive,
+               reminderEnabled, reminderMinuteOfDay, createdAt, updatedAt
+        FROM supplement_plan ORDER BY isActive DESC, name;
+        """).compactMap(rowToPlan)
+    }
+
+    /// Edits a plan's authored fields. `isActive` and the reminder are not
+    /// touched — they have their own single-purpose methods
+    /// (`deactivate(id:)`, `setReminder(id:enabled:reminderMinuteOfDay:)`) so
+    /// there is no way for an edit form to silently clear a reminder by
+    /// omitting it.
+    public func update(_ draft: SupplementPlanDraft, id: Int64) throws {
+        try db.run("""
+        UPDATE supplement_plan
+        SET name = ?, doseAmount = ?, doseUnit = ?, frequency = ?, timingNotes = ?, updatedAt = ?
+        WHERE id = ?;
+        """, [
+            .text(draft.name),
+            .real(draft.doseAmount),
+            .text(draft.doseUnit),
+            .text(draft.frequency),
+            draft.timingNotes.map { SQLValue.text($0) } ?? .null,
+            .text(nowText),
+            .integer(id)
+        ])
+    }
+
     public func plan(id: Int64) throws -> SupplementPlan? {
         try db.query("""
         SELECT id, name, doseAmount, doseUnit, frequency, timingNotes, isActive,

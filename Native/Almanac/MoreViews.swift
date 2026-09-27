@@ -50,6 +50,20 @@ struct ModulesView: View {
                     } label: {
                         Label("Fasting", systemImage: AlmanacIcon.fasting)
                     }
+
+                    if let db {
+                        NavigationLink {
+                            SupplementView(db: db, trackingModel: trackingModel)
+                        } label: {
+                            Label("Supplements", systemImage: AlmanacIcon.supplement)
+                        }
+
+                        NavigationLink {
+                            ContextTagsView(db: db, trackingModel: trackingModel)
+                        } label: {
+                            Label("Context", systemImage: AlmanacIcon.context)
+                        }
+                    }
                 }
 
                 Section("Daily context") {

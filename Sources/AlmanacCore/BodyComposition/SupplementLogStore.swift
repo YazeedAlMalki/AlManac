@@ -93,6 +93,40 @@ public struct SupplementLogStore: @unchecked Sendable {
         """, [.integer(planId), .text(from), .text(to)]).compactMap(rowToEntry)
     }
 
+    /// Adherence entries for every plan within a logical-day range, newest
+    /// first — the shape a history list wants, where the entries of different
+    /// plans interleave and reading them plan-by-plan would be a lie about when
+    /// things were taken.
+    public func entries(from: String, to: String) throws -> [SupplementLogEntry] {
+        try db.query("""
+        SELECT id, planId, timestamp, logicalDay, taken, notes, createdAt
+        FROM supplement_log WHERE logicalDay >= ? AND logicalDay < ?
+        ORDER BY timestamp DESC;
+        """, [.text(from), .text(to)]).compactMap(rowToEntry)
+    }
+
+    /// Corrects a `taken` flag after the fact.
+    ///
+    /// Separate from `log` rather than a delete-and-reinsert because the entry
+    /// has an `id` and a `createdAt` that other things may already have seen —
+    /// and because "I took it after all" and "I mis-tapped" are the same edit
+    /// with different reasons, and the reason is not stored.
+    public func setTaken(id: Int64, to taken: Bool) throws {
+        try db.run("""
+        UPDATE supplement_log SET taken = ? WHERE id = ?;
+        """, [.integer(taken ? 1 : 0), .integer(id)])
+    }
+
+    /// Removes an entry outright, for the mis-tap.
+    ///
+    /// A hard delete, unlike `supplement_plan`'s deactivation. Nothing foreign
+    /// keys to `supplement_log` and an adherence entry is the user's own
+    /// assertion rather than a reading from a device, so there is no external
+    /// record to contradict and nothing to keep pointing at it.
+    public func delete(id: Int64) throws {
+        try db.run("DELETE FROM supplement_log WHERE id = ?;", [.integer(id)])
+    }
+
     private func rowToEntry(_ row: Row) -> SupplementLogEntry? {
         guard let id = row.int("id"),
               let planId = row.int("planId"),
