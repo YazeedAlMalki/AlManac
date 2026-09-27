@@ -77,6 +77,10 @@ final class HealthModel: ObservableObject {
             catch {
                 problem = "Waist could not be written to Health: \(error.localizedDescription)"
             }
+            do { try await BodyCompositionWriteback(db: db, writer: writer).drainOnce() }
+            catch {
+                problem = "Body measurements could not be written to Health: \(error.localizedDescription)"
+            }
         }
 
         for domain in Self.domains {

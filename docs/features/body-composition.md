@@ -182,11 +182,40 @@ exists — it's the *bridge* that needs to change, not the domain enum).
 
 `BodyCompositionMeasurementHealthBridge` follows `VitalsRecordHealthBridge`'s
 shape (`HealthSampleWriting`, idempotent upsert on `(source, healthKitUUID)`)
-for the read side, and `HydrationHealthBridge`'s pattern for the write side
-(`.water` is the only other domain Almanac currently originates back out to
-HealthKit) — `pendingHealthKitWrite` on `body_composition_measurement` exists
-for exactly this: a manual entry queued for push, cleared once
-`HealthWriter.write(_:)` confirms it.
+for the read side, and `HydrationHealthBridge`'s pattern for the write side —
+`pendingHealthKitWrite` on `body_composition_measurement` exists for exactly
+this: a manual entry queued for push, cleared once `HealthWriter.write(_:)`
+confirms it.
+
+### The write side, built (2026-09-27)
+
+`BodyCompositionWriteback` is the outbound half, and it is what the column was
+added for. Four things about it are not the obvious choice:
+
+- **The queue is `pendingHealthKitWrite = 1`, not `healthKitUUID IS NULL`** as
+  the waist writeback uses. Only a metric HealthKit can hold is ever flagged,
+  because `skeletal_muscle_kg` and `visceral_rating` have no type: inferring the
+  queue from a null UUID would leave those rows retrying a write that can never
+  succeed. `BodyCompositionMeasurementStore.log` is the only writer of the flag.
+- **The two directions do not agree on the unit string.** The store spells body
+  fat `pct` (the BRD's own word); HealthKit's label is `%`, and
+  `HealthKitProvider.write` refuses anything else. A single shared table would
+  have had to carry both spellings, so `outbound` carries all three columns and
+  a test asserts its key set equals the inbound bridge's.
+- **A row whose unit is not the one its metric is stored in is left queued, not
+  relabelled.** A `weight` in pounds pushed under HealthKit's `kg` is a wrong
+  number wearing a right label, which is worse than not being sent. It stays
+  flagged so the mismatch is visible in the row rather than silently dropped.
+- **The echo is guarded.** `healthKitUUID` is a column-level `UNIQUE`, while the
+  upsert's conflict target is the *partial* index on `(source, healthKitUUID)`.
+  So an inbound sample carrying a UUID a manual row already holds would not be
+  caught by the upsert — it would fail outright. The bridge skips it, the same
+  guard the waist bridge has. `HealthKitProvider` already drops its own exports
+  by bundle identifier, so this is the belt to that braces.
+
+`HealthModel.syncNow()` drains it alongside the waist writeback, and
+`NSHealthUpdateUsageDescription` now says "body measurements" rather than
+naming only water and waist.
 
 ## 5. Store plan
 

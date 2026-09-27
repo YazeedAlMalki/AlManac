@@ -10,6 +10,77 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-27 — Body composition writes back to HealthKit
+
+Closes the "outbound half" §4 of `docs/features/body-composition.md` describes
+and leaves open. `pendingHealthKitWrite` (Migration018) had been written by no
+code and read by no code, `HealthKitProvider.write` refused every body domain,
+and the three metrics the feature doc calls "bi-directional (read ✅ write ✅)"
+were read-only in fact.
+
+- **`BodyCompositionWriteback`** is the outbound drain, beside the inbound
+  bridge in `BodyCompositionMeasurementHealthBridge.swift` and sharing its
+  metric table. `BodyCompositionMeasurementStore.log` sets
+  `pendingHealthKitWrite = 1` — the only writer of the column — and
+  `HealthModel.syncNow()` drains it next to the waist writeback.
+- **The queue is the flag, not `healthKitUUID IS NULL`** (which is what the
+  waist writeback uses). Only a metric HealthKit can hold is ever flagged:
+  `skeletal_muscle_kg` and `visceral_rating` have no type at all (Appendix C),
+  so inferring the queue from a null UUID would leave those rows retrying a
+  write that can never succeed.
+- **The two directions do not agree on the unit string, which would have been a
+  silent failure.** The store spells body fat `pct` (the BRD's own word);
+  HealthKit's label is `%`, and `HealthKitProvider.write` compares the unit
+  against its own table and throws `unavailable` on anything else. So `outbound`
+  carries metric, domain, store unit *and* health unit, and a test asserts its
+  key set equals the inbound bridge's.
+- **A row in a unit its metric is not stored in is left queued, not relabelled.**
+  A `weight` in pounds sent under HealthKit's `kg` is a wrong number wearing a
+  right label. Stays flagged, so the mismatch shows in the row rather than
+  being silently dropped or pushed wrong.
+- **The echo needed a guard, and it was a latent crash rather than a duplicate.**
+  `healthKitUUID` is a column-level `UNIQUE`, but the upsert's conflict target
+  is the *partial* index on `(source, healthKitUUID)` — so an inbound sample
+  carrying a UUID a manual row already holds is not caught by the upsert and
+  fails outright with `SQLITE_CONSTRAINT`. The bridge now skips it, mirroring
+  `BodyMeasurementHealthBridge`'s guard. `HealthKitProvider` already drops its
+  own exports by bundle identifier, so this is the belt to that braces.
+
+Two defects found and fixed in the code this touches:
+
+- **`BodyMeasurementWriteback.drainOnce` threw out of its loop on the first
+  failure,** so one unwritable waist row stopped every row after it from ever
+  being tried, and it reported the wrong thing — a single row's failure looked
+  like the whole drain's. Now every row is attempted and the first failure is
+  rethrown once the loop finishes: the row stays unmatched by the query (which
+  is the retry) *and* `HealthModel` still surfaces the error to the user. Its
+  existing test asserted the throw and the pending row; both still hold, which
+  is why the fix is invisible to it.
+- **`HydrationWriteback` had a per-row `catch` and so was silent** about a
+  completely failed drain, while the two other writebacks threw. Not changed
+  here — it is a third behaviour, and picking one is a product call about
+  whether a silent retry or a visible error is wanted. Flagged rather than
+  guessed at.
+
+Also generalised, and worth naming because it changes another module's
+behaviour: **every originated write now carries `HKMetadataKeySyncIdentifier`**
+rather than the waist alone. A retried write is now the same sample instead of
+a second one for water and all three body metrics too — hydration had the same
+duplicate-on-retry exposure the waist comment warned about, and the fix is the
+same line of code, so leaving body composition as the only metadata-free domain
+would have been incoherent. `storedWaistIdentifier` is now
+`storedIdentifier`, and the returned identifier is the *stored* sample's for
+every writable domain (an equal-version retry is ignored by HealthKit, and
+returning the fresh object's UUID would record a UUID that does not exist).
+`HealthKitProvider.writableDomains` is the single list that now drives both the
+write guard and the share-permission request, so adding a writable domain is
+one line rather than two that must agree. `NSHealthUpdateUsageDescription` now
+says "body measurements" instead of naming only water and waist.
+
+**Verified:** `swift test` — 361 XCTest (1 skip) and 465 Swift Testing, 0
+failures, including 12 new cases in `BodyCompositionWritebackTests`. The Debug
+simulator build succeeds with no new warnings.
+
 ## 2026-09-27 — Nutrition derived values (`edibleGrams`) and `NutritionSummary` coverage
 
 Closes to-do #17 and the "Still open" item 2 of the 2026-09-15 nutrition port.

@@ -185,7 +185,7 @@ DC76E9F0C0006E8F919E0C51 = { isa = PBXGroup; children = (1BDBD24583AAF7F81F76B97
                 CODE_SIGN_ENTITLEMENTS = Almanac/Almanac.entitlements;
                 GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Almanac;
                 INFOPLIST_KEY_NSHealthShareUsageDescription = "Almanac reads water, waist circumference, body composition, sleep, workouts and activity from Health to keep your records in sync.";
-                INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Almanac writes the water and waist circumference you log here to Health so those records are available in your other health apps.";
+                INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Almanac writes the water, waist circumference and body measurements you log here to Health so those records are available in your other health apps.";
                  INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Almanac uses your location to calculate local prayer times.";
                 INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
                 INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -198,7 +198,7 @@ DC76E9F0C0006E8F919E0C51 = { isa = PBXGroup; children = (1BDBD24583AAF7F81F76B97
                 CODE_SIGN_ENTITLEMENTS = Almanac/Almanac.entitlements;
                 GENERATE_INFOPLIST_FILE = YES; INFOPLIST_KEY_CFBundleDisplayName = Almanac;
                 INFOPLIST_KEY_NSHealthShareUsageDescription = "Almanac reads water, waist circumference, body composition, sleep, workouts and activity from Health to keep your records in sync.";
-                INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Almanac writes the water and waist circumference you log here to Health so those records are available in your other health apps.";
+                INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Almanac writes the water, waist circumference and body measurements you log here to Health so those records are available in your other health apps.";
                  INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Almanac uses your location to calculate local prayer times.";
                 INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
                 INFOPLIST_KEY_UILaunchScreen_Generation = YES;

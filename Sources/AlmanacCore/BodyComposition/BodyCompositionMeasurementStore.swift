@@ -90,11 +90,18 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
     public func log(_ draft: BodyCompositionMeasurementDraft, logicalDay: String) throws -> Int64 {
         let timestamp = iso(draft.timestamp)
         let createdAt = nowText
+        // A manual row of a metric HealthKit can hold is queued for write-back
+        // by flagging it here, which is the only writer of the column. Rows of
+        // `skeletal_muscle_kg` / `visceral_rating` are never flagged: there is
+        // no HealthKit type to send them to, so a flag would be a row that can
+        // never drain. See Migration018's comment and `BodyCompositionWriteback`.
+        let pendingWrite = draft.source == "manual"
+            && BodyCompositionMeasurementHealthBridge.healthKitDomain(forMetric: draft.metric) != nil
 
         try db.run("""
         INSERT INTO body_composition_measurement
-            (timestamp, timezoneOffset, timezoneIdentifier, logicalDay, metric, value, unit, source, conditions, healthKitUUID, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            (timestamp, timezoneOffset, timezoneIdentifier, logicalDay, metric, value, unit, source, conditions, healthKitUUID, pendingHealthKitWrite, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(timestamp),
             draft.timezoneOffset.map { SQLValue.integer(Int64($0)) } ?? .null,
@@ -106,6 +113,7 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
             .text(draft.source),
             .text(draft.conditions),
             draft.healthKitUUID.map { SQLValue.text($0) } ?? .null,
+            .integer(pendingWrite ? 1 : 0),
             .text(createdAt)
         ])
 

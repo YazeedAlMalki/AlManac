@@ -6,10 +6,10 @@ import Foundation
 /// Per Appendix C of the tech spec, `bodyMass`, `bodyFatPercentage` and
 /// `leanBodyMass` are the only body-composition metrics with a HealthKit type
 /// at all — skeletal muscle and visceral rating have none (manual/InBody-
-/// import only). All three mapped here are bi-directional in principle
-/// (`pendingHealthKitWrite` on the table exists for the outbound half); this
-/// bridge covers inbound sync, mirroring `VitalsRecordHealthBridge`'s
-/// idempotent upsert-by-`(source, healthKitUUID)` shape.
+/// import only). All three are bi-directional: this type is the inbound half
+/// and `BodyCompositionWriteback` the outbound one, joined by the `outbound`
+/// table above. Inbound sync is an idempotent upsert by
+/// `(source, healthKitUUID)`, mirroring `VitalsRecordHealthBridge`.
 ///
 /// HealthKit carries no fasted/non-fasted state, so every sample lands with
 /// `conditions = 'unknown'` — a manual entry can express the real condition;
@@ -26,6 +26,31 @@ public struct BodyCompositionMeasurementHealthBridge: HealthSampleWriting, @unch
         .bodyFatPercentage: ("body_fat_pct", "pct"),
         .leanBodyMass: ("lean_mass_kg", "kg")
     ]
+
+    /// The outbound half of the same three metrics, keyed by the stored metric
+    /// name. Separate from `metricMap` rather than derived from it, because the
+    /// two directions do not agree on the unit string: the store spells body
+    /// fat `pct` (the BRD's own word) while HealthKit's label is `%`, and
+    /// `HealthKitProvider.write` refuses anything else. A single shared table
+    /// would have had to carry both spellings anyway, and the two key sets are
+    /// asserted equal in `BodyCompositionWritebackTests`.
+    ///
+    /// Three rows, not five: `skeletal_muscle_kg` and `visceral_rating` have no
+    /// HealthKit type at all (Appendix C), so a manual row of either can never
+    /// be pushed and is deliberately never queued.
+    static let outbound: [String: (domain: HealthDomain, storeUnit: String, healthUnit: String)] = [
+        "weight": (.bodyMass, "kg", "kg"),
+        "body_fat_pct": (.bodyFatPercentage, "pct", "%"),
+        "lean_mass_kg": (.leanBodyMass, "kg", "kg"),
+    ]
+
+    /// The HealthKit domain for a stored metric name, or nil for one HealthKit
+    /// cannot hold. Read by `BodyCompositionMeasurementStore.log` so a manual
+    /// row is queued for write-back only when there is somewhere to send it —
+    /// otherwise a metric with no HK type would sit in the queue failing forever.
+    public static func healthKitDomain(forMetric metric: String) -> HealthDomain? {
+        outbound[metric]?.domain
+    }
 
     public init(db: Database, clock: any Clock = SystemClock(),
                 timeModel: TimeModel = TimeModel(timeZone: .current),
@@ -96,6 +121,19 @@ public struct BodyCompositionMeasurementHealthBridge: HealthSampleWriting, @unch
             guard let (metricName, unitName) = metricMap[sample.domain],
                   let value = sample.value else { continue }
 
+            // A manual row this app exported already holds this HealthKit UUID.
+            // Echoing it back must not create a second row for the same reading:
+            // `healthKitUUID` is a column-level UNIQUE (Migration018), so the
+            // upsert below — whose conflict target is the *partial* index on
+            // `(source, healthKitUUID)` — would not catch it and the insert
+            // would fail outright. `HealthKitProvider` already drops its own
+            // exports by bundle identifier; this is the same guard the waist
+            // bridge has, for any other host.
+            let holder = try db.query("""
+                SELECT source FROM body_composition_measurement WHERE healthKitUUID = ?;
+                """, [.text(sample.externalID)]).first
+            if let holder, holder.string("source") != sourceSystem { continue }
+
             let logicalDayText = timeModel.logicalDay(sample.start).value
 
             let existingRow = try db.query("""
@@ -141,5 +179,85 @@ public struct BodyCompositionMeasurementHealthBridge: HealthSampleWriting, @unch
         }
 
         return HealthApplyCounts(inserted: inserted, updated: updated, deleted: deleted)
+    }
+}
+
+/// Pushes manually-logged body composition entries to HealthKit.
+///
+/// The queue is `pendingHealthKitWrite = 1`, the flag `Migration018` added for
+/// this purpose and `BodyCompositionMeasurementStore.log` sets. It is not
+/// `healthKitUUID IS NULL` as the waist writeback uses, because only a metric
+/// HealthKit can actually hold is ever flagged: `skeletal_muscle_kg` and
+/// `visceral_rating` have no type, and inferring the queue from a null UUID
+/// would leave those rows retrying a write that can never succeed.
+///
+/// Same discipline as `HydrationWriteback` and the mirror of
+/// `HealthSyncService`: the write happens outside any SQLite transaction
+/// (it is a call to another system), and a row is stamped only after that
+/// write has actually succeeded. A failed write is recorded and the loop
+/// continues, so one bad row neither blocks the rows after it nor hides itself:
+/// the first failure is rethrown once every row has been tried, and the failed
+/// row stays flagged, which is the retry.
+public struct BodyCompositionWriteback: Sendable {
+    private let db: Database
+    private let writer: any HealthWriter
+
+    public init(db: Database, writer: any HealthWriter) {
+        self.db = db
+        self.writer = writer
+    }
+
+    private func parse(_ text: String) -> Date? {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: text)
+    }
+
+    /// Pushes every flagged manual row once. Returns the number successfully
+    /// pushed.
+    @discardableResult
+    public func drainOnce() async throws -> Int {
+        let rows = try db.query("""
+            SELECT id, metric, value, unit, timestamp FROM body_composition_measurement
+            WHERE source = 'manual' AND pendingHealthKitWrite = 1 AND deletedAt IS NULL
+            ORDER BY timestamp, id;
+            """)
+
+        var pushed = 0
+        var firstFailure: Error?
+        for row in rows {
+            // A row whose unit is not the one this metric is stored in cannot be
+            // sent under HealthKit's label without relabelling the number — a
+            // `weight` in pounds pushed as `kg` is worse than not pushed. It
+            // stays flagged rather than being dropped, so the mismatch is
+            // visible in the row instead of silently discarded.
+            guard let id = row.int("id"),
+                  let metric = row.string("metric"),
+                  let spec = BodyCompositionMeasurementHealthBridge.outbound[metric],
+                  row.string("unit") == spec.storeUnit,
+                  let value = row.double("value"), value.isFinite, value > 0,
+                  let text = row.string("timestamp"),
+                  let date = parse(text) else { continue }
+
+            // Stable per row, so a retried write is the same sync identifier
+            // rather than a second sample — see `HealthKitProvider.write`.
+            let sample = HealthSample(
+                externalID: "almanac.body_composition.\(id).\(date.timeIntervalSince1970)",
+                domain: spec.domain, start: date, end: date,
+                value: value, unit: spec.healthUnit)
+            do {
+                let externalID = try await writer.write(sample)
+                try db.run("""
+                    UPDATE body_composition_measurement
+                    SET healthKitUUID = ?, pendingHealthKitWrite = 0
+                    WHERE id = ? AND pendingHealthKitWrite = 1;
+                    """, [.text(externalID), .integer(id)])
+                pushed += 1
+            } catch {
+                firstFailure = firstFailure ?? error
+            }
+        }
+        if let firstFailure { throw firstFailure }
+        return pushed
     }
 }

@@ -11,7 +11,8 @@ import AlmanacCore
 /// is the unit the corresponding bridge's metric map already declares, and the
 /// one HealthKit hands out by default for that quantity.
 ///
-/// Water and waist circumference also write manually logged entries.
+/// Water, waist circumference and the three body-composition metrics also
+/// write manually logged entries; every other domain is a read-only sync.
 final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable {
     private let store = HKHealthStore()
 
@@ -54,6 +55,19 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     /// sample class, carrying time, activity type and optional totals.
     private static let workout = HKObjectType.workoutType()
 
+    /// The domains this build may originate back out to HealthKit.
+    ///
+    /// Every case here is a measurement a person entered in Almanac and would
+    /// expect to find in their other health apps. The three body-composition
+    /// metrics are exactly those with a HealthKit type (Appendix C) — skeletal
+    /// muscle and visceral rating have none, which is why the writeback's table
+    /// is three rows and not five. `requestAuthorisation` asks for share
+    /// permission on precisely this set, so it is the one place to change when a
+    /// domain becomes writable.
+    static let writableDomains: Set<HealthDomain> = [
+        .water, .waistCircumference, .bodyMass, .bodyFatPercentage, .leanBodyMass,
+    ]
+
     private static func sampleType(for domain: HealthDomain) -> HKSampleType? {
         if domain == .workouts { return workout }
         if let quantity = quantities[domain] { return quantity.type }
@@ -68,7 +82,7 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     func requestAuthorisation(for domains: [HealthDomain]) async throws {
         let read = Set(domains.compactMap(Self.sampleType(for:)))
         guard !read.isEmpty else { return }
-        let share = Set<HKSampleType>(domains.filter { $0 == .water || $0 == .waistCircumference }
+        let share = Set<HKSampleType>(domains.filter { Self.writableDomains.contains($0) }
             .compactMap { Self.quantities[$0]?.type })
         try await store.requestAuthorization(toShare: share, read: read)
     }
@@ -169,25 +183,26 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     }
 
     func write(_ sample: HealthSample) async throws -> String {
-        guard sample.domain == .water || sample.domain == .waistCircumference,
+        guard Self.writableDomains.contains(sample.domain),
               let spec = Self.quantities[sample.domain], let value = sample.value,
               value.isFinite, value > 0, sample.unit == spec.label else { throw HealthProviderError.unavailable }
         let quantity = HKQuantity(unit: spec.unit, doubleValue: value)
-        // Retrying a waist write after interruption must not create a second Health sample.
-        let metadata: [String: Any]? = sample.domain == .waistCircumference
-            ? [HKMetadataKeySyncIdentifier: sample.externalID, HKMetadataKeySyncVersion: 1] : nil
+        // Every originated write carries a sync identifier, not just the waist.
+        // Retrying one after an interruption must not create a second Health
+        // sample, and every drain re-derives the same identifier from the row's
+        // own id and timestamp — so a retry is the same sample, not a new one.
+        let metadata: [String: Any]? = [
+            HKMetadataKeySyncIdentifier: sample.externalID, HKMetadataKeySyncVersion: 1,
+        ]
         let hkSample = HKQuantitySample(type: spec.type, quantity: quantity,
                                         start: sample.start, end: sample.end, metadata: metadata)
         try await store.save(hkSample)
-        if sample.domain == .waistCircumference {
-            // An equal-version retry can be ignored by HealthKit. Return the
-            // stored sample's UUID, not the fresh UUID of the ignored object.
-            return try await storedWaistIdentifier(syncIdentifier: sample.externalID, type: spec.type)
-        }
-        return hkSample.uuid.uuidString
+        // An equal-version retry can be ignored by HealthKit. Return the stored
+        // sample's UUID, not the fresh UUID of the ignored object.
+        return try await storedIdentifier(syncIdentifier: sample.externalID, type: spec.type)
     }
 
-    private func storedWaistIdentifier(syncIdentifier: String, type: HKQuantityType) async throws -> String {
+    private func storedIdentifier(syncIdentifier: String, type: HKQuantityType) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             let predicate = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier,
                                                         allowedValues: [syncIdentifier])

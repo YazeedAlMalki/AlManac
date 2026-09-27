@@ -57,16 +57,27 @@ public struct BodyMeasurementWriteback: Sendable {
             ORDER BY measured_at, id;
             """)
         var pushed = 0
+        var firstFailure: Error?
         for row in rows {
             guard let id = row.int("id"), let value = row.double("value_cm"),
                   let date = row.string("measured_at").flatMap({ ISO8601DateFormatter().date(from: $0) }) else { continue }
             let sample = HealthSample(externalID: "almanac.body_measurement.\(id).\(date.timeIntervalSince1970)", domain: .waistCircumference,
                                       start: date, end: date, value: value, unit: "cm")
-            let externalID = try await writer.write(sample)
-            try db.run("UPDATE body_measurement SET source_identifier = ? WHERE id = ? AND source_identifier IS NULL;",
-                       [.text(externalID), .integer(id)])
-            pushed += 1
+            do {
+                let externalID = try await writer.write(sample)
+                try db.run("UPDATE body_measurement SET source_identifier = ? WHERE id = ? AND source_identifier IS NULL;",
+                           [.text(externalID), .integer(id)])
+                pushed += 1
+            } catch {
+                // This used to throw straight out of the loop, so one unwritable
+                // row stopped every row after it from ever being tried. Record
+                // the first failure and keep going, then report it below: the
+                // row stays unmatched by this query, which is the retry, and
+                // the caller still learns the drain was not clean.
+                firstFailure = firstFailure ?? error
+            }
         }
+        if let firstFailure { throw firstFailure }
         return pushed
     }
 }
