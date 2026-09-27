@@ -1,6 +1,6 @@
 # Almanac implementation status
 
-Updated 2026-09-26. The Technical Spec is now committed under `docs/`, so the
+Updated 2026-09-27. The Technical Spec is now committed under `docs/`, so the
 references to it resolve from a fresh clone. The production nutrition reference
 bundle ships as an AlmanacCore resource and installs into the app database on
 first launch. The editorial shell, Today tracking calendar, Trends surface and
@@ -9,6 +9,42 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-09-27 — Navigation decisions closed; no code changed
+
+The tab-bar roster and the quick-log button's default target had been carried as
+an open decision out of the UI Design Reference v1.0 (§5, §11). Both are now
+closed. **No source changed in this pass** — the shell was already built in
+`1c9a003` and refined in `837e21f` / `4ca270c`; what was missing was the record.
+
+- **Roster: Today, Trends, Modules** (`AlmanacApp.swift:4-8`), the Design
+  Reference's own two placeholder tabs plus the module anchor. The rule that
+  picks it: **a tab slot is earned by daily-use frequency, not build state and
+  not domain depth.** Laboratory — the deepest, most differentiated module — is
+  off the bar because it is used per blood draw. Hydration is off it because the
+  quick-log action already owns that verb.
+- **Modules stays a tab, not a side drawer.** The Design Reference specified a
+  drawer; the shell shipped a tab. `ModulesView` is already an app-owned
+  `NavigationStack` index, so the drawer's content is in place and only the
+  gesture is missing. A drawer would add a full-screen gesture to arbitrate
+  against every scroll view in a shell already reworked once for exactly that
+  class of bug (`AlmanacApp.swift:80-83`).
+- **The quick-log button has no single default target.** It opens the
+  `QuickLogView` console: water is the one-tap path (250 / 500 / 750 mL inline),
+  Food, Training and Body open focused sheets. Declining to name water as *the*
+  target costs water nothing, and a single-target button would push food — a
+  three-times-a-day action — to two taps.
+- **Supersedes spec §2 D-3** ("5-tab bar: Home · Log · Train · Insights ·
+  Settings"), a pre-spec owner decision. D-4 ("Log tab scope: all input modules")
+  is partially honoured — the console offers four of them; the rest are in
+  Modules. Both recorded, not silently dropped.
+- **The build-state table in the decision reference was stale** and is corrected
+  in the record: Nutrition, Trends, Training and weight were all listed as
+  unbuilt, and all four are built. The sequencing question that table supported
+  dissolved with it.
+
+Full reasoning, including what was deliberately not built and why, is in
+`docs/features/owner-decisions-2026-09-26.md` §13-15.
 
 ## 2026-09-26 — Technical Spec committed to the repository; OI-4 closed
 
@@ -102,9 +138,10 @@ Debug:
   fixed-width score layout.
 
 Outstanding product/design decisions remain: licensed Neue Montreal files,
-custom icon artwork, final on-device status colors, the final quick-log default
-action, and whether Modules should become a side drawer rather than a fourth
-root destination. Arabic strings and RTL layout are not yet localized; the
+custom icon artwork, and final on-device status colors. The quick-log default
+action and the Modules-as-drawer question are **closed** — see
+`docs/features/owner-decisions-2026-09-26.md` §13-15, recorded 2026-09-27.
+Arabic strings and RTL layout are not yet localized; the
 Almarai registration is in place for that later pass. The first-slice privacy
 and empty-state copy is provisional pending the tone decision recorded in the
 reference.

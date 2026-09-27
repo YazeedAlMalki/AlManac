@@ -357,3 +357,166 @@ Almanac can read, which is why every row currently has one real choice. Setting
 the preference now is still worthwhile — a preference recorded before a provider
 starts writing is one recorded against data the user has already formed an
 opinion about, rather than one made blind.
+
+---
+
+# Third pass, 2026-09-27 — navigation
+
+The tab-bar roster and the quick-log button's default target were carried as an
+open decision out of the UI Design Reference v1.0 (§5, §11). Two facts settled
+both of them before any new work was done: the shell was already built in
+`1c9a003`, and the reference document that framed the decision described a build
+state the repository had left behind weeks earlier. Neither fact was written
+down anywhere, which is the exact failure this file exists to prevent.
+
+## 13. The tab roster is Today, Trends, Modules
+
+**Asked:** which few destinations earn a permanent tab slot, and what the
+quick-log button defaults to.
+
+**Already built, so not open:** `AppTab` is `today`, `trends`, `modules`
+(`Native/Almanac/AlmanacApp.swift:4-8`), the bar lays them out either side of a
+central quick-log action (`:174-186`), and `selectedDestination` resolves them to
+`ReadinessDashboardView`, `TrendsView` and `ModulesView` (`:117-144`).
+
+**The rule that picks this roster: a tab slot is earned by daily-use frequency
+— not by build state, and not by domain depth.** Three consequences, each
+visible in the shipped shell:
+
+- **Build state never gated anything.** Every destination on the bar is built,
+  but that was not the test. A destination does not need a tab to be reachable;
+  `ModulesView` is the proof, holding Training, Hydration, Nutrition and the
+  rest as an index (`Native/Almanac/MoreViews.swift:29-46`). A future tab can
+  be added when its module is built, with no window in which a tab launches to
+  an empty screen.
+- **Depth argued the opposite way from the one that matters.** Laboratory is the
+  deepest and most differentiated module in the app — 61 analytes, five panels,
+  conflict review — and is not on the bar, because it is used per blood draw.
+  Frequency beat depth.
+- **Hydration is not a tab, despite being the most-logged domain in the app.**
+  The quick-log action already owns that verb one tap from open. A Hydration tab
+  would duplicate the same job across two controls.
+
+**The four verbs do not overlap:** Today glances, Trends reflects, Modules acts
+and browses, the quick-log action captures. That is the whole reason the roster
+is three and not four — the Design Reference's own two placeholder tabs plus
+the module anchor.
+
+**Not touched:** no destination was added or removed. Re-opening the roster is a
+frequency question about a module that does not exist yet.
+
+## 14. Modules stays a tab, not a side drawer
+
+**Asked, and open on the status doc until now:** whether Modules should become a
+side drawer rather than a fourth root destination.
+
+**What the Design Reference says:** a side drawer holds every domain module that
+does not make the tab bar. The shell shipped a tab instead.
+
+**Kept as a tab.** `ModulesView` is already an app-owned `NavigationStack`
+index, so the drawer's *content* is in place and only the gesture is missing.
+Buying it costs more than it returns:
+
+- The bar is laid out in flow rather than attached with `safeAreaInset`
+  deliberately — a navigation stack swallowed that inset and stranded the last
+  row of every long list behind the bar (`Native/Almanac/AlmanacApp.swift:80-83`).
+  A drawer adds a second full-screen gesture to arbitrate against every scroll
+  view in the app, on a shell that was already reworked once for this class of
+  bug.
+- On a three-tab bar a hamburger reads as a settings overflow. The app has twelve
+  domains and its most differentiated module sits off the bar; an affordance
+  that says "overflow" undersells both.
+- None of the three surveyed comparators uses a drawer. Whoop and Cronometer
+  both rank the bottom bar by usage frequency, and the closest structural
+  sibling to Almanac's shape — Cronometer's single entry-point console — puts
+  Diary / Trends / Settings at the bottom, not a drawer.
+
+**Reconsider when** the module list outgrows what one index screen scans
+comfortably. That is a real trigger, and it is a content problem rather than a
+navigation-architecture one.
+
+## 15. The quick-log button has no single default target
+
+**Asked:** should the button default to water, food or weight.
+
+**Built, and the answer is "none of them":** the action opens `QuickLogView`, a
+console. Water is the only one-tap path — 250 / 500 / 750 mL logged from the
+sheet itself — and Food, Training and Body each open a focused entry sheet
+(`Native/Almanac/QuickLogView.swift:117-152`, `:62-79`). The button's own
+accessibility hint already says so: "Choose water, food, training, or a body
+measurement" (`Native/Almanac/AlmanacApp.swift:226`).
+
+**Why not hard-code water as the target**, given it is the highest-frequency log
+in the app:
+
+- The console already makes water the fastest path available — one tap from
+  sheet-open, no further navigation — so declining to name it as *the* target
+  costs water nothing.
+- A single-target button would make *food*, a three-times-a-day action, two
+  taps: open the water logger, dismiss, tap the action again, tap Food. The
+  cost lands on the second-most-common action to save one tap on the first.
+- Both stated reasons for ruling food and weight out — "the button would have
+  nothing to open", "0% built" — were false. `NutritionQuickEntryView` has
+  shipped since `6d4be7f` and `QuickBodyLogView` is in this same sheet. A
+  console is also the only one of the three shapes that survives the answer
+  changing: nothing in the data model or the shell ties a control to a domain.
+
+**The cost of this choice, stated plainly:** the most frequent action in the app
+pays one extra tap — the sheet opening — that a direct-to-water button would
+not.
+
+**Deliberately not built:** a long-press or double-tap shortcut logging a default
+water amount. It is a small addition and the right shape of one: tap stays the
+console, the shortcut is additive rather than subtractive. It is deferred because
+the app has no telemetry, so nothing yet says how often that extra tap is
+actually paid, and a shortcut invented for it would be a guess wearing a
+permanent control surface.
+
+### What this supersedes, and what it does not
+
+**Superseded:** `almanac-tech-spec-v1_0.md` §2 D-3, a pre-spec owner decision
+recorded as "**5-tab bar:** Home · Log · Train · Insights · Settings". The UI
+Design Reference and the shipped shell replace it with three destinations and
+one action. The mapping is exact:
+
+| Spec D-3 | Shipped |
+|---|---|
+| Home | Today |
+| Log | the quick-log console — no tab |
+| Train | Modules |
+| Insights | Trends |
+| Settings | Modules |
+
+**Partially honoured, still divergent:** D-4, "Log tab scope: all input modules".
+The console offers four — water, food, training, body. Sleep, vitals, mood,
+soreness, prayer, fasting and laboratory entry are reached through Modules
+instead. Recorded rather than fixed, because whether the console should grow is
+a habit question, and Modules is a working answer in the meantime.
+
+**Also divergent, minor:** §17 puts `QuickWaterSheet` at "+200 ml / +500 ml";
+the implementation ships 250 / 500 / 750. The presets are UI affordances rather
+than a spec requirement, and the middle one matches.
+
+## The decision reference, and the build-state table that was wrong in it
+
+The document that prompted this pass scored seven destinations and marked
+Nutrition "0% — no nutrition screens exist yet", Trends "Slice 10, not started",
+Training UI "not started" with its backend "~15% — schema not started", and
+weight "not built — Body/wellness slice is at 0%".
+
+Every one of those was stale. `NutritionQuickEntryView`, `NutritionFoodSearchView`,
+`NutritionPortionPickerView` and `NutritionSavedMealsView` shipped in `6d4be7f`;
+`TrendsView` is a Swift Charts surface with scrub selection and summary
+statistics; the training module has its schema, `WorkloadComputer`, `WorkoutHealthKitMatcher`
+and `WorkoutSessionHealthBridge`, and the app's schema now runs through
+migration 043; and body measurement is both a quick-log destination and a
+HealthKit bridge reading `bodyMass`, `bodyFatPercentage` and `leanBodyMass`.
+
+**Why this matters beyond that one document:** the table existed to let the
+roster be chosen against build state, and the sequencing question built on top
+of it — "a tab would launch to an unbuilt screen if scheduled before Slice 5
+UI" — existed only because those rows were wrong. This is the standing hazard in
+this repo: a document kept outside the code goes on being authoritative after
+the code has moved. The roster, the rule behind it, and the fact that the
+question was already settled are therefore written down here rather than left in
+the reference.
