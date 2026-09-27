@@ -10,6 +10,73 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-27 — The night nutrition window resolves entries
+
+Closes item 5 of the still-open list in `docs/features/fasting.md`.
+`nutrition_window` rows had been created and looked up correctly since
+2026-09-17, but §7.2's assignment rule had no column to land in and no
+code to run it, so a 03:50 suhoor entry was resolvable in principle and
+recorded in nothing.
+
+- **`Migration044`** adds `nutrition_window_id` to `nutrition_log` **and**
+  `hydration_log`. §5.11 gives the column on the first and §5.13 does not
+  on the second, while §7.2's own prose says "any NutritionLog *or
+  HydrationLog*". Both get it — a dry fast is opened by water. The
+  contradiction and the decision are in
+  `docs/architecture/spec-reconciliation.md` §8. The name is
+  snake_case to match the two tables it sits in, not §5.11's camelCase:
+  half-applying the §3 naming split in one new column would be worse than
+  either convention.
+- **`NightNutritionWindowAssigner`** is the rule. Matching is by
+  timestamp containment, never by logical day — between 04:00 and Fajr the
+  two disagree (at 04:10 Riyadh on D+1 the logical day is already D+1
+  while the fast is still running) and the window wins. The spec's own
+  03:50 example is a case where they *agree*, which makes it the weaker
+  test; the one that pins the rule down uses 04:10.
+- **Coarse timestamps are left unassigned.** A `"2026-09"` value spans
+  the window on paper but has no instant for `Maghrib(D) ≤ timestamp <
+  Fajr(D+1)` to be true of. Unassigned is the honest value; assigned
+  would be a guess reading as a fact.
+- **Every assignment writes, including to NULL.** Editing an entry out
+  of the window clears it. A conditional `WHERE nutrition_window_id IS
+  NULL` would be the cheaper statement and would make the column a record
+  of the first resolution rather than the current one.
+- **`nutrition_window.windowType` is now `NutritionWindowType`**, not a
+  raw `String`. Its `standardLogicalDay` case is reachable and never
+  written: the spec names it and then gives no rule for creating one, and
+  inventing one would be a product decision nobody has made.
+- **`NutritionWindowStore.rowToWindow` now throws** instead of returning
+  nil for an unreadable row. A silent skip would drop a window from the
+  list the rebuild walks, and its entries would then be written as NULL —
+  a wrong answer that looks right.
+
+**Rebuild.** `assignUnassigned()` is spec line 1942 step 6d ("Rebuild
+nutrition_window assignments for religious fast days"). It **clears each
+window's assignments before refilling it**, and that order is the whole
+correctness point: an entry that a recalculated boundary pushed out of a
+window is not findable by querying the window's *new* span, because by
+definition it is not in it. Only asking which rows name the window finds
+them. `assignUnassigned(inWindow:)` is the scoped form, called from
+`ReligiousFastingService.ensureDay` so that marking a day as a fast
+retroactively claims an iftar the user logged before marking it.
+
+**The cost worth naming.** The assigner is called at six write paths
+(`NutritionModel.log`, `HydrationModel.log`, `HydrationModel.logDrink`,
+both Activity Rings day-detail editors, the widget's `LogWaterIntent`),
+because every one of them sets the timestamp the rule is defined against.
+That is discipline, not design — the seventh path added later will be the
+one that forgets and nothing enforces it. A whole-history rebuild is the
+backstop, and **it is not yet called from the restore procedure**, which
+is not built at all.
+
+**The read side does not exist.** No screen anywhere displays a night
+window's contents. The column is written and correct; showing "what you
+ate during the fast" is the user-visible half of §7.2 and is not this
+item.
+
+Full suite: 361 XCTest (1 skipped) + **481 Swift Testing** (up from 465;
++16 new), zero failures. Simulator build (iPhone 16e, Debug) clean.
+
 ## 2026-09-27 — Body composition writes back to HealthKit
 
 Closes the "outbound half" §4 of `docs/features/body-composition.md` describes

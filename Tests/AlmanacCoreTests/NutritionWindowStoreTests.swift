@@ -18,11 +18,11 @@ struct NutritionWindowStoreTests {
     @Test("A created night window can be read back by date and type")
     func createAndRead() throws {
         let store = NutritionWindowStore(db: db)
-        try store.createWindow(date: "2026-09-17", windowType: "night_nutrition_window",
+        try store.createWindow(date: "2026-09-17", windowType: .nightNutritionWindow,
                                 startTimestamp: maghribD, endTimestamp: fajrDPlus1,
                                 fajrTimestamp: fajrDPlus1, maghribTimestamp: maghribD)
 
-        let window = try store.window(date: "2026-09-17", windowType: "night_nutrition_window")
+        let window = try store.window(date: "2026-09-17", windowType: .nightNutritionWindow)
         #expect(window?.startTimestamp == maghribD)
         #expect(window?.endTimestamp == fajrDPlus1)
     }
@@ -30,12 +30,12 @@ struct NutritionWindowStoreTests {
     @Test("Creating a window twice for the same (date, windowType) replaces it")
     func createTwiceReplaces() throws {
         let store = NutritionWindowStore(db: db)
-        try store.createWindow(date: "2026-09-17", windowType: "night_nutrition_window",
+        try store.createWindow(date: "2026-09-17", windowType: .nightNutritionWindow,
                                 startTimestamp: maghribD, endTimestamp: fajrDPlus1)
-        try store.createWindow(date: "2026-09-17", windowType: "night_nutrition_window",
+        try store.createWindow(date: "2026-09-17", windowType: .nightNutritionWindow,
                                 startTimestamp: maghribD.addingTimeInterval(60), endTimestamp: fajrDPlus1)
 
-        let window = try store.window(date: "2026-09-17", windowType: "night_nutrition_window")
+        let window = try store.window(date: "2026-09-17", windowType: .nightNutritionWindow)
         #expect(window?.startTimestamp == maghribD.addingTimeInterval(60))
         let count = try db.query("SELECT COUNT(*) as n FROM nutrition_window;").first?.int("n")
         #expect(count == 1)
@@ -44,7 +44,7 @@ struct NutritionWindowStoreTests {
     @Test("A 03:50 suhoor entry on the calendar day after Maghrib still belongs to D's window")
     func suhoorAfterMidnightBelongsToPreviousDaysWindow() throws {
         let store = NutritionWindowStore(db: db)
-        try store.createWindow(date: "2026-09-17", windowType: "night_nutrition_window",
+        try store.createWindow(date: "2026-09-17", windowType: .nightNutritionWindow,
                                 startTimestamp: maghribD, endTimestamp: fajrDPlus1)
 
         // 2026-09-18T00:50:00Z = 03:50 Riyadh time, still before Fajr(D+1).
@@ -57,7 +57,7 @@ struct NutritionWindowStoreTests {
     @Test("An entry before Maghrib or at/after Fajr does not match the night window")
     func entryOutsideWindowDoesNotMatch() throws {
         let store = NutritionWindowStore(db: db)
-        try store.createWindow(date: "2026-09-17", windowType: "night_nutrition_window",
+        try store.createWindow(date: "2026-09-17", windowType: .nightNutritionWindow,
                                 startTimestamp: maghribD, endTimestamp: fajrDPlus1)
 
         #expect(try store.window(containing: maghribD.addingTimeInterval(-60)) == nil)
@@ -67,6 +67,6 @@ struct NutritionWindowStoreTests {
     @Test("A window with no matching date/type returns nil")
     func missingWindowIsNil() throws {
         let store = NutritionWindowStore(db: db)
-        #expect(try store.window(date: "2026-09-17", windowType: "night_nutrition_window") == nil)
+        #expect(try store.window(date: "2026-09-17", windowType: .nightNutritionWindow) == nil)
     }
 }

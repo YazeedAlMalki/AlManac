@@ -136,12 +136,16 @@ final class NutritionModel: ObservableObject {
 
     func log(foodRef: SourceIdentifier, foodName: String, grams: Double?,
              quantityText: String?, mealType: NutritionMealType?) throws {
-        guard let logStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let logStore, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        let eatenAt = Date()
         let draft = NutritionLogDraft(
             foodRef: foodRef, grams: grams,
-            eatenAt: PartialDateTime(instant: Date(), zone: ZoneContext(TimeZone.current)),
+            eatenAt: PartialDateTime(instant: eatenAt, zone: ZoneContext(TimeZone.current)),
             foodNameText: foodName, quantityText: quantityText, mealType: mealType)
-        try logStore.record(draft)
+        let outcome = try logStore.record(draft)
+        // §7.2: a meal eaten between Maghrib and Fajr belongs to the fast's night
+        // window even though its logical day is the next one.
+        try NightNutritionWindowAssigner(db: db).assign(nutritionLogID: outcome.logID, eatenAt: eatenAt)
         refresh()
     }
 

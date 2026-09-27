@@ -251,20 +251,73 @@ Edit-path regression tests were added to the four create-path tests.
    actual auto-create-at-Fajr/auto-end-at-Maghrib flow, §11.2).
 5. ~~`NutritionWindowStore`~~ — done 2026-09-17: creation + timestamp-range
    lookup (`window(containing:)`, correctly handling a 03:50 suhoor entry on
-   calendar day D+1 belonging to D's window). **Not done:** the
-   `nutritionWindowId` wiring into `NutritionLogStore`/`HydrationLog` — that
-   needs its own migration adding the column to each table, and touches two
-   slices (Nutrition, Hydration) that don't currently know Fasting exists.
-   Deliberately left as its own task rather than folded into this pass.
+   calendar day D+1 belonging to D's window). ~~The `nutritionWindowId`
+   wiring~~ — also done, 2026-09-27: see "The night window, wired" below.
 6. Notification suppression (Appendix B) — depends on whatever
    `NotificationScheduler` design Slice 11 (Advanced notifications) settles;
    flag as a cross-slice dependency rather than duplicating scheduling logic
    here.
 
-**What calls any of this — nothing yet.** Every store/service above is a
-pull-based, idempotent surface (`ensureDay`, `ensureCache`,
-`applyLocationUpdate`) a caller is expected to invoke explicitly, the same
-pattern `ReadinessModel.refresh()` uses. No UI, no app-launch wiring, and no
-background scheduling exist to actually call them day to day yet — that's
-Slice 2 UI's dashboard-integration territory (fasting status/prayer times on
-the readiness dashboard) or a dedicated Fasting screen, neither built.
+### The night window, wired (2026-09-27)
+
+`Migration044` adds `nutrition_window_id` to `nutrition_log` **and**
+`hydration_log`, and `NightNutritionWindowAssigner`
+(`Sources/AlmanacCore/Fasting/NightNutritionWindowAssigner.swift`) applies §7.2's
+rule. Three things about it are decisions, not mechanics:
+
+- **snake_case, and on both tables.** The spec gives the column on
+  `nutrition_log` (§5.11) and not on `hydration_log` (§5.13), while §7.2's own
+  prose says "any NutritionLog *or HydrationLog*". The rule is followed and the
+  contradiction recorded in `docs/architecture/spec-reconciliation.md`. Naming
+  follows the two tables it sits in, not §5.11's camelCase, for the reason in
+  that doc's §3.
+- **Matching is by timestamp, never by logical day.** The two rules disagree
+  between 04:00 and Fajr — at 04:10 Riyadh on D+1 the logical day is already
+  D+1 while the fast is still running, and the window wins. At the spec's own
+  03:50 example they agree, which is why that example is not the interesting
+  case; the test that pins the rule down uses 04:10.
+- **Coarse timestamps are left unassigned.** A `"2026-09"` value spans the
+  window on paper but has no instant for `Maghrib(D) ≤ timestamp < Fajr(D+1)` to
+  be true of. Unassigned is the honest column value; assigned would be a guess
+  that reads as a fact.
+
+**Wired into six write paths,** because every one of them sets the timestamp the
+rule is defined against: `NutritionModel.log`, `HydrationModel.log`,
+`HydrationModel.logDrink`, both Activity Rings day-detail editors
+(`editLoggedAt`, and the nutrition `update` when it moves `eatenAt`), and the
+widget's `LogWaterIntent`. **This is a discipline cost, not a design** — the
+seventh path added later will be the one that forgets, and nothing enforces it.
+`ReligiousFastingService.ensureDay` re-resolves the window it just created, which
+covers the common miss (the user marks the day *after* eating iftar) but not the
+edit paths. A whole-history `assignUnassigned()` is the backstop and is spec line
+1942 step 6d's "Rebuild nutrition_window assignments for religious fast days";
+it is **not yet called from the restore procedure**, which is not built.
+
+**Two things this did not settle:**
+
+- `nutrition_window.windowType` is now a Swift enum (`NutritionWindowType`)
+  rather than a raw `String`. Its `standardLogicalDay` case is reachable and
+  never written: the spec names it as a possible value and then gives no rule
+  for creating one. Inventing one would be a product decision nobody has made.
+- The spec's `mealType` includes `suhoor` and `iftar` (§5.11), which is how a
+  reader would expect an entry to be *marked* as suhoor. `NutritionMealType` has
+  four cases and can express neither. The assignment rule does not need it — it
+  is timestamp-based — but nothing in the app can currently label an entry as
+  the meal the whole feature is organised around.
+
+**What calls this, and what still doesn't.** (Corrected 2026-09-27: this
+paragraph previously said "nothing yet", which had gone stale — `ensureDay` has
+a production caller, and so does the night-window assigner.)
+
+| Surface | Called by |
+| --- | --- |
+| `ReligiousFastingService.ensureDay` | `FastingModel.ensureToday()`, the Fasting screen's own load |
+| `NightNutritionWindowAssigner` | `ReligiousFastingService.ensureDay` (retroactively) plus six write paths — see above |
+| `PrayerTimeEngine.ensureCache`, `ReligiousFastScheduleStore.applyLocationUpdate` | `FastingModel` |
+
+Still nothing: no shift-schedule UI, no background scheduling (the scheduler is
+Slice 11, and the 48-hour horizon and the re-run triggers are listed in
+`docs/implementation-status.md`), and the read side — **no screen anywhere
+displays a night window's contents.** The column is written and correct; nothing
+renders "what you ate during the fast", which is the user-visible half of §7.2
+and the reason the feature is not finished.

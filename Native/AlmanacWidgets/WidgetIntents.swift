@@ -20,7 +20,11 @@ struct LogWaterIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let db = try AppGroupDatabase.open()
         let store = HydrationStore(db: db)
-        try store.log(HydrationLogDraft(amount: Milliliters(250), loggedAt: Date()))
+        let loggedAt = Date()
+        let id = try store.log(HydrationLogDraft(amount: Milliliters(250), loggedAt: loggedAt))
+        // §7.2: a glass logged at iftar is inside the fast's night window, and
+        // this is a write path the app never sees, so it resolves its own.
+        try NightNutritionWindowAssigner(db: db).assign(hydrationLogID: id, loggedAt: loggedAt)
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }

@@ -2,9 +2,10 @@
 
 **Status:** four collisions resolved 2026-09-16 (commit `c83e88c`, migration
 015). Training (§6) and `vitals_record`/body-composition (§7) are two further
-divergences found since, both decided but not yet built. The naming split
-(§3) remains open by design — deferred, not blocking.
-**Date:** 2026-09-15 (updated 2026-09-16)
+divergences found since, both decided but not yet built. `nutrition_window_id`
+(§8) is a seventh, found 2026-09-27, decided and built. The naming split (§3)
+remains open by design — deferred, not blocking.
+**Date:** 2026-09-15 (updated 2026-09-27)
 
 ## 1. The spec was not lost
 
@@ -225,3 +226,43 @@ owning `.bodyMass`/`.bodyFatPercentage`/`.leanBodyMass`. `restingEnergy`
 stays in `vitals_record` as-is — it doesn't collide with anything §5.18/§5.20
 claims. No data migration needed: no durable database exists yet (§11 of
 `docs/architecture/health-data-foundation.md`).
+
+## 8. `nutrition_window_id` — the spec contradicts itself about which table has it
+
+Found 2026-09-27 while building the §7.2 assignment rule
+(`docs/features/fasting.md`, "The night window, wired").
+
+§5.11's `nutrition_log` has `nutritionWindowId INTEGER REFERENCES
+nutrition_window(id)` (line 397). §5.13's `hydration_log` does not (line 525).
+§7.2's rule then says:
+
+> Any NutritionLog **or HydrationLog** with `Maghrib(D) ≤ timestamp < Fajr(D+1)`
+> is assigned to this window (via nutritionWindowId).
+
+So the schema sections and the behaviour section disagree about the second table,
+and the behaviour section is the one that states the rule. A dry fast is opened by
+water, and the night window exists to hold suhoor and iftar — the entries that
+matter most here are the two ends of the meal-plus-water pair, and leaving
+`hydration_log` without the column would make the rule half-built exactly where
+it is used.
+
+**Decided 2026-09-27:** `Migration044` adds `nutrition_window_id` to **both**
+tables. §5.13 is recorded as amended. Dropping `hydration_log` is one `ALTER` and
+one loop iteration in `NightNutritionWindowAssigner` if the spec's schema section
+is ever treated as the authority over its own rule.
+
+**Naming follows the tables, not §5.11.** `nutrition_window_id` is snake_case
+because `nutrition_log` (Migration009) and `hydration_log` (Migration012) are,
+and a new column is not the place to half-apply the §3 split — it would read as
+`nutrition_window_id` in a snake_case table and `nutritionWindowId` two
+migrations later. This is a deliberate exception to "new work follows the spec's
+camelCase verbatim"; it is recorded here rather than left for a reader to infer.
+
+**A related gap, not decided:** §5.11's `mealType` enumerates
+`breakfast | lunch | dinner | snack | pre_workout | post_workout | suhoor |
+iftar | custom`, and `NutritionMealType` has four cases — the first four. So the
+two meals the night-window feature exists for cannot be *named* on an entry,
+even though the rule for placing them does not need the name (§7.2 is
+timestamp-based). Left alone: it is a Nutrition-domain decision about meal
+taxonomy, and guessing four new cases would change what every meal picker in the
+app offers.

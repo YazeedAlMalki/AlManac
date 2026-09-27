@@ -127,8 +127,13 @@ final class HydrationModel: ObservableObject {
     }
 
     func log(amount: Milliliters, note: String?) throws {
-        guard let store else { throw EditorFailure(message: "The database is unavailable.") }
-        try store.log(HydrationLogDraft(amount: amount, loggedAt: Date(), note: note))
+        guard let store, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        let loggedAt = Date()
+        let id = try store.log(HydrationLogDraft(amount: amount, loggedAt: loggedAt, note: note))
+        // §7.2: water is the second half of the night window's contents. A dry
+        // fast is opened by a drink, so iftar's water is in scope for this even
+        // though no food was.
+        try NightNutritionWindowAssigner(db: db).assign(hydrationLogID: id, loggedAt: loggedAt)
         refresh()
         syncAfterChange()
     }
@@ -160,7 +165,14 @@ final class HydrationModel: ObservableObject {
     /// and re-deriving it here would let the two drift.
     @discardableResult
     func logDrink(_ drink: Drink, volume: Milliliters?, note: String?) throws -> [DrinkLoggingWarning] {
-        let result = try loggingService().logDrink(drink, volume: volume, note: note)
+        let loggedAt = Date()
+        let result = try loggingService().logDrink(drink, volume: volume, at: loggedAt, note: note)
+        // Same §7.2 window assignment as a plain water entry — a drink logged at
+        // iftar is inside the night window on exactly the same terms.
+        if let db {
+            try NightNutritionWindowAssigner(db: db)
+                .assign(hydrationLogID: result.hydrationLogID, loggedAt: loggedAt)
+        }
         refresh()
         syncAfterChange()
         return result.warnings

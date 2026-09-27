@@ -57,7 +57,7 @@ struct ReligiousFastingServiceTests {
         #expect(session?.startTimestamp == fajrD)
         #expect(session?.isActive == true)
 
-        let window = try windowStore.window(date: "2026-09-17", windowType: "night_nutrition_window")
+        let window = try windowStore.window(date: "2026-09-17", windowType: .nightNutritionWindow)
         #expect(window?.startTimestamp == maghribD)
         #expect(window?.endTimestamp == fajrDPlus1)
     }
@@ -131,7 +131,7 @@ struct ReligiousFastingServiceTests {
             nextDayFajr: nil, timezoneOffset: 180, at: fajrD)
 
         guard case .sessionCreated = outcome else { Issue.record("expected creation"); return }
-        #expect(try windowStore.window(date: "2026-09-17", windowType: "night_nutrition_window") == nil)
+        #expect(try windowStore.window(date: "2026-09-17", windowType: .nightNutritionWindow) == nil)
     }
 
     @Test("A manually removed fast day is respected — no session is created")
@@ -145,5 +145,26 @@ struct ReligiousFastingServiceTests {
             nextDayFajr: fajrDPlus1, timezoneOffset: 180, at: fajrD)
 
         #expect(outcome == .notAFastDay)
+    }
+
+    @Test("Marking the day as a fast claims an iftar that was logged before the day was marked")
+    func markingTheDayLateStillClaimsLoggedIftar() throws {
+        // The user's order of operations: eat iftar, then open the app and mark
+        // the day. The window is created after the entry exists, so unless
+        // creating it re-resolves what is already there, that entry is never
+        // assigned to anything.
+        let iftar = maghribD.addingTimeInterval(10 * 60)
+        let logID = try HydrationStore(db: db).log(HydrationLogDraft(amount: Milliliters(500), loggedAt: iftar))
+        try scheduleStore.createSchedule(scheduleType: "mon_thu")
+
+        _ = try ReligiousFastingService.ensureDay(
+            anchorDate: "2026-09-17", prayerTimes: todaysPrayerTimes,
+            scheduleStore: scheduleStore, sessionStore: sessionStore, windowStore: windowStore,
+            nextDayFajr: fajrDPlus1, timezoneOffset: 180, at: fajrD)
+
+        let window = try #require(try windowStore.window(date: "2026-09-17", windowType: .nightNutritionWindow))
+        let stored = try db.query("SELECT nutrition_window_id AS w FROM hydration_log WHERE id = ?;",
+                                  [.text(logID)]).first?.int("w")
+        #expect(stored == window.id)
     }
 }

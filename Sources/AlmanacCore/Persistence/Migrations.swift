@@ -96,7 +96,8 @@ public enum AlmanacMigrations {
         Migration040_HydrationGoalSnapshots.self,
         Migration041_BodyMeasurements.self,
         Migration042_ExerciseMuscle.self,
-        Migration043_SyncSourcePreference.self
+        Migration043_SyncSourcePreference.self,
+        Migration044_NutritionWindowAssignment.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with

@@ -82,7 +82,7 @@ final class FastingModel: ObservableObject {
             session = try FastingSessionStore(db: db).sessions(for: day)
                 .first(where: { $0.sessionType == .religious })
             nightWindow = try NutritionWindowStore(db: db)
-                .window(date: day, windowType: "night_nutrition_window")
+                .window(date: day, windowType: .nightNutritionWindow)
             isFastDay = try ReligiousFastScheduleStore(db: db).isFastDay(day)
         } catch {
             self.error = String(describing: error)

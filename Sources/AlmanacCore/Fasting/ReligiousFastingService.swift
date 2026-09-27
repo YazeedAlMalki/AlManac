@@ -60,9 +60,17 @@ public enum ReligiousFastingService {
             logicalDay: anchorDate)
 
         if let nextDayFajr {
-            try windowStore.createWindow(date: anchorDate, windowType: "night_nutrition_window",
-                                          startTimestamp: maghrib, endTimestamp: nextDayFajr,
-                                          fajrTimestamp: nextDayFajr, maghribTimestamp: maghrib)
+            let windowID = try windowStore.createWindow(date: anchorDate, windowType: .nightNutritionWindow,
+                                                        startTimestamp: maghrib, endTimestamp: nextDayFajr,
+                                                        fajrTimestamp: nextDayFajr, maghribTimestamp: maghrib)
+            // Marking the day as a fast has to claim what is already logged. The
+            // user marks the day at some point during it — often after eating
+            // iftar — so without this the window opens over entries that predate
+            // it and they stay unassigned for good, until the next whole-history
+            // rebuild happens to reach them. Scoped to the one window just
+            // created, because this runs on every refresh.
+            _ = try NightNutritionWindowAssigner(db: windowStore.db)
+                .assignUnassigned(inWindow: windowID)
         }
 
         return .sessionCreated(sessionId: id)
