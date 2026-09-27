@@ -931,18 +931,21 @@ acceptance steps. No screenshots or runtime verification are claimed.
 
 ## Remaining boundaries
 
-- Apple SDK compilation, Simulator launch and interactive UI verification have
-  not been performed in this Linux environment.
+- *Written when the only build environment was Linux. The Apple build claims
+  here were true then and are false now:* `Native/` builds, launches and is
+  tested on a simulator daily, and CI builds the app, the widget and the UI test
+  suite on every push. For the current state read the evidence at the top of
+  this file, not this section. The standing boundaries are the four below.
 - Document import and document-file backup/restore remain deferred. The SQLite
   snapshot does not include document files.
 - The current storage model is a local personal database. There is no multi-user
   account boundary or server authorization layer; do not claim cross-user RLS.
 - Timeline filtering still runs in Swift over current records.
 - No automatic unit conversion, OCR, AI interpretation or new tracker.
-- The Technical Spec is not in this checkout, but it is not lost: the full
-  2026-08-05 original is one directory above the repository root at
-  `../almanac-tech-spec-v1.0.md`. See
-  `docs/architecture/spec-reconciliation.md`.
+- The Technical Spec **is** in this checkout, at
+  `docs/almanac-tech-spec-v1_0.md`, committed in `84f07e8`. An earlier version of
+  this line pointed one directory above the repository root, which no longer
+  resolves. See `docs/architecture/spec-reconciliation.md`.
 
 To verify the modified core on yamal after importing this branch:
 
