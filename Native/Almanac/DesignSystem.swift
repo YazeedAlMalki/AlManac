@@ -21,6 +21,15 @@ enum AlmanacPalette {
     static let surface = dynamic(light: 0xF1F1ED, dark: 0x15161A)
     static let surfaceMuted = dynamic(light: 0xE6E6E1, dark: 0x1E2024)
     /// Rules are the structural device. Containers are not.
+    ///
+    /// KNOWN INCONSISTENCY, found by `docs/ui/measure.sh` on the Today screen
+    /// in both appearances: rules render at 0.33pt, 0.67pt and 1.00pt on one
+    /// screen. The cause is that the app draws them two ways —
+    /// `Rectangle().fill(divider).frame(height: 1)`, which is 1pt by
+    /// construction, and `Divider().overlay(divider)`, whose height is its
+    /// own. Settling on one primitive is a design decision across a dozen call
+    /// sites, so it has not been done here; until it is, `measure.sh` reports
+    /// it on every capture rather than leaving it to be noticed by eye.
     static let divider = dynamic(light: 0xDCDCD6, dark: 0x2A2C30)
     static let textPrimary = dynamic(light: 0x1A1A18, dark: 0xECECEA)
     static let textSecondary = dynamic(light: 0x63635E, dark: 0x9A9C9F)
