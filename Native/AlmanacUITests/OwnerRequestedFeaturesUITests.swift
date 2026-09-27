@@ -214,14 +214,14 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
 
     /// "Water logging: add other drinks, counted with his calories."
     ///
-    /// A drink has to be pickable, loggable, and then visible on the dashboard
-    /// with its calories — a screen that accepts a drink and shows nothing
-    /// afterwards would pass a test that only checked the first half.
+    /// A drink has to be pickable, loggable, and then counted — a screen that
+    /// accepts a drink and never reports its calories anywhere would pass a
+    /// test that only checked the first half.
     ///
     /// Pepsi specifically, not "the first drink": the catalogue is ordered with
-    /// `catalog_water` first and water is 0 kcal, so the `From drinks` total is
-    /// legitimately absent for it. Picking the first row and then asserting a
-    /// calorie total would have been a test that could only ever fail.
+    /// `catalog_water` first, and water is 0 kcal, so water is legitimately
+    /// absent from a calorie total. Picking the first row and then asserting one
+    /// would have been a test that could only ever fail.
     func testLoggingADrinkShowsItOnTheDashboardWithCalories() {
         openModule("Hydration")
         XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))
@@ -254,22 +254,82 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Log a drink"].waitForNonExistence(timeout: 10),
                       "the drink logger did not close, so the dashboard cannot be read")
 
-        // The dashboard lists the drink, plus a day's drink total kept apart
-        // from food. Both live below the fold on a long list, so this scrolls
-        // rather than waiting.
-        let fromDrinks = app.staticTexts["From drinks"]
-        XCTAssertTrue(app.reveal(fromDrinks), """
-            drink calories must be totalled on the dashboard, and kept distinct from food
-            nav bars: \(app.navigationBars.allElementsBoundByIndex.map(\.identifier))
-            on screen: \(app.staticTexts.allElementsBoundByIndex.map(\.label))
-            """)
-
         // And the drink itself is listed by name, not just rolled into a number.
         XCTAssertTrue(
             app.staticTexts.containing(
                 NSPredicate(format: "label CONTAINS[c] %@", "Pepsi")
             ).firstMatch.exists,
             "the logged drink must be listed on the dashboard by name")
+
+        // The separate line is gone from *this* screen. Checked here, while
+        // Hydration is still on screen: after navigating to Today the query
+        // would answer trivially, and an assertion that cannot fail is not one.
+        // This is the only check in the test that can only pass after the
+        // 2026-09-27 change, so it is what catches the section being restored.
+        XCTAssertFalse(app.staticTexts["From drinks"].exists,
+                       "the separate drink-calorie line was superseded and must not come back")
+
+        // The drink's calories are part of the day's *one* energy total, on
+        // Today, rather than a second figure here. So the assertion has to go
+        // there: a drink this screen accepts but that never reaches the day's
+        // total would pass a check that only looked at Hydration.
+        //
+        // This is the reverse of what the test asserted until 2026-09-27, when
+        // a "From drinks" line kept the two apart on purpose.
+        // `owner-decisions` §6 argued for that on the grounds that a catalog
+        // drink is an uncited estimate and food is a cited figure, so summing
+        // them would launder one into the other. The owner chose the other
+        // branch. The reasoning still describes the data — the qualifier is
+        // still written per row to `hydration_log.value_qualifier` and the
+        // per-drink labels in the logger are untouched — so what the total
+        // gives up is only the visible separation, and says so in words instead.
+        //
+        // Getting there by tapping the "Today" tab works, and not for the
+        // reason a `TabView` usually does: Hydration is a `NavigationLink`
+        // pushed inside the Today destination's own `NavigationStack`, so
+        // tapping the already-selected tab is normally a no-op that leaves the
+        // stack pushed. Here it is not — the tap comes back to the Today root
+        // with the stack unwound. Recorded because it reads as a bug, and the
+        // obvious "fix" (relaunching, or unwinding by hand) swaps working
+        // navigation for something slower and just as easy to get wrong.
+        let todayTab = app.buttons["Today"].firstMatch
+        XCTAssertTrue(todayTab.waitForExistence(timeout: 10),
+                      "the Today tab must be reachable from a logged module")
+        todayTab.tap()
+
+        // The metric rows sit at the top of Today, so come back up before
+        // reading them.
+        for _ in 0..<8 { app.swipeDown() }
+
+        // So ask the question of the screen's own words rather than of a query
+        // for one of them. XCTest keeps off-screen rows in the tree either way,
+        // which is the point: an assertion phrased as "scroll to this text"
+        // cannot report the case where the text is absent, because walking to
+        // the end of the page still ends in a failure that reads like "not on
+        // this screen" rather than "not on any screen" — and takes twenty-four
+        // swipes to say it.
+        //
+        // Matched on the whole shape, not the exact string, because two things
+        // vary and neither is what is being tested: whether food is also logged
+        // turns "1 drink counted" into "3 foods and 1 drink counted", and a
+        // re-run logs a second Pepsi, so the count is not always one. This suite
+        // has to pass on a virgin and a populated database alike.
+        //
+        // Both words are required. Bare "drink" would also match a stray mention
+        // elsewhere on the screen and pass on a day where the drink had not been
+        // counted at all — the failure this test exists to catch. "counted" is
+        // `DayEnergy.summary`'s word and nothing else's.
+        let labels = app.staticTexts.allElementsBoundByIndex.map(\.label)
+        XCTAssertTrue(
+            labels.contains {
+                $0.localizedCaseInsensitiveContains("drink")
+                    && $0.localizedCaseInsensitiveContains("counted")
+            },
+            """
+            a logged drink's calories must reach the day's energy total and be \
+            named in it on Today
+            on screen: \(labels)
+            """)
     }
 
     // MARK: - Helpers
