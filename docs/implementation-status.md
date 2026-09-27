@@ -10,6 +10,70 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-27 — Nutrition derived values (`edibleGrams`) and `NutritionSummary` coverage
+
+Closes to-do #17 and the "Still open" item 2 of the 2026-09-15 nutrition port.
+Two independent gaps, both of which had been left open because the work depended
+on reference data that now ships.
+
+- **`EdibleYieldCalculator`** (`Sources/AlmanacCore/Nutrition/NutritionEdibleYield.swift`)
+  is the port of the source branch's `edibleGrams`, which the 2026-09-15 pass
+  skipped because it needed CoFID's per-reference-food edible proportions (the
+  2,887 rows imported 2026-09-25).
+- **The result is a four-way split, not a `Double?`** — `.known` / `.notAnalysed`
+  / `.unstated` / `.unusable` — because the data forces it. CoFID states a
+  proportion for 2,887 of 8,354 foods, so the common case is *nobody stated
+  one*; an optional would put that next to a real "not analysed" and invite both
+  wrong defaults. `factor?.value ?? 1.0` invents "nothing is discarded" for ~65%
+  of the catalogue; `?? gross` reports a gross mass as an edible one. Both return
+  a plausible number for a food the data says nothing about, which is the same
+  rule `NutritionTotals.incompleteNutrients` already follows one step later.
+- **Out-of-range is refused, not clamped.** A proportion outside `(0, 1]` is
+  `.unusable`, kept separate from `.unstated` because the data *claimed*
+  something and the fault is the bundle's. A bad input mass (NaN, infinite,
+  non-positive) throws `NutritionError` instead, because that is the caller's
+  mistake, not a gap in the data. Verified empirically along the way: SQLite
+  stores `Inf` as REAL but converts `NaN` to NULL, so a NaN proportion is
+  indistinguishable from "not analysed" at the storage layer — the test list
+  uses `[1.5, 0.0, -0.2, .infinity]`.
+- **A dish's own `nutrition_dish.edible_proportion` wins** over the bundle's
+  `nutrition_food_factor` row for the same food: it is the figure a person
+  decided, and `NutritionDishEditor` is the only writer of `nutrition_dish`.
+  `EdibleYieldCalculator` is a `struct` taking `Database` and builds its own
+  `NutritionCatalog`/`NutritionDishEditor`, because both collaborators' `db` is
+  `private`.
+- **`grams(fromVolumeMillilitres:for:)` applies `specific_gravity`,** and is
+  documented as the *only* volume case that reaches it: a household measure is
+  already converted to grams by `nutrition_portion.gram_weight` via
+  `NutritionCatalog.grams(of:amount:unit:modifier:)`, so mL typed by a person is
+  the sole remaining case.
+- **No production caller, stated rather than glossed.** Nothing in the device
+  schema has a slot for an as-purchased mass — `nutrition_log.grams` is the mass
+  the food was eaten at, and no screen asks anyone to say "this is raw". The
+  missing piece is the column, not the calculation; flagged in
+  `docs/features/nutrition.md` §10 rather than left for someone to discover.
+- **`NutritionSummary` had no coverage at all** — `DayEnergyTests` builds
+  `NutritionTotals` by hand, so the arithmetic that produces them was untested.
+  `NutritionSummaryTests` (14 tests) runs the real read against a real catalogue
+  and pins the four ways a total declines to be complete, each a field the UI
+  must be able to show: an unstated amount is named not zeroed, an unknown food
+  is named by ref, a `not_analysed` nutrient marks the day incomplete, and a
+  nutrient only some meals report is absent rather than smaller. Also pinned: a
+  nutrient reported on two bases is dropped rather than added, an energy figure
+  names the routes it came from (`energyBases`), and a soft delete removes a meal
+  rather than zeroing it.
+- **The logical-day test caught its own premise, not the code's.** It first
+  asserted that `2026-09-16T21:30Z` belongs to the 17th in Riyadh. It does not:
+  Riyadh is UTC+3 and a day opens at 04:00 local, so the 17th runs
+  `01:00Z → 01:00Z` and that instant is 00:30 local — before the boundary, so day
+  16. Rewritten to be genuinely two-sided: `2026-09-17T00:30Z` → day 16 and
+  `2026-09-18T00:30Z` → day 17, each of which a naive `yyyy-MM-dd` range files
+  under the *opposite* day, asserted on both totals and on which food landed
+  where.
+- **Verified:** `swift test` — 361 XCTest (1 skip) and 453 Swift Testing, 0
+  failures. No UI surface changed, so no simulator build was needed for this
+  item.
+
 ## 2026-09-27 — One rule weight, and the primitive that owns it
 
 Closes the finding `1435669` recorded against `AlmanacPalette.divider` as a known

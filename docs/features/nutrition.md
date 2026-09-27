@@ -175,3 +175,68 @@ corrects every meal already logged against it.
 A `nutrition_dish` row marks a `nutrition_food` row as device-authored. On
 reimport, pipeline foods, portions and food-level factors are replaced together,
 while a person's own dish and its portions remain untouched.
+
+## 10. Edible mass and `edibleGrams` (AlmanacCore, 2026-09-27)
+
+`EdibleYieldCalculator` (`NutritionEdibleYield.swift`) is the one place a gross
+(as-purchased) mass becomes an edible one. It is the port of the source branch's
+`edibleGrams`, left out of the 2026-09-15 pass because it needs the
+reference-food edible-proportion data §8 describes.
+
+**The result is a four-way split, not a `Double?`.** CoFID states a proportion
+for 2,887 of the bundle's 8,354 foods, so "nobody published one" is the common
+case. An optional would sit that case next to a genuine "not analysed" and invite
+the two wrong defaults — `?? 1.0` invents "nothing is discarded" for ~65% of the
+catalogue, `?? gross` reports a gross mass as an edible one — and both return a
+plausible number for a food the data says nothing about. So:
+
+| Case | Means |
+|---|---|
+| `.known(edibleGrams:source:)` | a proportion was stated and applied; the mass and its provenance travel together |
+| `.notAnalysed(source:)` | a factor row exists carrying CoFID's `N` — the source said it does not know |
+| `.unstated` | no factor row at all: the majority of the catalogue, and every food outside CoFID |
+| `.unusable(reason:)` | a proportion outside `(0, 1]`, or a density that is not a positive number of g/mL — the bundle's bug, not a missing fact |
+
+Out-of-range values are refused rather than clamped. A bad *input* mass (NaN,
+infinite, zero, negative) throws `NutritionError`, because that is the caller's
+mistake, not a gap in the data.
+
+A dish's own authored `nutrition_dish.edible_proportion` beats the bundle's
+`nutrition_food_factor` row for the same food: it is the figure a person decided,
+and `NutritionDishEditor` is the only writer of `nutrition_dish`.
+
+`grams(fromVolumeMillilitres:for:)` applies `specific_gravity` and exists for the
+one case that reaches it — a volume someone typed. A household measure does not:
+`nutrition_portion.gram_weight` already converts "1 cup" straight to grams, so
+that path stays in `NutritionCatalog.grams(of:amount:unit:modifier:)`.
+
+**No production caller yet, and that is honest rather than forgotten.** Nothing in
+the device schema has a slot for an as-purchased mass — `nutrition_log.grams` is
+the mass the food was eaten at, and no screen asks a user to say "this is raw".
+The derivation is built and tested so the answer is ready at the point a screen
+starts asking; the thing missing is the column, not the calculation.
+
+## 11. `NutritionSummary` coverage (2026-09-27)
+
+`DayEnergyTests` builds `NutritionTotals` by hand, so the arithmetic that
+actually produces them had no coverage. `NutritionSummaryTests` now runs the real
+read against a real catalogue and pins the four ways a total declines to be
+complete — the fields the UI has to be able to show, each one a place where the
+tempting shortcut silently reports a smaller, wrong number:
+
+- a meal with no stated amount is *named* (`mealsWithoutAmount`), never zeroed
+- a meal whose food the catalogue does not hold is named by its `foodRef`
+- a nutrient reported as `not_analysed` marks the day incomplete rather than
+  adding zero, and is listed in `incompleteNutrients`
+- a nutrient only some meals report is *absent* from `nutrients`, not smaller in
+  it
+- a nutrient reported on two different bases is dropped rather than added
+- a day with no computable energy is partial under the energy sentinel, and says
+  which routes (`energyBases`) the figure it does have came from
+- a soft-deleted meal leaves the day rather than zeroing it
+
+The logical-day read is covered both ways, not once: because a Riyadh day opens
+at 04:00 local (01:00Z), one meal at `2026-09-17T00:30Z` belongs to the 16th and
+one at `2026-09-18T00:30Z` belongs to the 17th. A naive `yyyy-MM-dd` range files
+both under the opposite day, so the test asserts the two meals are on *opposite*
+sides and that the right one is on each.
