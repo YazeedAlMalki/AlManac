@@ -91,6 +91,62 @@ final class ActivityRingCalendarTests: XCTestCase {
         XCTAssertEqual(day.nutrition, .dietProfileRequired)
     }
 
+    /// A drink that carries calories is nutrition.
+    ///
+    /// Until 2026-09-27 the ring asked only whether *food* was logged, so a day
+    /// whose energy came entirely from drinks showed "450 kcal" in the metric
+    /// row and "No nutrition logged" in the ring legend a few lines below it.
+    /// Each was faithful to the code that produced it and neither described the
+    /// day: two views asking one question of two different tables. Folding
+    /// drinks into the day's total did not create the split — it made it
+    /// visible, which is the only reason it is worth closing here.
+    func testADrinkThatCarriesCaloriesCountsAsNutritionForThatDay() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel.riyadh()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeModel.timeZone
+        let noon = calendar.date(from: DateComponents(year: 2026, month: 9, day: 24, hour: 12))!
+
+        try HydrationStore(db: db, zone: ZoneContext(timeModel.timeZone)).log(HydrationLogDraft(
+            amount: Milliliters(355),
+            loggedAt: noon,
+            drink: DrinkAttachment(drinkID: "catalog_pepsi", drinkName: "Pepsi",
+                                   caloriesKcal: 150, sodiumMg: 30, sugarG: 41,
+                                   qualifier: .catalogUnsourcedEstimate)))
+
+        let day = try XCTUnwrap(ActivityRingCalendar(db: db, timeModel: timeModel)
+            .month(containing: noon).day(on: "2026-09-24"))
+
+        XCTAssertEqual(day.nutrition, .dietProfileRequired)
+    }
+
+    /// The counter-case, and the reason the test above says "carries calories"
+    /// rather than "is a drink". Water is hydration, and the hydration ring
+    /// already reports it — so letting a glass of water claim the nutrition
+    /// ring would report nutrition on a day that has none, which trades one
+    /// wrong screen for another.
+    func testWaterDoesNotCountAsNutritionForThatDay() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel.riyadh()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeModel.timeZone
+        let noon = calendar.date(from: DateComponents(year: 2026, month: 9, day: 24, hour: 12))!
+
+        try HydrationStore(db: db, zone: ZoneContext(timeModel.timeZone)).log(HydrationLogDraft(
+            amount: Milliliters(250),
+            loggedAt: noon,
+            drink: DrinkAttachment(drinkID: "catalog_water", drinkName: "Water",
+                                   caloriesKcal: 0, sodiumMg: 0, sugarG: 0,
+                                   qualifier: .catalogUnsourcedEstimate)))
+
+        let day = try XCTUnwrap(ActivityRingCalendar(db: db, timeModel: timeModel)
+            .month(containing: noon).day(on: "2026-09-24"))
+
+        XCTAssertEqual(day.nutrition, .notLogged)
+    }
+
     func testDigestionRingSettingPersistsWithoutInventingAFillRule() throws {
         let db = try Database.inMemory()
         try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)

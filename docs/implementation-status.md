@@ -160,6 +160,11 @@ than the superseded free-date picker:
   hit/off/mess thresholds before the separate Diet Profile spec exists. A day
   with no nutrition log renders no nutrition ring. Golden completion requires a
   Nutrition `hit`, so the current dependency cannot produce a false golden day.
+  "Logged" is read from the same rows as the day's own energy total, food *and*
+  drinks that carry calories: a drinks-only day is a nutrition day. It is
+  deliberately not the same as "any drink logged" — water is 0 kcal, is already
+  reported by the hydration ring, and would otherwise put "nutrition logged" on
+  a day that has none.
 - Digestion has a persisted Settings toggle. Its visual indicator is distinct and
   explicitly unavailable because the daily fill rule is intentionally undefined.
 - The current explicit hydration goal is used for the displayed month until the

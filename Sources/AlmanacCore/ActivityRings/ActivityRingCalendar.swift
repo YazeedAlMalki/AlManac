@@ -116,13 +116,20 @@ public struct ActivityRingCalendar: Sendable {
         }
         let queryBounds = DateRange(start: firstBounds.start, end: lastBounds.end).utcTextBounds
         var totals = Dictionary(uniqueKeysWithValues: logicalDays.map { ($0.value, 0.0) })
+        // Whether the day holds anything energy-bearing, which is the question
+        // the nutrition ring asks. Collected in this pass rather than a second
+        // one so the drinks already being read for milliliters are the same
+        // rows that count as nutrition. Asking that question of a different
+        // table than the day's own total is exactly how the ring came to report
+        // "No nutrition logged" directly beneath a row reading "450 kcal".
+        var nutritionLogged = Set<String>()
         for entry in try HydrationStore(db: db).logs(from: queryBounds.start, to: queryBounds.end) {
             guard let instant = entry.loggedAt.span?.start else { continue }
             let day = timeModel.logicalDay(instant).value
-            if totals[day] != nil { totals[day, default: 0] += entry.amount.value }
+            guard totals[day] != nil else { continue }
+            totals[day, default: 0] += entry.amount.value
+            if (entry.drink?.caloriesKcal ?? 0) > 0 { nutritionLogged.insert(day) }
         }
-
-        var nutritionLogged = Set<String>()
         for placed in try NutritionLogStore(db: db).logged(from: queryBounds.start, to: queryBounds.end) {
             guard let instant = placed.occurrence.span?.start else { continue }
             let day = timeModel.logicalDay(instant).value
