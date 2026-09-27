@@ -75,18 +75,36 @@ jobs:
       # `/Applications/Xcode_26.app`. That path is a guess: image manifests have
       # used both `Xcode_26.app` and a fully versioned `Xcode_26.3.app`, and
       # `xcode-select -s` on a path that does not exist fails the whole job with
-      # a message that says nothing about the cause. So: prefer any Xcode 26,
-      # fall back to whatever the image defaults to, and print what is actually
-      # installed either way so a mismatch is legible instead of mysterious.
+      # a message that says nothing about the cause. So: prefer the newest Xcode
+      # 26, fall back to whatever the image defaults to, and print what is
+      # actually installed either way so a mismatch is legible rather than
+      # mysterious.
+      #
+      # This job builds a `generic/platform=iOS Simulator` destination, so it
+      # needs an SDK rather than a runtime and it was unaffected by the
+      # runtime/Xcode mismatch that broke `test-ios`. It still gets the ordering
+      # fix, because "the oldest Xcode happens to have the SDK" is luck, and the
+      # image is free to drop that SDK on a rotation.
       - name: Select an Xcode 26
         run: |
           set -uo pipefail
           echo "installed:"
           ls -1 /Applications | grep -i '^Xcode' || echo "  (none found)"
-          SELECTED=""
-          for candidate in /Applications/Xcode_26*.app; do
-            if [ -d "$candidate" ]; then SELECTED="$candidate"; break; fi
-          done
+          # Newest, not first. `macos-26` carries seven Xcodes (26.0.1 .. 26.6) and
+          # a shell glob expands in lexicographic order, so taking the first match
+          # selected the OLDEST one, 26.0.1. That is what broke `test-ios`: an old
+          # Xcode drives none of the simulator runtimes the image has, so
+          # `xcodebuild test` found zero eligible destinations and died in 13s
+          # with exit 70, while `simctl` returned a well-formed UDID belonging to
+          # a runtime a different Xcode owned. `isAvailable` does not mean
+          # "drivable by the selected toolchain" -- the `test-ios` job's "Pick a
+          # simulator" step is what enforces that, and it needs this fix in order
+          # to have a toolchain to measure against.
+          #
+          # `|| true` because a `run:` step executes under `bash -e`: a glob that
+          # matches nothing fails the pipeline, and the assignment's exit status
+          # would abort the step before the fallback below could report anything.
+          SELECTED=$(ls -1d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1 || true)
           if [ -n "$SELECTED" ]; then
             sudo xcode-select -s "$SELECTED"
             echo "selected $SELECTED"
@@ -136,10 +154,19 @@ jobs:
       - name: Select an Xcode 26
         run: |
           set -uo pipefail
-          SELECTED=""
-          for candidate in /Applications/Xcode_26*.app; do
-            if [ -d "$candidate" ]; then SELECTED="$candidate"; break; fi
-          done
+          # Newest, not first. `macos-26` carries seven Xcodes (26.0.1 .. 26.6) and
+          # a shell glob expands in lexicographic order, so taking the first match
+          # selected the OLDEST one, 26.0.1. That Xcode drives none of the simulator
+          # runtimes the image actually has, so `xcodebuild test` found zero
+          # eligible destinations and died in 13s with exit 70 -- while `simctl`
+          # returned a well-formed UDID belonging to a runtime a different Xcode
+          # owned. `isAvailable` does not mean "drivable by the selected
+          # toolchain"; the "Pick a simulator" step below is what enforces that.
+          #
+          # `|| true` because a `run:` step executes under `bash -e`: a glob that
+          # matches nothing fails the pipeline, and the assignment's exit status
+          # would abort the step before the fallback below could report anything.
+          SELECTED=$(ls -1d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1 || true)
           if [ -n "$SELECTED" ]; then
             sudo xcode-select -s "$SELECTED"
             echo "selected $SELECTED"
@@ -152,40 +179,73 @@ jobs:
       # `-destination name=iPhone 16e` silently stops matching the moment GitHub
       # rotates the device set, and a destination that matches nothing does not
       # fail — the job queues and reports nothing. This prefers the newest
-      # available iOS runtime and the newest iPhone in it, and says which it
-      # picked so a surprising result is legible in the log.
+      # available iOS runtime and says which it picked, so a surprising result is
+      # legible in the log.
+      #
+      # "Newest" is bounded by the *selected toolchain*, which is the part that
+      # was missing and the reason this job had never passed. `simctl` enumerates
+      # every runtime in the shared CoreSimulator directory, including ones owned
+      # by other Xcodes, and reports them all as `isAvailable`. It will therefore
+      # happily hand back a UDID that the selected `xcodebuild` cannot drive, and
+      # the result is a destination error that names neither the Xcode nor the
+      # runtimes. So the SDK the chosen Xcode reports is the ceiling: a newer
+      # Xcode drives older runtimes, never the reverse.
       #
       # Two details of `simctl list -j` that are easy to get wrong, and were:
       # the top-level keys are full runtime *identifiers*
       # (`com.apple.CoreSimulator.SimRuntime.iOS-26-3`), not display names, so a
       # `startswith("iOS")` filter silently matches nothing; and the values are
-      # lists of devices, so a `.get("isAvailable")` on the value raises. The
-      # script below was run against real `simctl` output and against an empty
-      # runtime set, a watchOS-only set, and an unavailable device before being
-      # committed here.
+      # lists of devices, so a `.get("isAvailable")` on the value raises.
       - name: Pick a simulator
         id: sim
         run: |
           set -euo pipefail
-          UDID=$(xcrun simctl list devices available -j | python3 -c '
-          import json, re, sys
+          SDK=$(xcrun --sdk iphonesimulator --show-sdk-version)
+          echo "selected toolchain can drive iOS simulators up to $SDK"
+          UDID=$(xcrun simctl list devices available -j | SIM_SDK_VERSION="$SDK" python3 -c '
+          import json, os, re, sys
 
           def rank(runtime_id):
               # "com.apple.CoreSimulator.SimRuntime.iOS-26-3" -> (26, 3)
               tail = runtime_id.rsplit(".", 1)[-1]
               return tuple(int(n) for n in re.findall(r"\d+", tail)) or (0,)
 
-          candidates = []
-          for runtime_id, devices in json.load(sys.stdin)["devices"].items():
+          sdk_raw = os.environ.get("SIM_SDK_VERSION", "")
+          sdk = tuple(int(n) for n in re.findall(r"\d+", sdk_raw))
+          if not sdk:
+              sys.exit("SIM_SDK_VERSION unset; cannot tell which runtimes this Xcode drives")
+
+          seen, usable = [], []
+          for runtime_id, devices in json.load(sys.stdin).get("devices", {}).items():
               if ".iOS" not in runtime_id:
                   continue
+              r = rank(runtime_id)
               for d in devices:
                   if d.get("isAvailable") and d.get("name", "").startswith("iPhone"):
-                      candidates.append((rank(runtime_id), d["name"], d["udid"]))
-          if not candidates:
-              sys.exit("no available iPhone simulator")
-          candidates.sort(key=lambda c: (c[0], c[1]))
-          print(candidates[-1][2])
+                      seen.append((r, d["name"]))
+                      if r <= sdk:
+                          usable.append((r, d["name"], d["udid"]))
+
+          if not usable:
+              print("no installed iOS runtime this toolchain can drive "
+                    "(simulator SDK %s)" % sdk_raw, file=sys.stderr)
+              for r, n in sorted(set(seen)):
+                  print("  available: iOS %s  %s" % (".".join(map(str, r)), n), file=sys.stderr)
+              sys.exit(1)
+
+          # Newest usable runtime first. The device name is a deterministic
+          # tiebreak, not a preference: alphabetical order picks "iPhone Air"
+          # over "iPhone 17 Pro Max", so CI may run on a different device than
+          # local. That is acceptable -- it is discovered, never hard-coded --
+          # but it does mean a geometry-sensitive test can pass here and fail on
+          # a desk, or the reverse.
+          usable.sort(key=lambda c: (c[0], c[1]))
+          chosen = usable[-1]
+          if chosen[0] != sdk:
+              print("::warning::no iOS %s runtime installed; falling back to iOS %s"
+                    % (sdk_raw, ".".join(map(str, chosen[0]))), file=sys.stderr)
+          print("using %s on iOS %s" % (chosen[1], ".".join(map(str, chosen[0]))), file=sys.stderr)
+          print(chosen[2])
           ')
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
