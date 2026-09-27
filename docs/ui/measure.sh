@@ -19,8 +19,12 @@
 # Usage:  docs/ui/measure.sh [image.png ...]
 #         docs/ui/measure.sh --capture          # capture first, then measure
 #
-# Requires: xcodebuild, xcrun (for --capture only), python3 (to compile the
-# tool with the right SDK), and a Swift toolchain.
+# ALMANAC_SCALE overrides the assumed device scale, e.g. "ALMANAC_SCALE=--scale 2"
+# for an iPad capture. It matters: every point size the tool prints is device
+# pixels divided by this, so a 2x capture measured at 3x reports every size a
+# third too large.
+#
+# Requires: xcodebuild, xcrun (for --capture only), and a Swift toolchain.
 
 set -euo pipefail
 
@@ -63,6 +67,7 @@ for img in "$@"; do
     *dark*) appearance=dark ;;
     *light*) appearance=light ;;
   esac
+  # shellcheck disable=SC2086  # ALMANAC_SCALE is a flag pair and must word-split
   "$BIN" "$img" --appearance "$appearance" ${ALMANAC_SCALE:-}
   echo
 done
