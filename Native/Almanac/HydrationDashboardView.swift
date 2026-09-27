@@ -82,22 +82,11 @@ struct HydrationDashboardView: View {
                 }
                 .onDelete(perform: delete)
             }
-            // A separate line from food's `NutritionTotals.kcal`, on purpose.
-            // Merging them would put an uncited catalog estimate inside a
-            // number that otherwise means cited composition data, which is the
-            // distinction `Migration013` exists to keep.
-            if let drinkCalories = model.todaysDrinkCalories, drinkCalories > 0 {
-                Section {
-                    HStack {
-                        Text("From drinks")
-                        Spacer()
-                        Text("\(AlmanacNumber.compact(drinkCalories)) kcal")
-                            .font(AlmanacTypography.font(.data).monospacedDigit())
-                    }
-                } footer: {
-                    Text("Kept apart from your food calories on purpose: a catalog drink is a typical value, not a measured or cited figure.")
-                }
-            }
+            // No drink-calorie total here any more. It is part of the day's
+            // single energy figure on Today, so a second number in this screen
+            // would be the same figure twice. The per-drink figure in each row
+            // above still shows, and `Migration013` still records per row
+            // whether a drink's value was a catalog estimate or user-entered.
         }
         .navigationTitle("Hydration")
         .almanacModuleSurface()

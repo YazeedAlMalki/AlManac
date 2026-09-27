@@ -46,6 +46,73 @@ public struct NutritionTotals: Sendable, Hashable {
     }
 }
 
+/// The day's energy as one figure, food and logged drinks added together.
+///
+/// A catalog drink's calories are an uncited typical value
+/// (`catalogUnsourcedEstimate`) and a food's are a cited composition figure, so
+/// the sum is a mixed-quality number. That is a reason to be able to *say* so,
+/// which `energyBases` already asks of a UI, and not a reason to show two
+/// numbers. Nothing is lost by adding them here: the qualifier is written per
+/// row to `hydration_log.value_qualifier`, which is what `Migration013` exists
+/// to preserve, and this reads it without altering it.
+///
+/// `nil` means nothing was logged, which is **not** the same as zero. A caller
+/// that renders `nil` as `0 kcal` has invented a reading, and that is the one
+/// failure this type is here to prevent — so a day with only drinks must
+/// report its energy rather than reading as empty, because the food side being
+/// empty says nothing about whether anything was recorded.
+public struct DayEnergy: Hashable, Sendable {
+    /// Food plus drinks, in kilocalories. Present because `DayEnergy` exists.
+    public let kcal: Double
+    /// Foods that contributed to the total.
+    public let foodCount: Int
+    /// How many drinks contributed, so a caller can name the composition in
+    /// words without inventing a second figure.
+    public let drinkCount: Int
+    /// False only when food *was* logged and could not be fully totalled.
+    ///
+    /// A day with no food at all is complete, not partial: the absence of the
+    /// other half of the total says nothing about whether this half is whole.
+    public let isFoodComplete: Bool
+
+    /// `food` is the day's food totals, if any were computed. Food that was
+    /// logged without an amount counts as nothing: it is not a zero-calorie
+    /// meal, and treating it as one would both dilute the total and hide the
+    /// fact that the day is incomplete.
+    public static func total(food: NutritionTotals?, drinks: [Double]) -> DayEnergy? {
+        let counted = (food?.mealsCounted ?? 0) > 0
+        let foodKcal = counted ? food?.kcal : nil
+        let drinkKcal = drinks.isEmpty ? nil : drinks.reduce(0, +)
+        // Summed, not coalesced. `foodKcal ?? drinkKcal` reads as "food if
+        // present, else drinks" and silently drops the drinks whenever any
+        // food was logged, which is the common case and looked correct.
+        let parts = [foodKcal, drinkKcal].compactMap { $0 }
+        guard !parts.isEmpty else { return nil }
+        return DayEnergy(kcal: parts.reduce(0, +),
+                         foodCount: food?.mealsCounted ?? 0,
+                         drinkCount: drinks.count,
+                         isFoodComplete: food?.isComplete ?? true)
+    }
+
+    /// What the total is made of, in one line and in words.
+    ///
+    /// A second *number* is what folding drinks in was meant to remove; a
+    /// second line of *words* costs nothing and is what keeps a mixed-quality
+    /// figure honest, the same bargain `energyBases` asks of any UI. Kept here
+    /// rather than in a view because the rule is not obvious: whether a day is
+    /// partial depends on the food being absent, not merely on it being nil.
+    public var summary: String {
+        guard isFoodComplete else { return "Partial total — some values are unavailable" }
+        switch (foodCount, drinkCount) {
+        case (_, 0): return "\(foodCount) foods counted"
+        case (0, 1): return "1 drink counted"
+        case (0, _): return "\(drinkCount) drinks counted"
+        case (_, 1): return "\(foodCount) foods and 1 drink counted"
+        default: return "\(foodCount) foods and \(drinkCount) drinks counted"
+        }
+    }
+}
+
 /// Reads the food log against the reference catalog.
 ///
 /// Holds nothing and stores nothing: totals are derived on demand, so a

@@ -206,7 +206,11 @@ struct ReadinessDashboardView: View {
                         title: "Nutrition",
                         value: nutritionValue,
                         detail: nutritionDetail,
-                        tone: nutritionModel.todaysTotals == nil ? .neutral : nil
+                        // Keyed on the day's energy, not on `todaysTotals`: a
+                        // drinks-only day has no food totals, and keying on
+                        // those put a "minus.circle" nothing-here badge beside
+                        // a real calorie figure.
+                        tone: todaysEnergy == nil ? .neutral : nil
                     )
                     Divider().overlay(AlmanacPalette.divider).padding(.leading, 62)
                     AlmanacMetricRow(
@@ -317,16 +321,23 @@ struct ReadinessDashboardView: View {
         return .good
     }
 
+    /// Food and drinks as one figure, or nil when neither was logged.
+    ///
+    /// Guarded on the combined total rather than on `mealsCounted > 0`, because
+    /// a day of nothing but a logged drink is a real reading: keeping the food
+    /// guard here would render an em dash and discard it.
+    private var todaysEnergy: DayEnergy? {
+        DayEnergy.total(food: nutritionModel.todaysTotals,
+                        drinks: hydrationModel.todaysDrinkEnergy)
+    }
+
     private var nutritionValue: String {
-        guard let totals = nutritionModel.todaysTotals, totals.mealsCounted > 0 else { return "—" }
-        return "\(AlmanacNumber.compact(totals.kcal)) kcal"
+        guard let energy = todaysEnergy else { return "—" }
+        return "\(AlmanacNumber.compact(energy.kcal)) kcal"
     }
 
     private var nutritionDetail: String {
-        guard let totals = nutritionModel.todaysTotals, totals.mealsCounted > 0 else {
-            return "No nutrition logged yet"
-        }
-        return totals.isComplete ? "\(totals.mealsCounted) foods counted" : "Partial total — some values are unavailable"
+        todaysEnergy?.summary ?? "No nutrition logged yet"
     }
 
     private var trainingValue: String {

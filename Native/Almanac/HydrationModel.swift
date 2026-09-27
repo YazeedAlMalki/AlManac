@@ -179,17 +179,22 @@ final class HydrationModel: ObservableObject {
         return drink
     }
 
-    /// Calories from logged drinks today, summed separately from food.
+    /// Each logged drink's calories today, in log order. Empty when no drink
+    /// carried a figure.
     ///
-    /// Deliberately NOT folded into `NutritionTotals.kcal`. A catalog drink is
-    /// an uncited typical value (`DrinkValueQualifier.catalogUnsourcedEstimate`)
-    /// and food is a cited composition figure; merging them would launder an
-    /// estimate into a measurement, which is the exact distinction
-    /// `Migration013` was written to protect. Two labelled numbers keep it.
-    var todaysDrinkCalories: Double? {
-        let withDrinks = todaysEntries.compactMap { $0.drink?.caloriesKcal }
-        guard !withDrinks.isEmpty else { return nil }
-        return withDrinks.reduce(0, +)
+    /// Returned per drink rather than pre-summed because the day total needs
+    /// the count as well as the sum: `DayEnergy` names the composition in
+    /// words, and a count that was computed somewhere else could disagree with
+    /// this total without anything failing.
+    ///
+    /// These figures are added into the day's single energy total alongside
+    /// food. That is a presentation choice and not a claim that a catalog drink
+    /// is a cited figure like food — the qualifier is still written per row to
+    /// `hydration_log.value_qualifier`, which is what `Migration013` exists to
+    /// protect, and `DayEnergy` sums without touching it. The distinction is
+    /// preserved by being sayable out loud, not by being a second number.
+    var todaysDrinkEnergy: [Double] {
+        todaysEntries.compactMap { $0.drink?.caloriesKcal }
     }
 
     func delete(id: String) throws {

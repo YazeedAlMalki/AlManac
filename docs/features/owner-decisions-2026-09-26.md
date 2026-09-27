@@ -154,6 +154,29 @@ This is the one place where the literal request ("counted with his calories")
 was implemented as a labelled second number rather than one combined total, and
 the reason is worth disagreeing with if you disagree.
 
+### Superseded 2026-09-27, on the owner's call: one combined total
+
+The owner read the paragraph above and chose the other branch — the literal
+reading of the original request, "counted with his calories". Food and drinks
+now add into a single figure on Today, and the "From drinks" section is gone.
+
+The reasoning above is not retracted, because it still describes the data. It
+is now a constraint on *presentation* rather than a reason for two numbers:
+
+- `hydration_log.value_qualifier` is untouched, and still records per row
+  whether a drink's figure was a catalog estimate or user-entered. That is the
+  distinction `Migration013` was written to protect, and it is still protected.
+- The per-row labels in the drink logger and on the hydration dashboard are
+  untouched, so a value is still never presented as measured.
+- What the owner gave up is the *visible* separation on Today. That is now
+  carried in words instead — the day's total says how many foods and drinks it
+  is made of — which is the same bargain `NutritionTotals.energyBases` already
+  asks of any UI showing a total that mixes methods.
+
+So the estimate is no longer separated by a rule; it is disclosed by a sentence.
+That is a weaker guarantee than the one this section originally argued for, and
+it is the owner's call to make, not the implementer's.
+
 ## 7. Not built: Whoop, Fitbit, and other health-kit services
 
 **Asked:** "we should also be able to sync other health kits (whoop, fitbit,
