@@ -25,10 +25,15 @@ against `AlmanacPalette`, and every structural band classified as a rule or a pa
 It exists because "does this screen obey the design system" has an objective answer, and
 answering it by eye is unreliable at exactly the sizes that matter — a rule one shade off,
 a hard-coded grey, a caption set at body size. It found the real one on the first run: the
-app draws rules with two different primitives, `Rectangle().frame(height: 1)` and
-`Divider().overlay(...)`, so they render at three different weights (0.33, 0.67 and
-1.00pt) on one screen — in both appearances, which is what makes it a design decision
-rather than a rendering artifact.
+app drew rules with three different weights — 0.33pt, 0.67pt and 1.00pt — on one screen, in
+both appearances, which is what makes it a design decision rather than a rendering artifact.
+All three are now `AlmanacRule`, and the check that reports it ("rules are drawn at … they
+should be one weight") passes on all three captures.
+
+The three weights had three unrelated causes, which is why it survived review: SwiftUI's
+`Divider()` draws the system's idea of a hairline, a 1pt stroke centred on a card's edge
+antialiases across two device-pixel rows, and a filled `Rectangle` is 1pt by construction.
+Each was individually defensible; only the screen they shared was not.
 
 It reads both palettes, and `measure.sh` infers the appearance from the filename, because
 `capture.sh` already names its shots `today-light` and `today-dark`. Measuring a dark

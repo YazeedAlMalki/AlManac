@@ -26,10 +26,10 @@ and this skill is about whether the code obeys it.
 |---|---|---|
 | Palette | `AlmanacPalette` | 12 tokens, light + dark, via a dynamic `UIColor` provider |
 | Typography | `AlmanacTypography` | 9 roles; `.custom(_:size:relativeTo:)` so the scale is Dynamic Type–aware |
-| Metrics | `AlmanacMetrics` | 6 spacing, radius and target values |
+| Metrics | `AlmanacMetrics` | 7 spacing, radius, target and rule-weight values |
 | Icons | `AlmanacIcon` | Centralised SF Symbols, pending the approved custom sheet |
 | Status | `AlmanacStatusTone` | The only colours allowed to carry judgement |
-| Components | `AlmanacCard`, `AlmanacSectionHeader`, `AlmanacEyebrow`, `AlmanacMetricRow`, `AlmanacStatusMark`, `AlmanacPrimaryButtonStyle`, `AlmanacSecondaryButtonStyle` | |
+| Components | `AlmanacRule`, `AlmanacCard`, `AlmanacSectionHeader`, `AlmanacEyebrow`, `AlmanacMetricRow`, `AlmanacStatusMark`, `AlmanacPrimaryButtonStyle`, `AlmanacSecondaryButtonStyle` | |
 | Modifiers | `almanacScreen()`, `almanacModuleSurface()`, `almanacNavigationHost(_:)`, `editorError(_:)` | |
 
 ## Audit
@@ -39,6 +39,11 @@ The audit is mechanical. Run these and report counts, not impressions:
 ```sh
 # Colours outside the palette — should be zero outside DesignSystem.swift
 grep -rn 'Color(\|Color\.accentColor\|Color\.white\|Color\.black\|Color\.gray' Native/Almanac/ | grep -v DesignSystem.swift
+
+# Rules drawn by hand — should be zero; AlmanacRule is the only thing that draws one.
+# TrendsView's AxisGridLine is the one legitimate exception: a chart gridline belongs
+# to Swift Charts and scales with the plot, so it is not a structural rule.
+grep -rn 'Divider()\|AlmanacPalette\.divider' Native/Almanac/ | grep -v DesignSystem.swift
 
 # Token adoption: AlmanacMetrics is the least-used layer in the app
 grep -rc 'AlmanacMetrics\.' Native/Almanac/*.swift | grep -v ':0'
@@ -80,12 +85,13 @@ Two cautions when interpreting the output:
 |---|---|---|---|
 | `AlmanacPalette` | 12 | [N] | [N of 31] |
 | `AlmanacTypography` | 9 roles | [N] | [N of 31] |
-| `AlmanacMetrics` | 6 | [N] | [N of 31] |
+| `AlmanacMetrics` | 7 | [N] | [N of 31] |
 
 ### Violations
 | Kind | Count | Where | Fix |
 |---|---|---|---|
 | Off-palette colour | | | |
+| Hand-drawn rule | | | |
 | Fixed-point font | | | |
 | Hardcoded spacing | | | |
 | Dynamic Type clamp | | | |

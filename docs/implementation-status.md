@@ -10,6 +10,46 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-27 — One rule weight, and the primitive that owns it
+
+Closes the finding `1435669` recorded against `AlmanacPalette.divider` as a known
+inconsistency rather than fixing. `docs/ui/measure.sh` reported rules at **0.33pt, 0.67pt
+and 1.00pt on the same screen**, in both appearances.
+
+- **The three weights had three unrelated causes**, which is why it survived review —
+  each was individually defensible and only the screen they shared was wrong:
+  `Divider().overlay(divider)` drew the *system's* idea of a hairline (0.33pt, 14 sites);
+  `AlmanacCard`'s 1pt stroke was *centred on the shape's edge*, so half the rule fell
+  outside and antialiased across two device-pixel rows (0.67pt, every card in the app);
+  and `Rectangle().fill(divider).frame(height: 1)` is 1pt by construction (3 sites).
+- **`AlmanacRule`** is now the only thing that draws a rule, at
+  `AlmanacMetrics.ruleWeight`. All 19 hand-drawn sites are gone. `Divider()`'s weight is
+  a system implementation detail that has changed across OS releases, so a structural
+  device whose weight is not in the token file is not one the design system controls.
+- **1pt, not a true device-pixel hairline.** 1/3pt is one device pixel at 3x but half of
+  one at 2x, so the app's structural device would change weight with the display it
+  shipped on. 1pt is also the weight all three existing intentions already asked for.
+- **The card border is inset by half its width** so the whole 1pt lands inside the shape
+  rather than straddling it. Visually a half-pixel; it is the difference between a border
+  that measures 1pt and one that measures 0.67pt. `AlmanacSecondaryButtonStyle` had the
+  same stroke and is fixed the same way.
+- **`ExerciseProgressView`'s empty state was a hand-rolled `AlmanacCard`** — same padding,
+  background, clip and border, written out a second time with the un-inset stroke. It is
+  an `AlmanacCard` now.
+- **Vertical rules included.** `TrendsView`'s two summary-cell dividers had the same
+  defect, so `AlmanacRule` takes an `axis`. **Left alone: `TrendsView`'s `AxisGridLine`** —
+  a chart gridline belongs to Swift Charts, scales with the plot, and is not a structural
+  rule.
+- The `62` indent on metric-list rules is now `AlmanacRule.metricTextInset`, named and
+  documented, rather than a literal a caller had to know the cost of.
+- **Verified:** the Debug simulator build succeeds; **21/21 UI tests pass**; and
+  `measure.sh --capture` reports **one weight, 1.00pt, and "no findings"** on all three
+  captures (light, dark, largest Dynamic Type) — the check that was failing is the
+  evidence the fix landed. `swift test` could not be run to completion: an unrelated
+  parallel session was writing `NutritionEdibleYield.swift` and `EdibleYieldTests.swift`
+  into this tree during the build (`input file … was modified during the build`). This
+  change touches no file under `Sources/` or `Tests/`.
+
 ## 2026-09-27 — Navigation decisions closed; no code changed
 
 The tab-bar roster and the quick-log button's default target had been carried as

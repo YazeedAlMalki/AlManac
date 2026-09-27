@@ -115,9 +115,7 @@ struct ReadinessDashboardView: View {
                     }
                 }
 
-                Rectangle()
-                    .fill(AlmanacPalette.divider)
-                    .frame(height: 1)
+                AlmanacRule()
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(readinessHeadline(outcome))
@@ -192,7 +190,7 @@ struct ReadinessDashboardView: View {
                         detail: model.sleepDurationMinutes == nil ? "No primary sleep episode available" : "Primary sleep",
                         tone: model.sleepDurationMinutes == nil ? .neutral : nil
                     )
-                    Divider().overlay(AlmanacPalette.divider).padding(.leading, 62)
+                    AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
                         icon: AlmanacIcon.hydration,
                         title: "Hydration",
@@ -200,7 +198,7 @@ struct ReadinessDashboardView: View {
                         detail: "of \(AlmanacNumber.compact(hydrationGoal)) mL",
                         tone: hydrationTone
                     )
-                    Divider().overlay(AlmanacPalette.divider).padding(.leading, 62)
+                    AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
                         icon: AlmanacIcon.nutrition,
                         title: "Nutrition",
@@ -212,7 +210,7 @@ struct ReadinessDashboardView: View {
                         // a real calorie figure.
                         tone: todaysEnergy == nil ? .neutral : nil
                     )
-                    Divider().overlay(AlmanacPalette.divider).padding(.leading, 62)
+                    AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
                         icon: AlmanacIcon.training,
                         title: "Training",
@@ -253,13 +251,13 @@ struct ReadinessDashboardView: View {
     private var inputRows: some View {
         VStack(spacing: 0) {
             inputRow("Sleep", value: model.sleepDurationMinutes.map(durationLabel), missingValue: "Not available")
-            Divider().overlay(AlmanacPalette.divider)
+            AlmanacRule()
             inputRow("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.compact($0)) bpm" }, missingValue: "Not available")
-            Divider().overlay(AlmanacPalette.divider)
+            AlmanacRule()
             inputRow("HRV", value: model.latestHRV.map { "\(AlmanacNumber.compact($0)) ms" }, missingValue: "Not available")
-            Divider().overlay(AlmanacPalette.divider)
+            AlmanacRule()
             inputRow("Mood", value: model.todayMood.map { "\($0.score)/10" }, missingValue: "Not logged")
-            Divider().overlay(AlmanacPalette.divider)
+            AlmanacRule()
             inputRow("Soreness", value: model.todaySoreness.map { "\($0.overallScore)/10" }, missingValue: "Not logged")
         }
     }
@@ -274,23 +272,23 @@ struct ReadinessDashboardView: View {
                             inputRow("Tonnage", value: "\(AlmanacNumber.compact(tonnage)) kg", missingValue: nil)
                         }
                         if let distance = summary.totalDistanceMeters {
-                            Divider().overlay(AlmanacPalette.divider)
+                            AlmanacRule()
                             inputRow("Distance", value: "\(AlmanacNumber.compact(distance)) m", missingValue: nil)
                         }
                         if let duration = summary.totalDurationSeconds {
-                            Divider().overlay(AlmanacPalette.divider)
+                            AlmanacRule()
                             inputRow("Time", value: durationLabel(Int(duration.rounded())), missingValue: nil)
                         }
                         if let reps = summary.totalReps {
-                            Divider().overlay(AlmanacPalette.divider)
+                            AlmanacRule()
                             inputRow("Reps", value: "\(reps)", missingValue: nil)
                         }
                         if let rounds = summary.totalRounds {
-                            Divider().overlay(AlmanacPalette.divider)
+                            AlmanacRule()
                             inputRow("Rounds", value: "\(rounds)", missingValue: nil)
                         }
                         if let rpe = summary.averageRPE {
-                            Divider().overlay(AlmanacPalette.divider)
+                            AlmanacRule()
                             inputRow("Average RPE", value: String(format: "%.1f/10", rpe), missingValue: nil)
                         }
                     }

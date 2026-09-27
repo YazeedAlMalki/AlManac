@@ -22,14 +22,13 @@ enum AlmanacPalette {
     static let surfaceMuted = dynamic(light: 0xE6E6E1, dark: 0x1E2024)
     /// Rules are the structural device. Containers are not.
     ///
-    /// KNOWN INCONSISTENCY, found by `docs/ui/measure.sh` on the Today screen
-    /// in both appearances: rules render at 0.33pt, 0.67pt and 1.00pt on one
-    /// screen. The cause is that the app draws them two ways —
-    /// `Rectangle().fill(divider).frame(height: 1)`, which is 1pt by
-    /// construction, and `Divider().overlay(divider)`, whose height is its
-    /// own. Settling on one primitive is a design decision across a dozen call
-    /// sites, so it has not been done here; until it is, `measure.sh` reports
-    /// it on every capture rather than leaving it to be noticed by eye.
+    /// The weight is not part of this token but of `AlmanacRule`, which is the
+    /// only thing that draws one. This colour was previously applied three
+    /// ways at three weights on a single screen: `Divider().overlay(...)`,
+    /// which draws the system's idea of a hairline rather than a value in this
+    /// file; `Rectangle().fill(...).frame(height: 1)`; and the 1pt stroke on
+    /// `AlmanacCard`, which antialiases across two device-pixel rows and so
+    /// measured 0.67pt beside a 1pt rule. All three are `AlmanacRule` now.
     static let divider = dynamic(light: 0xDCDCD6, dark: 0x2A2C30)
     static let textPrimary = dynamic(light: 0x1A1A18, dark: 0xECECEA)
     static let textSecondary = dynamic(light: 0x63635E, dark: 0x9A9C9F)
@@ -208,6 +207,15 @@ enum AlmanacMetrics {
     static let cardRadius: CGFloat = 14
     static let controlRadius: CGFloat = 10
     static let minimumControl: CGFloat = 50
+    /// The weight of a rule. One value, because rules are the structural
+    /// device and a screen showing them at two weights has no hierarchy —
+    /// `docs/ui/measure.sh` reported 0.33pt, 0.67pt and 1.00pt on Today.
+    ///
+    /// It is 1pt rather than a true device-pixel hairline (1/3pt) because
+    /// 1/3pt is not a portable value: it is one device pixel at 3x but half of
+    /// one at 2x, so the app's structural device would change weight with the
+    /// display it happened to ship on.
+    static let ruleWeight: CGFloat = 1
 }
 
 enum AlmanacAppearance: String, CaseIterable, Identifiable {
@@ -282,6 +290,46 @@ enum AlmanacStatusTone {
     }
 }
 
+/// Which way a rule runs. Almanac is overwhelmingly horizontal — rules separate
+/// rows of a daybook. A vertical rule exists for the one place a row of cells
+/// is split side by side.
+enum AlmanacRuleAxis {
+    case horizontal
+    case vertical
+}
+
+/// A rule: the app's structural device, and the only thing that draws one.
+///
+/// Rules are a filled `Rectangle` at `AlmanacMetrics.ruleWeight`, never
+/// SwiftUI's `Divider()`. `Divider()` looks like the obvious choice and is the
+/// wrong one: its weight is the system's idea of a hairline rather than a value
+/// in this file, so the app's primary structural device weighed whatever the OS
+/// decided and could change between releases. That is what put 0.33pt rules
+/// beside a 1pt one on the same screen.
+///
+/// It takes an `inset` rather than expecting a surrounding `padding` so that the
+/// indent is part of the rule's definition: a rule inside a metric list is
+/// supposed to start at the text column, and a caller reaching for `.padding`
+/// would have to know that 62 is what that column costs.
+struct AlmanacRule: View {
+    /// Lines a rule up with an `AlmanacMetricRow`'s text column: the row's
+    /// 20pt inset, its 28pt icon well, and the 14pt gap after it.
+    static let metricTextInset: CGFloat = 62
+
+    var axis: AlmanacRuleAxis = .horizontal
+    var inset: CGFloat = 0
+
+    var body: some View {
+        Rectangle()
+            .fill(AlmanacPalette.divider)
+            .frame(
+                width: axis == .vertical ? AlmanacMetrics.ruleWeight : nil,
+                height: axis == .horizontal ? AlmanacMetrics.ruleWeight : nil
+            )
+            .padding(axis == .vertical ? .vertical : .horizontal, inset)
+    }
+}
+
 /// A panel. Most panels are ruled areas of the page rather than boxes stacked on
 /// top of it: a daybook separates its entries with a rule, and a screen where
 /// every block is an identical filled card has no hierarchy at all. The one
@@ -308,8 +356,14 @@ struct AlmanacCard<Content: View>: View {
             .background(prominent ? AlmanacPalette.surface : AlmanacPalette.canvas)
             .clipShape(RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous))
             .overlay {
+                // A card is delineated by a rule, not a fill — doctrine rule 1.
+                // The stroke is inset by half its width so the whole rule lands
+                // inside the shape: centred on the edge it would straddle it,
+                // antialias across two device-pixel rows, and measure 0.67pt
+                // next to an `AlmanacRule`'s 1pt.
                 RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous)
-                    .stroke(AlmanacPalette.divider, lineWidth: 1)
+                    .inset(by: AlmanacMetrics.ruleWeight / 2)
+                    .stroke(AlmanacPalette.divider, lineWidth: AlmanacMetrics.ruleWeight)
             }
     }
 }
@@ -524,7 +578,8 @@ struct AlmanacSecondaryButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: AlmanacMetrics.controlRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: AlmanacMetrics.controlRadius, style: .continuous)
-                    .stroke(AlmanacPalette.divider, lineWidth: 1)
+                    .inset(by: AlmanacMetrics.ruleWeight / 2)
+                    .stroke(AlmanacPalette.divider, lineWidth: AlmanacMetrics.ruleWeight)
             }
     }
 }

@@ -31,7 +31,7 @@ struct EditorialRhythmCalendarView: View {
                         .font(AlmanacTypography.font(.body))
                         .foregroundStyle(AlmanacPalette.critical)
                 } else if let day = model.selectedActivity {
-                    Divider().overlay(AlmanacPalette.divider)
+                    AlmanacRule()
                     selectedDay(day)
                 }
 
@@ -140,7 +140,7 @@ struct EditorialRhythmCalendarView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("activity-ring-day-\(day.day.value)")
-                Divider().overlay(AlmanacPalette.divider)
+                AlmanacRule()
             }
         }
     }

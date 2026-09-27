@@ -31,7 +31,7 @@ Never hardcode these. All of them live in `DesignSystem.swift`.
 | `AlmanacPalette.good` / `.warning` / `.critical` | Status. The only colours allowed to carry judgement |
 
 `AlmanacMetrics`: `screenInset 20`, `cardPadding 24`, `sectionGap 32`, `cardRadius 14`,
-`controlRadius 10`, `minimumControl 50`.
+`controlRadius 10`, `minimumControl 50`, `ruleWeight 1`.
 
 `AlmanacTypography.font(_:)`: `.display`, `.screenTitle`, `.sectionTitle`, `.body`,
 `.bodyMedium`, `.label`, `.caption`, `.data`, `.dayNumber`.
@@ -40,8 +40,9 @@ Never hardcode these. All of them live in `DesignSystem.swift`.
 
 1. **Rules separate; containers do not.** Most panels are ruled areas of the page, not
    boxes stacked on it. A screen where every block is an identical filled card has no
-   hierarchy at all. Reach for a `Rectangle().fill(AlmanacPalette.divider)` before a
-   second surface.
+   hierarchy at all. Reach for an `AlmanacRule` before a second surface — never a
+   `Divider()`, which draws at the system's idea of a hairline rather than
+   `AlmanacMetrics.ruleWeight`, and put 0.33pt rules beside 1pt ones on one screen.
 2. **One prominent card per screen.** `AlmanacCard(prominent: true)` is for the single
    object the screen is about. Everything else is `prominent: false`.
 3. **Accent means measured.** Ink-blue appears where Almanac recorded something. Do not
@@ -95,13 +96,17 @@ Do not reintroduce these. Each has been fixed once and has a commit or a comment
 
 1. Does it introduce a raw `Color(`, `Color.accentColor`, or a hex literal outside
    `DesignSystem.swift`? That is a finding.
-2. Does it hardcode a spacing or size number where a token exists? `AlmanacMetrics` is
+2. Does it draw a rule by hand — a `Divider()`, a bare
+   `Rectangle().fill(AlmanacPalette.divider)`, or a stroke on the divider token —
+   instead of using `AlmanacRule`? That is a finding, and the one `measure.sh` exists
+   to catch: it reports rules drawn at more than one weight.
+3. Does it hardcode a spacing or size number where a token exists? `AlmanacMetrics` is
    under-used across this app, so new code should not add to the problem.
-3. Does it add a prominent card, and is there already one on that screen?
-4. Is anything interactive under 50pt, or overlapping something interactive?
-5. Does it clamp Dynamic Type with `.dynamicTypeSize(...)`? There are only four such
+4. Does it add a prominent card, and is there already one on that screen?
+5. Is anything interactive under 50pt, or overlapping something interactive?
+6. Does it clamp Dynamic Type with `.dynamicTypeSize(...)`? There are only four such
    sites and each is a considered trade-off; a fifth needs a reason in a comment.
-6. Does it animate without checking `\.accessibilityReduceMotion`?
+7. Does it animate without checking `\.accessibilityReduceMotion`?
 
 ## When the doctrine and a request conflict
 

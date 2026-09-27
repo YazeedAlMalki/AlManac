@@ -190,7 +190,7 @@ private struct AlmanacNavigationBar: View {
         .padding(.bottom, 10)
         .background(AlmanacPalette.surface)
         .overlay(alignment: .top) {
-            Rectangle().fill(AlmanacPalette.divider).frame(height: 1)
+            AlmanacRule()
         }
         // The bar now sits in the layout flow, so the surface is extended past
         // the safe area to keep the home indicator on the bar's own colour.

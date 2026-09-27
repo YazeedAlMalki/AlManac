@@ -43,7 +43,7 @@ struct ExerciseProgressView: View {
                             ForEach(Array(history.enumerated()), id: \.element.boutId) { index, point in
                                 row(point)
                                 if index < history.count - 1 {
-                                    Rectangle().fill(AlmanacPalette.divider).frame(height: 1)
+                                    AlmanacRule()
                                 }
                             }
                         }
@@ -79,21 +79,20 @@ struct ExerciseProgressView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("No history yet")
-                .font(AlmanacTypography.font(.sectionTitle))
-                .foregroundStyle(AlmanacPalette.textPrimary)
-            Text("Log this exercise and its load, reps and sets start charting here. Nothing is charted until you record something.")
-                .font(AlmanacTypography.font(.body))
-                .foregroundStyle(AlmanacPalette.textSecondary)
-        }
-        .padding(AlmanacMetrics.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AlmanacPalette.surface)
-        .clipShape(RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: AlmanacMetrics.cardRadius, style: .continuous)
-                .stroke(AlmanacPalette.divider, lineWidth: 1)
+        // Was a hand-rolled `AlmanacCard` — same padding, background, clip and
+        // border, written out again. The only difference was that its 1pt
+        // stroke was centred on the edge, so it drew a different-weight rule
+        // from every other card in the app.
+        AlmanacCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("No history yet")
+                    .font(AlmanacTypography.font(.sectionTitle))
+                    .foregroundStyle(AlmanacPalette.textPrimary)
+                Text("Log this exercise and its load, reps and sets start charting here. Nothing is charted until you record something.")
+                    .font(AlmanacTypography.font(.body))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
