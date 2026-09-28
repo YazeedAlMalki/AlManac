@@ -256,6 +256,7 @@ enum AlmanacIcon {
     static let body = "ruler"
     static let supplement = "pills"
     static let context = "tag"
+    static let digestion = "circle.grid.cross"
     static let check = "checkmark"
     static let edit = "pencil"
     static let previous = "chevron.left"

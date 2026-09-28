@@ -27,6 +27,7 @@ struct QuickLogView: View {
         case food
         case training
         case body
+        case digestion
 
         var id: String { rawValue }
     }
@@ -77,6 +78,12 @@ struct QuickLogView: View {
                         detail: "Add weight or another body measurement.",
                         destination: .body
                     )
+                    destinationCard(
+                        icon: AlmanacIcon.digestion,
+                        title: "Digestion",
+                        detail: "Record a bowel movement or a urination.",
+                        destination: .digestion
+                    )
                 }
                 .frame(maxWidth: 760, alignment: .leading)
                 .padding(.horizontal, AlmanacMetrics.screenInset)
@@ -106,6 +113,8 @@ struct QuickLogView: View {
                 case .body:
                     QuickBodyLogView(db: db, trackingModel: trackingModel,
                                       isFastDay: fastingModel.isFastDay, onSaved: finishFlow)
+                case .digestion:
+                    DigestionQuickEntryView(db: db, trackingModel: trackingModel, onSaved: finishFlow)
                 }
             }
             .sensoryFeedback(.success, trigger: feedbackTrigger)
@@ -175,6 +184,7 @@ struct QuickLogView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("quicklog-destination-\(destination.rawValue)")
         .accessibilityHint("Opens the \(title.lowercased()) logger")
     }
 

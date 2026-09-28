@@ -7,6 +7,73 @@ import Foundation
 /// the Slice 9 handoff to settle; this is only the fixed domain value.
 public enum BristolType: Int, Sendable, Codable, CaseIterable {
     case type1 = 1, type2, type3, type4, type5, type6, type7
+
+    /// The type's name on the scale, after Heaton & Lewis (1997), *Scoring
+    /// systems of stool composition and physical form*.
+    ///
+    /// A picker of `1 2 3 4 5 6 7` is not a reference scale — the number only
+    /// means something against its description, and the description is what the
+    /// user is actually being asked to recognise. The seven names are the
+    /// standard published wording rather than anything written here.
+    ///
+    /// **Attribution is an open item.** These strings are reproduced from a
+    /// published scale, and `docs/features/digestion.md` records that the
+    /// Attributions screen has not been extended to cover them.
+    public var displayName: String {
+        switch self {
+        case .type1: return "Separate hard lumps"
+        case .type2: return "Lumpy, sausage-shaped"
+        case .type3: return "Sausage-shaped, smooth"
+        case .type4: return "Smooth, soft sausage"
+        case .type5: return "Soft blobs with clear edges"
+        case .type6: return "Mushy pieces"
+        case .type7: return "Entirely liquid"
+        }
+    }
+
+    /// One clause of what the type looks like, for the picker's secondary line.
+    /// The seven types differ as much in consistency as in shape, and "mushy
+    /// pieces" alone does not say whether that is a lot or a little.
+    public var summary: String {
+        switch self {
+        case .type1: return "Like nuts, hard to pass"
+        case .type2: return "Lumpy and hard to pass"
+        case .type3: return "Like a sausage, smooth"
+        case .type4: return "Like a snake, smooth and soft"
+        case .type5: return "Soft blobs, clearly separated"
+        case .type6: return "Fluffy, shapeless pieces"
+        case .type7: return "No solid pieces at all"
+        }
+    }
+
+    /// The whole row, as a screen reader should announce it.
+    ///
+    /// BRD §6.3's accessibility rule is "never rely on colour alone; numeric
+    /// grades + text + VoiceOver" — and the two halves of that have to travel
+    /// together, or a grade travels without its meaning.
+    public var accessibilityLabel: String { "Type \(rawValue), \(displayName)" }
+}
+
+/// Stool colour, BRD §6.3's own six: "brown range, pale, yellow, green, black,
+/// red".
+///
+/// A closed set rather than the free `String?` the column holds, for the same
+/// reason `BristolType` is closed: these are the values an escalation rule
+/// would one day key on ("black", "red"), and a query over a spelling nobody
+/// fixed in advance is a query that quietly finds nothing.
+public enum StoolColor: String, Sendable, Codable, CaseIterable {
+    case brown, pale, yellow, green, black, red
+
+    public var displayName: String {
+        switch self {
+        case .brown: return "Brown"
+        case .pale: return "Pale"
+        case .yellow: return "Yellow"
+        case .green: return "Green"
+        case .black: return "Black"
+        case .red: return "Red"
+        }
+    }
 }
 
 /// A bowel movement log entry not yet written to storage.
@@ -106,6 +173,31 @@ public struct DigestionStore: @unchecked Sendable {
         SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt
         FROM bowel_movement WHERE logicalDay = ? ORDER BY timestamp;
         """, [.text(logicalDay)]).compactMap(rowToEntry)
+    }
+
+    /// Entries across a logical-day range, newest first.
+    ///
+    /// The same shape as `logs(for:)` but half-open over days, so a caller
+    /// showing several days does not have to issue a query per day and stitch
+    /// them. Newest first because every caller wants the most recent thing on
+    /// screen, and a history list reads downward.
+    public func logs(from: String, to: String) throws -> [BowelMovementEntry] {
+        try db.query("""
+        SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt
+        FROM bowel_movement WHERE logicalDay >= ? AND logicalDay < ?
+        ORDER BY timestamp DESC;
+        """, [.text(from), .text(to)]).compactMap(rowToEntry)
+    }
+
+    /// Removes an entry outright.
+    ///
+    /// `bowel_movement` has no `deletedAt` and nothing in the app derives from
+    /// a row that is still here, so a hard delete is the honest operation. A
+    /// mis-tap is the case this exists for, and a "deleted" row that only
+    /// reports itself deleted would leave the user unable to tell the two
+    /// apart.
+    public func delete(id: Int64) throws {
+        try db.run("DELETE FROM bowel_movement WHERE id = ?;", [.integer(id)])
     }
 
     private func rowToEntry(_ row: Row) -> BowelMovementEntry? {

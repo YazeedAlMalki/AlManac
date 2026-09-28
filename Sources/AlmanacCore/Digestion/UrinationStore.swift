@@ -3,6 +3,29 @@ import Foundation
 /// BRD §6.3's 8-level urination color chart, 1 (pale) through 8 (dark brown).
 public enum UrinationColorGrade: Int, Sendable, Codable, CaseIterable {
     case grade1 = 1, grade2, grade3, grade4, grade5, grade6, grade7, grade8
+
+    /// "Grade 4", and the two ends the spec actually names.
+    ///
+    /// BRD §6.3 asks for an "8-level chart" without giving it, and the only two
+    /// points this repository can state are the ones the type's own doc comment
+    /// already states: 1 is pale and 8 is dark brown. **Grades 2 to 7 are left
+    /// as numbers rather than given descriptions.** A plausible-sounding ladder
+    /// of eight colour descriptions would be eight clinical claims written by
+    /// this codebase, and the BRD's own advisory section is explicitly held back
+    /// for clinician review — inventing the middle of the chart would be doing
+    /// the one thing that gate exists to prevent, a clause earlier and in a
+    /// smaller font.
+    public var displayName: String {
+        switch self {
+        case .grade1: return "Grade 1 — pale"
+        case .grade8: return "Grade 8 — dark brown"
+        default: return "Grade \(rawValue)"
+        }
+    }
+
+    /// The grade announced as a whole, per BRD §6.3's "numeric grades + text +
+    /// VoiceOver" and its "never rely on colour alone".
+    public var accessibilityLabel: String { "Colour grade \(rawValue) of 8, \(displayName)" }
 }
 
 /// A urination log entry not yet written to storage.
@@ -78,6 +101,22 @@ public struct UrinationStore: @unchecked Sendable {
         SELECT id, logicalDay, timestamp, colorGrade, notes, clinicianEscalationLevel, createdAt
         FROM urination_record WHERE logicalDay = ? ORDER BY timestamp;
         """, [.text(logicalDay)]).compactMap(rowToEntry)
+    }
+
+    /// Entries across a logical-day range, newest first — `DigestionStore`'s
+    /// range query, for the same reason: one query rather than one per day.
+    public func logs(from: String, to: String) throws -> [UrinationEntry] {
+        try db.query("""
+        SELECT id, logicalDay, timestamp, colorGrade, notes, clinicianEscalationLevel, createdAt
+        FROM urination_record WHERE logicalDay >= ? AND logicalDay < ?
+        ORDER BY timestamp DESC;
+        """, [.text(from), .text(to)]).compactMap(rowToEntry)
+    }
+
+    /// Removes an entry outright; see `DigestionStore.delete(id:)` for why this
+    /// is a hard delete rather than a soft one.
+    public func delete(id: Int64) throws {
+        try db.run("DELETE FROM urination_record WHERE id = ?;", [.integer(id)])
     }
 
     private func rowToEntry(_ row: Row) -> UrinationEntry? {

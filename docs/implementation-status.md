@@ -10,6 +10,53 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-28 — Digestion quick entry
+
+Closes the second of the two item-9 gaps. `DigestionStore` and `UrinationStore`
+had been complete and green since 2026-09-16 with **zero** `Native/` call sites —
+a user could not record a bowel movement or a urination at all.
+
+- **Quick Log now offers Digestion**, and the sheet covers both kinds: a
+  segmented control, time, Bristol type, stool colour, the symptom flags, notes,
+  and today's entries with swipe-to-delete. Saving returns to Quick Log rather
+  than closing it, matching that sheet's existing convention.
+- **The scale and the chart are pushed screens, not inline lists.** Seven
+  described rows plus eight grade rows in the log form would push the colour
+  field, the symptoms, the notes and today's list most of a screen down — and
+  this is a *log* form, so everything below the fold is something the user came
+  to do. A seven-option wheel would have hidden six of seven behind a spin,
+  which defeats the point of a reference scale.
+- **No advisory is shown, and the BRD says why.** §6.3's wording "requires
+  clinician review before App Store release", so `clinicianEscalationLevel` stays
+  NULL and the screen interprets nothing: no colour is called concerning, no
+  grade is called dark, blood is the fact the user recorded. The escalation rule
+  the BRD *does* give ("amount/type of blood, black stool, …") is keyed on values
+  this screen stores precisely so a future rule can read them.
+- **Only two of the eight urine grades are named** — 1 pale, 8 dark brown, the two
+  the type's own doc comment states. A plausible ladder of eight colour
+  descriptions would be eight clinical claims invented here, a clause earlier
+  than the clinician review §6.3 is held back for. A test fails if anyone names
+  one.
+- **`urgency` is not offered.** A bare `Int?` that neither the BRD nor the spec
+  gives a scale for; a picker would be inventing the scale.
+- **The digestion ring's fill rule was not invented.** BRD §350 says it is
+  "explicitly undecided … there is no universal daily bowel-movement target", so
+  `.fillRuleUnavailable` is the spec working, and the Settings toggle turning on
+  a ring that then says so is correct rather than a bug.
+- **Store gaps closed:** `logs(from:to:)` and `delete(id:)` on both stores;
+  `StoolColor` as a closed enum; `BristolType.displayName`/`summary`/
+  `accessibilityLabel`; `UrinationColorGrade.displayName`/
+  `accessibilityLabel`. Colour is offered as **text, never a swatch** — BRD
+  §6.3's "never rely on colour alone" means a colour chip relies on colour
+  alone.
+
+**Open item:** the Attributions screen does not credit the Bristol scale, and
+`BristolType`'s seven names are reproduced published wording (Heaton & Lewis
+1997). Recorded in `docs/features/digestion.md` §5.
+
+Full suite: 361 XCTest (1 skipped) + **503 Swift Testing** (up from 492), zero
+failures. UI suite: **34 tests, all passing** (7 new). Simulator build clean.
+
 ## 2026-09-27 — Supplements and context tags get screens
 
 Closes the two rows `docs/features/body-composition.md` §1 still listed as
