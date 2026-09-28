@@ -148,6 +148,70 @@ final class TimelineTests: XCTestCase {
         XCTAssertEqual(items.filter { $0.title.hasPrefix("Sleep") }.count, 1)
     }
 
+    // MARK: - One implementation of "what happened"
+
+    /// A one-day range and the one-day call must answer identically.
+    ///
+    /// They used to be two code paths: the range query composed only the three
+    /// table-backed providers, and the day query appended the health-domain one.
+    /// Same type, same idea, two different answers — and the range one silently
+    /// omitted sleep, workouts, mood, vitals and body composition.
+    func testOneDayRangeMatchesTheOneDayCall() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel(timeZone: TimeZone(identifier: "UTC")!)
+        let timestamp = Date(timeIntervalSince1970: 1_772_000_000)
+        _ = try BodyCompositionMeasurementStore(db: db).log(
+            BodyCompositionMeasurementDraft(metric: "weight", value: 82, unit: "kg",
+                                           timestamp: timestamp, source: "manual",
+                                           timezoneOffset: 0, timezoneIdentifier: "UTC"),
+            logicalDay: "2026-02-25")
+
+        let timeline = TrackingTimeline(db: db)
+        let oneDay = try timeline.items(for: "2026-02-25", timeModel: timeModel)
+        let asRange = try timeline.items(fromDay: "2026-02-25", toDay: "2026-02-26", timeModel: timeModel)
+
+        XCTAssertFalse(oneDay.isEmpty, "the fixture logged nothing, so this would pass vacuously")
+        XCTAssertEqual(oneDay.map(\.id), asRange.map(\.id))
+        XCTAssertTrue(asRange.contains { $0.title == "Weight" })
+    }
+
+    /// A three-day range must reach every day, and the day range must be
+    /// half-open so no entry is presented twice at a boundary.
+    func testDayRangeCoversEveryDayAndIsHalfOpen() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel(timeZone: TimeZone(identifier: "UTC")!)
+        let body = BodyCompositionMeasurementStore(db: db)
+        for day in ["2026-02-25", "2026-02-26", "2026-02-27", "2026-02-28"] {
+            _ = try body.log(BodyCompositionMeasurementDraft(
+                metric: "weight", value: 82, unit: "kg",
+                timestamp: Date(timeIntervalSince1970: 1_772_000_000),
+                source: "manual", timezoneOffset: 0, timezoneIdentifier: "UTC"),
+                logicalDay: day)
+        }
+
+        let items = try TrackingTimeline(db: db)
+            .items(fromDay: "2026-02-25", toDay: "2026-02-28", timeModel: timeModel)
+
+        // 25, 26, 27 — the 28th is the exclusive end.
+        XCTAssertEqual(items.filter { $0.title == "Weight" }.count, 3)
+        XCTAssertEqual(Set(items.map(\.id)).count, items.count, "a day appeared twice")
+    }
+
+    /// An empty or reversed range is empty, not a spin or an error.
+    func testAnEmptyOrReversedDayRangeIsEmpty() throws {
+        let db = try Database.inMemory()
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+        let timeModel = TimeModel.riyadh()
+        let timeline = TrackingTimeline(db: db)
+
+        XCTAssertTrue(try timeline.items(fromDay: "2026-02-25", toDay: "2026-02-25",
+                                        timeModel: timeModel).isEmpty)
+        XCTAssertTrue(try timeline.items(fromDay: "2026-02-27", toDay: "2026-02-25",
+                                        timeModel: timeModel).isEmpty)
+    }
+
     // An entry with no occurrence and no report time falls back to when it was
     // entered, and says so rather than passing as an occurrence.
     func testEntryDateFallbackIsDistinguished() throws {

@@ -11,33 +11,82 @@ public struct TrackingTimeline {
 
     public init(db: Database) {
         self.db = db
-        var providers: [any TimelineProviding] = [
+        // The supplement provider appended per query owns the health domains
+        // that have specialised stores (sleep, workouts, body composition,
+        // mood, soreness, custom measurements and vitals), so raw health
+        // samples are not added here as a second representation.
+        self.providers = [
             LabStore(db: db),
             NutritionLogStore(db: db),
             HydrationStore(db: db)
         ]
-        // The supplement provider below owns the health domains that have
-        // specialised stores (sleep, workouts, body composition and vitals),
-        // so raw health samples are not added here as a second representation.
-        self.providers = providers
     }
 
+    /// The three table-backed providers, and **only** those.
+    ///
+    /// The health domains — sleep, workouts, body composition, vitals, mood,
+    /// soreness, custom measurements — come from `TrackingSupplementProvider`
+    /// below, and that provider places entries by *logical day* rather than by
+    /// UTC text. A `[from, to)` pair of UTC instants does not determine a set of
+    /// logical days without a timezone, and picking one would silently file a
+    /// 03:00 entry under whichever day the wrong zone decided — the exact
+    /// confusion §7.2's night window exists to prevent.
+    ///
+    /// So this is honestly the lesser timeline, and the day-range entry point
+    /// below is the one to use for anything user-facing. It exists because the
+    /// three stores are `TimelineProviding` in their own right and composing
+    /// them directly is legitimate; it is not the whole of what was recorded.
     public func items(from: String, to: String) throws -> [TrackingTimelineItem] {
         map(try Timeline(providers: providers).entries(from: from, to: to))
     }
 
-    public func items(for day: String, timeModel: TimeModel) throws -> [TrackingTimelineItem] {
-        let logicalDay = LogicalDay(day)
-        guard let bounds = timeModel.bounds(of: logicalDay) else { return [] }
-        let range = DateRange(start: bounds.start, end: bounds.end)
-        let utcBounds = range.utcTextBounds
+    /// Everything recorded across `[fromDay, toDay)`, in occurrence order.
+    ///
+    /// **The single implementation of "what happened".** `items(for:)` is a
+    /// one-day call to this, and it used to be a separate code path that
+    /// appended a provider the range query did not have — so the two entry
+    /// points answered different questions under the same name, and the range
+    /// one quietly omitted sleep, workouts, mood, vitals and body composition.
+    ///
+    /// `toDay` is exclusive and is a *logical* day, because a logical day is
+    /// what every one of these tables is keyed by and the 04:00 boundary is what
+    /// the app is organised around.
+    public func items(fromDay: String, toDay: String, timeModel: TimeModel) throws -> [TrackingTimelineItem] {
+        let days = logicalDays(from: fromDay, to: toDay, timeModel: timeModel)
+        guard let first = days.first,
+              let last = days.last,
+              let start = timeModel.bounds(of: LogicalDay(first))?.start,
+              let end = timeModel.bounds(of: LogicalDay(last))?.end else { return [] }
+
         var providers = providers
-        providers.append(TrackingSupplementProvider(
-            db: db, day: day, timeModel: timeModel
-        ))
-        return map(try Timeline(providers: providers).entries(
-            from: utcBounds.start, to: utcBounds.end
-        ))
+        providers.append(TrackingSupplementProvider(db: db, days: days, timeModel: timeModel))
+        return map(try Timeline(providers: providers).entries(from: iso(start), to: iso(end)))
+    }
+
+    public func items(for day: String, timeModel: TimeModel) throws -> [TrackingTimelineItem] {
+        let next = timeModel.day(after: LogicalDay(day))?.value ?? day
+        return try items(fromDay: day, toDay: next, timeModel: timeModel)
+    }
+
+    /// The logical days in `[from, to)`, walked through `TimeModel` so the 04:00
+    /// boundary is applied between them rather than assumed away.
+    private func logicalDays(from: String, to: String, timeModel: TimeModel) -> [String] {
+        var days: [String] = []
+        var cursor = LogicalDay(from)
+        let last = LogicalDay(to)
+        // Bounded so a reversed or nonsensical range cannot spin. 370 is a year
+        // of days; a wider range than that is a mistake, not a request.
+        for _ in 0..<370 {
+            if cursor.value >= last.value { break }
+            days.append(cursor.value)
+            guard let next = timeModel.day(after: cursor) else { break }
+            cursor = next
+        }
+        return days
+    }
+
+    private func iso(_ date: Date) -> String {
+        DateRange.utcFormatter.string(from: date)
     }
 
     private func map(_ entries: [TimelineEntry]) -> [TrackingTimelineItem] {
@@ -49,7 +98,14 @@ public struct TrackingTimeline {
                 id: "\(entry.domain)-\(entry.recordID)",
                 title: entry.title,
                 detail: detailParts.isEmpty ? nil : detailParts.joined(separator: " · "),
-                value: displayValue(entry.value)
+                value: displayValue(entry.value),
+                // Carried through rather than left for the caller to recover.
+                // A reading surface needs the time of day on every row, and
+                // reconstructing it meant matching on a hand-built id string
+                // ("domain-table-id") that any change to a provider's naming
+                // would silently break.
+                occurredAt: entry.occurrence.span?.start,
+                basis: entry.basis
             )
         }
     }
@@ -73,13 +129,28 @@ public struct TrackingTimeline {
     }
 }
 
+/// The health domains, for days the caller named.
+///
+/// A range rather than one day because the Today surface asks about one and a
+/// reading surface asks about several, and a provider that only answered for a
+/// single day would force the second caller to loop over the first one's
+/// contract. Every query below is already keyed by logical day, so the range is
+/// just a walk.
 private struct TrackingSupplementProvider: TimelineProviding {
     let domain = "tracking-supplement"
     let db: Database
-    let day: String
+    let days: [String]
     let timeModel: TimeModel
 
     func entries(from: String, to: String) throws -> [TimelineEntry] {
+        var result: [TimelineEntry] = []
+        for day in days {
+            result.append(contentsOf: try entries(forDay: day))
+        }
+        return result
+    }
+
+    private func entries(forDay day: String) throws -> [TimelineEntry] {
         let nextDay = timeModel.day(after: LogicalDay(day))?.value ?? day
         var result: [TimelineEntry] = []
 
@@ -221,11 +292,24 @@ public struct TrackingTimelineItem: Sendable, Hashable, Identifiable {
     public let title: String
     public let detail: String?
     public let value: String?
+    /// When it happened, as an instant.
+    ///
+    /// Nil when the placement is not an instant — a `.recorded` basis, or a
+    /// day-precision fallback. That is a real placement and not a missing one,
+    /// so a caller shows it as such rather than treating it as zero.
+    public let occurredAt: Date?
+    /// How strong the placement is. `.occurrence` is a real clock time; anything
+    /// else is the timeline saying this entry's time is a weaker claim, which
+    /// the detail column already words.
+    public let basis: TimeBasis
 
-    public init(id: String, title: String, detail: String?, value: String?) {
+    public init(id: String, title: String, detail: String?, value: String?,
+                occurredAt: Date? = nil, basis: TimeBasis = .occurrence) {
         self.id = id
         self.title = title
         self.detail = detail
         self.value = value
+        self.occurredAt = occurredAt
+        self.basis = basis
     }
 }

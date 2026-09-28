@@ -10,6 +10,58 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-28 — One timeline, and a screen that reads it
+
+Closes the Timeline item. `Timeline` — the generic merge type, the one that
+promises a total order over anything a module provides — had **no consumer at
+all** outside tests. `TrackingTimeline` was reachable only from the Activity
+Rings day editor, which is a *correction* surface: a place to fix a value, not a
+place to read a day back. Every other screen assembled its own record list by
+hand, which is why Today's record names four domains and knows nothing about the
+other eight.
+
+- **`DayTimelineView`** (Modules → Records → Timeline) reads a logical day, or
+  seven or thirty of them, in occurrence order. Ruled rows and no prominent card:
+  the day is the object and it is the heading, so a filled panel would be
+  spending the emphasis on decoration.
+- **Nothing is grouped by domain.** The merge type's whole argument is one total
+  order over occurrence time; grouping by module would throw that away in favour
+  of a list that reads like the hand-rolled ones it replaces.
+
+**Two real defects fixed rather than worked around:**
+
+- **`items(from:to:)` and `items(for:)` were two code paths answering the same
+  question, and disagreed.** The range query composed only the three
+  table-backed providers (lab, nutrition, hydration); the day query appended the
+  health-domain one. So a range silently omitted sleep, workouts, mood,
+  soreness, vitals, body composition and custom measurements — and the
+  deficiency was invisible, because nothing called the range form. There is now
+  one implementation, `items(fromDay:toDay:timeModel:)`, and `items(for:)` is a
+  one-day call to it. `TimelineTests` pins that a one-day range and the one-day
+  call return identical ids, and that a half-open day range counts no day twice.
+- **`items(from:to:)` is now documented as the lesser timeline** rather than
+  left looking equivalent. The health-domain provider places entries by *logical
+  day*, and a pair of UTC instants does not determine a set of logical days
+  without a timezone — picking one would file a 03:00 entry under whichever day
+  the wrong zone decided, which is the exact confusion §7.2's night window
+  exists to prevent.
+
+**`TrackingTimelineItem` now carries `occurredAt` and `basis`.** A reading
+surface needs the time of day on every row, and the item handed back rendered
+strings with no timestamp in them. The first attempt recovered the time by
+matching on a hand-built id string (`"domain-table-id"`) — which any change to
+a provider's naming would have silently broken. Carrying the field is one line
+at the mapping site and both new fields default, so the existing calendar
+compiles unchanged.
+
+**Also corrected:** `docs/architecture/health-data-foundation.md` §7.1's
+`TimelineProviding` sketch had a `static` domain, `Date` bounds and a
+`db:` parameter, none of which match what was built. The doc now shows the real
+signature with a table saying which was right and why.
+
+Full suite: 364 XCTest (1 skipped) + 503 Swift Testing, zero failures. UI suite:
+**37 tests, all passing** (3 new). Simulator build clean.
+
 ## 2026-09-28 — Digestion quick entry
 
 Closes the second of the two item-9 gaps. `DigestionStore` and `UrinationStore`

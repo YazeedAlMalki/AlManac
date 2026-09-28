@@ -206,22 +206,46 @@ of history, **and** profiling shows the merge dominating.
 ### 7.1 The protocol
 
 ```swift
-public protocol TimelineProviding {
-    static var domain: String { get }
-    func entries(from: Date, to: Date, in db: Database) throws -> [TimelineEntry]
+public protocol TimelineProviding: Sendable {
+    var domain: String { get }
+    func entries(from: String, to: String) throws -> [TimelineEntry]
 }
+```
 
+**Corrected 2026-09-28.** The signature sketched here did not match what was
+built, in three ways, and the sketch was the one that was wrong:
+
+| | This doc said | What is built | Why |
+|---|---|---|---|
+| `domain` | `static var` | `var` | An instance property, so a provider can be named without the type and a merge list is homogeneous. A `static` one would have forced every conformer to re-declare the same constant. |
+| bounds | `Date` | `String` (ISO-8601 prefix) | The stored columns are text, compared lexically half-open `[from, to)`. Converting to `Date` at the boundary would need a decision about a coarse prefix's span, and the existing range machinery already encodes that decision once. |
+| database | `in db: Database` | not a parameter | A conformer already holds its own `Database`. Passing it in as well was a second way to say the same thing, and the two could disagree. |
+
+`from`/`to` are ISO-8601 prefixes of any precision, half-open — see
+`TimelineEntry.swift`, whose own header states the same rule.
+
+```swift
 public struct TimelineEntry: Sendable {
     public let domain: String
     public let kind: String
     public let recordTable: String
     public let recordID: String
-    public let occurrence: OccurrenceTime      // §8 — precision and zone
+    public let occurrence: PartialDateTime      // §8 — precision and zone
+    public let basis: TimeBasis
     public let title: String
     public let detail: String?
     public let value: ValuePresentation
-    public let lifecycle: String               // module's own vocabulary
+    public let lifecycle: String?
+    public let rangeFit: RangeFit
 }
+```
+
+Two fields are here that the sketch did not have, and both exist because a
+consumer needed them: `basis` distinguishes a real clock time from a weaker
+placement (`.recorded`, say), and `rangeFit` says whether a coarse-date record
+*definitely* falls in the queried range or merely overlaps it. Without the
+second, a "March 2019" record would silently vanish from every range that
+starts later in March; it is shown and labelled `.potential` instead.
 
 public enum ValuePresentation: Sendable {
     case none

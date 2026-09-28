@@ -86,6 +86,14 @@ struct ModulesView: View {
                         Label("Laboratory", systemImage: AlmanacIcon.laboratory)
                     }
 
+                    if let db {
+                        NavigationLink {
+                            DayTimelineView(db: db)
+                        } label: {
+                            Label("Timeline", systemImage: AlmanacIcon.timeline)
+                        }
+                    }
+
                     NavigationLink {
                         MeasurementsView(db: db, trackingModel: trackingModel)
                     } label: {
