@@ -283,10 +283,65 @@ windows, which one wins," not where the candidates come from.
 2. ~~UI~~ — done 2026-09-17 (§5 above), scoped to quick-add against an
    ad-hoc daily session, using `WorkloadComputer` for the aggregate shown
    both on the Training tab and (when today has one) as a section on
-   `ReadinessDashboardView`. Still open: a bout detail/edit view (today's
-   screen only deletes), a session review screen for past days (today's
-   screen only shows today), and any UI for `PrescribedWorkoutStore`'s
-   templates/containers — that store exists in `AlmanacCore` since the
-   schema pass and still isn't reachable from anywhere in the app.
+   `ReadinessDashboardView`. **The three things left open in this item are
+   now built (2026-09-28)** — see "Training history and templates" below.
 3. Calorie burn — blocked on the Compendium/MET licensing question; not
    scheduled.
+
+### Training history and templates (2026-09-28)
+
+Closes the two entry gaps item 2 named, plus the `PrescribedWorkoutStore`
+surface that had been in `AlmanacCore` since the schema pass and unreachable
+from anywhere in the app.
+
+- **`TrainingSessionReviewView`** — past sessions over 7/30/90 days, newest day
+  first, each with its bouts. The Training screen showed today only, so there
+  was nowhere to look at what happened last Tuesday.
+- **Bouts are editable**, which closes the other gap: until now a bout could be
+  logged or deleted but never corrected. `WorkoutBoutStore.updateActuals` writes
+  **only the actual columns** — a prescription is what was planned, and an
+  editor that offered it would make "I had meant to do four reps"
+  indistinguishable from "I did four reps", which is the distinction the
+  prescribed/actual split exists to keep.
+- **A HealthKit-derived session is read-only and says so.** Its figures came
+  from a watch; editing them would write a number the next sync overwrites.
+  `WorkoutSessionEntry.isOwnLog` is the test, and the row is labelled rather
+  than silently inert.
+- **`TrainingTemplateView`** — list, create, edit, discontinue. A template is
+  deliberately thin (a name plus a container shape), and the screen says so
+  rather than implying an exercise-level editor that would rewrite history.
+
+**Vocabularies as types, and the drift risk that comes with them.**
+`TrainingContainer` (ten) and `PrescriptionKind` (twelve) are now Swift enums,
+which is what lets a bout editor offer *only* the fields a prescription type
+calls for — a timed hold has no load in it, and asking for one would be asking
+about a number nobody has. Both transcribe lists that also exist as arrays on
+`Migration016_TrainingSchema` and as SQL CHECK constraints, so
+`TrainingVocabularyTests` asserts the enums equal the arrays. Two copies of the
+same list that disagree would otherwise surface as a runtime constraint
+violation at the insert rather than as a compile error.
+
+**One bug I introduced and fixed before shipping:** the bout editor's
+`int`/`double` helpers returned nil for an unparseable field, so mistyping a
+load would have silently blanked it — the number would become "not recorded"
+with no trace. All fields are now validated before anything is written, and a
+bad one names itself.
+
+**Also fixed, pre-existing:** `BodyCircumferenceUITests` read a live switch
+through an element captured *before* `app.terminate()`, so its "must be 0 after
+toggling off" assertion was reading a snapshot of a dead hierarchy and could
+pass or fail on whatever the previous run had left. It now re-queries after the
+relaunch.
+
+**Store gaps closed:** `WorkoutBoutStore.updateActuals`,
+`WorkoutSessionStore.sessions(from:to:)` (a review screen otherwise has to ask
+per day and stitch, which is how a screen ends up showing fewer days than it
+claims when one query throws), `PrescribedWorkoutStore.templates()`/`update`,
+and validation of `containerType` against the enum so a bad value is a typed
+error naming it rather than a raw SQLite CHECK failure.
+
+**Still not built: a "apply template to a session" path.** A template is a
+container shape and the bouts come from logging, so there is nothing in the
+store to apply yet; `TrainingModel.logBout` still creates ad-hoc sessions with
+`prescribedWorkoutId: nil`. That needs a product decision about whether a
+template prescribes exercises or only the shape of a session.

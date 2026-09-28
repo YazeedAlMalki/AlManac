@@ -45,9 +45,17 @@ final class BodyCircumferenceUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Modules"].waitForExistence(timeout: 15))
         app.buttons["Modules"].tap()
         openSettings(app)
-        XCTAssertEqual(toggle.value as? String, "1", "Side preference must persist across launch")
-        tapSwitch(toggle) // Exercise the reversible toggle-off stub.
-        XCTAssertEqual(toggle.value as? String, "0")
+        // Re-queried, not the `toggle` captured before `terminate()`. An element
+        // from a terminated process is a snapshot of a hierarchy that no longer
+        // exists, so its `value` reads back whatever it was when the app died —
+        // which is why the "must be 0 after toggling off" assertion below could
+        // pass or fail depending on what state the previous run left, rather
+        // than on what the tap did.
+        let toggleAfterRelaunch = app.switches["Track left/right arms and thighs"]
+        XCTAssertTrue(toggleAfterRelaunch.waitForExistence(timeout: 5))
+        XCTAssertEqual(toggleAfterRelaunch.value as? String, "1", "Side preference must persist across launch")
+        tapSwitch(toggleAfterRelaunch) // Exercise the reversible toggle-off stub.
+        XCTAssertEqual(toggleAfterRelaunch.value as? String, "0")
         app.navigationBars["Settings"].buttons.firstMatch.tap()
         openCircumferences(app)
         XCTAssertTrue(app.staticTexts[noteText].waitForExistence(timeout: 5))

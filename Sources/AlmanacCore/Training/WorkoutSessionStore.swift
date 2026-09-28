@@ -131,6 +131,19 @@ public struct WorkoutSessionStore: @unchecked Sendable {
         """, [.text(date)]).compactMap(Self.entry(from:))
     }
 
+    /// Live sessions across a logical-day range `[from, to)`, newest day first.
+    ///
+    /// The read a past-days review needs. Without it a screen has to ask once
+    /// per day and stitch the results, which is how a review screen ends up
+    /// silently showing fewer days than it says it does when one query throws.
+    public func sessions(from: String, to: String) throws -> [WorkoutSessionEntry] {
+        try db.query("""
+        SELECT * FROM workoutSession
+        WHERE date >= ? AND date < ? AND deletedAt IS NULL
+        ORDER BY date DESC, id;
+        """, [.text(from), .text(to)]).compactMap(Self.entry(from:))
+    }
+
     // MARK: - Private
 
     private static func entry(from row: Row) -> WorkoutSessionEntry? {

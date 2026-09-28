@@ -10,6 +10,55 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-28 — Training history, bout editing, and templates
+
+Closes all three gaps `docs/features/training.md` §2 listed, and the
+`PrescribedWorkoutStore` surface that had been in `AlmanacCore` since the
+schema pass with no way to reach it.
+
+- **`TrainingSessionReviewView`** — past sessions over 7/30/90 days, each with
+  its bouts. The Training screen showed today only.
+- **Bouts are editable.** Until now a bout could be logged or deleted but never
+  corrected. `updateActuals` writes **only the actual columns**: a prescription
+  is what was planned, and an editor offering it would make "I had meant to do
+  four reps" indistinguishable from "I did four reps".
+- **A HealthKit-derived session is read-only and says so.** Editing figures that
+  came from a watch writes a number the next sync overwrites.
+- **`TrainingTemplateView`** — list, create, edit, discontinue. A template is a
+  name plus a container shape, and the screen says so rather than implying an
+  exercise-level editor that would rewrite history.
+- **`TrainingContainer` (ten) and `PrescriptionKind` (twelve) are now enums.**
+  That is what lets a bout editor offer only the fields a type calls for — a
+  timed hold has no load in it. Both transcribe lists that also exist as arrays
+  on `Migration016_TrainingSchema` and as SQL CHECK constraints, so tests assert
+  the enums equal the arrays; a silent drift would otherwise surface as a
+  runtime constraint violation at the insert.
+- **`containerType` is validated against the enum**, so a bad value is a typed
+  error naming it rather than a raw SQLite CHECK failure at the insert.
+- **`WorkoutSessionStore.sessions(from:to:)`** — a review screen otherwise asks
+  per day and stitches, which is how one ends up showing fewer days than it
+  claims when a single query throws.
+
+**A bug I introduced and fixed before it shipped:** the bout editor's
+`int`/`double` helpers returned nil for an unparseable field, so mistyping a
+load would have silently blanked it — the figure would become "not recorded"
+with no trace. Every field is now validated before anything is written, and a
+bad one names itself.
+
+**A pre-existing test bug, fixed:** `BodyCircumferenceUITests` read a live
+switch through an element captured *before* `app.terminate()`, so its "must be
+0 after toggling off" assertion was reading a snapshot of a dead hierarchy and
+could pass or fail on whatever the previous run had left. It now re-queries
+after the relaunch.
+
+**Still not built: "apply template to a session".** There is nothing in the
+store to apply — a template is a container shape and bouts come from logging —
+so it needs a product decision about whether a template prescribes exercises or
+only the shape of a session. Recorded, not guessed.
+
+Full suite: 364 XCTest (1 skipped) + **517 Swift Testing** (up from 503), zero
+failures. UI suite: **42 tests, all passing** (6 new). Simulator build clean.
+
 ## 2026-09-28 — One timeline, and a screen that reads it
 
 Closes the Timeline item. `Timeline` — the generic merge type, the one that

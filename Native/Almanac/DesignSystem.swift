@@ -258,6 +258,7 @@ enum AlmanacIcon {
     static let context = "tag"
     static let digestion = "circle.grid.cross"
     static let timeline = "list.bullet.rectangle"
+    static let templates = "square.stack.3d.up"
     static let check = "checkmark"
     static let edit = "pencil"
     static let previous = "chevron.left"

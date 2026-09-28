@@ -171,6 +171,43 @@ public struct WorkoutBoutStore: @unchecked Sendable {
         return id
     }
 
+    /// Corrects a bout's *actual* figures — the numbers of what was actually
+    /// done, as against what was prescribed.
+    ///
+    /// Actuals only, deliberately. A prescription is what was planned, and
+    /// rewriting it after the fact would make the plan and the performance
+    /// indistinguishable, which is the one distinction the whole
+    /// prescribed/actual split in `WorkoutBoutDraft` exists to keep.
+    ///
+    /// Only the fields the draft names are written, and a nil is written as
+    /// NULL — the same rule `log` follows, so a bout of a timed hold still has
+    /// no load in it rather than a load of zero. Returns whether a live bout was
+    /// changed, so a caller editing an already-deleted row finds out.
+    @discardableResult
+    public func updateActuals(_ draft: WorkoutBoutDraft, id: Int64) throws -> Bool {
+        try db.run("""
+        UPDATE workoutBout SET
+            actualSets = ?, actualReps = ?, actualLoadKg = ?, actualDurationSeconds = ?,
+            actualDistanceMeters = ?, actualRounds = ?, elapsedSeconds = ?,
+            avgHeartRate = ?, rpe = ?, techniqueRating = ?, notes = ?, updatedAt = ?
+        WHERE id = ? AND deletedAt IS NULL;
+        """, [
+            draft.actualSets.map { SQLValue.integer(Int64($0)) } ?? .null,
+            draft.actualReps.map { SQLValue.integer(Int64($0)) } ?? .null,
+            draft.actualLoadKg.map { SQLValue.real($0) } ?? .null,
+            draft.actualDurationSeconds.map { SQLValue.real($0) } ?? .null,
+            draft.actualDistanceMeters.map { SQLValue.real($0) } ?? .null,
+            draft.actualRounds.map { SQLValue.integer(Int64($0)) } ?? .null,
+            draft.elapsedSeconds.map { SQLValue.real($0) } ?? .null,
+            draft.avgHeartRate.map { SQLValue.integer(Int64($0)) } ?? .null,
+            draft.rpe.map { SQLValue.integer(Int64($0)) } ?? .null,
+            draft.techniqueRating.map { SQLValue.text($0) } ?? .null,
+            draft.notes.map { SQLValue.text($0) } ?? .null,
+            .text(nowText),
+            .integer(id)
+        ]) > 0
+    }
+
     @discardableResult
     public func delete(id: Int64) throws -> Bool {
         let changes = try db.run("""

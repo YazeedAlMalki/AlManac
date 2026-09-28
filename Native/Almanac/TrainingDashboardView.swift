@@ -50,6 +50,22 @@ struct TrainingDashboardView: View {
                     Label("Browse exercises", systemImage: "square.grid.2x2")
                 }
                 .accessibilityIdentifier("exercise-library-link")
+
+                NavigationLink {
+                    TrainingSessionReviewView(db: model.database, model: model)
+                } label: {
+                    Label("Training history", systemImage: AlmanacIcon.timeline)
+                }
+                .accessibilityIdentifier("training-history-link")
+                .disabled(model.database == nil)
+
+                NavigationLink {
+                    TrainingTemplateView(db: model.database)
+                } label: {
+                    Label("Templates", systemImage: AlmanacIcon.templates)
+                }
+                .accessibilityIdentifier("training-templates-link")
+                .disabled(model.database == nil)
             } footer: {
                 Text("Grouped by muscle, then by how you train it — bar, cable, machine, bodyweight.")
             }

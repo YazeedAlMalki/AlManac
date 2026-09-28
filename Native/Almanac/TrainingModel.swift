@@ -30,6 +30,17 @@ final class TrainingModel: ObservableObject {
     private var boutStore: WorkoutBoutStore?
     private let timeModel = TimeModel(timeZone: .current)
 
+    /// The connection, for the screens that read their own tables.
+    ///
+    /// Exposed rather than each of those screens taking a second `Database` and
+    /// a second `AppGroupDatabase` connection: this app opens its database once
+    /// in `AlmanacApp` and shares it, and a review screen that opened its own
+    /// would be a second writer against the same file.
+    ///
+    /// Nil before `configure(db:)` has run, which is why every screen that takes
+    /// it also disables its own entry point rather than opening empty.
+    var database: Database? { db }
+
     func configure(db: Database?) {
         guard let db, self.db == nil else { return }
         self.db = db

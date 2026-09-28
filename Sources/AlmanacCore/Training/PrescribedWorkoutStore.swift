@@ -36,8 +36,18 @@ public struct PrescribedWorkoutStore: @unchecked Sendable {
         return f.string(from: date)
     }
 
+    /// Creates a template.
+    ///
+    /// `containerType` is validated against `TrainingContainer` rather than left
+    /// free, because the column has a CHECK constraint: a value outside the
+    /// model's ten would otherwise be a runtime SQL error at the insert instead
+    /// of a typed mistake at the call site. The error names the offending value
+    /// so the caller can say which one it was.
     @discardableResult
     public func create(name: String, containerType: String, notes: String? = nil) throws -> Int64 {
+        guard TrainingContainer(rawValue: containerType) != nil else {
+            throw PrescribedWorkoutStoreError.unknownContainerType(containerType)
+        }
         let now = nowText
         try db.run("""
         INSERT INTO prescribedWorkout (name, containerType, notes, createdAt, updatedAt)
@@ -60,6 +70,30 @@ public struct PrescribedWorkoutStore: @unchecked Sendable {
         return changes > 0
     }
 
+    /// Live templates, by name.
+    ///
+    /// Excludes soft-deleted ones. `workout(id:)` deliberately does **not** — a
+    /// past session can still name a template that has since been discontinued,
+    /// and the review screen needs to be able to say which one that was. Listing
+    /// deleted templates as if they were current is the trap; reading one
+    /// because a history row points at it is not.
+    public func templates() throws -> [PrescribedWorkoutEntry] {
+        try db.query("""
+        SELECT * FROM prescribedWorkout WHERE deletedAt IS NULL ORDER BY name COLLATE NOCASE;
+        """).compactMap(Self.entry(from:))
+    }
+
+    public func update(id: Int64, name: String, containerType: String, notes: String?) throws -> Bool {
+        try db.run("""
+        UPDATE prescribedWorkout SET name = ?, containerType = ?, notes = ?, updatedAt = ?
+        WHERE id = ? AND deletedAt IS NULL;
+        """, [
+            .text(name), .text(containerType),
+            notes.map { SQLValue.text($0) } ?? .null,
+            .text(nowText), .integer(id)
+        ]) > 0
+    }
+
     public func workout(id: Int64) throws -> PrescribedWorkoutEntry? {
         try db.query("SELECT * FROM prescribedWorkout WHERE id = ?;", [.integer(id)])
             .first.flatMap(Self.entry(from:))
@@ -75,4 +109,8 @@ public struct PrescribedWorkoutStore: @unchecked Sendable {
                                        notes: row.string("notes"), deletedAt: row.string("deletedAt"),
                                        createdAt: createdAt, updatedAt: updatedAt)
     }
+}
+
+public enum PrescribedWorkoutStoreError: Error, Sendable, Equatable {
+    case unknownContainerType(String)
 }
