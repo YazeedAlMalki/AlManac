@@ -14,6 +14,17 @@ extension XCUIApplication {
     ///
     /// Two things make "swipe N times, then assert" the wrong shape here.
     ///
+    /// **A swipe is not always a scroll.** The loop also watches whether the
+    /// content actually moved, and falls back to a press-then-drag after two
+    /// consecutive swipes that changed nothing. This is not hypothetical: on
+    /// the Timeline screen, which is a plain `List` with a short first section
+    /// and a picker below the fold, `swipeDown()` left the hierarchy
+    /// byte-identical across a dozen attempts while a single drag scrolled it
+    /// in one gesture. A budget-only loop reports that as "not there", which is
+    /// indistinguishable from the element genuinely being absent — and the fix
+    /// for a real absence (a control that was never offered) would have been to
+    /// add an identifier to something that already had one.
+    ///
     /// **How far down a row sits depends on the data, not on the layout.** Both
     /// `Form`s in this app are lazily built, so their length varies with what is
     /// logged. `testSettingsCanToggleTheDigestionActivityRing` passed on a
@@ -38,11 +49,62 @@ extension XCUIApplication {
     func reveal(_ element: XCUIElement,
                 maxSwipes: Int = 24,
                 direction: RevealDirection = .up) -> Bool {
+        /// Where the list's own content currently starts, so "did that move?" is
+        /// answerable rather than guessed at.
+        ///
+        /// Scoped to the collection view's own descendants, and that scoping is
+        /// load-bearing in both directions. A version that read
+        /// `staticTexts` at the application level reported "the list never
+        /// moved" for a list that scrolled perfectly well, because the largest
+        /// `maxY` in that set belongs to the custom tab bar — chrome, pinned to
+        /// the window, identical before and after any scroll. The stuck-signal
+        /// that this exists to detect is therefore one the chrome manufactures,
+        /// and the fallback never fires. `cells` is no better: this app's
+        /// `List`s expose no cells at all, so that query is always empty and the
+        /// check is silently off.
+        func anchor() -> CGFloat? {
+            collectionViews.firstMatch
+                .descendants(matching: .staticText)
+                .allElementsBoundByIndex
+                .filter { $0.frame.height > 1 }
+                .map(\.frame.minY)
+                .min()
+        }
+
+        var lastSeen = anchor()
+        var stuckCount = 0
         for _ in 0..<maxSwipes {
             if isRevealed(element) { return true }
             direction == .up ? swipeUp() : swipeDown()
+            let now = anchor()
+            if let now, let lastSeen, abs(now - lastSeen) < 0.5 {
+                stuckCount += 1
+            } else {
+                stuckCount = 0
+            }
+            lastSeen = now
+            // A plain swipe is a fast flick, and a flick is not always a scroll:
+            // on some lists it is absorbed as a selection or lands on a row that
+            // does not consume it, leaving the hierarchy byte-identical while
+            // the loop happily burns its whole budget. A press-then-drag moves
+            // the content under a held touch, which is what actually scrolls.
+            // Two consecutive no-move swipes is the trigger, not the first, so a
+            // list that is genuinely at its end does not pay for a drag.
+            if stuckCount >= 2, collectionViews.firstMatch.exists {
+                drag(collectionViews.firstMatch, direction: direction)
+                stuckCount = 0
+            }
         }
         return isRevealed(element)
+    }
+
+    /// A press-then-drag across the middle of `list`, which scrolls it a long
+    /// way in one gesture. Falls back to a swipe if the drag does not land.
+    private func drag(_ list: XCUIElement, direction: RevealDirection) {
+        let start = direction == .up ? CGVector(dx: 0.5, dy: 0.75) : CGVector(dx: 0.5, dy: 0.25)
+        let end = direction == .up ? CGVector(dx: 0.5, dy: 0.2) : CGVector(dx: 0.5, dy: 0.75)
+        list.coordinate(withNormalizedOffset: start)
+            .press(forDuration: 0.1, thenDragTo: list.coordinate(withNormalizedOffset: end))
     }
 
     /// Polls `condition` until it holds or `timeout` elapses.

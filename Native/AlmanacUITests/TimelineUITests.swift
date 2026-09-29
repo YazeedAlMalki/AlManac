@@ -23,8 +23,21 @@ final class TimelineUITests: XCTestCase {
         // The header states the range rather than leaving "today" to be assumed,
         // because a logical day is not a calendar day and the footer says so.
         XCTAssertTrue(app.staticTexts["Recorded"].exists, "the screen does not name what it is showing")
-        XCTAssertTrue(app.staticText(beginningWith: "In the order it happened").exists,
-                      "the screen does not state its ordering or the 04:00 boundary")
+        // Scrolled to, not merely queried. A `List` builds rows lazily, so on a
+        // populated database the section footer sits below the fold and is not
+        // in the hierarchy at all — `exists` is false for something that is on
+        // screen and merely unrendered. The same trap `UIScrollSupport`'s header
+        // describes for `Form` rows, and it is why this assertion passed on an
+        // empty database and failed on a full one.
+        // `.up`, not `.down`: the footer and the picker are *below* the fold and
+        // `.up` is this suite's name for scrolling toward the bottom of a list.
+        // `.down` scrolls back toward the top, which is why the earlier
+        // version of this assertion could not reach them however many swipes it
+        // spent.
+        let ordering = app.staticText(beginningWith: "In the order it happened")
+        XCTAssertTrue(app.reveal(ordering),
+                      "the screen does not state its ordering or the 04:00 boundary; visible: "
+                      + "\(app.staticTexts.allElementsBoundByIndex.map(\.label))")
     }
 
     /// A period with nothing in it must say so, and must not present an empty
@@ -49,7 +62,11 @@ final class TimelineUITests: XCTestCase {
     func testWideningThePeriodChangesTheRangeItStates() {
         openTimeline()
         let period = app.element("timeline-period")
-        XCTAssertTrue(period.waitForExistence(timeout: 5), "the period control is not offered")
+        // `reveal` rather than `waitForExistence`, for the same reason as the
+        // footer assertion above: the picker is in the second section of a
+        // lazily-built list, so on a populated database it is below the fold and
+        // genuinely absent from the hierarchy until it is scrolled to.
+        XCTAssertTrue(app.reveal(period), "the period control is not offered")
         period.tap()
         app.buttons["Last 7 days"].tap()
 
