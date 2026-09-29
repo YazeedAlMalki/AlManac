@@ -23,9 +23,11 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 |---|---|
 | Core suite | **PASS** — 606 tests, 75 suites, zero failures |
 | App + widget build (iPhone 16e simulator) | **PASS** |
-| Notification settings UI tests | **PASS** — 5 of 5, run explicitly |
+| Insights UI tests | **PASS** — 5 of 5 |
+| Notification settings UI tests | **PASS** — 5 of 5 |
 | Timeline UI tests | **PASS** — 3 of 3, after two defects were fixed (see §6) |
-| Full UI suite | **UNRUN** — exceeds a 50-minute command timeout. 6 of 52 passed before the run was abandoned; the rest is not claimed. |
+| The three suites above, together | **PASS** — 13 of 13, 8m42s |
+| Full UI suite (52 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 39 are **not** claimed either way. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
 
 ---
