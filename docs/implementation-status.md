@@ -10,6 +10,64 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-30 — Circadian context stops being a table nobody reads; catalog follow-ups; the README stops lying
+
+Three items, plus the housekeeping.
+
+**Circadian context (Slice 5).** `circadian_context` was written on every
+readiness cycle and read by nothing. BRD §6.15 names "comparable-day filtering
+(Day Type + Circadian Context)" and §13.2 says insights use `contextType` as a
+filter; neither happened. A week spent moving from nights to days was pooled with
+a settled one, so the resulting `r` reported a schedule change as a relationship
+between sleep and readiness. Correlations now drop transition days, say how many
+they dropped, and drop the filter itself when it would cost more than half the
+window. A date with no row is *not* a transition — the table is silent about days
+the linking service has not reached, and treating absence as one would delete
+every unlinked day from every correlation. Today now states the day's context in
+words; `.unknown` renders nothing rather than a line, because with no shift
+schedule there is no claim to make.
+
+`InsightsQuery` takes a `Clock` like everything else in the package. It was
+reaching for `Date()`, which meant the only way to test a *window* was to write
+fixtures relative to whenever the test happened to run — and a first draft of the
+new tests silently lost half its sample that way, which is documented in the
+test file because the symptom was a sample size, not a date error.
+
+**Laboratory catalog (Slice 7).** The five differential percentages and the rest
+of the electrolytes are seeded. The percentages were *unseedable* until `TextFold`
+was fixed: it erased `%` along with case and punctuation, so "Neutrophils %"
+folded to the absolute count's own alias and all five pairs resolved to the
+absolute. The catalog's ambiguity handling exists to stop the importer choosing
+at random; the fold was manufacturing the ambiguity. The percentages are
+catalogued and matchable but deliberately **not** in the CBC panel — a
+laboratory printing percentages alongside absolute counts is printing a derived
+view of the same numbers.
+
+Import-job records are assessed and **parked**: they need a migration, a store, a
+status vocabulary and a screen, and whether a failed import leaves a row saying
+so is a product decision. Written up rather than guessed at.
+
+**The README was wrong in three places** and said so with confidence. It claimed
+the 48-table domain schema was "NOT BUILT — spec text unavailable" (recovered
+2026-09-15, ~76 tables across 45 migrations), that `ReadinessCycle` was not
+built, and that restore was "unimplemented by design" (`restoreBundle`
+implements §16.2 behind a working screen). Its "what was deliberately NOT built"
+and "when the spec arrives" sections were written for a spec that has since
+arrived. Each row now names the type that implements it.
+
+**`docs/acceptance-checklist.md` exists.** None did. It records what was driven
+and marks the rest UNRUN — notification delivery, HealthKit on a device, backup
+restore, two calibration labels needing seeded data. A step is PASS only if it
+was driven; "the code looks right" is not a result.
+
+**Two defects found while driving it**, neither caused by the readiness work:
+the Timeline UI tests had been failing since 2026-09-26 because the shared
+`reveal` helper's swipe did not scroll that particular `List` and a budget-only
+loop reported "not there"; and the new reminders screen's switches reloaded
+their state once on appear, overwriting a write that had just succeeded.
+
++65 tests. Full core suite: 622 tests, 77 suites, zero failures.
+
 ## 2026-09-29 — Notifications: §14 wired to something that actually fires
 
 Slice 11. A previous note claimed items 3 and 4 were blocked on
