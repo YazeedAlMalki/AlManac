@@ -19,6 +19,7 @@ struct AlmanacApp: App {
     @StateObject private var prayerModel = PrayerModel()
     @StateObject private var fastingModel = FastingModel()
     @StateObject private var trackingModel = TrackingCalendarModel()
+    @StateObject private var notificationModel = NotificationModel()
     @State private var selectedTab = AppTab.today
     @State private var quickLogging = false
     @AppStorage("almanac.appearance") private var appearanceRaw = AlmanacAppearance.system.rawValue
@@ -68,6 +69,12 @@ struct AlmanacApp: App {
                         await healthModel.syncNow()
                         readinessModel.refresh()
                         trackingModel.refresh()
+                        // §14.1's scheduling pass, after prayer times and today's
+                        // fast are current — suhoor and iftar triggers are derived
+                        // from exactly those. Awaiting it here rather than letting
+                        // it race the fast/pass it depends on.
+                        await notificationModel.reconcileNotifications()
+                        await notificationModel.deliverSnackSuggestionIfWarranted()
                     }
                 } else if phase == .background {
                     prayerModel.pauseLocation()
@@ -110,6 +117,7 @@ struct AlmanacApp: App {
                 trackingModel.configure(db: model.db)
                 prayerModel.configure(db: model.db)
                 fastingModel.configure(db: model.db)
+                notificationModel.configure(db: model.db)
             }
             .background(AlmanacPalette.canvas.ignoresSafeArea())
     }
@@ -138,7 +146,8 @@ struct AlmanacApp: App {
                 readinessModel: readinessModel,
                 trackingModel: trackingModel,
                 prayerModel: prayerModel,
-                fastingModel: fastingModel
+                fastingModel: fastingModel,
+                notificationModel: notificationModel
             )
         }
     }

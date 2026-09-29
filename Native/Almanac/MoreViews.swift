@@ -15,6 +15,7 @@ struct ModulesView: View {
     let trackingModel: TrackingCalendarModel
     let prayerModel: PrayerModel
     let fastingModel: FastingModel
+    let notificationModel: NotificationModel
 
     var body: some View {
         NavigationStack {
@@ -113,7 +114,8 @@ struct ModulesView: View {
                             model: hydrationModel,
                             labModel: labModel,
                             healthModel: healthModel,
-                            trackingModel: trackingModel
+                            trackingModel: trackingModel,
+                            notificationModel: notificationModel
                         )
                     } label: {
                         Label("Settings", systemImage: AlmanacIcon.settings)

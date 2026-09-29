@@ -7,6 +7,7 @@ struct SettingsView: View {
     @ObservedObject var labModel: LaboratoryModel
     @ObservedObject var healthModel: HealthModel
     @ObservedObject var trackingModel: TrackingCalendarModel
+    @ObservedObject var notificationModel: NotificationModel
     @State private var dailyGoal: Double = 2000
     @State private var remindersEnabled = false
     @State private var reminderIntervalMinutes = 60
@@ -18,8 +19,6 @@ struct SettingsView: View {
     @State private var healthKitStatus: String?
     @State private var error: String?
     @AppStorage("almanac.appearance") private var appearanceRaw = AlmanacAppearance.system.rawValue
-
-    private let scheduler = NotificationScheduler()
 
     var body: some View {
         Form {
@@ -59,6 +58,12 @@ struct SettingsView: View {
                     Stepper("Until \(reminderEndHour):00", value: $reminderEndHour, in: 0...23)
                         .onChange(of: reminderEndHour) { _, _ in Task { await applyReminderSchedule() } }
                 }
+                NavigationLink {
+                    NotificationSettingsView(model: notificationModel)
+                } label: {
+                    Label("All reminders", systemImage: "bell")
+                }
+                .accessibilityIdentifier("notification-settings-link")
             }
             Section("About") {
                 NavigationLink("Attributions") {
@@ -160,10 +165,17 @@ struct SettingsView: View {
         }
     }
 
-    /// Persists the current reminder fields to `hydration_settings` (the
-    /// same store `HydrationReminderService` reads), then applies the
-    /// schedule to the OS. `HydrationSettingsStore` is the single source of
-    /// truth now — nothing here reads or writes `@AppStorage`.
+    /// Persists the reminder fields to `hydration_settings` (the store
+    /// `HydrationReminderService` reads), then runs §14.1's scheduling pass.
+    ///
+    /// **The fire times are no longer computed here.** This used to expand the
+    /// interval/window pair into `DateComponents` and hand them to a scheduler
+    /// that repeated them forever, which meant the reminders ignored shift
+    /// schedule, religious fasts and every other rule in §14 — and could not be
+    /// unscheduled individually. `NotificationPlanner` now derives the water
+    /// window from the day's own shift occurrence, applies Appendix B, and the
+    /// scheduler reconciles the OS against the result. The interval below still
+    /// sets the cadence, because that is a user preference rather than a rule.
     private func applyReminderSchedule() async {
         do {
             try model.saveReminderSettings(enabled: remindersEnabled, intervalMinutes: reminderIntervalMinutes,
@@ -174,34 +186,29 @@ struct SettingsView: View {
         }
 
         guard remindersEnabled else {
-            await scheduler.cancelAll()
+            // Turning the water toggle off has to reach the notification rule
+            // too, or the next pass would schedule water again from the §5.25
+            // default. The planner requires *both* switches on for that reason.
+            do {
+                try notificationModel.setEnabled(false, for: .water)
+            } catch {
+                self.error = String(describing: error)
+            }
+            await notificationModel.reconcileNotifications()
             return
         }
 
         do {
-            guard try await scheduler.requestAuthorization() else {
+            try notificationModel.setEnabled(true, for: .water)
+            guard try await notificationModel.requestAuthorizationAndSchedule() else {
                 remindersEnabled = false
-                error = "Notifications were not authorized."
                 try? model.saveReminderSettings(enabled: false, intervalMinutes: reminderIntervalMinutes,
                                                  startHour: reminderStartHour, endHour: reminderEndHour)
                 return
             }
-            await scheduler.scheduleReminders(times: reminderFireTimes())
         } catch {
             remindersEnabled = false
             self.error = String(describing: error)
-        }
-    }
-
-    /// Expands the interval/window pair into one `DateComponents` per fire,
-    /// starting at `reminderStartHour` and stepping by `reminderIntervalMinutes`
-    /// up to (not including) `reminderEndHour` — the same window
-    /// `HydrationReminderService.checkReminder` enforces server-side.
-    private func reminderFireTimes() -> [DateComponents] {
-        guard reminderIntervalMinutes > 0, reminderStartHour < reminderEndHour else { return [] }
-        let windowMinutes = (reminderEndHour - reminderStartHour) * 60
-        return stride(from: 0, to: windowMinutes, by: reminderIntervalMinutes).map { offset in
-            DateComponents(hour: reminderStartHour + offset / 60, minute: offset % 60)
         }
     }
 }
