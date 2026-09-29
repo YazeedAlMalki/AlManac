@@ -10,6 +10,65 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-29 — The sleep stages finally reach the readiness score
+
+First of readiness integration's five gaps (§9). Closes the one the handoff
+called the highest-value item in the remaining set.
+
+**A fifth of every readiness score has been the number 50, reached by
+accident.** §9.1 gives sleep quality a 20% weight; §9.2 says "if no stage data →
+50, flagged as missing". The 50 was the score on every run — not because stage
+data was missing, but because `ReadinessModel.refresh()` built `ReadinessInputs`
+without the `stages` field at all. The flag was honest about it
+(`.sleepQuality` was reported missing, and confidence was depressed to match),
+but the number was still shown to the user with the same weight as the
+four-fifths that had actually been measured.
+
+The samples were never missing. `health_sample` has held them since the sleep
+bridge landed, and `SleepClassifier` has been reading them since. The only
+reader of the stage rows was `private` to `SleepEpisodeHealthBridge` — the data
+was in the database, being used by a different feature, one function away.
+
+- **`SleepStageSampleStore`** is that read promoted out of the bridge, with a
+  windowed form beside the load-everything form re-classification needs. The
+  "a row whose `unit` is not a `SleepStage` is not a sleep sample" rule is a
+  contract with `HealthKitProvider`; two readers of it would be two places to
+  disagree about it. Same reasoning as the bridge not re-implementing
+  `HealthSampleStore`'s persistence — a wrong-shaped duplicate that was once
+  built here and deleted.
+- **`SleepStageBreakdownReader`** turns one episode's window into the §9.2
+  split, read from the *same* primary episode the duration comes from. A
+  duration from one night and a quality from another would be a score about no
+  night at all.
+- **No asleep stage in the window is nil, not three zeros.** A breakdown of
+  zeros would score 0 and tell the user they slept terribly on a night the app
+  never observed — R-RDY's forbidden substitution, reached by the opposite
+  route. Manual entries and devices that report no stages keep taking §9.2's
+  documented 50-with-flag path, which is the correct answer rather than a
+  workaround.
+
+**This changes scores users have already seen.** Any night with HealthKit stage
+data now moves the sleep-quality term off 50, usually *upward* — a real night
+outscores neutral, so most scores rise. Historical `readiness_record` rows keep
+their stored score (§9.9 forbids silent rewrites), so only newly-computed
+scores move, but a user comparing this week to last will see a step that is a
+correction rather than a change in their recovery. Recorded here because it is
+not a bug fix that can hide.
+
+**Still open, in the other four gaps:** `readiness_baseline` is still orphaned
+(Migration014's table has no store, writer or reader, and
+`ReadinessModel.recentBaseline` is still a naive raw-row average that always
+yields `.general`); 2 of 9 `ReadinessContext` fields are wired, so §9.7's "Day X
+of 21" is still unreachable; `CycleBoundaryCalculator.window(...)` is still
+test-only; `ContextEvent` tags are still written by `ContextTagsView` and read
+by nothing. `day_record.dayType` is still never set to `religious`, which still
+holds back §9.8's Ramadan baseline and Appendix B's suppression matrix.
+
+XCTest 374 (1 skipped), up from 364 — the ten new tests. Swift Testing 580 in
+73 suites, unchanged by this work. One pre-existing failure in that Swift
+Testing run (`BodyMeasurementTests`, which hardcodes the applied-migration list
+and is red against the uncommitted Migration045) is not from this change.
+
 ## 2026-09-29 — Religious fasting orchestration: the dry-fast break rule and a lost night window
 
 Closes the Tier-0 Slice 6 bug. Two independent defects, one of which the code
