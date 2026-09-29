@@ -179,6 +179,39 @@ public enum LabCatalogSeed {
           nil, "absolute", .quantitative,
           ["Basophils", "Absolute basophils", "Basophil count"]),
 
+        // The five percentage forms, seeded as five further analytes rather than
+        // as a unit variant of the absolute counts above.
+        //
+        // A percentage and an absolute count are different measurements of the
+        // same cell type, in different dimensions (`percentage` vs
+        // `cellsPerVolume` in `UnitRegistry`), and they move independently — a
+        // falling absolute count with a rising percentage is a real and common
+        // finding. `docs/features/laboratory-catalog-coverage.md` recorded them
+        // as "not seeded" for exactly that reason; this is that follow-up, and
+        // the reason is now "seeded, and deliberately not interconvertible"
+        // rather than "not claimed".
+        //
+        // They are deliberately *not* added to the CBC panel below. A full blood
+        // count with differential reports the absolute counts; a laboratory that
+        // also prints percentages is printing a derived view of the same numbers.
+        // Putting them in the panel would make an import assign a percentage to a
+        // report that never printed one.
+        e("almanac:lab.haematology.neutrophils-percentage", "Neutrophils, percentage",
+          "haematology", nil, "percentage", .quantitative,
+          ["Neutrophils %", "Neutrophils percent", "% neutrophils", "Neutrophil percentage"]),
+        e("almanac:lab.haematology.lymphocytes-percentage", "Lymphocytes, percentage",
+          "haematology", nil, "percentage", .quantitative,
+          ["Lymphocytes %", "Lymphocytes percent", "% lymphocytes", "Lymphocyte percentage"]),
+        e("almanac:lab.haematology.monocytes-percentage", "Monocytes, percentage",
+          "haematology", nil, "percentage", .quantitative,
+          ["Monocytes %", "Monocytes percent", "% monocytes", "Monocyte percentage"]),
+        e("almanac:lab.haematology.eosinophils-percentage", "Eosinophils, percentage",
+          "haematology", nil, "percentage", .quantitative,
+          ["Eosinophils %", "Eosinophils percent", "% eosinophils", "Eosinophil percentage"]),
+        e("almanac:lab.haematology.basophils-percentage", "Basophils, percentage",
+          "haematology", nil, "percentage", .quantitative,
+          ["Basophils %", "Basophils percent", "% basophils", "Basophil percentage"]),
+
         e("almanac:lab.iron.ferritin", "Ferritin", "iron_studies", nil, nil, .quantitative,
           ["Ferritin", "Serum ferritin"], "فيريتين"),
         e("almanac:lab.iron.serum-iron", "Iron", "iron_studies", nil, nil, .quantitative,
@@ -203,6 +236,23 @@ public enum LabCatalogSeed {
           ["Sodium", "Na"]),
         e("almanac:lab.chemistry.potassium", "Potassium", "chemistry", nil, nil,
           .quantitative, ["Potassium", "K"]),
+        // The rest of the panel, so "electrolytes" is a panel rather than the
+        // two-analyte subset it was. Each is a distinct substance in a distinct
+        // unit; none is derivable from another here, and a calcium that moved
+        // while its ionised counterpart did not is exactly the kind of thing a
+        // user needs both of for.
+        e("almanac:lab.chemistry.chloride", "Chloride", "chemistry", nil, nil,
+          .quantitative, ["Chloride", "Cl", "Serum chloride", "Chlorides"]),
+        e("almanac:lab.chemistry.bicarbonate", "Bicarbonate", "chemistry", nil, nil,
+          .quantitative, ["Bicarbonate", "HCO3", "HCO3-", "Total CO2", "Carbon dioxide"]),
+        e("almanac:lab.chemistry.calcium", "Calcium, total", "chemistry", nil, nil,
+          .quantitative, ["Calcium", "Total calcium", "Ca", "Serum calcium"]),
+        e("almanac:lab.chemistry.ionised-calcium", "Calcium, ionised", "chemistry", nil, nil,
+          .quantitative, ["Ionised calcium", "Ionized calcium", "Free calcium", "iCa"]),
+        e("almanac:lab.chemistry.magnesium", "Magnesium", "chemistry", nil, nil,
+          .quantitative, ["Magnesium", "Mg", "Serum magnesium"]),
+        e("almanac:lab.chemistry.phosphate", "Phosphate", "chemistry", nil, nil,
+          .quantitative, ["Phosphate", "Phosphorus", "PO4", "Serum phosphate"]),
         e("almanac:lab.chemistry.alt", "Alanine aminotransferase", "chemistry", nil, nil,
           .quantitative, ["ALT", "SGPT", "Alanine aminotransferase"]),
         e("almanac:lab.chemistry.ast", "Aspartate aminotransferase", "chemistry", nil, nil,
@@ -277,6 +327,24 @@ public enum LabCatalogSeed {
             "almanac:lab.vitamin-b9.folate-serum",
             "almanac:lab.vitamin-a.retinol",
             "almanac:lab.vitamin-e.alpha-tocopherol"
+        ]),
+        // Sodium, potassium, chloride, bicarbonate, calcium, ionised calcium,
+        // magnesium and phosphate — the eight a "basic metabolic panel" or a
+        // standalone electrolytes run reports.
+        //
+        // A *panel* here is a convenience grouping for the picker, not a claim
+        // about what any one laboratory prints on any one form. Which of these
+        // arrived on a given report is decided by that report's own text, and
+        // the importer assigns what it finds.
+        ("almanac:panel.electrolytes", "Electrolytes", [
+            "almanac:lab.chemistry.sodium",
+            "almanac:lab.chemistry.potassium",
+            "almanac:lab.chemistry.chloride",
+            "almanac:lab.chemistry.bicarbonate",
+            "almanac:lab.chemistry.calcium",
+            "almanac:lab.chemistry.ionised-calcium",
+            "almanac:lab.chemistry.magnesium",
+            "almanac:lab.chemistry.phosphate"
         ])
     ]
 

@@ -1,11 +1,21 @@
 # Almanac — Laboratory catalog coverage
 
-**Version:** 0.2 (revises 0.1)
-**Date:** 2026-09-08
+**Version:** 0.3 (revises 0.2)
+**Date:** 2026-09-30
 **Generated from:** `Sources/AlmanacCore/Laboratory/LabCatalogSeed.swift`
 **Pinned by:** `CatalogCoverageTests` — `testEveryDocumentedVitaminFormIsSeeded`,
 `testVitaminEntriesAreClassifiedByWhatTheyMeasure`,
-`testTheVitaminCountIsNotOverstated`, `testCBCPanelIsComplete`.
+`testTheVitaminCountIsNotOverstated`, `testCBCPanelIsComplete` — and, from 0.3,
+`LabCatalogCoverageFollowUpTests` for everything the 0.2 "not seeded" table
+below used to defer.
+
+## What changed in 0.3
+
+The two rows in "Remaining requested coverage" that were pure catalog work are
+now seeded: **the five differential percentages** and **the rest of the
+electrolytes panel**. Seeding the percentages was only possible after a fix to
+`TextFold`, which is the interesting part and is written up under
+[Folding a percent sign](#folding-a-percent-sign).
 
 ## What changed from 0.1
 
@@ -126,10 +136,10 @@ tracked below, not implied.
 
 | Area | Status |
 |---|---|
-| Differential percentages (neut %, lymph %, mono %, eos %, baso %) | **not seeded** — a percentage and an absolute count are different analytes, and `UnitRegistry` keeps `%` in its own dimension |
+| Differential percentages (neut %, lymph %, mono %, eos %, baso %) | **Seeded in 0.3** as five further analytes. Not in the CBC panel — see below. |
 | Reticulocytes, nucleated RBC, immature granulocytes | **not seeded** |
 | Liver panel beyond ALT/AST — ALP, GGT, bilirubin, albumin | **not seeded** |
-| Full electrolytes — chloride, bicarbonate, calcium, magnesium, phosphate | **not seeded** (sodium and potassium are seeded) |
+| Full electrolytes — chloride, bicarbonate, calcium, magnesium, phosphate | **Seeded in 0.3**, with ionised calcium as a separate analyte, and an `almanac:panel.electrolytes` panel of eight |
 | Thyroid beyond TSH/FT4 — free T3, TPO antibodies | **not seeded** |
 | Homocysteine | **not seeded** — see the vitamin table |
 | Vitamin D binding protein, free 25-OH D | **not seeded** |
@@ -137,8 +147,49 @@ tracked below, not implied.
 | Verified LOINC codes | **none** — licensing unresolved; the table and `verified` flag are ready |
 | Reference intervals in the catalog | **out of scope by decision** — ranges are preserved as the source printed them; no catalog fallback is applied |
 
-Seeded totals: **24** vitamin-family entries, **37** core entries, **61**
-analytes, **5** panels.
+## Folding a percent sign
+
+`TextFold` erases case, diacritics, punctuation and script variants, on the
+grounds that those differences carry no identity. It also erased `%`, which
+does.
+
+That made the differential percentages unseedable rather than merely unseeded.
+`Neutrophils %` folded to `neutrophils`, which is already the absolute count's
+alias — so all five pairs resolved to the absolute, and
+`testNoAliasIsSharedByTwoAnalytes` failed on every one of them. The catalog's
+ambiguity handling exists to stop the importer picking between two analytes at
+random; the fold was manufacturing the ambiguity itself.
+
+`%` now folds to its own token: `Neutrophils %` → `neutrophils pct`, and
+`Neutrophils` → `neutrophils`. Everything the fold used to erase, it still
+erases.
+
+### Why the percentages are not in the CBC panel
+
+A full blood count with differential reports the absolute counts. A laboratory
+that also prints percentages is printing a *derived view of the same numbers*.
+Adding them to the panel would mean an import assigns a value the report never
+stated, in a different unit dimension, with no record of where it came from. So
+the panel is unchanged at 15 members and the percentages are catalogued,
+matchable, and separate.
+
+Seeded totals: **24** vitamin-family entries, **48** core entries, **72**
+analytes, **6** panels. (Counted from the seed source; `LabCatalogSeed.all`
+is `vitamins + core`.)
+
+## Not built: import-job records
+
+§2.5 distinguishes an *import job* from a *sync cursor*, and the distinction is
+a real one — a job has a start, an outcome and a row count; a cursor has a
+position. `LabReportCSVImport` parses and returns; it does not record that it ran,
+what it matched, or how many rows it left unmatched.
+
+That is **not** catalog work and it is not done here. A job record is a
+migration, a store, a status vocabulary and a place on the import screen to show
+it, and the shape of the status vocabulary is a product decision — in
+particular whether a failed import leaves a job row that says so, or leaves
+nothing at all. Guessing that is the same class of invention this document
+refuses elsewhere, so it is recorded as open rather than built.
 
 ## Specimen
 
