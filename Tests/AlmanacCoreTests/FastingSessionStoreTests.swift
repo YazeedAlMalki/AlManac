@@ -7,8 +7,10 @@ struct FastingSessionStoreTests {
     let db = try! TestDatabase()
     var store: FastingSessionStore { FastingSessionStore(db: db) }
 
-    private func draft(start: TimeInterval, type: FastingSessionType = .ifConfirmedSuggestion) -> FastingSessionDraft {
-        FastingSessionDraft(startTimestamp: Date(timeIntervalSince1970: start), sessionType: type)
+    private func draft(start: TimeInterval, type: FastingSessionType = .ifConfirmedSuggestion,
+                       isDryFast: Bool = false) -> FastingSessionDraft {
+        FastingSessionDraft(startTimestamp: Date(timeIntervalSince1970: start), sessionType: type,
+                            isDryFast: isDryFast)
     }
 
     @Test("Start a session and read it back as active")
@@ -30,6 +32,35 @@ struct FastingSessionStoreTests {
 
         #expect(outcome == .noOp)
         #expect(try store.activeSession()?.isActive == true)
+    }
+
+    @Test("Water breaks an active religious dry fast")
+    func waterBreaksReligiousDryFast() throws {
+        // A dry fast is not an IF window: the owner's call is that *any*
+        // intake ends it, water included, because a "dry" fast that was
+        // drunk from is not a fast that was kept.
+        let id = try store.start(
+            draft(start: 1_000_000, type: .religious, isDryFast: true), logicalDay: "2026-09-16")
+
+        // 7 hours after Fajr, and it is water.
+        let outcome = try store.recordIntake(at: Date(timeIntervalSince1970: 1_000_000 + 7 * 3600))
+
+        #expect(outcome == .ended(sessionId: id, durationMinutes: 420))
+        #expect(try store.session(id: id)?.isActive == false)
+        #expect(try store.session(id: id)?.finalDurationMinutes == 420)
+    }
+
+    @Test("Water does not break an active intermittent fast")
+    func waterDoesNotBreakIntermittentFast() throws {
+        // The guard on the rule above. §11.1 is explicit that water and black
+        // coffee never break an IF, and `recordIntake` must not quietly become
+        // a second, stricter rule for every session type.
+        let id = try store.start(draft(start: 1_000_000), logicalDay: "2026-09-16")
+
+        let outcome = try store.recordIntake(at: Date(timeIntervalSince1970: 1_050_000))
+
+        #expect(outcome == .noOp)
+        #expect(try store.session(id: id)?.isActive == true)
     }
 
     @Test("A calorie entry ends the active session and records duration")

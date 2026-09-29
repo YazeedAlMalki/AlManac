@@ -5,7 +5,7 @@ import Foundation
 /// — never a number computed from too few points and passed off as real.
 /// `.insufficientData` is that state; `CorrelationEngine` cannot produce an
 /// `r` without first clearing the sample-size gate.
-public enum CorrelationResult: Sendable, Equatable {
+public enum CorrelationResult: Sendable, Hashable {
     case insufficientData(sampleSize: Int, minimumRequired: Int)
     case computed(r: Double, sampleSize: Int)
 }

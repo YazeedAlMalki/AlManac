@@ -58,6 +58,41 @@ struct TrendsView: View {
                     .pickerStyle(.segmented)
                     .onChange(of: range) { _, _ in load() }
 
+                    // Insights is the general read-across surface and this
+                    // screen is one metric plotted. They sit side by side rather
+                    // than one replacing the other, because a readiness line on
+                    // its own is the figure worth plotting and a correlation is
+                    // not a line at all.
+                    NavigationLink {
+                        InsightsView(db: db)
+                    } label: {
+                        AlmanacCard {
+                            HStack(spacing: 14) {
+                                Image(systemName: AlmanacIcon.insights)
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundStyle(AlmanacPalette.accent)
+                                    .frame(width: 28, height: 28)
+                                    .background(AlmanacPalette.surfaceMuted)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Insights")
+                                        .font(AlmanacTypography.font(.sectionTitle))
+                                        .foregroundStyle(AlmanacPalette.textPrimary)
+                                    Text("Trends, associations and badges across everything you record.")
+                                        .font(AlmanacTypography.font(.body))
+                                        .foregroundStyle(AlmanacPalette.textSecondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                Spacer(minLength: 10)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(AlmanacPalette.textSecondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("insights-link")
+
                     if let error {
                         AlmanacCard {
                             VStack(alignment: .leading, spacing: 12) {

@@ -47,19 +47,39 @@ public enum ReligiousFastingService {
             return .notAFastDay
         }
 
+        let id: Int64
+        let outcome: ReligiousFastingOutcome
         if let existing = try sessionStore.sessions(for: anchorDate).first(where: { $0.sessionType == .religious }) {
-            guard existing.isActive else { return .alreadyEnded(sessionId: existing.id) }
-            guard now >= maghrib else { return .alreadyActive(sessionId: existing.id) }
-            try sessionStore.endScheduled(id: existing.id, at: maghrib)
-            return .sessionEnded(sessionId: existing.id)
+            id = existing.id
+            if !existing.isActive {
+                outcome = .alreadyEnded(sessionId: existing.id)
+            } else if now >= maghrib {
+                try sessionStore.endScheduled(id: existing.id, at: maghrib)
+                outcome = .sessionEnded(sessionId: existing.id)
+            } else {
+                outcome = .alreadyActive(sessionId: existing.id)
+            }
+        } else {
+            id = try sessionStore.start(
+                FastingSessionDraft(startTimestamp: fajr, sessionType: .religious, isDryFast: true,
+                                     timezoneOffset: timezoneOffset),
+                logicalDay: anchorDate)
+            outcome = .sessionCreated(sessionId: id)
         }
 
-        let id = try sessionStore.start(
-            FastingSessionDraft(startTimestamp: fajr, sessionType: .religious, isDryFast: true,
-                                 timezoneOffset: timezoneOffset),
-            logicalDay: anchorDate)
-
-        if let nextDayFajr {
+        // The window is ensured on *every* call, not only when the session is
+        // first created. The first `ensureDay` of a day routinely runs before
+        // tomorrow's Fajr is in the prayer cache, so it creates the session
+        // with no window; every later call then returned at the already-exists
+        // branch above, and the window was lost for the rest of the day — which
+        // left every suhoor and iftar entry in it unassigned. The window needs
+        // an end timestamp, so it genuinely cannot be built without `nextDayFajr`;
+        // what it can do is wait for one instead of giving up on the day.
+        //
+        // Idempotent by lookup, because this runs on every refresh and
+        // `nutrition_window` has no uniqueness constraint on (date, windowType).
+        if let nextDayFajr,
+           try windowStore.window(date: anchorDate, windowType: .nightNutritionWindow) == nil {
             let windowID = try windowStore.createWindow(date: anchorDate, windowType: .nightNutritionWindow,
                                                         startTimestamp: maghrib, endTimestamp: nextDayFajr,
                                                         fajrTimestamp: nextDayFajr, maghribTimestamp: maghrib)
@@ -73,6 +93,6 @@ public enum ReligiousFastingService {
                 .assignUnassigned(inWindow: windowID)
         }
 
-        return .sessionCreated(sessionId: id)
+        return outcome
     }
 }

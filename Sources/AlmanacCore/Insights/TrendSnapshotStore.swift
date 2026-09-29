@@ -20,7 +20,7 @@ public struct TrendSnapshotStore: @unchecked Sendable {
         """, [
             .text(metric), .text(period),
             .real(snapshot.average), .real(snapshot.minimum), .real(snapshot.maximum),
-            .text(String(describing: snapshot.direction)),
+            .text(snapshot.direction.rawValue),
             .text(now)
         ])
     }
@@ -35,19 +35,8 @@ public struct TrendSnapshotStore: @unchecked Sendable {
               let minimum = row.double("minimum"),
               let maximum = row.double("maximum"),
               let directionText = row.string("direction"),
-              let direction = TrendDirection(directionText) else { return nil }
+              let direction = TrendDirection(rawValue: directionText) else { return nil }
 
         return TrendSnapshot(average: average, minimum: minimum, maximum: maximum, direction: direction)
-    }
-}
-
-private extension TrendDirection {
-    init?(_ text: String) {
-        switch text {
-        case "up": self = .up
-        case "down": self = .down
-        case "flat": self = .flat
-        default: return nil
-        }
     }
 }

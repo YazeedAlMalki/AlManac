@@ -293,8 +293,53 @@ edit paths. A whole-history `assignUnassigned()` is the backstop and is spec lin
 1942 step 6d's "Rebuild nutrition_window assignments for religious fast days";
 it is **not yet called from the restore procedure**, which is not built.
 
+**Dry-fast break rule (decided 2026-09-29).** The service used to leave this
+open in a doc comment, because §11.1's rules were written for intermittent
+fasting and do not say what water does to a *religious* fast. The owner's call:
+**any intake ends a dry fast, water included** — a dry fast that was drunk from
+is not a fast that was kept, so the session ends and records the real duration
+rather than claiming a completed fast. It is `end`, not `invalidate`: the hours
+before the intake were genuinely fasted, and the record should say so.
+
+- `FastingSessionStore.recordIntake(at:)` owns the rule, as a **separate
+  method** rather than a flag on `recordNutritionEntry`. `recordNutritionEntry`
+  keeps §11.1 untouched — it still returns `.noOp` for `calories == 0` — so
+  intermittent fasting is unaffected. A test pins that: water does not break an
+  IF session.
+- `FastingAwareHydrationLog` is the wrapper, same shape and same dependency
+  direction as `FastingAwareNutritionLog` (Hydration must not know Fasting
+  exists). It records the drink first and unconditionally: a broken fast is
+  still a real thing the user drank.
+- **Not wired into the hydration write paths yet — the known gap.** Four call
+  sites still write through `HydrationStore` directly and bypass the rule:
+  `HydrationModel.log`, `HydrationModel.logDrink`, the widget's
+  `LogWaterIntent`, and the Activity Rings day-detail hydration editor. Until
+  those are switched to `FastingAwareHydrationLog`, logging water during a fast
+  does not break it in the running app; the rule is correct and tested, just not
+  called from those four paths yet. This is the same "discipline cost" the night
+  -window assignment already carries (six paths wired, a seventh will forget).
+
+**The night window is no longer lost for the day (fixed 2026-09-29).** Window
+creation used to sit inside the session-*creation* branch, gated on
+`nextDayFajr` being non-nil, while every later call returned earlier at the
+already-exists branch. The first `ensureDay` of a day routinely runs before
+tomorrow's Fajr is in the prayer cache, so it created the session with no
+window — and the window was then unrecoverable for the rest of that day, leaving
+every suhoor and iftar entry in it unassigned. A test had encoded this as
+expected behaviour. `ensureDay` now ensures the window on *every* call,
+idempotently by lookup (`nutrition_window` has no uniqueness constraint on
+(date, windowType), so the lookup is what prevents duplicates).
+
 **Two things this did not settle:**
 
+- **`day_record.dayType` is never set to `religious`** (raised 2026-09-29, still
+  open — a genuine product decision, not a bug). `ensureDay` creates the
+  `fasting_session` row, but nothing types the *day*. This blocks more than it
+  looks: the Appendix B suppression matrix and the §9.8 Ramadan readiness
+  baseline both key off `dayType`, so Slice 11's notification scheduler and the
+  readiness integration work are both only half-buildable until it is answered.
+  It does **not** block the dry-fast break rule above, which is a property of
+  the session rather than the day.
 - `nutrition_window.windowType` is now a Swift enum (`NutritionWindowType`)
   rather than a raw `String`. Its `standardLogicalDay` case is reachable and
   never written: the spec names it as a possible value and then gives no rule
@@ -313,6 +358,7 @@ a production caller, and so does the night-window assigner.)
 | --- | --- |
 | `ReligiousFastingService.ensureDay` | `FastingModel.ensureToday()`, the Fasting screen's own load |
 | `NightNutritionWindowAssigner` | `ReligiousFastingService.ensureDay` (retroactively) plus six write paths — see above |
+| `FastingAwareHydrationLog` | **nothing yet** — the four hydration write paths above still bypass it |
 | `PrayerTimeEngine.ensureCache`, `ReligiousFastScheduleStore.applyLocationUpdate` | `FastingModel` |
 
 Still nothing: no shift-schedule UI, no background scheduling (the scheduler is

@@ -1,10 +1,16 @@
 import Foundation
 
-public enum TrendDirection: Sendable, Equatable {
+/// `String`-backed rather than a bare enum, because `TrendSnapshotStore` round-
+/// trips this through a TEXT column. It used to do so via
+/// `String(describing:)`, which happened to produce `"up"` and matched the
+/// reader by luck; a case rename would have silently written a value nothing
+/// could read back. A raw value makes the storage representation a decision
+/// rather than an accident of the debugger's description.
+public enum TrendDirection: String, Sendable, Hashable, CaseIterable {
     case up, down, flat
 }
 
-public struct TrendSnapshot: Sendable, Equatable {
+public struct TrendSnapshot: Sendable, Hashable {
     public let average: Double
     public let minimum: Double
     public let maximum: Double

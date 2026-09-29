@@ -10,6 +10,109 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-29 — Religious fasting orchestration: the dry-fast break rule and a lost night window
+
+Closes the Tier-0 Slice 6 bug. Two independent defects, one of which the code
+had explicitly refused to guess at and one of which was quietly locked in by a
+test that asserted the broken behaviour was correct.
+
+**Any intake ends a religious dry fast, water included** (the owner's call).
+§11.1's "water never breaks a fast" is written for intermittent fasting and
+says nothing about a *dry* fast; the service said so in a doc comment and left
+it open. A dry fast that was drunk from is not a fast that was kept, so the
+session now **ends** and records the real duration — hours genuinely fasted
+before the intake are not erased. It is `end`, not `invalidate`, for that reason.
+
+- `FastingSessionStore.recordIntake(at:)` owns it, deliberately **not** a flag on
+  `recordNutritionEntry`, which keeps §11.1 byte-for-byte intact and still
+  returns `.noOp` for `calories == 0`. A test pins the boundary: water does not
+  break an IF session. Getting this wrong would have broken intermittent
+  fasting for every user.
+- `FastingAwareHydrationLog` wraps it, same shape and dependency direction as
+  `FastingAwareNutritionLog` — Hydration does not learn that Fasting exists. It
+  writes the drink first and unconditionally; a broken fast is still a real
+  thing the user drank.
+
+**The night window was lost for the whole day.** Window creation sat inside the
+session-creation branch behind a `nextDayFajr != nil` guard, while every later
+call returned earlier at the already-exists branch. The first `ensureDay` of a
+day routinely runs before tomorrow's Fajr is cached, so the session was created
+with no window and the window was then unreachable for the rest of that day —
+leaving every suhoor and iftar entry in it unassigned. `ensureDay` now ensures
+the window on every call, idempotently by lookup, because
+`nutrition_window` has no uniqueness constraint on (date, windowType). A test
+had asserted the old behaviour; it now asserts recovery and no-duplication.
+
+**Still open, and it is a product decision rather than a bug:**
+`day_record.dayType` is never set to `religious`. Nothing types the day, only
+the session. The Appendix B suppression matrix and the §9.8 Ramadan readiness
+baseline both read `dayType`, so Slice 11's notification scheduler and the
+readiness integration are each only half-buildable until this is answered. It
+does not block the work above, which is a property of the session.
+
+**Not wired:** the four hydration write paths (`HydrationModel.log`,
+`HydrationModel.logDrink`, the widget's `LogWaterIntent`, the Activity Rings
+day-detail hydration editor) still write through `HydrationStore` directly, so
+the break rule is not yet reached from the running app. The rule is correct and
+tested; the call sites are the follow-up. Recorded in `docs/features/fasting.md`
+rather than left to be rediscovered.
+
+Full suite: 541 Swift Testing tests in 71 suites, zero failures (up from 517).
+
+## 2026-09-29 — Insights gets real queries
+
+`CorrelationEngine`, `CorrelationPairStore`, `TrendSnapshotStore`,
+`AchievementEngine` and `AchievementRecordStore` had been complete and tested
+since Slice 10 with **zero app consumers** — so `correlation_pair`,
+`trend_snapshot` and `achievement_record` were permanently empty tables. The
+engines were never the gap. The line between the tables and the numbers was,
+and nothing drew it.
+
+- **`InsightSeriesBuilder`** reads nine metrics out of the real stores.
+  `InsightMetric` states per metric how several entries on one day become one
+  value, because that is the part a reader has to trust: four drinks sum to a
+  day's hydration, two mood check-ins average to a mood, and getting it wrong
+  produces a chart that looks fine and means something else.
+- **`InsightsQuery`** runs all three engines and persists what they say. There
+  is no nightly batch — the horizon is a caller concern the engine header
+  already states, and a stored number nobody refreshes is worse than none.
+- **`InsightsView`**, linked from Trends. Trends stays as the one metric worth
+  plotting; Insights is the read-across surface.
+
+**The honesty rules are in the copy, because that is where a guardrail about
+what a screen may say has to be satisfied.** Every trend states how many days of
+the window were actually recorded. A short pair says "Not enough paired days —
+3 of 14", not a dash and not a number. The direction word is "Higher together",
+never "causes". The Associations footer states the caveat in full.
+
+**Three defects fixed:**
+
+- **`CorrelationPairStore` claimed "unordered" and was ordered.** `("sleep",
+  "readiness")` and `("readiness", "sleep")` were two rows holding the same
+  number. Both metrics are now sorted into a canonical order in and out, and
+  `allPairs()` reads only canonical rows so a pre-fix database reports each pair
+  once.
+- **`TrendDirection` round-tripped by accident.** `TrendSnapshotStore` wrote
+  `String(describing:)`, which happened to produce `"up"` and matched the reader
+  by luck; a case rename would have silently written a value nothing could read
+  back. It has a `String` raw value now.
+- **`CorrelationResult` and `TrendSnapshot` were `Equatable` but not `Hashable`**,
+  so neither could ride in a `Hashable` result type.
+
+**Five of the nine achievement inputs are constants, each for a stated reason.**
+No step target, no high-load threshold, no Diet Profile, and — the one the
+engine's own header flags — no decided definition of a perfect log. So
+`.perfectLog` is never awarded and a test fails if it ever is. The other four
+badges do appear. Recorded in `docs/features/insights.md` §5.
+
+**Not built:** Spearman and p-values (Pearson is the concrete default the
+handoff proceeded on, and both need a decision about what the app claims
+statistically); context tags as a correlation input (sparse by nature, would sit
+at "insufficient" permanently); charts for anything but readiness.
+
+Full suite: 364 XCTest (1 skipped) + **541 Swift Testing** (up from 517), zero
+failures. UI suite: **46 tests, all passing** (5 new). Simulator build clean.
+
 ## 2026-09-28 — Training history, bout editing, and templates
 
 Closes all three gaps `docs/features/training.md` §2 listed, and the

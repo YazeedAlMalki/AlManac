@@ -60,6 +60,24 @@ public struct FastingSessionStore: @unchecked Sendable {
         return id
     }
 
+    /// Any intake at all — water included — against an active *religious dry
+    /// fast*, which the owner's call (2026-09-29) treats differently from an
+    /// intermittent fast: a dry fast that was drunk from is not a fast that was
+    /// kept, so the session ends and records the real duration rather than
+    /// claiming a completed fast. §11.1's rules were written for IF and do not
+    /// cover this, which is why this is a separate method rather than a flag on
+    /// `recordNutritionEntry`.
+    ///
+    /// Non-dry and IF sessions are `.noOp` here: water never breaks those, and
+    /// `recordNutritionEntry` already owns the calorie-bearing case for them.
+    @discardableResult
+    public func recordIntake(at timestamp: Date) throws -> FastingBreakOutcome {
+        guard let active = try activeSession(),
+              active.sessionType == .religious, active.isDryFast else { return .noOp }
+        let minutes = try end(active, at: timestamp)
+        return .ended(sessionId: active.id, durationMinutes: minutes)
+    }
+
     /// Applies spec §11.1's fast-breaking / backdating decision tree for one
     /// calorie-bearing nutrition entry. Water and black coffee/tea are
     /// `calories == 0` by definition and never reach the break logic.

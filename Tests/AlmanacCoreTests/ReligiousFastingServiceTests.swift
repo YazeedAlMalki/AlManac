@@ -134,6 +134,50 @@ struct ReligiousFastingServiceTests {
         #expect(try windowStore.window(date: "2026-09-17", windowType: .nightNutritionWindow) == nil)
     }
 
+    @Test("A later call creates the window the first call could not")
+    func windowIsCreatedOnceNextFajrIsKnown() throws {
+        // The first `ensureDay` of the day can run before tomorrow's Fajr is in
+        // the prayer cache. The session is created, but the window cannot be —
+        // it has no end timestamp. Every later call used to return at the
+        // already-exists branch, so the window was lost for the whole day and
+        // every suhoor/iftar entry in it stayed unassigned.
+        try scheduleStore.createSchedule(scheduleType: "mon_thu")
+        let first = try ReligiousFastingService.ensureDay(
+            anchorDate: "2026-09-17", prayerTimes: todaysPrayerTimes,
+            scheduleStore: scheduleStore, sessionStore: sessionStore, windowStore: windowStore,
+            nextDayFajr: nil, timezoneOffset: 180, at: fajrD)
+        guard case .sessionCreated(let id) = first else { Issue.record("expected creation"); return }
+
+        let second = try ReligiousFastingService.ensureDay(
+            anchorDate: "2026-09-17", prayerTimes: todaysPrayerTimes,
+            scheduleStore: scheduleStore, sessionStore: sessionStore, windowStore: windowStore,
+            nextDayFajr: fajrDPlus1, timezoneOffset: 180, at: maghribD.addingTimeInterval(-3600))
+
+        #expect(second == .alreadyActive(sessionId: id))
+        let window = try windowStore.window(date: "2026-09-17", windowType: .nightNutritionWindow)
+        #expect(window?.startTimestamp == maghribD)
+        #expect(window?.endTimestamp == fajrDPlus1)
+    }
+
+    @Test("The window is not created twice by a later call")
+    func windowIsNotDuplicatedByLaterCalls() throws {
+        try scheduleStore.createSchedule(scheduleType: "mon_thu")
+        _ = try ReligiousFastingService.ensureDay(
+            anchorDate: "2026-09-17", prayerTimes: todaysPrayerTimes,
+            scheduleStore: scheduleStore, sessionStore: sessionStore, windowStore: windowStore,
+            nextDayFajr: nil, timezoneOffset: 180, at: fajrD)
+
+        for offset in [3600.0, 7200.0] {
+            _ = try ReligiousFastingService.ensureDay(
+                anchorDate: "2026-09-17", prayerTimes: todaysPrayerTimes,
+                scheduleStore: scheduleStore, sessionStore: sessionStore, windowStore: windowStore,
+                nextDayFajr: fajrDPlus1, timezoneOffset: 180,
+                at: maghribD.addingTimeInterval(-offset))
+        }
+
+        #expect(try windowStore.windows(ofType: .nightNutritionWindow).count == 1)
+    }
+
     @Test("A manually removed fast day is respected — no session is created")
     func manuallyRemovedDayCreatesNothing() throws {
         let id = try scheduleStore.createSchedule(scheduleType: "mon_thu")
