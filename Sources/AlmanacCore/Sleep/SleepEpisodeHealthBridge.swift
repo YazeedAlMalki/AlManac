@@ -26,11 +26,16 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
     private let episodes: SleepEpisodeStore
     private let timeModel: TimeModel
     private let zone: ZoneContext
+    /// The stage-sample read, shared with `SleepStageBreakdownReader` so the
+    /// "a row whose `unit` is not a stage is not a sleep sample" rule has one
+    /// home rather than one per reader.
+    private let stageSamples: SleepStageSampleStore
 
     public init(db: Database, clock: any Clock = SystemClock(),
                 timeModel: TimeModel = TimeModel(timeZone: .current),
                 zone: ZoneContext = ZoneContext(TimeZone.current)) {
         self.samples = HealthSampleStore(db: db, healthDomain: .sleep, clock: clock, zone: zone)
+        self.stageSamples = SleepStageSampleStore(db: db, sourceSystem: samples.sourceSystem)
         self.episodes = SleepEpisodeStore(db: db, clock: clock)
         self.timeModel = timeModel
         self.zone = zone
@@ -72,6 +77,13 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
         return days
     }
 
+    /// `health_sample` stores instants as UTC `...Z` text. Needed only to find
+    /// which logical days a withdrawal touches; the stage rows themselves are
+    /// read by `SleepStageSampleStore`, which owns that parsing.
+    private func parse(_ text: String) -> Date? {
+        ISO8601DateFormatter().date(from: text)
+    }
+
     /// Re-runs §8.1–§8.3 for each touched day and writes the episodes belonging
     /// to it. Grouping happens once and is shared; only primary selection is
     /// per-day, because that is the part anchored to a day.
@@ -96,7 +108,7 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
             if let next = timeModel.day(after: day) { days.insert(next) }
         }
 
-        let grouped = SleepClassifier.groupIntoEpisodes(try liveStageSamples(in: db))
+        let grouped = SleepClassifier.groupIntoEpisodes(try stageSamples.allLiveSamples())
         guard !grouped.isEmpty else { return }
 
         for day in days.sorted() {
@@ -143,34 +155,5 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
         for id in stale {
             try db.run("DELETE FROM sleep_episode WHERE id = ?;", [.integer(id)])
         }
-    }
-
-    /// Live sleep samples as the classifier wants them. A row whose `unit` is not
-    /// a `SleepStage` is not a sleep sample and is skipped rather than guessed
-    /// at — the encoding is a contract with `HealthKitProvider`, and a mismatch
-    /// should drop a row, not invent a stage for it.
-    private func liveStageSamples(in db: Database) throws -> [SleepStageSample] {
-        try db.query("""
-        SELECT external_id, start_at, end_at, unit, source_name
-        FROM health_sample
-        WHERE source_system = ? AND domain = 'sleep' AND deleted_at IS NULL
-        ORDER BY start_at;
-        """, [.text(samples.sourceSystem)]).compactMap { row in
-            guard let id = row.string("external_id"),
-                  let stageText = row.string("unit"),
-                  let stage = SleepStage(rawValue: stageText),
-                  let startText = row.string("start_at"),
-                  let endText = row.string("end_at"),
-                  let start = parse(startText), let end = parse(endText) else { return nil }
-            return SleepStageSample(start: start, end: end, stage: stage,
-                                    sourceApp: row.string("source_name"),
-                                    healthKitUUID: id)
-        }
-    }
-
-    private func parse(_ text: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: text)
     }
 }

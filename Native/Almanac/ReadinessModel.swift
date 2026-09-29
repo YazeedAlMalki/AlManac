@@ -23,6 +23,16 @@ import AlmanacCore
 ///   Circadian) and stay at their `false`/`nil` defaults. Calibration-day
 ///   counting (§9.7's "Day X of 21") is not built either — `calibrationDay`
 ///   stays nil, so the UI never shows a preliminary-estimate label yet.
+/// - **Stages:** the primary episode's stage split *is* wired
+///   (`SleepStageBreakdownReader`). It was not, and §9.2's "no stage data → 50"
+///   was therefore the score on every single run rather than the fallback: 20%
+///   of every readiness score was a constant. **This changes scores users have
+///   already seen** — for any night with HealthKit stage data the sleep-quality
+///   term now moves off 50, usually upward, since a real night scores above
+///   neutral. Historical `readiness_record` rows are not rewritten (§9.9), so
+///   only newly-computed scores are affected, and a user comparing today's
+///   score to last week's will see a step that is a correction, not a change in
+///   their recovery.
 @MainActor
 final class ReadinessModel: ObservableObject {
     @Published private(set) var displayName = "User"
@@ -60,6 +70,7 @@ final class ReadinessModel: ObservableObject {
     private var injuryStore: InjuryNoteStore?
     private var cycleStore: ReadinessCycleStore?
     private var recordStore: ReadinessRecordStore?
+    private var stageReader: SleepStageBreakdownReader?
     private let timeModel = TimeModel(timeZone: .current)
 
     func configure(db: Database?) {
@@ -73,12 +84,14 @@ final class ReadinessModel: ObservableObject {
         injuryStore = InjuryNoteStore(db: db)
         cycleStore = ReadinessCycleStore(db: db)
         recordStore = ReadinessRecordStore(db: db)
+        stageReader = SleepStageBreakdownReader(db: db)
         refresh()
     }
 
     func refresh() {
         guard let profileStore, let vitalsStore, let moodStore, let sorenessStore,
-              let sleepStore, let injuryStore, let cycleStore, let recordStore else { return }
+              let sleepStore, let injuryStore, let cycleStore, let recordStore,
+              let stageReader else { return }
         // Hoisted out of the `do` so the save below can run on its own. Reading
         // and saving fail for different reasons and the user can do different
         // things about them, so they get different words — see below.
@@ -110,6 +123,12 @@ final class ReadinessModel: ObservableObject {
 
             let inputs = ReadinessInputs(
                 sleepDurationMinutes: sleepDurationMinutes,
+                // Read from the same primary episode the duration came from: a
+                // duration from one night and a quality from another would be a
+                // score about no night at all. Nil is the ordinary case for a
+                // manual entry or a device that reports no stages, and §9.2
+                // scores that 50 and flags it missing rather than excluding it.
+                stages: try primary.flatMap { try stageReader.breakdown(forEpisode: $0) },
                 restingHeartRate: latestRHR,
                 hrv: latestHRV,
                 mood: todayMood?.score,
