@@ -146,6 +146,17 @@ struct ReadinessDashboardView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("readiness-baseline-notice")
                     }
+                    // §13.2's "circadian context as a filter": the same fact the
+                    // correlations narrow on, shown where the day's own context
+                    // is already being explained. With no shift schedule this is
+                    // nil and the line does not appear at all.
+                    if let circadian = model.circadianLine {
+                        Text(circadian)
+                            .font(AlmanacTypography.font(.caption))
+                            .foregroundStyle(AlmanacPalette.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("readiness-circadian-line")
+                    }
                 }
 
                 if let outcome {

@@ -188,6 +188,14 @@ struct InsightsView: View {
                     text: "Not enough paired days — \(summary.sampleSize) of \(summary.minimumRequired)",
                     tone: .neutral)
             }
+            // The comparable-day filter, stated rather than applied silently. A
+            // number computed from 20 of 24 days reads exactly like one computed
+            // from 24 unless the screen says which happened.
+            if summary.excludedTransitionDays > 0 {
+                Text("\(summary.excludedTransitionDays) day\(summary.excludedTransitionDays == 1 ? "" : "s") in a schedule change left out")
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
+            }
         }
         .frame(minHeight: AlmanacMetrics.minimumControl, alignment: .leading)
         .accessibilityElement(children: .combine)

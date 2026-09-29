@@ -16,11 +16,19 @@ public struct InsightsQuery: @unchecked Sendable {
     private let db: Database
     private let timeModel: TimeModel
     private let builder: InsightSeriesBuilder
+    private let clock: any Clock
 
-    public init(db: Database, timeModel: TimeModel = TimeModel(timeZone: .current)) {
+    /// The clock is injected like everywhere else in this package, and for the
+    /// same reason: `recentRange` used to reach for `Date()` directly, which
+    /// meant the only way to test a *window* was to write fixtures relative to
+    /// whenever the test happened to run. Every other store here takes a
+    /// `Clock`, and this one type was the outlier.
+    public init(db: Database, timeModel: TimeModel = TimeModel(timeZone: .current),
+                clock: any Clock = SystemClock()) {
         self.db = db
         self.timeModel = timeModel
         self.builder = InsightSeriesBuilder(db: db, timeModel: timeModel)
+        self.clock = clock
     }
 
     // MARK: - Range
@@ -28,7 +36,7 @@ public struct InsightsQuery: @unchecked Sendable {
     /// `[fromDay, toDay)` covering the last `dayCount` logical days, ending
     /// today.
     public func recentRange(dayCount: Int) -> (from: String, to: String, days: [String]) {
-        let end = timeModel.logicalDay(Date())
+        let end = timeModel.logicalDay(clock.now)
         let count = max(1, dayCount)
         var cursor = end
         for _ in 0..<(count - 1) {
@@ -78,23 +86,70 @@ public struct InsightsQuery: @unchecked Sendable {
     /// `CorrelationEngine`'s 14-day gate on days where one side was never
     /// measured, and the resulting `r` would be a statement about the
     /// interpolation as much as about sleep.
+    ///
+    /// **Days in a circadian transition are left out.** BRD §6.15 names
+    /// "comparable-day filtering (Day Type + Circadian Context)" and §13.2 says
+    /// insights use `circadian_context.contextType` as a filter. A week spent
+    /// moving from nights to days is not a week whose sleep and readiness sit on
+    /// the same footing as a settled one, and pooling the two is how a
+    /// correlation picks up a schedule change and reports it as a relationship
+    /// between two measurements.
+    ///
+    /// **The filter is dropped when it would cost more than half the window.**
+    /// A filter that empties the sample is not a stricter answer, it is a missing
+    /// one, and the summary carries which of the two happened so the screen can
+    /// say so rather than showing a number of unexplained provenance.
     public func correlation(between a: InsightMetric, and b: InsightMetric,
                             dayCount: Int) throws -> CorrelationSummary {
         let range = recentRange(dayCount: dayCount)
         let left = try builder.series(for: a, fromDay: range.from, toDay: range.to)
         let right = try builder.series(for: b, fromDay: range.from, toDay: range.to)
+        let transitions = try transitionDays(in: range.days)
 
-        var pairs: [(Double, Double)] = []
+        var allPairs: [(Double, Double)] = []
+        var comparablePairs: [(Double, Double)] = []
+        var excluded = 0
         for day in range.days {
             guard let x = left.value(for: day), let y = right.value(for: day) else { continue }
-            pairs.append((x, y))
+            allPairs.append((x, y))
+            if transitions.contains(day) {
+                excluded += 1
+            } else {
+                comparablePairs.append((x, y))
+            }
         }
 
-        let result = CorrelationEngine.pearson(pairs)
+        let filtered = !comparablePairs.isEmpty && comparablePairs.count * 2 >= allPairs.count
+        let result = CorrelationEngine.pearson(filtered ? comparablePairs : allPairs)
         try CorrelationPairStore(db: db).save(
             metricA: a.rawValue, metricB: b.rawValue, result: result)
 
-        return CorrelationSummary(metricA: a, metricB: b, result: result, windowCount: dayCount)
+        return CorrelationSummary(metricA: a, metricB: b, result: result, windowCount: dayCount,
+                                 excludedTransitionDays: filtered ? excluded : 0)
+    }
+
+    /// The dates in `days` whose stored circadian context is a transition.
+    ///
+    /// One ranged read rather than a lookup per day, because the row is keyed on
+    /// `date` and the window is a bounded handful of days. A date with no row is
+    /// **not** a transition: the table is only written for dates the readiness
+    /// cycle linking service has processed, and an unprocessed date makes no
+    /// claim in either direction. Treating absence as a transition would delete
+    /// every unlinked day from every correlation, which is the opposite of what
+    /// the filter is for.
+    private func transitionDays(in days: [String]) throws -> Set<String> {
+        guard let first = days.first, let last = days.last, first <= last else { return [] }
+        var result: Set<String> = []
+        for row in try db.query("""
+            SELECT date, contextType FROM circadian_context WHERE date >= ? AND date <= ?;
+            """, [.text(first), .text(last)]) {
+            guard let date = row.string("date"),
+                  let raw = row.string("contextType"),
+                  let type = CircadianContextType(rawValue: raw),
+                  type == .transitionEarlier || type == .transitionLater else { continue }
+            result.insert(date)
+        }
+        return result
     }
 
     /// The default pairs, each computed and persisted.
@@ -187,6 +242,20 @@ public struct CorrelationSummary: Sendable, Hashable, Identifiable {
     public let metricB: InsightMetric
     public let result: CorrelationResult
     public let windowCount: Int
+    /// Paired days dropped because they were inside a circadian transition
+    /// (BRD §6.15 comparable-day filtering). Zero both when the filter was
+    /// dropped for want of data and when there was nothing to filter — the
+    /// screen only needs to mention it when it actually happened.
+    public let excludedTransitionDays: Int
+
+    public init(metricA: InsightMetric, metricB: InsightMetric, result: CorrelationResult,
+                windowCount: Int, excludedTransitionDays: Int = 0) {
+        self.metricA = metricA
+        self.metricB = metricB
+        self.result = result
+        self.windowCount = windowCount
+        self.excludedTransitionDays = excludedTransitionDays
+    }
 
     public var id: String { "\(metricA.rawValue)-\(metricB.rawValue)" }
 

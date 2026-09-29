@@ -73,6 +73,11 @@ final class ReadinessModel: ObservableObject {
     /// `ReadinessContext` flag, because the context flag of the nearest name
     /// means a circadian *transition*, which is a different fact.
     @Published private(set) var baselineNotice: ReadinessBaselineNotice?
+    /// §13's circadian context for today, read from the stored
+    /// `circadian_context` row. Nil when there is no row, or when the context is
+    /// `.unknown` — with no shift schedule there is nothing to say, and a line
+    /// reading "no schedule recorded" on every day would be noise.
+    @Published private(set) var circadianLine: String?
 
     private var db: Database?
     private var profileStore: ProfileStore?
@@ -134,6 +139,9 @@ final class ReadinessModel: ObservableObject {
             calibrationDay = resolution.calibrationDay
             baselineNotice = resolution.notice
             recordBaseline(resolution, day: today)
+
+            circadianLine = try CircadianContextStore(db: db!).context(for: today.value)
+                .flatMap { CircadianPresentation.line(for: $0.contextType, transitionDayN: $0.transitionDayN) }
 
             todayMood = try moodStore.logs(for: today.value).last
             todaySoreness = try sorenessStore.logs(for: today.value).last
