@@ -7,22 +7,26 @@ import AlmanacCore
 /// `refresh()` is the one place that assembles `ReadinessInputs`/
 /// `ReadinessContext` from the other Slice 2/7 stores, calls
 /// `ReadinessEngine.evaluate`, and persists the result via
-/// `ReadinessRecordStore` — nothing else in the app does this yet, so this is
-/// also where several deliberately-simple stand-ins live until their real
-/// tasks are built:
+/// `ReadinessRecordStore` — nothing else in the app does this.
+///
+/// **What is built now, and what is still a stand-in:**
 ///
 /// - **Cycle:** `ReadinessCycleStore.ensureCycle` makes a bare cycle for
 ///   today if the primary-sleep-linking task (§8.4) hasn't created one yet.
-/// - **Baseline:** averaged here from `VitalsRecordStore`'s last 28 days of
-///   readings, not from a persisted `readiness_baseline` row — no store
-///   builds/maintains that table yet (§9.8).
-/// - **Context:** only active, training-affecting injuries are wired in
-///   (`InjuryNoteStore`, precedence rule §9.6.1). Manual recovery, rest/
-///   deload days, religious fasting, and shift transitions all depend on
-///   modules Slice 2 doesn't own (Training, Fasting's religious half,
-///   Circadian) and stay at their `false`/`nil` defaults. Calibration-day
-///   counting (§9.7's "Day X of 21") is not built either — `calibrationDay`
-///   stays nil, so the UI never shows a preliminary-estimate label yet.
+/// - **Baseline:** `ReadinessBaselineService` supplies §9.7's calibration
+///   counting and §9.8's general / shift-specific / Ramadan baselines, and
+///   `ReadinessBaselineStore` records the result in the `readiness_baseline`
+///   table that Migration014 created and nothing had ever written. This
+///   replaced an on-the-fly 28-day average that counted *days* rather than
+///   §9.7 valid days and never counted calibration at all, so the "Preliminary
+///   estimate" label §9.7 requires could not appear.
+/// - **Context:** injuries (§9.6.1), religious fast days, a session planned
+///   before iftar, and the day's circadian transition are all read from the
+///   stores that own them. Manual recovery days, planned rest days and planned
+///   deload weeks stay `false`, and the reason is a missing data model rather
+///   than a missing call: nothing in this repo records a deload week or a
+///   recovery day, so there is nothing to read. Recorded in
+///   `docs/features/readiness.md` rather than invented here.
 /// - **Stages:** the primary episode's stage split *is* wired
 ///   (`SleepStageBreakdownReader`). It was not, and §9.2's "no stage data → 50"
 ///   was therefore the score on every single run rather than the fallback: 20%
@@ -60,6 +64,15 @@ final class ReadinessModel: ObservableObject {
     /// number is missing, a failed save means it is correct on screen and will
     /// be gone by morning. One message for both would misdescribe one of them.
     @Published private(set) var saveProblem: String?
+    /// §9.7 — "Calibrating — Day X of 21 valid days", nil once calibration is
+    /// complete. Distinct from the score being provisional: a user can be fully
+    /// calibrated and still have only today's automatic inputs.
+    @Published private(set) var calibrationDay: Int?
+    /// §9.8's "limited comparable shift data" / "Ramadan context —
+    /// calibrating", shown alongside the score. Its own property rather than a
+    /// `ReadinessContext` flag, because the context flag of the nearest name
+    /// means a circadian *transition*, which is a different fact.
+    @Published private(set) var baselineNotice: ReadinessBaselineNotice?
 
     private var db: Database?
     private var profileStore: ProfileStore?
@@ -97,6 +110,7 @@ final class ReadinessModel: ObservableObject {
         // things about them, so they get different words — see below.
         var cycle: Int64?
         var result: ReadinessOutcome?
+        var baseline = ReadinessBaseline()
         let today = timeModel.logicalDay(Date())
 
         do {
@@ -111,7 +125,15 @@ final class ReadinessModel: ObservableObject {
 
             latestRHR = try vitalsStore.latestValue(for: "rhr")?.value
             latestHRV = try vitalsStore.latestValue(for: "hrv")?.value
-            let baseline = try recentBaseline(vitalsStore: vitalsStore, today: today)
+
+            // §9.7's calibration count and §9.8's three baselines, from the
+            // stores that hold the underlying days rather than from an average
+            // recomputed here.
+            let resolution = try ReadinessBaselineService(db: db!, timeModel: timeModel).resolve(for: today)
+            baseline = resolution.baseline
+            calibrationDay = resolution.calibrationDay
+            baselineNotice = resolution.notice
+            recordBaseline(resolution, day: today)
 
             todayMood = try moodStore.logs(for: today.value).last
             todaySoreness = try sorenessStore.logs(for: today.value).last
@@ -137,7 +159,11 @@ final class ReadinessModel: ObservableObject {
             )
             let context = ReadinessContext(
                 activeInjuryBodyArea: injuries.first?.bodyArea,
-                injuryAffectsTraining: !injuries.isEmpty
+                injuryAffectsTraining: !injuries.isEmpty,
+                religiousFastDay: try ReligiousFastScheduleStore(db: db!).isFastDay(today.value),
+                fastedSessionPlanned: try isSessionPlannedBeforeIftar(day: today),
+                shiftTransition: try isCircadianTransition(day: today),
+                calibrationDay: resolution.calibrationDay
             )
             let state: ReadinessState = (todayMood != nil && todaySoreness != nil) ? .final : .provisional
             result = ReadinessEngine.evaluate(state: state, inputs: inputs, baseline: baseline, context: context)
@@ -171,26 +197,55 @@ final class ReadinessModel: ObservableObject {
         }
     }
 
-    /// Naive 28-day average, computed on the fly rather than read from a
-    /// maintained `readiness_baseline` row (see the type-level doc comment).
-    /// `validDayCount` counts distinct logical days with an RHR or HRV
-    /// reading — an approximation of §9.7's "valid day" (which also counts a
-    /// sleep-only day), good enough to feed the calibration-vs-personalised
-    /// distinction without building the full baseline pipeline.
-    private func recentBaseline(vitalsStore: VitalsRecordStore, today: LogicalDay) throws -> ReadinessBaseline {
-        guard let windowStart = Calendar.current.date(byAdding: .day, value: -28, to: Date()) else {
-            return ReadinessBaseline()
+    /// Writes the §9.8 baseline row for whichever type answered, so the record
+    /// of *what today's score was measured against* survives the day. A failure
+    /// here is deliberately silent: the score is already computed and correct,
+    /// the row is a record rather than an input, and a persistence failure in an
+    /// audit trail should not blank the number the user came for.
+    private func recordBaseline(_ resolution: ReadinessBaselineResolution, day: LogicalDay) {
+        guard let db,
+              let start = resolution.windowStartDate,
+              let end = resolution.windowEndDate else { return }
+        let type: ReadinessBaselineType
+        switch resolution.baseline.context {
+        case .general, .calibration: type = .general
+        case .shiftSpecific: type = .shiftSpecific
+        case .ramadan: type = .ramadan
         }
-        let from = timeModel.logicalDay(windowStart).value
-        let to = timeModel.day(after: today)?.value ?? today.value
+        let shiftType: ShiftType? = type == .shiftSpecific
+            ? try? ShiftScheduleStore(db: db).occurrence(for: day.value)?.shiftType
+            : nil
+        guard type != .shiftSpecific || shiftType != nil else { return }
 
-        let rhrHistory = try vitalsStore.records(metric: "rhr", from: from, to: to)
-        let hrvHistory = try vitalsStore.records(metric: "hrv", from: from, to: to)
-        let avgRHR = rhrHistory.isEmpty ? nil : rhrHistory.map(\.value).reduce(0, +) / Double(rhrHistory.count)
-        let avgHRV = hrvHistory.isEmpty ? nil : hrvHistory.map(\.value).reduce(0, +) / Double(hrvHistory.count)
-        let validDays = Set((rhrHistory + hrvHistory).map(\.logicalDay)).count
+        try? ReadinessBaselineStore(db: db).save(resolution.baseline, type: type, shiftType: shiftType,
+                                                windowStartDate: start, windowEndDate: end,
+                                                rollingWindowDays: ReadinessBaselineService.windowDays)
+    }
 
-        return ReadinessBaseline(restingHeartRate: avgRHR, hrv: avgHRV, validDayCount: validDays)
+    /// §9.6's `.religiousFastContext` precedence rule needs "a session is
+    /// planned before iftar on a religious fast day" — the *plan*, not a
+    /// completed workout. `PlannedWorkoutStore.nextUpcoming` is the plan, and
+    /// Maghrib from the prayer cache is the deadline.
+    ///
+    /// False when the day is not a fast day at all, when no prayer times are
+    /// cached yet, or when nothing is planned: each of those is "no fasted
+    /// session is planned", which is what the flag means.
+    private func isSessionPlannedBeforeIftar(day: LogicalDay) throws -> Bool {
+        guard try ReligiousFastScheduleStore(db: db!).isFastDay(day.value) else { return false }
+        let cached = try PrayerTimeCacheStore(db: db!).cachedDay(day.value)
+        guard let maghrib = cached?.times.first(where: { $0.name == "maghrib" })?.timestamp else { return false }
+        guard let planned = try PlannedWorkoutStore(db: db!).nextUpcoming(after: Date()) else { return false }
+        return planned.scheduledAt <= maghrib
+    }
+
+    /// §13's transition states, which `ReadinessContext.shiftTransition` names.
+    /// Read from the stored `circadian_context` row for the day rather than
+    /// recomputed: `ReadinessCyclePrimaryLinkingService` already writes that row
+    /// on every primary-sleep link, and a second computation here could disagree
+    /// with it.
+    private func isCircadianTransition(day: LogicalDay) throws -> Bool {
+        guard let record = try CircadianContextStore(db: db!).context(for: day.value) else { return false }
+        return record.contextType == .transitionEarlier || record.contextType == .transitionLater
     }
 
     /// Logs mood and soreness together (spec §17's `MoodSorenessScreen` is

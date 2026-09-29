@@ -135,12 +135,26 @@ struct ReadinessDashboardView: View {
                     if let problem = model.saveProblem {
                         AlmanacProblemNote(text: problem)
                     }
+                    // §9.8's "limited comparable shift data" / "Ramadan
+                    // context — calibrating". Below the problem notes because
+                    // it is a caveat about the number above, not a fault, and a
+                    // user should read the caveat *after* the reading.
+                    if let notice = model.baselineNotice {
+                        Text(notice.text)
+                            .font(AlmanacTypography.font(.caption))
+                            .foregroundStyle(AlmanacPalette.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("readiness-baseline-notice")
+                    }
                 }
 
                 if let outcome {
                     if dynamicTypeSize.isAccessibilitySize {
                         VStack(alignment: .leading, spacing: 8) {
                             AlmanacStatusMark(text: isFinal ? "Final" : "Provisional", tone: isFinal ? .good : .neutral)
+                            if let day = model.calibrationDay {
+                                AlmanacStatusMark(text: "Preliminary · day \(day) of 21", tone: .neutral)
+                            }
                             if !outcome.missingInputs.isEmpty {
                                 Text("\(outcome.missingInputs.count) input\(outcome.missingInputs.count == 1 ? "" : "s") missing")
                                     .font(AlmanacTypography.font(.caption))
@@ -150,6 +164,9 @@ struct ReadinessDashboardView: View {
                     } else {
                         HStack(spacing: 10) {
                             AlmanacStatusMark(text: isFinal ? "Final" : "Provisional", tone: isFinal ? .good : .neutral)
+                            if let day = model.calibrationDay {
+                                AlmanacStatusMark(text: "Day \(day) of 21", tone: .neutral)
+                            }
                             if !outcome.missingInputs.isEmpty {
                                 Text("\(outcome.missingInputs.count) input\(outcome.missingInputs.count == 1 ? "" : "s") missing")
                                     .font(AlmanacTypography.font(.caption))
