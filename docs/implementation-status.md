@@ -10,6 +10,70 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
+## 2026-09-29 — Notifications: §14 wired to something that actually fires
+
+Slice 11. A previous note claimed items 3 and 4 were blocked on
+`day_record.dayType`. That is wrong, and so is the follow-on claim that the
+suppression path needs it. `dayType` is a column nothing reads or writes
+(Migration014 creates it, and that is all), and `NotificationSuppressionMatrix`
+gets its five axes from fasting sessions, shift occurrences, sleep episodes and
+the open readiness cycle. None of them is `dayType`.
+
+**What was actually true:** `Sources/AlmanacCore/Notifications/` held ~480 lines
+of trigger arithmetic, suppression logic and settings storage with **no
+production caller at all**, while `NotificationScheduler` took raw
+`[DateComponents]` and repeated them forever. Every §14 rule was implemented and
+unreachable.
+
+- **`NotificationPlanner`** is the missing piece: §14.1's "on each scheduling
+  run" as one pull-based call. It reads the two existing assemblers, the existing
+  pure matrix, and the new per-type switch table, and returns a
+  `[PlannedNotification]` snapshot. All nine types wired end to end.
+- **Suppression is evaluated per notification, at that notification's own fire
+  instant** — not once for the pass. This is the one design decision worth
+  stating. `isNightShift` and `isPostShiftSleep` carry their own timestamps and
+  are then correct for a notification 30 hours out: a night shift tonight
+  suppresses tonight's bedtime and leaves tomorrow's alone. The other three axes
+  cannot be evaluated at an arbitrary instant (their stores have no
+  point-in-time variant) and carry this pass's value forward, which is §14.1's
+  own rerun-on-every-event architecture rather than a shortcut around it.
+- **`Migration045` adds `notification_rule`** (§5.25, the spec's default table
+  verbatim). Its four `suppressDuring*` columns are created and **never
+  written**: `NotificationSuppressionMatrix` is the authority, and a second
+  writable copy of the same matrix is a rule that can disagree with itself.
+- **`NotificationScheduler` is now a diff, not a nuke-and-refill.** It adds what
+  is missing, removes only what the plan no longer wants, and never touches a
+  request it did not mint. It also reports what the OS *refused*, which the old
+  `try?` swallowed. And the old repeating `UNCalendarNotificationTrigger`s are
+  gone — one-shot triggers are why a rule change can now unschedule anything.
+- **Wired pull-based, deliberately.** §14.1 names four event kinds that should
+  re-run the pass, spread across most of the app; wiring a call into each is the
+  multi-site failure mode `docs/features/fasting.md` records ("the seventh path
+  added later will be the one that forgets"). Instead the pass is idempotent and
+  safe to call from anywhere, and it is called from the two places all four
+  events pass through anyway: the app's foreground handler (already the home of
+  `ensureCache`/`ensureToday`, and suhoor/iftar triggers depend on both) and the
+  settings screen after a switch. A missed call site costs one pass of
+  staleness, not a wrong schedule.
+- **Water has two switches and needs both** — the §5.25 default and the
+  pre-existing hydration toggle. A user who turned water reminders off must not
+  keep getting them because a schema default disagrees.
+- **`NotificationSettingsView`** gives every type an individual switch (BRD
+  §6.14's "all types individually toggleable") and states the real queued count
+  from the OS rather than recomputing a possibly-stale plan.
+
+**Product decisions not taken, on purpose:** no permission prompt on launch (a
+prompt must follow a deliberate tap); the pre-workout snack suggestion is
+delivered immediately, not scheduled, because §14.2 gives it no lead time; and
+per-type user-set *times* exist in storage but only water's interval is exposed
+in the UI, which is a follow-up rather than a claim.
+
+**Not verified:** whether a notification actually arrives at a chosen minute. That
+is device-only and is listed unrun in `docs/acceptance-checklist.md` rather than
+ticked on the strength of the code looking right.
+
++39 Swift Testing tests (11 rule store, 28 planner) and 5 UI tests, all green.
+
 ## 2026-09-29 — The sleep stages finally reach the readiness score
 
 First of readiness integration's five gaps (§9). Closes the one the handoff
