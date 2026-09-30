@@ -83,12 +83,92 @@ public struct HydrationProfile: Sendable, Hashable {
     }
 }
 
-public enum ActivityLevel: String, Codable, Sendable, CaseIterable, Hashable {
+/// How much a person moves, in five steps.
+///
+/// **One vocabulary for the app, not one per feature.** This started life as
+/// hydration's own answer to "how active is this person", and it is now also what
+/// drives the generated calorie target, so a person's activity level is stated
+/// once. The alternative — a second five-case enum beside this one — is how the
+/// app ends up with a hydration suggestion computed from one activity level and a
+/// calorie target computed from another, both of which the person believes they
+/// set.
+///
+/// **Two multipliers, because the two questions are different.** How much water
+/// somebody needs and how much energy they burn are not the same function of
+/// "active", and the numbers do not even move the same way: a sedentary person
+/// needs slightly *less* fluid than the baseline (0.9) while burning slightly
+/// *less* energy than it (1.2). Calling both of them "the multiplier" is how a
+/// hydration factor of 0.9 ends up multiplying a calorie target.
+///
+/// `rawValue` is what `hydration_profile.activity_level` already holds, so the
+/// names are frozen by stored data. Renaming the case is free; changing
+/// `rawValue` is a data migration.
+public enum ActivityLevel: String, Codable, Sendable, CaseIterable, Hashable, Identifiable {
     case sedentary = "sedentary"
     case light = "light"
     case moderate = "moderate"
     case high = "high"
     case veryHigh = "very_high"
+
+    public var id: String { rawValue }
+
+    public var title: String {
+        switch self {
+        case .sedentary: return "Sedentary"
+        case .light: return "Lightly active"
+        case .moderate: return "Moderately active"
+        case .high: return "Very active"
+        case .veryHigh: return "Extra active"
+        }
+    }
+
+    public var explanation: String {
+        switch self {
+        case .sedentary: return "Desk work, little exercise."
+        case .light: return "Light exercise one or two days a week."
+        case .moderate: return "Exercise three to five days a week."
+        case .high: return "Hard exercise six or seven days a week."
+        case .veryHigh: return "Physical work, or twice-a-day training."
+        }
+    }
+
+    /// How much fluid this activity level implies, relative to the baseline.
+    ///
+    /// These are the factors `HydrationCalculator` has always used, moved here so
+    /// the number sits next to the level it belongs to instead of in a `switch`
+    /// inside a calculator. Unchanged in value — a multiplier table that moves is
+    /// a hydration goal that changes for everyone, silently.
+    public var hydrationNeedMultiplier: Double {
+        switch self {
+        case .sedentary: return 0.9
+        case .light: return 1.0
+        case .moderate: return 1.1
+        case .high: return 1.2
+        case .veryHigh: return 1.4
+        }
+    }
+
+    /// The energy-expenditure factor that goes with Mifflin-St Jeor.
+    ///
+    /// **The standard published scale**, transcribed: the same five points, on the
+    /// same scale, in the order the equation is always used with. Every generated
+    /// calorie target in the app is a resting burn times this number, so a wrong
+    /// value here is a wrong answer in every card — which is why it is not a
+    /// number this app picked, and why it is *not* `hydrationNeedMultiplier` with a
+    /// different name.
+    ///
+    /// Overridable per snapshot: a person training for a marathon is not `high`,
+    /// and the way to say so is to type a different multiplier, not to wait for
+    /// this enum to grow a case.
+    public var energyExpenditureMultiplier: Double {
+        switch self {
+        case .sedentary: return 1.2
+        case .light: return 1.375
+        case .moderate: return 1.55
+        case .high: return 1.725
+        case .veryHigh: return 1.9
+        }
+    }
 }
 
 /// A hydration recommendation. Computed by `HydrationCalculator`, ported

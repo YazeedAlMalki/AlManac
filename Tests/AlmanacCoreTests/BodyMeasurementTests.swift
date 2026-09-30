@@ -21,12 +21,18 @@ struct BodyMeasurementTests {
         // the point of the test more plainly — these are the migrations a
         // profile predating 041 has to be upgraded through, and adding a
         // migration should make a human edit this line on purpose.
-        #expect(try runner.migrate(existing) == [41, 42, 43, 44, 45, 46])
+        #expect(try runner.migrate(existing) == [41, 42, 43, 44, 45, 46, 47, 48])
         #expect(try runner.migrate(existing).isEmpty)
         let profile = try ProfileStore(db: existing).profile()
         #expect(profile.displayName == "Existing user")
         #expect(profile.bodyMeasurementTrackSides == false)
         #expect(profile.createdAt == "before")
+        // A row that predates 041 predates 048 as well, and the columns 048 added
+        // must read as unset rather than as guesses about the person.
+        #expect(profile.unitBasis == .kilograms)
+        #expect(profile.isRegistered == false)
+        #expect(profile.trainingExperience == .notSet)
+        #expect(profile.allergens.isEmpty)
     }
 
     @Test("Toggle off uses unsided rows; on requires a side for arms and thighs only")

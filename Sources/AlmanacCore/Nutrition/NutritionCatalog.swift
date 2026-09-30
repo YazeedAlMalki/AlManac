@@ -178,22 +178,98 @@ public struct NutritionCatalog: @unchecked Sendable {
     /// Foods whose name in any language contains `text`, compared folded (`TextFold`):
     /// case, accents and Arabic letter variants do not matter. Each food once, by primary name.
     public func search(_ text: String, limit: Int = 50) throws -> [NutritionFood] {
+        try search(text, limit: limit, excluding: []).foods
+    }
+
+    /// The same search, with a hard allergen filter over the results.
+    ///
+    /// ## What the filter does and does not do
+    ///
+    /// It withholds any food whose *name* declares one of `excluding`'s allergens.
+    /// That is the whole of it. The catalog has no ingredient data — USDA and
+    /// CoFID rows are imported without allergen columns — so a food whose name is
+    /// silent about peanuts cannot be *shown* to be peanut-free, only shown to be
+    /// silent. Those foods are returned, with `.noDeclaration`, and
+    /// `AllergenFilterEffect.disclaimer` is the sentence the screen owes the
+    /// person as a result.
+    ///
+    /// Which is why this is a parameter and not a store dependency: the catalog
+    /// has no idea anybody has allergies, and it should not. Somebody who searches
+    /// with an empty set gets exactly the unfiltered list, which is the same
+    /// method with a different argument rather than a second code path.
+    ///
+    /// ## The limit is applied before the filter, and that is a real choice
+    ///
+    /// A query for "chicken" returning 200 rows with 3 of them peanut-butter
+    /// should show 197, not 47 — so filtering before `LIMIT` would silently shrink
+    /// results for exactly the people who need them. Filtering after it means a
+    /// query matching mostly allergen-bearing foods can return fewer than
+    /// `limit`, and that is stated on `effect.truncated` rather than left as a
+    /// mysteriously short list.
+    ///
+    /// Still one query. The verdict is computed in Swift from the primary name
+    /// already being read, not by a second query per row.
+    public func search(_ text: String,
+                       limit: Int = 50,
+                       excluding allergens: Set<FoodAllergen>) throws -> NutritionFoodSearchResults {
         let folded = TextFold.fold(text)
-        guard !folded.isEmpty, limit > 0 else { return [] }
+        guard !folded.isEmpty, limit > 0 else {
+            return NutritionFoodSearchResults(allergens: allergens)
+        }
+
         let pattern = "%" + folded.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "%", with: "\\%")
             .replacingOccurrences(of: "_", with: "\\_") + "%"
-        return try db.query("""
-            SELECT f.food_ref FROM nutrition_food f
+        let candidates = try db.query("""
+            SELECT f.food_ref, p.name_fold AS primary_fold FROM nutrition_food f
             JOIN nutrition_food_name p ON p.food_ref = f.food_ref AND p.is_primary = 1
             WHERE EXISTS (SELECT 1 FROM nutrition_food_name n
                           WHERE n.food_ref = f.food_ref AND n.name_fold LIKE ? ESCAPE '\\')
             ORDER BY p.name_fold, f.food_ref
             LIMIT ?;
             """, [.text(pattern), .integer(Int64(limit))])
-            .compactMap { row in
-                try row.string("food_ref").flatMap(SourceIdentifier.init(parsing:)).flatMap(food)
+            .compactMap { row -> (SourceIdentifier, String)? in
+                guard let raw = row.string("food_ref"),
+                      let ref = SourceIdentifier(parsing: raw) else { return nil }
+                // The folded primary name is already in hand, so the verdict costs
+                // no second read. Fall back to the ref if a row somehow has no
+                // primary name — the EXISTS above guarantees one exists.
+                return (ref, row.string("primary_fold") ?? raw)
             }
+
+        var kept: [NutritionFood] = []
+        var verdicts: [SourceIdentifier: AllergenVerdict] = [:]
+        var blocked: [SourceIdentifier: AllergenVerdict] = [:]
+        var removed = 0
+        var triggered: Set<FoodAllergen> = []
+
+        for (ref, nameFolded) in candidates {
+            // Match on the folded primary name, so "PEANUT BUTTER" and "peanut
+            // butter" produce one verdict. `AllergenVerdict.forFood` folds again,
+            // which is idempotent, so the cost is nil and the table stays the only
+            // place word lists live.
+            let verdict = AllergenVerdict.forFood(named: nameFolded, personAllergens: allergens)
+            if verdict.isFilteredOut {
+                removed += 1
+                blocked[ref] = verdict
+                triggered.formUnion(verdict.declared)
+                continue
+            }
+            if let food = try food(ref) {
+                kept.append(food)
+                verdicts[ref] = verdict
+            }
+        }
+
+        return NutritionFoodSearchResults(
+            foods: kept,
+            verdicts: verdicts,
+            blocked: blocked,
+            effect: AllergenFilterEffect(removed: removed, kept: kept.count,
+                                         triggeredBy: triggered),
+            hitTheLimit: candidates.count == limit,
+            allergens: allergens
+        )
     }
 
     // MARK: Portions

@@ -119,14 +119,11 @@ public struct HydrationCalculator: Sendable {
 
     // MARK: - Private Helpers
 
+    /// Reads the factor off the level. Was a `switch` in here, and moving it onto
+    /// the enum is what lets the goals code use the same five steps without
+    /// declaring a second, differently-named copy of them.
     private func multiplier(for level: ActivityLevel) -> Double {
-        switch level {
-        case .sedentary: return 0.9
-        case .light: return 1.0
-        case .moderate: return 1.1
-        case .high: return 1.2
-        case .veryHigh: return 1.4
-        }
+        level.hydrationNeedMultiplier
     }
 
     private func calculateUrgency(
