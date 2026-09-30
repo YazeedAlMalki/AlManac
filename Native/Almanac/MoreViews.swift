@@ -3,9 +3,30 @@ import AlmanacCore
 import Combine
 import Foundation
 
+/// The Modules menu.
+///
+/// **Generated from `AppRoute.menu`, not written out.** The list of screens and
+/// the list of things you can be navigated to are the same list, which is the
+/// only reason they cannot drift. A hand-written `NavigationLink { Body… }` per
+/// row is a second inventory of the app's screens, and the day a screen is
+/// added to one and not the other nobody finds out until someone taps a button
+/// that goes nowhere.
+///
+/// The group and the title of each row are data on the route, so adding a screen
+/// is one `case` plus one `switch` arm in `AppRoute.tab` — the latter
+/// compiler-enforced.
 @MainActor
 struct ModulesView: View {
-    let db: Database?
+    /// Non-optional, and the callers make that true.
+    ///
+    /// Half the screens behind this menu need a database outright — they open
+    /// their own store on it — and the old shape was `Database?` with an
+    /// `if let db` per row, which is a screen list that is quietly half as long
+    /// as the app when the database is missing. `appShell` is only rendered
+    /// when the laboratory store opened, and `db` is assigned immediately
+    /// before it, so the optional was never load-bearing; it only existed to
+    /// be unwrapped again at every row.
+    let db: Database
     let labModel: LaboratoryModel
     let hydrationModel: HydrationModel
     let nutritionModel: NutritionModel
@@ -17,8 +38,16 @@ struct ModulesView: View {
     let fastingModel: FastingModel
     let notificationModel: NotificationModel
 
+    @Environment(\.tabCoordinator) private var tabs
+
+    /// A stack that never pushes. Used only when this screen is rendered with
+    /// no coordinator in its environment — a preview, or a host that has not
+    /// wired one up. The menu rows then do nothing rather than crashing, which
+    /// is the right failure for a view whose whole job is to be embedded.
+    private var emptyPath: Binding<[AppRoute]> { .constant([]) }
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: tabs?.path(for: .modules) ?? emptyPath) {
             List {
                 Section {
                     Text("Everything you enter stays in Almanac’s local database on this device. Apple Health is used only for the connections you enable.")
@@ -27,98 +56,13 @@ struct ModulesView: View {
                         .listRowBackground(AlmanacPalette.surface)
                 }
 
-                Section("Track") {
-                    NavigationLink {
-                        TrainingDashboardView(model: trainingModel, embedded: true)
-                    } label: {
-                        Label("Training", systemImage: AlmanacIcon.training)
-                    }
-
-                    NavigationLink {
-                        HydrationDashboardView(model: hydrationModel, embedded: true)
-                    } label: {
-                        Label("Hydration", systemImage: AlmanacIcon.hydration)
-                    }
-
-                    NavigationLink {
-                        NutritionQuickEntryView(model: nutritionModel, embedded: true)
-                    } label: {
-                        Label("Nutrition", systemImage: AlmanacIcon.nutrition)
-                    }
-
-                    NavigationLink {
-                        FastingView(model: fastingModel)
-                    } label: {
-                        Label("Fasting", systemImage: AlmanacIcon.fasting)
-                    }
-
-                    if let db {
-                        NavigationLink {
-                            SupplementView(db: db, trackingModel: trackingModel)
-                        } label: {
-                            Label("Supplements", systemImage: AlmanacIcon.supplement)
+                ForEach(AppRoute.menu) { group in
+                    Section(group.section.title) {
+                        ForEach(group.routes) { route in
+                            NavigationLink(value: route) {
+                                Label(route.title, systemImage: route.icon)
+                            }
                         }
-
-                        NavigationLink {
-                            ContextTagsView(db: db, trackingModel: trackingModel)
-                        } label: {
-                            Label("Context", systemImage: AlmanacIcon.context)
-                        }
-                    }
-                }
-
-                Section("Daily context") {
-                    NavigationLink {
-                        PrayerView(model: prayerModel)
-                    } label: {
-                        Label("Prayer", systemImage: AlmanacIcon.prayer)
-                    }
-                }
-
-                Section("Records") {
-                    if let db {
-                        NavigationLink("Body circumferences") {
-                            BodyCircumferenceView(db: db, healthModel: healthModel)
-                        }
-                    }
-                    NavigationLink {
-                        ReportListView(model: labModel)
-                    } label: {
-                        Label("Laboratory", systemImage: AlmanacIcon.laboratory)
-                    }
-
-                    if let db {
-                        NavigationLink {
-                            DayTimelineView(db: db)
-                        } label: {
-                            Label("Timeline", systemImage: AlmanacIcon.timeline)
-                        }
-                    }
-
-                    NavigationLink {
-                        MeasurementsView(db: db, trackingModel: trackingModel)
-                    } label: {
-                        Label("Measurements", systemImage: AlmanacIcon.body)
-                    }
-
-                    NavigationLink {
-                        ProfileView(db: db, readinessModel: readinessModel)
-                    } label: {
-                        Label("Profile", systemImage: AlmanacIcon.profile)
-                    }
-                }
-
-                Section("App") {
-                    NavigationLink {
-                        SettingsView(
-                            model: hydrationModel,
-                            labModel: labModel,
-                            healthModel: healthModel,
-                            trackingModel: trackingModel,
-                            notificationModel: notificationModel
-                        )
-                    } label: {
-                        Label("Settings", systemImage: AlmanacIcon.settings)
                     }
                 }
             }
@@ -128,6 +72,59 @@ struct ModulesView: View {
             .navigationTitle("Modules")
             .toolbarBackground(AlmanacPalette.canvas, for: .navigationBar)
             .almanacScreen()
+            .navigationDestination(for: AppRoute.self) { route in
+                destination(for: route)
+            }
+        }
+    }
+
+    /// The one place a route becomes a screen.
+    ///
+    /// A `switch`, not a table, so adding a route without a screen is a
+    /// non-exhaustive switch — a build failure rather than a menu row that
+    /// pushes nothing.
+    @ViewBuilder
+    private func destination(for route: AppRoute) -> some View {
+        switch route {
+        case .training:
+            TrainingDashboardView(model: trainingModel, embedded: true)
+        case .hydration:
+            HydrationDashboardView(model: hydrationModel, embedded: true)
+        case .nutrition:
+            NutritionQuickEntryView(model: nutritionModel, embedded: true)
+        case .fasting:
+            FastingView(model: fastingModel)
+        case .supplements:
+            SupplementView(db: db, trackingModel: trackingModel)
+        case .context:
+            ContextTagsView(db: db, trackingModel: trackingModel)
+        case .prayer:
+            PrayerView(model: prayerModel)
+        case .bodyCircumference:
+            BodyCircumferenceView(db: db, healthModel: healthModel)
+        case .laboratory:
+            ReportListView(model: labModel)
+        case .laboratoryImportHistory:
+            LabImportHistoryView(model: labModel)
+        case .timeline:
+            DayTimelineView(db: db)
+        case .bodyComposition:
+            MeasurementsView(db: db, trackingModel: trackingModel)
+        case .profile:
+            ProfileView(db: db, readinessModel: readinessModel)
+        case .settings:
+            SettingsView(
+                model: hydrationModel,
+                labModel: labModel,
+                healthModel: healthModel,
+                trackingModel: trackingModel,
+                notificationModel: notificationModel
+            )
+        // The tab roots. Reached by pushing a tab's own root onto itself, which
+        // no caller does — the bar switches tabs instead — so they are here only
+        // because `AppRoute` is exhaustive and this switch has to be too.
+        case .todayRoot, .trendsRoot, .trendsDetail:
+            EmptyView()
         }
     }
 }

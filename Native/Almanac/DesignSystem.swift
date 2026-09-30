@@ -244,32 +244,10 @@ enum AlmanacAppearance: String, CaseIterable, Identifiable {
 
 /// Temporary icon vocabulary. The approved custom icon sheet is a separate
 /// deliverable; centralizing SF Symbols keeps that replacement isolated.
-enum AlmanacIcon {
-    static let today = "circle.grid.2x2"
-    static let trends = "chart.xyaxis.line"
-    static let modules = "square.grid.2x2"
-    static let quickAdd = "plus"
-    static let sleep = "bed.double"
-    static let hydration = "drop"
-    static let nutrition = "fork.knife"
-    static let training = "dumbbell"
-    static let body = "ruler"
-    static let supplement = "pills"
-    static let context = "tag"
-    static let digestion = "circle.grid.cross"
-    static let timeline = "list.bullet.rectangle"
-    static let templates = "square.stack.3d.up"
-    static let insights = "point.3.connected.trianglepath.dotted"
-    static let check = "checkmark"
-    static let edit = "pencil"
-    static let previous = "chevron.left"
-    static let next = "chevron.right"
-    static let laboratory = "cross.case"
-    static let profile = "person"
-    static let prayer = "sun.horizon"
-    static let fasting = "moon.stars"
-    static let settings = "gearshape"
-}
+// `AlmanacIcon` moved to `Sources/AlmanacCore/Design/AlmanacIcon.swift`. The
+// router in `AppRoute` names its own icons, and a route that could not label
+// itself would make every caller repeat the mapping — so the vocabulary has to
+// be reachable from the core module. It is still one list, not two.
 
 enum AlmanacStatusTone {
     case neutral
@@ -474,10 +452,45 @@ struct AlmanacMetricRow: View {
     let value: String
     var detail: String?
     var tone: AlmanacStatusTone?
-
+    /// What tapping the row does, or `nil` when the row is a reading rather
+    /// than a door.
+    ///
+    /// The action lives on the row itself rather than in a `.onTapGesture` on
+    /// whatever contains it, for three reasons that all show up as bugs
+    /// otherwise. It gets the button trait and the "double-tap to activate"
+    /// hint for free, so VoiceOver does not read a non-interactive row as an
+    /// image and a string. It gets the pressed feedback, which a tap gesture
+    /// does not. And it keeps the hit target on the row instead of on the
+    /// container's padding, so a row inside a card with a footer is not tappable
+    /// through the footer.
+    var action: (() -> Void)?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        if let action {
+            Button(action: action) { content }
+                .buttonStyle(AlmanacMetricRowStyle())
+                // A hint is the one thing the label cannot carry, so it is the
+                // one thing set here.
+                //
+                // The label is deliberately *not* set. Measured on a simulator,
+                // a tappable row announces as "Hydration, of 2000 mL, 0 mL" —
+                // title, detail, value, in reading order, which is what was
+                // wanted. Forcing it with `accessibilityElement(children:`
+                // `.ignore)` plus an explicit label was tried first and changed
+                // nothing: SwiftUI computes a button's label from its own
+                // content and does not let the caller restate it that way. The
+                // natural label is already right, so the code that pretended to
+                // control it is gone rather than left in as a no-op that looks
+                // load-bearing.
+                .accessibilityHint(Text("Opens \(title)"))
+        } else {
+            content
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 10) {
@@ -528,8 +541,7 @@ struct AlmanacMetricRow: View {
         .frame(minHeight: 64)
     }
 
-    private var iconView: some View {
-        Image(systemName: icon)
+    private var iconView: some View {        Image(systemName: icon)
             .font(.system(size: 17, weight: .medium))
             .foregroundStyle(tone?.color ?? AlmanacPalette.accent)
             .frame(width: 28, height: 28)
@@ -559,8 +571,26 @@ struct AlmanacStatusMark: View {
     }
 }
 
-struct AlmanacPrimaryButtonStyle: ButtonStyle {
+/// The pressed state for a tappable metric row.
+///
+/// A row inside a card that grows a full-width accent fill on press reads as a
+/// button, which is what it now is — but the fill is a *tint* of the surface,
+/// not the accent. Solid accent on press would put the accent behind a row of
+/// text and spend the one color that means "Almanac recorded something" on
+/// "you are touching this".
+struct AlmanacMetricRowStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(configuration.isPressed ? AlmanacPalette.surfaceMuted : Color.clear)
+            .contentShape(Rectangle())
+            // 0.12s, and no scale. A row is already 64pt tall; shrinking it on
+            // press moves the text above the finger and reads as a glitch
+            // rather than as feedback.
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+struct AlmanacPrimaryButtonStyle: ButtonStyle {    func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(AlmanacTypography.font(.bodyMedium))
             .foregroundStyle(AlmanacPalette.onAccent)

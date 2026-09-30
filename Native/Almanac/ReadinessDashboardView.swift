@@ -11,7 +11,19 @@ struct ReadinessDashboardView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.tabCoordinator) private var tabs
     @State private var checkingIn = false
+
+    /// The action for a row that opens a feature.
+    ///
+    /// Returns `nil` rather than a no-op closure when there is no coordinator,
+    /// because `AlmanacMetricRow` treats `nil` as "this row is a reading" and
+    /// would draw a button that does nothing. A dead button is a lie about what
+    /// is tappable; a plain row is just a row.
+    private func goTo(_ route: AppRoute) -> (() -> Void)? {
+        guard let tabs else { return nil }
+        return { tabs.go(to: route) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -224,7 +236,16 @@ struct ReadinessDashboardView: View {
                         title: "Hydration",
                         value: "\(AlmanacNumber.compact(hydrationModel.todayTotal.value)) mL",
                         detail: "of \(AlmanacNumber.compact(hydrationGoal)) mL",
-                        tone: hydrationTone
+                        tone: hydrationTone,
+                        // A reading is a door. Each of these rows is the name of
+                        // a feature, and Today is where someone first wonders
+                        // *where* hydration is logged — so tapping the row takes
+                        // them there, switching to Modules if it has to. Sleep
+                        // has no row above it on purpose: it is read from Apple
+                        // Health and nothing in Almanac writes it, so it is a
+                        // reading, not a door, and a button that goes nowhere is
+                        // worse than no button.
+                        action: goTo(.hydration)
                     )
                     AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
@@ -236,7 +257,8 @@ struct ReadinessDashboardView: View {
                         // drinks-only day has no food totals, and keying on
                         // those put a "minus.circle" nothing-here badge beside
                         // a real calorie figure.
-                        tone: todaysEnergy == nil ? .neutral : nil
+                        tone: todaysEnergy == nil ? .neutral : nil,
+                        action: goTo(.nutrition)
                     )
                     AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
@@ -244,7 +266,8 @@ struct ReadinessDashboardView: View {
                         title: "Training",
                         value: trainingValue,
                         detail: trainingDetailText,
-                        tone: trainingModel.todaysSummary == nil ? .neutral : nil
+                        tone: trainingModel.todaysSummary == nil ? .neutral : nil,
+                        action: goTo(.training)
                     )
                 }
             }

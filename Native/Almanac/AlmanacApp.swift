@@ -1,12 +1,6 @@
 import SwiftUI
 import AlmanacCore
 
-private enum AppTab: Hashable {
-    case today
-    case trends
-    case modules
-}
-
 @main
 @MainActor
 struct AlmanacApp: App {
@@ -20,7 +14,10 @@ struct AlmanacApp: App {
     @StateObject private var fastingModel = FastingModel()
     @StateObject private var trackingModel = TrackingCalendarModel()
     @StateObject private var notificationModel = NotificationModel()
-    @State private var selectedTab = AppTab.today
+    /// Owned here, above the bar, because it is the one piece of state that has
+    /// to be shared by all three tabs: which tab is showing, and how deep each
+    /// tab's stack is. Everything else in the app is per-feature.
+    @StateObject private var tabs = TabCoordinator()
     @State private var quickLogging = false
     @AppStorage("almanac.appearance") private var appearanceRaw = AlmanacAppearance.system.rawValue
     @Environment(\.scenePhase) private var scenePhase
@@ -96,8 +93,9 @@ struct AlmanacApp: App {
         // trapped behind the bar — Settings could not be scrolled to.
         VStack(spacing: 0) {
             selectedDestination
-            AlmanacNavigationBar(selection: $selectedTab, quickLog: { quickLogging = true })
+            AlmanacNavigationBar(selection: tabs.selectionBinding, quickLog: { quickLogging = true })
         }
+            .environment(\.tabCoordinator, tabs)
             .sheet(isPresented: $quickLogging) {
                 QuickLogView(
                     db: model.db,
@@ -108,7 +106,7 @@ struct AlmanacApp: App {
                     fastingModel: fastingModel
                 )
             }
-            .onChange(of: selectedTab) { _, tab in
+            .onChange(of: tabs.selected) { _, tab in
                 if tab == .today { trackingModel.refresh() }
             }
             // The database is opened synchronously in LaboratoryModel.open(),
@@ -130,7 +128,7 @@ struct AlmanacApp: App {
 
     @ViewBuilder
     private var selectedDestination: some View {
-        switch selectedTab {
+        switch tabs.selected {
         case .today:
             ReadinessDashboardView(
                 model: readinessModel,
@@ -140,10 +138,24 @@ struct AlmanacApp: App {
                 trackingModel: trackingModel
             )
         case .trends:
+            // Deliberately *not* wrapped in the coordinator's stack. Trends brings
+            // its own `NavigationStack` and pushes its own links inside it, and
+            // nesting a second one inside the first is a back button that pops
+            // the wrong stack. It is also the only tab with nothing outside to
+            // reach it — a cross-tab link names a feature, and Trends is a
+            // feature only the bar links to. If a route ever needs to push
+            // *into* Trends, that is the change where Trends adopts the
+            // coordinator's path, not a wrapper added here.
             TrendsView(db: model.db)
         case .modules:
-            ModulesView(
-                db: model.db,
+            // `appShell` only renders when the store opened, and `db` is
+            // assigned just before it, so this unwrap cannot fail in practice.
+            // The `else` is there because "cannot fail in practice" is not the
+            // same as "cannot fail", and a menu that silently vanishes is worse
+            // than one that says why.
+            if let db = model.db {
+                ModulesView(
+                    db: db,
                 labModel: model,
                 hydrationModel: hydrationModel,
                 nutritionModel: nutritionModel,
@@ -153,16 +165,21 @@ struct AlmanacApp: App {
                 trackingModel: trackingModel,
                 prayerModel: prayerModel,
                 fastingModel: fastingModel,
-                notificationModel: notificationModel
-            )
+                    notificationModel: notificationModel
+                )
+            } else {
+                ContentUnavailableView("Modules unavailable",
+                                       systemImage: AlmanacIcon.modules,
+                                       description: Text("Almanac’s database is not open. Restart the app to try again."))
+            }
         }
     }
 }
 
+
 private struct AlmanacNavigationBar: View {
     @Binding var selection: AppTab
     let quickLog: () -> Void
-
     /// The quick-log action's own column. The bar has three destinations and
     /// one action, so the action gets a fixed column and the three tabs share
     /// what is left. Today and Trends sit in one half-width group and Modules
@@ -188,16 +205,26 @@ private struct AlmanacNavigationBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
+            // Built from `AppTab.barGroup` rather than written out. The bar's
+            // layout arithmetic — two equal halves with a fixed column between
+            // them — is what puts the quick-log action on the true centreline,
+            // and a hand-written `HStack` of three buttons is a second place
+            // for that arithmetic to live.
             HStack(spacing: 0) {
-                destinationButton(.today, title: "Today", icon: AlmanacIcon.today)
-                destinationButton(.trends, title: "Trends", icon: AlmanacIcon.trends)
+                ForEach(AppTab.allCases.filter { $0.barGroup == .leadingHalf }) { tab in
+                    destinationButton(tab)
+                }
             }
             .frame(maxWidth: .infinity)
 
             quickLogButton
 
-            destinationButton(.modules, title: "Modules", icon: AlmanacIcon.modules)
-                .frame(maxWidth: .infinity)
+            HStack(spacing: 0) {
+                ForEach(AppTab.allCases.filter { $0.barGroup == .trailingHalf }) { tab in
+                    destinationButton(tab)
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
         .frame(height: 66)
         .padding(.horizontal, 8)
@@ -242,17 +269,17 @@ private struct AlmanacNavigationBar: View {
         .accessibilityIdentifier("quick-log")
     }
 
-    private func destinationButton(_ tab: AppTab, title: String, icon: String) -> some View {
+    private func destinationButton(_ tab: AppTab) -> some View {
         Button {
             selection = tab
         } label: {
             VStack(spacing: Self.iconGap) {
-                Image(systemName: icon)
+                Image(systemName: tab.icon)
                     .font(.system(size: 18, weight: selection == tab ? .semibold : .regular))
                     .frame(width: 36, height: Self.iconWell)
                     .background(selection == tab ? AlmanacPalette.surfaceMuted : Color.clear)
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                Text(title)
+                Text(tab.title)
                     .font(AlmanacTypography.font(.caption))
                     .dynamicTypeSize(...DynamicTypeSize.xLarge)
             }
@@ -261,9 +288,20 @@ private struct AlmanacNavigationBar: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(title)
+        .accessibilityLabel(tab.title)
         .accessibilityAddTraits(selection == tab ? [.isSelected, .isButton] : .isButton)
+        // The bar is hand-built rather than a `TabView`, which means it does not
+        // inherit the system's handle on its own items — and a custom bar with
+        // no identifier is ambiguous to every test the moment a screen is
+        // pushed. "Modules" then names two buttons at once: this tab and the
+        // navigation bar's back button, which is labelled with the screen it
+        // came from. That is not a test-only problem; it is the same collision a
+        // screen reader user hits, so the identifier is part of the bar rather
+        // than a testing convenience bolted on.
+        .accessibilityIdentifier(Self.identifier(for: tab))
     }
+
+    static func identifier(for tab: AppTab) -> String { "tab-\(tab.rawValue)" }
 }
 
 /// All access to this connection stays on the main actor. The core owns SQL,
