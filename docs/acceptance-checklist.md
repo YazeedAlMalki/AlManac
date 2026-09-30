@@ -21,7 +21,7 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 
 | | |
 |---|---|
-| Core suite | **PASS** — 606 tests, 75 suites, zero failures |
+| Core suite | **PASS** — 627 tests, 78 suites, zero failures (recounted 2026-09-30 against `f3c10e2`; the 606/75 recorded earlier was captured before the last commit's tests landed) |
 | App + widget build (iPhone 16e simulator) | **PASS** |
 | Insights UI tests | **PASS** — 5 of 5 |
 | Notification settings UI tests | **PASS** — 5 of 5 |
@@ -37,7 +37,7 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 | # | Step | Result |
 |---|---|---|
 | 1.1 | `swift build` clean | **PASS** |
-| 1.2 | `swift test` green | **PASS** — 606/606 |
+| 1.2 | `swift test` green | **PASS** — 627/627 |
 | 1.3 | App target builds for a simulator | **PASS** |
 | 1.4 | Widget extension is built and embedded | **PASS** — `AlmanacWidgets.appex` present in the built app |
 | 1.5 | Every migration applies to a virgin database | **PASS** — 45 migrations, exercised by every core test |
