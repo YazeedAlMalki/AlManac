@@ -57,6 +57,10 @@ public enum LabReportCSVImport {
             if groups[reportID] == nil { groupOrder.append(reportID) }
             groups[reportID, default: []].append(cells)
         }
+        // The report keys this attempt reaches. Recorded before any write, so a
+        // job row can always name the rows it is about, even for an attempt
+        // that goes on to throw.
+        result.reportIDs = groupOrder
 
         for reportID in groupOrder {
             guard let reportRows = groups[reportID] else { continue }
@@ -127,6 +131,66 @@ public enum LabReportCSVImport {
             }
         }
         return result
+    }
+
+    // MARK: - Recording the attempt
+
+    /// Runs the import **and records that it ran**, as a job.
+    ///
+    /// This is the app's only import path. The pure `importReports(csv:into:)`
+    /// above stays available for tests of the parsing rules, which have no
+    /// business asserting anything about job rows.
+    ///
+    /// **The job is written as `.unresolved`, deliberately.** Deciding the
+    /// outcome here would freeze an answer about the catalog into the record,
+    /// and the catalog gains aliases after any given import. What this records
+    /// is what the attempt *did* — rows, reports, observations, invalid lines —
+    /// which nothing later can change; what it *matched* is worked out by
+    /// `LabImportJobReconciler.reconcile()` from the rows themselves.
+    ///
+    /// A throw still records a job, with the reason. An import that failed
+    /// because the file was unreadable is precisely the case a person needs to
+    /// find later, and a `try` that leaves nothing behind is how data loss
+    /// becomes invisible.
+    @discardableResult
+    public static func importReports(csv: String,
+                                     into store: LabStore,
+                                     sourceName: String? = nil,
+                                     recording jobs: LabImportJobStore) throws -> LabCSVImportResult {
+        do {
+            let result = try importReports(csv: csv, into: store, sourceSystem: jobs.sourceSystem)
+            try jobs.record(draft: LabImportJobDraft(
+                sourceName: sourceName,
+                sourceReportIDs: result.reportIDs,
+                sourceSystem: jobs.sourceSystem,
+                outcome: result,
+                status: .unresolved
+            ))
+            return result
+        } catch {
+            try? jobs.record(draft: LabImportJobDraft(
+                sourceName: sourceName,
+                sourceReportIDs: LabReportCSVImport.reportKeys(in: csv),
+                sourceSystem: jobs.sourceSystem,
+                outcome: LabCSVImportResult(),
+                status: .failed,
+                failureReason: String(describing: error)
+            ))
+            throw error
+        }
+    }
+
+    /// The report keys a file names, read without writing anything. Used on the
+    /// failure path above, where there is no result to take them from, so a
+    /// failed job can still say which report it failed on.
+    static func reportKeys(in csv: String) -> [String] {
+        var order: [String] = []
+        var seen: Set<String> = []
+        for cells in parse(csv) where cells.count == columnCount {
+            guard let reportID = clean(cells[0]), seen.insert(reportID).inserted else { continue }
+            order.append(reportID)
+        }
+        return order
     }
 
     // MARK: - CSV parsing (RFC 4180-lite: quoted fields, doubled quotes,
@@ -235,8 +299,33 @@ public struct LabCSVImportResult: Sendable, Equatable {
     public var observationsUnchanged = 0
     public var observationsRevised = 0
     public var invalidRows: [String] = []
+    /// The `source_report_id`s this attempt actually reached, in first-seen
+    /// order. Enough for `LabImportJobStore` to find the rows again without
+    /// holding a second copy of them.
+    public var reportIDs: [String] = []
 
     public init() {}
+
+    /// Used by tests and by callers that are building a result rather than
+    /// running an import.
+    public init(observationsCreated: Int) {
+        self.observationsCreated = observationsCreated
+    }
+
+    public init(groups: Int = 0, reportsCreated: Int = 0, reportsUnchanged: Int = 0,
+                reportConflicts: Int = 0, observationsCreated: Int = 0,
+                observationsUnchanged: Int = 0, observationsRevised: Int = 0,
+                invalidRows: [String] = [], reportIDs: [String] = []) {
+        self.groups = groups
+        self.reportsCreated = reportsCreated
+        self.reportsUnchanged = reportsUnchanged
+        self.reportConflicts = reportConflicts
+        self.observationsCreated = observationsCreated
+        self.observationsUnchanged = observationsUnchanged
+        self.observationsRevised = observationsRevised
+        self.invalidRows = invalidRows
+        self.reportIDs = reportIDs
+    }
 
     public var invalidRowCount: Int { invalidRows.count }
     public var needsHumanResolution: Bool { reportConflicts > 0 }

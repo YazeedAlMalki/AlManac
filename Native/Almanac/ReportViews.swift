@@ -34,6 +34,19 @@ struct ReportListView: View {
             if reports.count == limit {
                 Button("Load more reports") { limit += 50; reload() }
             }
+            // A row in the list rather than a `safeAreaInset`: that inset is
+            // swallowed by a `NavigationStack` on this screen's own host
+            // (`AlmanacApp`'s bar comment explains the trap), and a control
+            // nobody can reach is worse than one more row.
+            Section {
+                NavigationLink {
+                    LabImportHistoryView(model: model)
+                } label: {
+                    Label("Import history", systemImage: "clock.arrow.circlepath")
+                }
+            } footer: {
+                Text("Every import you have pasted is recorded here, with how many rows matched the catalog.")
+            }
         }
         .navigationTitle("Laboratory")
         .almanacModuleSurface()
@@ -183,6 +196,11 @@ struct ReportDetailView: View {
 /// same `upsertReport` / `record` seams as manual entry, so re-imports are
 /// fingerprint-idempotent and unranked changes are held as conflicts for the
 /// review screen rather than silently applied.
+///
+/// It calls the *recording* overload of `importReports`, so every import is
+/// written down as an `import_job` and can be read back from the import history.
+/// The plain overload still exists and is what the parser tests use; this view
+/// deliberately does not have a second path that forgets to record.
 @MainActor
 struct CSVImportView: View {
     @ObservedObject var model: LaboratoryModel
@@ -215,6 +233,14 @@ struct CSVImportView: View {
                         if outcome.invalidRowCount > 0 {
                             Text("\(outcome.invalidRowCount) rows skipped — see the source file").foregroundStyle(.secondary)
                         }
+                        // What the import *did* is known immediately; what it
+                        // *matched* is not, because that depends on the catalog
+                        // as it stands when the question is asked. Saying so is
+                        // better than showing a count that will change later
+                        // with no explanation.
+                        Text("Saved to import history. Whether each test name matched the catalog is worked out next time Almanac opens.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -231,8 +257,139 @@ struct CSVImportView: View {
     private func importCSV() {
         do {
             guard let store = model.store else { throw EditorFailure(message: "The database is unavailable.") }
-            outcome = try LabReportCSVImport.importReports(csv: csv, into: store)
+            guard let jobs = model.importJobs else { throw EditorFailure(message: "The database is unavailable.") }
+            outcome = try LabReportCSVImport.importReports(csv: csv, into: store, recording: jobs)
             model.changed()
         } catch { self.error = String(describing: error) }
+    }
+}
+
+/// Every import that has run, newest first, and what each one came to.
+///
+/// This is the answer to "did I lose data", and it only exists because an
+/// import that half-failed three weeks ago would otherwise leave no trace. The
+/// numbers shown are the reconciled view of the rows, not a tally frozen at
+/// import time — so a row fixed by hand, or a test name the catalog learned
+/// since, changes what this screen says.
+@MainActor
+struct LabImportHistoryView: View {
+    let model: LaboratoryModel
+    @State private var jobs: [LabImportJob] = []
+    @State private var error: String?
+
+    var body: some View {
+        List {
+            if jobs.isEmpty {
+                ContentUnavailableView("No imports yet", systemImage: "square.and.arrow.down",
+                    description: Text("Imports you paste into the laboratory screen are recorded here, with how many rows matched."))
+            }
+            ForEach(jobs) { job in
+                LabImportJobRow(job: job)
+            }
+        }
+        .navigationTitle("Import history")
+        .almanacModuleSurface()
+        .task { reload() }
+        .onChange(of: model.generation) { _, _ in reload() }
+        .editorError($error)
+    }
+
+    private func reload() {
+        do { jobs = try model.importJobs?.jobs(limit: 50) ?? [] }
+        catch { self.error = String(describing: error) }
+    }
+}
+
+/// One import, as a person reads it: when, how it went, and whether anything
+/// needs them.
+private struct LabImportJobRow: View {
+    let job: LabImportJob
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(job.sourceName ?? "Pasted import")
+                    .font(.headline)
+                Spacer()
+                Text(job.startedAt.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if let reason = job.failureReason {
+                Text(reason)
+                    .font(.subheadline)
+                    .foregroundStyle(AlmanacPalette.critical)
+            } else {
+                AlmanacStatusMark(text: job.status.displayText, tone: job.status.tone)
+                if job.rowsUsable > 0 {
+                    Text("\(job.rowsMatched) of \(job.rowsUsable) rows matched the catalog"
+                         + (job.rowsAmbiguous > 0 ? " · \(job.rowsAmbiguous) need choosing" : "")
+                         + (job.rowsUnmatched > 0 ? " · \(job.rowsUnmatched) did not match" : ""))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if job.observationsCreated + job.observationsUnchanged + job.observationsRevised > 0 {
+                Text("\(job.observationsCreated) results added · \(job.observationsUnchanged) unchanged · \(job.observationsRevised) revised")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if job.invalidRows > 0 {
+                Text("\(job.invalidRows) rows were not laboratory lines and were skipped")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(job.accessibilityDescription)
+    }
+}
+
+extension LabImportStatus {
+    /// The sentence a person reads. Written per case rather than derived from
+    /// the raw value, because `rawValue` is a storage key and not English.
+    var displayText: String {
+        switch self {
+        case .matched: return "Every row matched"
+        case .partial: return "Some rows did not match"
+        case .unmatched: return "No rows matched"
+        case .invalid: return "No usable rows"
+        case .conflicted: return "Report details need review"
+        case .failed: return "The import did not finish"
+        // Never shown as a problem: it is this app's own pending work, and a
+        // person cannot act on it.
+        case .unresolved: return "Checking"
+        }
+    }
+
+    var tone: AlmanacStatusTone {
+        switch self {
+        case .matched: return .good
+        case .partial: return .warning
+        case .unmatched, .invalid: return .warning
+        case .conflicted, .failed: return .critical
+        case .unresolved: return .neutral
+        }
+    }
+}
+
+extension LabImportJob {
+    /// One sentence, read in place of the four rows of text above it. A status
+    /// mark plus three counts is four separate announcements otherwise, and a
+    /// screen reader user has to hold all four to learn that nothing was lost.
+    var accessibilityDescription: String {
+        let when = startedAt.formatted(date: .abbreviated, time: .shortened)
+        if let reason = failureReason {
+            return "Import on \(when) did not finish. \(reason)"
+        }
+        guard rowsUsable > 0 else {
+            return "Import on \(when): \(status.displayText)."
+        }
+        var parts = ["\(rowsMatched) of \(rowsUsable) rows matched the catalog"]
+        if rowsAmbiguous > 0 { parts.append("\(rowsAmbiguous) need a choice from candidates") }
+        if rowsUnmatched > 0 { parts.append("\(rowsUnmatched) did not match") }
+        if invalidRows > 0 { parts.append("\(invalidRows) were not laboratory lines") }
+        return "Import on \(when). " + parts.joined(separator: ". ") + "."
     }
 }

@@ -60,6 +60,12 @@ struct AlmanacApp: App {
                     prayerModel.ensureCache()
                     fastingModel.ensureToday()
                     prayerModel.resumeLocationIfAuthorized()
+                    // §2.5's import outcomes. Synchronous and one query when
+                    // there is nothing stale, so it belongs with the other
+                    // `ensure…` passes rather than in the async block below —
+                    // putting it after the awaits would let the import history
+                    // screen read a count from before the pass that fixes it.
+                    model.reconcileImportJobs()
                     // Await both syncs before refreshing: sleep, vitals and water
                     // all feed the homepage, and a fire-and-forget hydration
                     // sync would leave the tracking calendar one refresh behind.
@@ -271,6 +277,11 @@ final class LaboratoryModel: ObservableObject {
     @Published private(set) var db: Database?
     @Published private(set) var generation = 0
     @Published private(set) var startupError: String?
+    /// Where imports are recorded. Exposed so the import screen records
+    /// through the same handle rather than building a second store over the
+    /// same file — and it is optional only because `db` is: it exists exactly
+    /// when the database does.
+    @Published private(set) var importJobs: LabImportJobStore?
 
     init() { open() }
 
@@ -294,6 +305,7 @@ final class LaboratoryModel: ObservableObject {
             self.db = db
             let store = LabStore(db: db)
             self.store = store
+            self.importJobs = LabImportJobStore(db: db)
             #if DEBUG
             try LabReportFixture.seedIfNeeded(into: store)
             #endif
@@ -305,6 +317,33 @@ final class LaboratoryModel: ObservableObject {
     }
 
     func changed() { generation += 1 }
+
+    /// Pull-based reconciliation: works out how past imports went and links the
+    /// rows the catalog can now resolve.
+    ///
+    /// Called on foreground alongside the other `ensure…` passes, and **not**
+    /// from the import button. Whether a row matched is a property of the file
+    /// *and the catalog*, and the catalog gains aliases long after any given
+    /// import — so deciding it at the import would freeze the wrong answer into
+    /// the record. One query when there is nothing to do, and only the stale
+    /// jobs are examined after that, which is what keeps this off the critical
+    /// path (see the performance note in `docs/handoff-2026-09-30.md` §8).
+    ///
+    /// Returns how many jobs it closed, so a caller can tell "nothing to do"
+    /// from "ran and found nothing".
+    @discardableResult
+    func reconcileImportJobs() -> Int {
+        guard let db else { return 0 }
+        do {
+            let closed = try LabImportJobReconciler(db: db).reconcile()
+            if closed > 0 { changed() }
+            return closed
+        } catch {
+            // A stale count is the cost of missing this call, not a reason to
+            // put an alert in front of someone about their own laboratory data.
+            return 0
+        }
+    }
 }
 
 struct EditorFailure: Error, LocalizedError {
