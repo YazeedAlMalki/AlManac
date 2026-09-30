@@ -70,12 +70,26 @@ public struct NotificationPlanner: @unchecked Sendable {
         let instant = now ?? clock.now
         var candidates: [PlannedNotification] = []
 
-        for day in try daysCovered(from: instant, horizon: horizon) {
+        let days = try daysCovered(from: instant, horizon: horizon)
+        for day in days {
             try appendDaily(instant: instant, day: day, horizon: horizon, into: &candidates)
         }
 
-        let kept = try candidates.filter { candidate in
-            let context = try suppression.context(at: candidate.fireAt)
+        // Read the facts once for the whole pass rather than once per candidate.
+        // Three of Appendix B's five axes cannot vary within a pass, and the two
+        // that can are answered from rows already fetched. Without this the pass
+        // issued ~7 queries per candidate — around 140 for a 48-hour window, on a
+        // pass that runs on every foreground activation. See
+        // `NotificationSuppressionContextAssembler.nowOnlyAxes()`.
+        let nowOnly = try suppression.nowOnlyAxes()
+        let occurrences = try suppression.nightOccurrences(around: instant)
+        let postShiftEpisodes = try suppression.postShiftEpisodes(around: instant)
+
+        let kept = candidates.filter { candidate in
+            let context = nowOnly.with(
+                isNightShift: suppression.isWithinNightShift(at: candidate.fireAt, occurrences: occurrences),
+                isPostShiftSleep: suppression.isWithinPostShiftSleep(at: candidate.fireAt,
+                                                                      episodes: postShiftEpisodes))
             return !NotificationSuppressionMatrix.shouldSuppress(candidate.type, in: context)
         }
 

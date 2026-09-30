@@ -24,6 +24,34 @@ import Foundation
 /// computing suppression once for a notification's future fire time and
 /// trusting it to still hold — so `instant` should in practice always be
 /// "now, or very close to it."
+/// The axes of `NotificationSuppressionContext` that hold the same value at
+/// every instant within one scheduling pass.
+///
+/// A separate type rather than a `NotificationSuppressionContext` with two
+/// fields left false, so it cannot be passed to `shouldSuppress` by accident and
+/// silently suppress nothing. Merging them back is `with(_:now:)`.
+public struct NowOnlySuppressionAxes: Sendable, Hashable {
+    public let isDryFastActive: Bool
+    public let isConfirmedIFActive: Bool
+    public let isReadinessAlreadyFinal: Bool
+
+    public init(isDryFastActive: Bool, isConfirmedIFActive: Bool, isReadinessAlreadyFinal: Bool) {
+        self.isDryFastActive = isDryFastActive
+        self.isConfirmedIFActive = isConfirmedIFActive
+        self.isReadinessAlreadyFinal = isReadinessAlreadyFinal
+    }
+
+    /// The full context at `instant`, given the two axes that do vary there.
+    public func with(isNightShift: Bool, isPostShiftSleep: Bool) -> NotificationSuppressionContext {
+        NotificationSuppressionContext(
+            isDryFastActive: isDryFastActive,
+            isConfirmedIFActive: isConfirmedIFActive,
+            isNightShift: isNightShift,
+            isPostShiftSleep: isPostShiftSleep,
+            isReadinessAlreadyFinal: isReadinessAlreadyFinal)
+    }
+}
+
 public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
     private let timeModel: TimeModel
     private let fastingSessions: FastingSessionStore
@@ -42,16 +70,41 @@ public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
     }
 
     public func context(at instant: Date) throws -> NotificationSuppressionContext {
+        let now = try nowOnlyAxes()
+        return NotificationSuppressionContext(
+            isDryFastActive: now.isDryFastActive,
+            isConfirmedIFActive: now.isConfirmedIFActive,
+            isNightShift: try isWithinNightShift(at: instant),
+            isPostShiftSleep: try isWithinPostShiftSleep(at: instant),
+            isReadinessAlreadyFinal: now.isReadinessAlreadyFinal)
+    }
+
+    /// The three axes that cannot be evaluated at an arbitrary instant, read
+    /// once and reusable for every instant a caller cares about.
+    ///
+    /// **This exists because calling `context(at:)` per candidate was a real
+    /// performance bug.** `NotificationPlanner` evaluates suppression at each
+    /// notification's own fire instant — correctly, because two of the five axes
+    /// carry their own timestamps — and a 48-hour window can hold twenty-odd
+    /// candidates. Each `context(at:)` call issued about seven queries: the
+    /// active fast, two shift occurrences, two days of sleep episodes, the open
+    /// cycle, and its record. That is roughly 140 queries for one scheduling
+    /// pass, on a pass that runs on **every foreground activation**.
+    ///
+    /// Three of the five axes do not vary within a pass at all — a dry fast is
+    /// either active at every candidate's fire instant or at none of them, and
+    /// today's readiness is final or it is not. Only `isNightShift` and
+    /// `isPostShiftSleep` depend on the instant. Splitting them means a pass
+    /// costs about four queries instead of one hundred and forty, and the answer
+    /// is identical.
+    public func nowOnlyAxes() throws -> NowOnlySuppressionAxes {
         let fasting = try fastingSessions.activeSession()
         let isConfirmedIF = fasting.map {
             $0.sessionType == .ifPlanned || $0.sessionType == .ifConfirmedSuggestion
         } ?? false
-
-        return NotificationSuppressionContext(
+        return NowOnlySuppressionAxes(
             isDryFastActive: fasting?.isDryFast ?? false,
             isConfirmedIFActive: isConfirmedIF,
-            isNightShift: try isWithinNightShift(at: instant),
-            isPostShiftSleep: try isWithinPostShiftSleep(at: instant),
             isReadinessAlreadyFinal: try isOpenReadinessCycleFinal())
     }
 
@@ -68,13 +121,32 @@ public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
     /// (Migration014), not times-of-day, so a plain range check is correct
     /// regardless of whether the shift crosses midnight.
     private func isWithinNightShift(at instant: Date) throws -> Bool {
-        for date in [calendarDateString(instant), calendarDateString(instant.addingTimeInterval(-86400))] {
-            guard let occurrence = try shifts.occurrence(for: date),
-                  occurrence.shiftType == .night,
-                  let start = occurrence.shiftStartTime, let end = occurrence.shiftEndTime else { continue }
+        try isWithinNightShift(at: instant, occurrences: try nightOccurrences(around: instant))
+    }
+
+    /// The night shift window covering `instant`, from occurrences already read.
+    ///
+    /// The batched form, and the reason `NotificationPlanner` is not issuing two
+    /// shift queries per candidate. See `nowOnlyAxes()` for the whole argument;
+    /// this is the same split applied to the two axes that genuinely do vary.
+    func isWithinNightShift(at instant: Date, occurrences: [ShiftOccurrenceRecord]) -> Bool {
+        for occurrence in occurrences where occurrence.shiftType == .night {
+            guard let start = occurrence.shiftStartTime, let end = occurrence.shiftEndTime else { continue }
             if instant >= start && instant <= end { return true }
         }
         return false
+    }
+
+    /// Night-shift occurrences for the two calendar dates an instant can fall in.
+    ///
+    /// Two dates, not two queries per candidate: a night shift that started
+    /// "yesterday" and is still running is filed under yesterday's date.
+    func nightOccurrences(around instant: Date) throws -> [ShiftOccurrenceRecord] {
+        var found: [ShiftOccurrenceRecord] = []
+        for date in [calendarDateString(instant), calendarDateString(instant.addingTimeInterval(-86400))] {
+            if let occurrence = try shifts.occurrence(for: date) { found.append(occurrence) }
+        }
+        return found
     }
 
     /// Mirrors the night-shift lookup, but keyed by logical day (04:00
@@ -83,19 +155,28 @@ public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
     /// classified under yesterday's logical day can still be running past
     /// the 04:00 boundary into today's.
     private func isWithinPostShiftSleep(at instant: Date) throws -> Bool {
+        try isWithinPostShiftSleep(at: instant, episodes: try postShiftEpisodes(around: instant))
+    }
+
+    /// The batched form. An episode spanning now may be filed under today's
+    /// logical day or yesterday's — the 04:00 boundary means a post-shift sleep
+    /// that started before it is still running after it.
+    func isWithinPostShiftSleep(at instant: Date, episodes: [StoredSleepEpisode]) -> Bool {
+        episodes.contains {
+            $0.effectiveType == .postShift && instant >= $0.start && instant <= $0.end
+        }
+    }
+
+    func postShiftEpisodes(around instant: Date) throws -> [StoredSleepEpisode] {
         let today = timeModel.logicalDay(instant)
         var days = [today]
         if let yesterday = timeModel.day(before: today) { days.append(yesterday) }
-
+        var found: [StoredSleepEpisode] = []
         for day in days {
-            let episodes = try sleepEpisodes.episodes(for: day.value)
-            if episodes.contains(where: {
-                $0.effectiveType == .postShift && instant >= $0.start && instant <= $0.end
-            }) {
-                return true
-            }
+            found.append(contentsOf: try sleepEpisodes.episodes(for: day.value)
+                .filter { $0.effectiveType == .postShift })
         }
-        return false
+        return found
     }
 
     /// Whether the currently open readiness cycle already has a `.final`
