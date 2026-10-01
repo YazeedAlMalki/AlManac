@@ -243,4 +243,58 @@ struct FoodAllergenTests {
         #expect(results.disclaimer == nil)
         #expect(results.note == nil)
     }
+
+    // MARK: - The reason a food was withheld
+
+    @Test("One allergen reads as one reason, in lower case")
+    func singleAllergenReason() {
+        let verdict = AllergenVerdict.forFood(named: "Peanut Sauce", personAllergens: [.peanuts])
+        // Lower-cased because the sentence begins "Names …" and a capitalised
+        // allergen there reads as the start of a new clause.
+        #expect(verdict.reason == "Names Peanuts")
+    }
+
+    @Test("Two allergens read as a list with an 'and'")
+    func twoAllergenReason() {
+        let verdict = AllergenVerdict(declared: [.peanuts, .milk], status: .declares)
+        #expect(verdict.reason == "Names Milk and Peanuts")
+    }
+
+    @Test("Three or more allergens keep the comma, and the order does not vary")
+    func manyAllergenReasonsAreStable() {
+        // `Set` iteration order is stable within a process but not across runs, so
+        // an unsorted join produces a reason that differs between launches. This
+        // is a sentence a person compares against a shopping list; it cannot
+        // reorder itself.
+        let declared: Set<FoodAllergen> = [.gluten, .peanuts, .milk, .soy]
+        let verdict = AllergenVerdict(declared: declared, status: .declares)
+        let expected = "Names Gluten / cereals, Milk, Peanuts and Soy"
+        #expect(verdict.reason == expected)
+
+        // Built the other way round, from a different literal order, to catch a
+        // sort that happens to agree with this one insertion order.
+        let other: Set<FoodAllergen> = [.soy, .milk, .gluten, .peanuts]
+        #expect(AllergenVerdict(declared: other, status: .declares).reason == expected)
+    }
+
+    @Test("A food that declares nothing has no reason to state")
+    func noDeclarationHasNoReason() {
+        // The absence is load-bearing: `.noDeclaration` results stay in the list,
+        // and a reason printed against one would tell the reader the food had been
+        // checked for something it was not checked for.
+        #expect(AllergenVerdict.forFood(named: "Apple Juice", personAllergens: [.peanuts]).reason == nil)
+        #expect(AllergenVerdict.forFood(named: "Apple Juice", personAllergens: []).reason == nil)
+    }
+
+    @Test("A withheld food keeps the publisher's punctuation and case")
+    func withheldFoodKeepsTheDisplayName() {
+        let ref = SourceIdentifier(namespace: .usda, localID: "1105904")
+        let withheld = WithheldFood(ref: ref, name: "Peanut Butter, Smooth",
+                                    verdict: AllergenVerdict(declared: [.peanuts], status: .declares))
+        // Verbatim. Neither `TextFold.fold`ed ("peanut butter smooth"), nor
+        // re-capitalised, nor upper-cased: this string is the label the reader is
+        // holding, and it has to be matchable against it.
+        #expect(withheld.name == "Peanut Butter, Smooth")
+        #expect(withheld.id == ref)
+    }
 }

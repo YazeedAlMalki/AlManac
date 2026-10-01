@@ -64,6 +64,54 @@ struct AllergenFilteredSearchTests {
         #expect(results.verdict(for: results.foods[0].ref).status == .noDeclaration)
     }
 
+    @Test("A withheld food arrives named, not just as a catalogue key")
+    func withheldFoodCarriesItsName() throws {
+        let (_, catalog) = try seeded()
+        let results = try catalog.search("satay", excluding: [.peanuts])
+
+        // The name is the only part of a withheld row a reader can act on.
+        // `cofid:1` identifies nothing they can use, so a screen built on the ref
+        // alone shows a receipt rather than an explanation.
+        let hidden = try #require(results.blocked.first)
+        // The *display* name, commas and all. `name_fold` would give
+        // "peanut sauce satay", which the reader holding a jar of peanut sauce
+        // cannot match against the label in front of them.
+        #expect(hidden.name == "Peanut Sauce, Satay")
+        #expect(hidden.verdict.declares(.peanuts))
+        #expect(hidden.verdict.reason == "Names Peanuts")
+        #expect(hidden.ref.description == "cofid:1")
+    }
+
+    @Test("Withheld foods come back in name order")
+    func withheldFoodsAreSortedByName() throws {
+        // Order is a lookup property, not a tidiness one: the list is shown when a
+        // search came back empty, and the reader's question is whether the food
+        // they wanted is on it.
+        let (db, catalog) = try seeded()
+        try db.execute("""
+        INSERT INTO nutrition_food (food_ref, namespace, local_id, licence_group,
+                                    food_group_code, food_group_name, source_record)
+        VALUES ('cofid:7', 'cofid', '7', 'B', 'DG', 'Sauces', 'fixture');
+        INSERT INTO nutrition_food_name (food_ref, language, name, is_primary, name_fold)
+        VALUES ('cofid:7', 'en', 'Peanut Satay Sauce, Spicy', 1, 'peanut satay sauce spicy');
+        """)
+        let results = try catalog.search("satay", excluding: [.peanuts])
+
+        // Both foods are withheld, so the assertion is about order and not about
+        // which of the two the filter caught — a search for "satay" that also
+        // matched something safe would put a third row in `kept` and make this
+        // about something else.
+        // "Peanut Satay…" before "Peanut Sauce,…": `name_fold` agrees, because
+        // "sat" < "sau". Catalog order happens to be name order too — the sort is
+        // there so that stays true when the catalogue is not sorted, not to fix
+        // this fixture.
+        #expect(results.blocked.map(\.name) == ["Peanut Satay Sauce, Spicy",
+                                                "Peanut Sauce, Satay"])
+        // And the one safe match survives, so the two lists are complementary
+        // rather than one being a copy of the other with names changed.
+        #expect(results.foods.map(\.primaryName) == ["Chicken Satay Skewers"])
+    }
+
     @Test("No allergens means exactly the old behaviour")
     func noAllergensIsUnfiltered() throws {
         let (_, catalog) = try seeded()

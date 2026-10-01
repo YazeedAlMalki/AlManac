@@ -92,9 +92,28 @@ final class NutritionModel: ObservableObject {
 
     // MARK: Search and lookup
 
-    func search(_ text: String) throws -> [NutritionFood] {
-        guard let catalog else { return [] }
-        return try catalog.search(text)
+    /// Search, filtered by the allergens on the profile.
+    ///
+    /// The allergen set is read per search rather than cached on the model,
+    /// because the thing that changes it is a trip to the profile screen and the
+    /// cache would then be stale for as long as nobody thought to invalidate it.
+    /// The read is two indexed lookups against a table with fourteen rows, on a
+    /// screen that is already running a `LIKE` scan over the food catalogue — the
+    /// invalidation bug it would prevent is worth more than the microseconds.
+    func search(_ text: String) throws -> NutritionFoodSearchResults {
+        // No catalog means no search, and no search means no filter has run — so
+        // `allergens` is empty and `isFiltered` is false. That is the honest
+        // answer: the screen stays silent about allergies rather than warning
+        // about a filter that did not happen.
+        guard let catalog, let db else { return NutritionFoodSearchResults() }
+        // A failed read of the allergen list must not silently produce an
+        // *unfiltered* search, which is the one result that looks safe. No
+        // allergies can be reported means the gate is not in force, and
+        // `NutritionFoodSearchResults.disclaimer` is where that has to be said —
+        // so the empty set is right, and it is the caller's job not to read it as
+        // "checked and clean".
+        let allergens = (try? ProfileStore(db: db).allergenSet()) ?? []
+        return try catalog.search(text, excluding: allergens)
     }
 
     /// Almanac's calorie number per 100 g, when the catalog can produce one.

@@ -216,7 +216,7 @@ private struct QuickBodyLogView: View {
     let onSaved: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var metric = "weight"
+    @State private var metric = BodyMetric.weight.rawValue
     @State private var value = ""
     @State private var conditions = "unknown"
     @State private var error: String?
@@ -240,8 +240,13 @@ private struct QuickBodyLogView: View {
             Form {
                 Section("Measurement") {
                     Picker("Metric", selection: $metric) {
-                        ForEach(bodyMetricOptions) { option in
-                            Text(option.title).tag(option.id)
+                        // `BodyMetric.allCases`, not the list this file used to
+                        // carry. That list was the only definition of what may go
+                        // in `body_composition_measurement.metric`, and it lived
+                        // in the view target where the store could not check a
+                        // write against it.
+                        ForEach(BodyMetric.allCases) { option in
+                            Text(option.title).tag(option.rawValue)
                         }
                     }
                     TextField("Value", text: $value)
@@ -281,11 +286,14 @@ private struct QuickBodyLogView: View {
         guard let db,
               let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
               number.isFinite,
-              number > 0,
-              let option = bodyMetricOptions.first(where: { $0.id == metric }) else {
+              number > 0 else {
             error = "Enter a positive measurement value."
             return
         }
+        // Falling back rather than failing: this is the second write path for the
+        // same column, and a row with an unknown metric is a card that can never
+        // be drawn. Weight is the one value always safe to record.
+        let option = BodyMetric(rawValue: metric) ?? .weight
         do {
             let now = Date()
             let day = TimeModel(timeZone: .current).logicalDay(now).value

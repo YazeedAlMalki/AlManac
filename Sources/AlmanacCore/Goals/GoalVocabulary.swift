@@ -137,4 +137,14 @@ public enum BiologicalSex: String, Sendable, Hashable, CaseIterable, Identifiabl
               let parsed = BiologicalSex(rawValue: trimmed) else { return .notSet }
         return parsed
     }
+
+    /// Whether this is an answer rather than the absence of one.
+    ///
+    /// The column stores an absence as NULL, so the *write* path needs to know
+    /// that `.notSet` means "write NULL" rather than "write the string
+    /// `not_set`". Without this, a picker whose selection is `.notSet` saves the
+    /// literal token, and every later read has to special-case it — which is the
+    /// exact arrangement that let a typed `"Female"` read as *not set* in the
+    /// first place. One value, one representation, in the column and the enum.
+    public var isSet: Bool { self != .notSet }
 }

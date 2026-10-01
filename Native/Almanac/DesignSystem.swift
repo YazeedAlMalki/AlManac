@@ -554,6 +554,59 @@ struct AlmanacMetricRow: View {
     }
 }
 
+/// A bar showing how far a reading has travelled towards a target.
+///
+/// ## The fill is a value, and nothing here animates it
+///
+/// A meter's obvious implementation is a `withAnimation` on the fraction, or a
+/// `ProgressView` tinted and trusted. Both animate. On a card grid of five that
+/// is five independent animations starting whenever the view re-renders — which
+/// on a body-composition screen is whenever a reading is saved, the unit basis
+/// changes, or a target lands. The screen is then doing work the user did not
+/// ask for, on a surface they are trying to read a number off.
+///
+/// So the width is a `GeometryReader` read and a `frame`, and the fraction is
+/// whatever `BodyCompositionProgress` computed. There is no `animation`
+/// modifier, no `ProgressView`, and no state to drive one. The bar changes when
+/// the value changes, which is the same as saying it does not change when
+/// nothing has.
+///
+/// ## `nil` draws nothing, and says so
+///
+/// `fraction` is `nil` for five different reasons — no target, no reading, fewer
+/// than two readings, no span to measure from, target already met — and
+/// collapsing them into "draw an empty bar" would leave a card showing a
+/// half-filled track that reads as "0% of the way there" for someone who is
+/// actually at their goal. A full bar and an empty bar are both claims. So a
+/// `nil` fraction renders no track at all, and the card's own status line is what
+/// says why.
+struct AlmanacMeter: View {
+    /// 0…1, or `nil` for "there is no progress to show".
+    let fraction: Double?
+    var tone: AlmanacStatusTone = .neutral
+    /// The thickness of the filled part. 8pt reads as a bar rather than a hairline
+    /// at arm's length without becoming a chart.
+    private let thickness: CGFloat = 8
+
+    var body: some View {
+        if let fraction {
+            GeometryReader { geometry in
+                // Clamped here as well as in core. The core value is already
+                // clamped, and this is not a second rule — it is what stops a
+                // future caller of this view from drawing a track that overflows
+                // its card.
+                let width = geometry.size.width * min(max(fraction, 0), 1)
+                ZStack(alignment: .leading) {
+                    Capsule().fill(AlmanacPalette.surfaceMuted)
+                    Capsule().fill(tone.color).frame(width: width)
+                }
+            }
+            .frame(height: thickness)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
 struct AlmanacStatusMark: View {
     let text: String
     let tone: AlmanacStatusTone

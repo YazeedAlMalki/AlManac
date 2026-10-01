@@ -244,6 +244,34 @@ public struct AllergenVerdict: Sendable, Hashable {
         declared.contains(allergen)
     }
 
+    /// One line naming the allergens this food's name declared, or `nil`.
+    ///
+    /// Lives here rather than in the search screen so the sentence is tested
+    /// beside the matching rule it explains, and so a screen cannot describe a
+    /// removal more confidently than `matches` actually matched.
+    ///
+    /// **Sorted, not set order.** `Set` iteration order is stable within a
+    /// process but not across runs, so an unsorted join produces a reason that
+    /// reads "Milk, Peanuts, Gluten / cereals" on one launch and a different
+    /// order on the next. This is a sentence a person compares against a shopping
+    /// list.
+    ///
+    /// **Titles verbatim, not lower-cased.** Lower-casing reads better for a
+    /// single word but mangles the ones that are not single words: `.gluten`'s
+    /// title is "Gluten / cereals", and "gluten / cereals" reads as a typo while
+    /// "Gluten / cereals" reads as the allergen the labelling laws name. So the
+    /// sentence is "Names Milk and Peanuts" — slightly formal, and always exactly
+    /// the string the picker shows the user when they recorded it.
+    public var reason: String? {
+        guard !declared.isEmpty else { return nil }
+        let names = declared.map(\.title).sorted()
+        guard names.count > 1 else { return "Names \(names[0])" }
+        // Oxford-comma style, because with two items "Peanuts and Milk" and with
+        // three "Peanuts, Milk and Soy" is what reads as a list at a glance.
+        let head = names.dropLast().joined(separator: ", ")
+        return "Names \(head) and \(names[names.count - 1])"
+    }
+
     /// Whether the food should be withheld from a search a person is looking at.
     ///
     /// The decision the app was asked for: a hard filter, so a food that declares

@@ -191,6 +191,20 @@ public struct ProfileStore: @unchecked Sendable {
         Set(try allergens())
     }
 
+    /// Just the unit basis, in one query.
+    ///
+    /// A body-composition screen needs this on every reload to format its cards,
+    /// and `profile()` would fetch the whole row *and* join `food_allergen` to
+    /// hand back nine unrelated fields. Reading one column is the difference
+    /// between one query and two for the common case of somebody with no
+    /// allergies, where the second query returns nothing at all.
+    public func unitBasis() throws -> UnitBasis {
+        guard let row = try db.query("SELECT unitBasis FROM profile WHERE id = 1;").first else {
+            return .kilograms
+        }
+        return UnitBasis.parse(row.string("unitBasis"))
+    }
+
     // MARK: - Write
 
     /// The profile table is a singleton (id always 1), but nothing seeds

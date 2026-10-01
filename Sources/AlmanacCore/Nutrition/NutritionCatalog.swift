@@ -220,56 +220,93 @@ public struct NutritionCatalog: @unchecked Sendable {
         let pattern = "%" + folded.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "%", with: "\\%")
             .replacingOccurrences(of: "_", with: "\\_") + "%"
+        // Both name columns are read, and `name_fold` alone would have been the
+        // cheaper-looking choice: `TextFold` strips punctuation and case, so a
+        // withheld food would be listed as "Peanut sauce satay" — the reader
+        // looking for the jar in front of them cannot match that against the label
+        // they are holding. They are columns of the same row, so reading both is
+        // no extra query.
         let candidates = try db.query("""
-            SELECT f.food_ref, p.name_fold AS primary_fold FROM nutrition_food f
+            SELECT f.food_ref, p.name AS primary_name, p.name_fold AS primary_fold
+            FROM nutrition_food f
             JOIN nutrition_food_name p ON p.food_ref = f.food_ref AND p.is_primary = 1
             WHERE EXISTS (SELECT 1 FROM nutrition_food_name n
                           WHERE n.food_ref = f.food_ref AND n.name_fold LIKE ? ESCAPE '\\')
             ORDER BY p.name_fold, f.food_ref
             LIMIT ?;
             """, [.text(pattern), .integer(Int64(limit))])
-            .compactMap { row -> (SourceIdentifier, String)? in
+            .compactMap { row -> Candidate? in
                 guard let raw = row.string("food_ref"),
                       let ref = SourceIdentifier(parsing: raw) else { return nil }
                 // The folded primary name is already in hand, so the verdict costs
-                // no second read. Fall back to the ref if a row somehow has no
-                // primary name — the EXISTS above guarantees one exists.
-                return (ref, row.string("primary_fold") ?? raw)
+                // no second read. The display name is preferred, and the folded
+                // form is the fallback: the EXISTS above guarantees a name row
+                // exists, but nothing in the schema guarantees `name_fold` was
+                // populated, and a verdict computed on an empty string would call
+                // every food clear of every allergen.
+                return Candidate(ref: ref,
+                                 name: row.string("primary_name") ?? row.string("primary_fold") ?? raw,
+                                 nameFolded: row.string("primary_fold") ?? "")
             }
 
         var kept: [NutritionFood] = []
         var verdicts: [SourceIdentifier: AllergenVerdict] = [:]
-        var blocked: [SourceIdentifier: AllergenVerdict] = [:]
+        var blocked: [WithheldFood] = []
         var removed = 0
         var triggered: Set<FoodAllergen> = []
 
-        for (ref, nameFolded) in candidates {
+        for candidate in candidates {
             // Match on the folded primary name, so "PEANUT BUTTER" and "peanut
             // butter" produce one verdict. `AllergenVerdict.forFood` folds again,
             // which is idempotent, so the cost is nil and the table stays the only
             // place word lists live.
-            let verdict = AllergenVerdict.forFood(named: nameFolded, personAllergens: allergens)
+            let verdict = AllergenVerdict.forFood(named: candidate.nameFolded,
+                                                  personAllergens: allergens)
             if verdict.isFilteredOut {
                 removed += 1
-                blocked[ref] = verdict
+                // The name travels with the verdict. `food(ref)` is deliberately
+                // *not* called for a withheld row: that would be a second query
+                // per removed food on a search that may remove fifty, to fetch a
+                // name the query above already returned.
+                blocked.append(WithheldFood(ref: candidate.ref,
+                                            name: candidate.name,
+                                            verdict: verdict))
                 triggered.formUnion(verdict.declared)
                 continue
             }
-            if let food = try food(ref) {
+            if let food = try food(candidate.ref) {
                 kept.append(food)
-                verdicts[ref] = verdict
+                verdicts[candidate.ref] = verdict
             }
         }
 
         return NutritionFoodSearchResults(
             foods: kept,
             verdicts: verdicts,
-            blocked: blocked,
+            // Name order, so the "was my food on the list?" read is a lookup
+            // rather than a scan. `blocked` is small — it is bounded by `limit` —
+            // so this is a sort of at most 50 short strings, once per search.
+            blocked: blocked.sorted { $0.name.compare($1.name, options: .caseInsensitive) == .orderedAscending },
             effect: AllergenFilterEffect(removed: removed, kept: kept.count,
                                          triggeredBy: triggered),
             hitTheLimit: candidates.count == limit,
             allergens: allergens
         )
+    }
+
+    /// One row of the search query: the food, the name as the user sees it, and
+    /// the folded name the match runs against.
+    ///
+    /// A private nested type rather than a tuple because the two names are easy to
+    /// transpose — and transposing them is not a type error, it is a search that
+    /// displays "PEANUT SAUCE, SATAY" or withholds foods for punctuation. Naming
+    /// them `name` and `nameFolded` makes the swap something a reader notices.
+    private struct Candidate {
+        let ref: SourceIdentifier
+        /// Display form, from `nutrition_food_name.name`.
+        let name: String
+        /// Match form, from `nutrition_food_name.name_fold`. May be empty.
+        let nameFolded: String
     }
 
     // MARK: Portions

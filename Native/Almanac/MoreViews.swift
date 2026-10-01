@@ -130,105 +130,13 @@ struct ModulesView: View {
 }
 
 @MainActor
-struct ProfileView: View {
-    let db: Database?
-    @ObservedObject var readinessModel: ReadinessModel
-
-    @State private var displayName = ""
-    @State private var dateOfBirth = ""
-    @State private var biologicalSex = ""
-    @State private var height = ""
-    @State private var sports = ""
-    @State private var saved = false
-    @State private var error: String?
-
-    var body: some View {
-        Form {
-            Section("Profile") {
-                TextField("Display name", text: $displayName)
-                    .textContentType(.name)
-                TextField("Date of birth (YYYY-MM-DD)", text: $dateOfBirth)
-                    .keyboardType(.numbersAndPunctuation)
-                TextField("Biological sex", text: $biologicalSex)
-                TextField("Height (cm)", text: $height)
-                    .keyboardType(.decimalPad)
-                TextField("Sports (comma-separated)", text: $sports)
-            }
-
-            if saved {
-                Section {
-                    Label("Profile saved", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(AlmanacPalette.good)
-                }
-            }
-        }
-        .navigationTitle("Profile")
-        .almanacModuleSurface()
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save", action: save).disabled(db == nil)
-            }
-        }
-        .task { load() }
-        .editorError($error)
-    }
-
-    private func load() {
-        guard let db else { return }
-        do {
-            let profile = try ProfileStore(db: db).profile()
-            displayName = profile.displayName
-            dateOfBirth = profile.dateOfBirth ?? ""
-            biologicalSex = profile.biologicalSex ?? ""
-            height = profile.heightCm.map { String(describing: $0) } ?? ""
-            sports = profile.sports.joined(separator: ", ")
-        } catch {
-            self.error = String(describing: error)
-        }
-    }
-
-    private func save() {
-        guard let db else { return }
-        do {
-            let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !name.isEmpty else {
-                throw EditorFailure(message: "Enter a display name.")
-            }
-
-            let heightValue: Double?
-            let trimmedHeight = height.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmedHeight.isEmpty {
-                heightValue = nil
-            } else if let value = Double(trimmedHeight), value > 0, value < 300 {
-                heightValue = value
-            } else {
-                throw EditorFailure(message: "Height must be a number between 0 and 300 cm.")
-            }
-
-            let store = ProfileStore(db: db)
-            try store.updateDisplayName(name)
-            try store.updateDateOfBirth(optionalText(dateOfBirth.trimmingCharacters(in: .whitespacesAndNewlines)))
-            try store.updateBiologicalSex(optionalText(biologicalSex.trimmingCharacters(in: .whitespacesAndNewlines)))
-            try store.updateHeight(heightValue)
-            try store.updateSports(
-                sports.split(separator: ",")
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-            )
-            readinessModel.refresh()
-            saved = true
-        } catch {
-            self.error = String(describing: error)
-        }
-    }
-}
-
-@MainActor
 struct MeasurementsView: View {
     let db: Database?
     @ObservedObject var trackingModel: TrackingCalendarModel
 
-    @State private var bodyRecords: [BodyCompositionMeasurement] = []
+    /// The five cards, built in one pass from two queries.
+    @State private var bodyCards: [BodyCompositionProgress] = []
+    @State private var bodyHistory: [BodyCompositionMeasurement] = []
     @State private var customDefinitions: [CustomMeasurementDefinition] = []
     @State private var customRecords: [CustomMeasurementLogEntry] = []
     @State private var addingBody = false
@@ -238,11 +146,23 @@ struct MeasurementsView: View {
     var body: some View {
         List {
             Section("Body composition") {
-                if bodyRecords.isEmpty {
-                    Text("No measurements yet. Add a weight or body-composition reading below.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(bodyRecords) { record in
+                // The cards are the screen. Five of them, every one present even
+                // with no reading, because a grid whose layout depends on what
+                // happens to be logged is a grid you re-learn every week — and
+                // "No target set" on an empty meter is a legible card, not a
+                // broken one.
+                BodyCompositionGrid(cards: bodyCards)
+
+                Button("Log body measurement", systemImage: "plus") { addingBody = true }
+                    .disabled(db == nil)
+            }
+
+            // The readings themselves, which is a different question from "where
+            // am I". Its own section rather than stacked under the cards so a
+            // screen with 200 readings still shows five cards above the fold.
+            if !bodyHistory.isEmpty {
+                Section("Readings") {
+                    ForEach(bodyHistory) { record in
                         measurementRow(
                             title: bodyMetricTitle(record.metric),
                             value: record.value,
@@ -252,8 +172,6 @@ struct MeasurementsView: View {
                         )
                     }
                 }
-                Button("Log body measurement", systemImage: "plus") { addingBody = true }
-                    .disabled(db == nil)
             }
 
             Section("Custom measurements") {
@@ -276,7 +194,7 @@ struct MeasurementsView: View {
                     .disabled(db == nil)
             }
         }
-        .navigationTitle("Measurements")
+        .navigationTitle("Body composition")
         .almanacModuleSurface()
         .task { reload() }
         .sheet(isPresented: $addingBody) {
@@ -299,11 +217,36 @@ struct MeasurementsView: View {
         do {
             let range = recentLogicalDayRange()
             let bodyStore = BodyCompositionMeasurementStore(db: db)
-            var body: [BodyCompositionMeasurement] = []
-            for metric in bodyMetricOptions.map(\.id) {
-                body.append(contentsOf: try bodyStore.records(metric: metric, from: range.from, to: range.to))
-            }
-            bodyRecords = body.sorted { $0.timestamp > $1.timestamp }
+            let metrics = BodyMetric.allCases.map(\.rawValue)
+
+            // **Three queries for the whole grid**, and the count is stated because
+            // it is the thing to keep flat as the screen grows. The obvious loop is
+            // `for metric in metrics { records(metric:) }`, which is five queries
+            // to draw five cards on a screen the user opens often, and its cost
+            // grows with the metric list rather than with the data.
+            //
+            // `snapshotsInForce` rather than `activeTargets`, because the two
+            // differ in a way the card depends on and only one of them is honest
+            // here. `activeTargets` returns resolved numbers, dropping a metric
+            // whose target is absent — so "no target" and "no target *row*" arrive
+            // as the same missing dictionary key. The snapshot keeps that
+            // distinction, which is what lets a card say "No target set" instead
+            // of inventing a default.
+            //
+            // `all(from:targets:unitBasis:)` then builds every card from rows
+            // already in memory, so the arithmetic happens once per reading rather
+            // than once per card.
+            let series = try bodyStore.records(forMetrics: metrics, from: range.from, to: range.to)
+            let inForce = try GoalTargetSnapshotStore(db: db).snapshotsInForce(on: range.from)
+            let basis = try ProfileStore(db: db).unitBasis()
+            bodyCards = BodyCompositionProgress.all(from: series,
+                                                   targets: inForce,
+                                                   unitBasis: basis)
+
+            // The history list below the grid is a different question — "what have
+            // I logged", not "where am I" — and it wants the same rows sorted
+            // newest first, which is one sort over what was already read.
+            bodyHistory = series.sorted { $0.timestamp > $1.timestamp }
 
             let customStore = CustomMeasurementStore(db: db)
             customDefinitions = try customStore.definitions()
@@ -343,7 +286,9 @@ private struct BodyMeasurementEditor: View {
     let onSaved: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var metric = "weight"
+    /// The stored raw value, not the enum: `body_composition_measurement.metric`
+    /// is a `TEXT` column and `BodyCompositionMeasurementDraft` takes the string.
+    @State private var metric = BodyMetric.weight.rawValue
     @State private var value = ""
     @State private var conditions = "unknown"
     @State private var error: String?
@@ -352,8 +297,13 @@ private struct BodyMeasurementEditor: View {
         NavigationStack {
             Form {
                 Picker("Metric", selection: $metric) {
-                    ForEach(bodyMetricOptions) { option in
-                        Text(option.title).tag(option.id)
+                    // From `BodyMetric.allCases`, not a list in this file. The
+                    // old `bodyMetricOptions` was the only definition of what may
+                    // go in that column and it lived in the view target, so core
+                    // could not check a write and this picker could disagree with
+                    // the store about what a metric is called.
+                    ForEach(BodyMetric.allCases) { option in
+                        Text(option.title).tag(option.rawValue)
                     }
                 }
                 TextField("Value", text: $value)
@@ -386,14 +336,21 @@ private struct BodyMeasurementEditor: View {
             return
         }
         do {
-            let option = bodyMetricOptions.first { $0.id == metric } ?? bodyMetricOptions[0]
+            // A metric the picker cannot produce falls back to weight rather than
+            // being written through: a row whose metric is not in the vocabulary
+            // is a card that can never be drawn, and this is the last point
+            // before the write.
+            let chosen = BodyMetric(rawValue: metric) ?? .weight
             let now = Date()
             let day = TimeModel(timeZone: .current).logicalDay(now).value
             _ = try BodyCompositionMeasurementStore(db: db).log(
                 BodyCompositionMeasurementDraft(
-                    metric: option.id,
+                    metric: chosen.rawValue,
                     value: number,
-                    unit: option.unit,
+                    // The *stored* unit token, not the display one: `pct` and `%`
+                    // are both display strings and only the first is what a row
+                    // holds.
+                    unit: chosen.unit,
                     timestamp: now,
                     source: "manual",
                     conditions: conditions,
@@ -490,22 +447,16 @@ private struct CustomMeasurementEditor: View {
     }
 }
 
-struct BodyMetricOption: Identifiable {
-    let id: String
-    let title: String
-    let unit: String
-}
-
-let bodyMetricOptions = [
-    BodyMetricOption(id: "weight", title: "Weight", unit: "kg"),
-    BodyMetricOption(id: "body_fat_pct", title: "Body fat", unit: "pct"),
-    BodyMetricOption(id: "lean_mass_kg", title: "Lean mass", unit: "kg"),
-    BodyMetricOption(id: "skeletal_muscle_kg", title: "Skeletal muscle", unit: "kg"),
-    BodyMetricOption(id: "visceral_rating", title: "Visceral rating", unit: "rating")
-]
-
+/// The title for a stored metric string.
+///
+/// Falls back to the raw value for anything not in `BodyMetric`, because a row
+/// that is somehow there still has to be readable in a list — the fallback is
+/// honest about not knowing rather than hiding the row. This replaces a
+/// `bodyMetricOptions` array that duplicated the vocabulary in the view target,
+/// where core could not see it and a rename of a case would have left the two
+/// silently disagreeing about what a column may contain.
 private func bodyMetricTitle(_ metric: String) -> String {
-    bodyMetricOptions.first { $0.id == metric }?.title ?? readable(metric)
+    BodyMetric(rawValue: metric)?.title ?? readable(metric)
 }
 
 private func recentLogicalDayRange() -> (from: String, to: String) {
