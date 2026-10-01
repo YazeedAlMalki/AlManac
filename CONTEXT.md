@@ -128,3 +128,43 @@ _Avoid_: screen, page, view
 The single owner of which tab is selected and how deep each tab's navigation
 stack is. Above the bar, injected downward.
 _Avoid_: router, navigator, coordinator (alone)
+
+## Decisions taken without an answer
+
+Four product questions were put to the owner on 2026-09-30 and not answered
+before the work continued. Each was resolved by taking the narrowest option that
+honours the request, and each is recorded here so it can be overruled without
+having to reverse-engineer the reasoning. **None of these has been confirmed.**
+
+**Macro targets — left null.** `goal_target_snapshot`'s protein, carbohydrate and
+fat columns are nullable and stay empty. Nothing in the BRD, the spec or the
+handoff says how to derive a macro split, and this repository does not invent a
+number nobody chose. Only calories (Mifflin-St Jeor, which needs a sex and a
+height) and hydration (35 mL/kg) are generated. *Overrule by:* naming a rule —
+fixed calorie share, or g/kg bodyweight.
+
+**Greeting name — first name, falling back to `displayName`.** Already
+implemented as `UserProfile.preferredName`. "First Last" and `displayName` only
+were the alternatives. *Overrule by:* changing `preferredName`.
+
+**Registration gate — Insights and the calorie target only.** Narrowest thing
+that honours "lock features until registration" without blocking data entry. All
+four modules stay open for logging. *Overrule by:* widening to all four modules
+or narrowing to the calorie card alone.
+
+**Allergen filter scope — food search only.** What was built. Saved meals are
+**not** covered, and this is the one gap here with a safety argument behind it: a
+saved meal is a suggestion the app itself made, and somebody with a peanut
+allergy logging one deserves the same warning the search gives. It was not built
+because the owner's decision was "food allergies gate food suggestions", and
+saved meals are not suggestions. *Overrule by:* adding a warning at
+`NutritionSavedMealsView`.
+
+### Weighing
+
+**Meter fraction**:
+How far a reading has travelled from the oldest reading in the window towards a
+target, as a fraction of travelled-plus-remaining. `nil` when there is no target,
+no reading, fewer than two readings, no span, or the target is met — five
+distinct reasons, none of which is "0%".
+_Avoid_: progress, completion
