@@ -3,8 +3,8 @@
 Updated 2026-10-02. The Training Program layer above a single session is built
 in `AlmanacCore` — migration 049, three stores, three engines — and its screens
 are built in `Native/Almanac`; see `docs/features/training-program.md`. The
-entry for that is the topmost section below. The Technical Spec is now committed under `docs/`, so the
-references to it resolve from a fresh clone. The production nutrition reference
+entry for that is the topmost section below. The Technical Spec is now
+committed under `docs/`, so the references to it resolve from a fresh clone. The production nutrition reference
 bundle ships as an AlmanacCore resource and installs into the app database on
 first launch. The editorial shell, Today tracking calendar, Trends surface and
 Quick Log are also live.
