@@ -101,7 +101,8 @@ public enum AlmanacMigrations {
         Migration045_NotificationRule.self,
         Migration046_LabImportJob.self,
         Migration047_GoalTargetSnapshot.self,
-        Migration048_ProfileFields.self
+        Migration048_ProfileFields.self,
+        Migration049_TrainingProgram.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with

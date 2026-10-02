@@ -33,6 +33,13 @@ public struct WorkoutBoutDraft: Sendable {
     public var rpe: Int?
     public var techniqueRating: String?
     public var notes: String?
+    /// Decision 1: which equipment this bout was performed with. Nullable — a
+    /// bodyweight movement has none, and every bout logged before Migration049
+    /// has none recorded.
+    public var equipmentVariant: String?
+    /// Decision 3: this slot's pool item was skipped for this one session.
+    /// False on every other bout, and on every bout that is not from a program.
+    public var wasSkippedForSession: Bool
 
     public init(sessionId: Int64, exerciseCatalogId: Int64, sequenceIndex: Int = 0,
                 prescriptionType: String, containerType: String? = nil,
@@ -43,7 +50,8 @@ public struct WorkoutBoutDraft: Sendable {
                 actualSets: Int? = nil, actualReps: Int? = nil, actualLoadKg: Double? = nil,
                 actualDurationSeconds: Double? = nil, actualDistanceMeters: Double? = nil,
                 actualRounds: Int? = nil, elapsedSeconds: Double? = nil, avgHeartRate: Int? = nil,
-                rpe: Int? = nil, techniqueRating: String? = nil, notes: String? = nil) {
+                rpe: Int? = nil, techniqueRating: String? = nil, notes: String? = nil,
+                equipmentVariant: String? = nil, wasSkippedForSession: Bool = false) {
         self.sessionId = sessionId
         self.exerciseCatalogId = exerciseCatalogId
         self.sequenceIndex = sequenceIndex
@@ -68,6 +76,8 @@ public struct WorkoutBoutDraft: Sendable {
         self.rpe = rpe
         self.techniqueRating = techniqueRating
         self.notes = notes
+        self.equipmentVariant = equipmentVariant
+        self.wasSkippedForSession = wasSkippedForSession
     }
 }
 
@@ -100,10 +110,64 @@ public struct WorkoutBoutEntry: Sendable, Hashable, Identifiable {
     public let rpe: Int?
     public let techniqueRating: String?
     public let notes: String?
+    /// Decision 1's variant. Null on a bodyweight movement, on any bout logged
+    /// before Migration049, and on any bout whose variant nobody chose.
+    public let equipmentVariant: String?
+    /// Decision 3's per-session skip, recorded on the log side because the skip
+    /// itself writes no pool state — holding its position *is* the absence of a
+    /// write. A skipped slot carries no actuals.
+    public let wasSkippedForSession: Bool
 
     public let deletedAt: String?
     public let createdAt: String
     public let updatedAt: String
+
+    /// The two Decision-1/3 columns default to "no variant, not skipped", so the
+    /// ~99% of bouts that have nothing to say about either — and every bout
+    /// logged before Migration049 — are constructible without naming them.
+    public init(id: Int64, sessionId: Int64, exerciseCatalogId: Int64, sequenceIndex: Int,
+                prescriptionType: String, containerType: String? = nil,
+                prescribedSets: Int? = nil, prescribedReps: Int? = nil, prescribedLoadKg: Double? = nil,
+                prescribedDurationSeconds: Double? = nil, prescribedDistanceMeters: Double? = nil,
+                prescribedWorkSeconds: Double? = nil, prescribedRestSeconds: Double? = nil,
+                prescribedRounds: Int? = nil,
+                actualSets: Int? = nil, actualReps: Int? = nil, actualLoadKg: Double? = nil,
+                actualDurationSeconds: Double? = nil, actualDistanceMeters: Double? = nil,
+                actualRounds: Int? = nil, elapsedSeconds: Double? = nil, avgHeartRate: Int? = nil,
+                rpe: Int? = nil, techniqueRating: String? = nil, notes: String? = nil,
+                equipmentVariant: String? = nil, wasSkippedForSession: Bool = false,
+                deletedAt: String? = nil, createdAt: String = "", updatedAt: String = "") {
+        self.id = id
+        self.sessionId = sessionId
+        self.exerciseCatalogId = exerciseCatalogId
+        self.sequenceIndex = sequenceIndex
+        self.prescriptionType = prescriptionType
+        self.containerType = containerType
+        self.prescribedSets = prescribedSets
+        self.prescribedReps = prescribedReps
+        self.prescribedLoadKg = prescribedLoadKg
+        self.prescribedDurationSeconds = prescribedDurationSeconds
+        self.prescribedDistanceMeters = prescribedDistanceMeters
+        self.prescribedWorkSeconds = prescribedWorkSeconds
+        self.prescribedRestSeconds = prescribedRestSeconds
+        self.prescribedRounds = prescribedRounds
+        self.actualSets = actualSets
+        self.actualReps = actualReps
+        self.actualLoadKg = actualLoadKg
+        self.actualDurationSeconds = actualDurationSeconds
+        self.actualDistanceMeters = actualDistanceMeters
+        self.actualRounds = actualRounds
+        self.elapsedSeconds = elapsedSeconds
+        self.avgHeartRate = avgHeartRate
+        self.rpe = rpe
+        self.techniqueRating = techniqueRating
+        self.notes = notes
+        self.equipmentVariant = equipmentVariant
+        self.wasSkippedForSession = wasSkippedForSession
+        self.deletedAt = deletedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
 
     public var isDeleted: Bool { deletedAt != nil }
 }
@@ -137,8 +201,8 @@ public struct WorkoutBoutStore: @unchecked Sendable {
              prescribedDistanceMeters, prescribedWorkSeconds, prescribedRestSeconds, prescribedRounds,
              actualSets, actualReps, actualLoadKg, actualDurationSeconds, actualDistanceMeters,
              actualRounds, elapsedSeconds, avgHeartRate, rpe, techniqueRating, notes,
-             createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+             equipmentVariant, wasSkippedForSession, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .integer(draft.sessionId), .integer(draft.exerciseCatalogId), .integer(Int64(draft.sequenceIndex)),
             .text(draft.prescriptionType), draft.containerType.map { SQLValue.text($0) } ?? .null,
@@ -161,6 +225,8 @@ public struct WorkoutBoutStore: @unchecked Sendable {
             draft.rpe.map { SQLValue.integer(Int64($0)) } ?? .null,
             draft.techniqueRating.map { SQLValue.text($0) } ?? .null,
             draft.notes.map { SQLValue.text($0) } ?? .null,
+            draft.equipmentVariant.map { SQLValue.text($0) } ?? .null,
+            .integer(draft.wasSkippedForSession ? 1 : 0),
             .text(now), .text(now)
         ])
         var id: Int64 = 0
@@ -206,6 +272,25 @@ public struct WorkoutBoutStore: @unchecked Sendable {
             .text(nowText),
             .integer(id)
         ]) > 0
+    }
+
+    /// Records which equipment this bout was performed with (Decision 1).
+    ///
+    /// Set at logging time and correctable afterwards, because a person writes
+    /// "dumbbell" into a slot they meant as "cable" often enough that making it
+    /// a one-shot guess would corrupt the variant graphs for every later session.
+    /// Written on the log, never on the pool: which variant was *used* is a fact
+    /// about the session, and copying it back onto the prescription would
+    /// rewrite the plan from the outcome.
+    @discardableResult
+    public func updateEquipmentVariant(id: Int64, to variant: String?) throws -> Bool {
+        if let variant, EquipmentVariant(rawValue: variant) == nil {
+            throw WorkoutBoutStoreError.unknownEquipmentVariant(variant)
+        }
+        return try db.run("""
+        UPDATE workoutBout SET equipmentVariant = ?, updatedAt = ?
+        WHERE id = ? AND deletedAt IS NULL;
+        """, [variant.map { SQLValue.text($0) } ?? .null, .text(nowText), .integer(id)]) > 0
     }
 
     @discardableResult
@@ -263,7 +348,17 @@ public struct WorkoutBoutStore: @unchecked Sendable {
             rpe: row.int("rpe").map(Int.init),
             techniqueRating: row.string("techniqueRating"),
             notes: row.string("notes"),
+            equipmentVariant: row.string("equipmentVariant"),
+            wasSkippedForSession: row.int("wasSkippedForSession") == 1,
             deletedAt: row.string("deletedAt"), createdAt: createdAt, updatedAt: updatedAt
         )
     }
+}
+
+public enum WorkoutBoutStoreError: Error, Sendable, Equatable {
+    /// A variant outside `EquipmentVariant`'s four. The column has a CHECK
+    /// constraint too, so this turns a raw SQL failure into a typed one that
+    /// names the value — same reasoning as
+    /// `PrescribedWorkoutStoreError.unknownContainerType`.
+    case unknownEquipmentVariant(String)
 }

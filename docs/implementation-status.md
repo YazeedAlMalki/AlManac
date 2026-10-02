@@ -1,6 +1,9 @@
 # Almanac implementation status
 
-Updated 2026-09-27. The Technical Spec is now committed under `docs/`, so the
+Updated 2026-10-02. The Training Program layer above a single session is built
+in `AlmanacCore` — migration 049, three stores, three engines — with no UI yet;
+see `docs/features/training-program.md`. The entry for that is the topmost
+section below. The Technical Spec is now committed under `docs/`, so the
 references to it resolve from a fresh clone. The production nutrition reference
 bundle ships as an AlmanacCore resource and installs into the app database on
 first launch. The editorial shell, Today tracking calendar, Trends surface and
@@ -9,6 +12,75 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-02 — Training Program: the layer above a session
+
+The AI-delegatable half of `docs/handoff-2026-10-01-training-program.md`. Full
+write-up in `docs/features/training-program.md`; what follows is what a reader
+of this file needs to know.
+
+**Core only, no UI.** Nothing in `Native/Almanac` changed. The handoff's UX flow
+is a design, and `docs/acceptance-checklist.md` marks the program steps UNRUN
+rather than ticking them on the strength of the core compiling.
+
+### New
+
+- **`Migration049_TrainingProgram`** — `trainingProgram`, `programDay`,
+  `programDayExercisePool`, three indexes; `workoutSession` gains
+  `programDayId` / `rotationIndex` / `readinessAdjusted` plus an index,
+  `workoutBout` gains `equipmentVariant` / `wasSkippedForSession`.
+- **`ProgramStore`, `ProgramDayStore`, `ProgramDayExercisePoolStore`** — full
+  CRUD, typed errors for the three closed sets, soft delete, `setPositions`,
+  `setActive`, `setProgression`.
+- **`RotationEngine`** — `nextRotationIndex(programDayId:)` and
+  `plan(programDayId:rotationIndex:skipping:)`. Two queries per plan.
+- **`ReadinessAdjustment`** — band → policy → adjusted prescription.
+- **`ExerciseProgression`** — per-exercise suggestion, never a write.
+- **`EquipmentVariantGraph`** — separate/combined mode over both graphs.
+- **`ProgramVocabulary`** — `EquipmentVariant`, `EquipmentVariantDisplay`,
+  `ProgressionCondition`, `ExerciseAvailability`.
+- **`ExerciseProgressStore.history(exerciseCatalogIds:)`** — one batched read,
+  because a per-item read inside the progression loop was a query per exercise.
+
+### Three things decided while building, not found
+
+**The readiness→prescription table is reconstructed.** `prescription-model-v0.1.md`
+was never committed to this repo (`docs/features/training.md` §1), so the handoff's
+"readiness adjustment computation" had no source. Two rules survive it — `release`
+is the only type that may *increase* on a low-readiness day, and `quality_reps`
+holds volume and drops complexity — and the rest was rebuilt from those plus
+`ReadinessFormula`'s own six bands and its real 40/70 thresholds. No threshold or
+band was invented. `ReadinessAdjustment.table` is the single place to overrule it.
+Recorded in `CONTEXT.md`.
+
+**`isActive = false` and `deletedAt` are different, on purpose.** Permanent
+removal is reversible and keeps the item's prescription, progression rule and
+rotation position; deletion is gone. The store has two reads because the two
+questions have two answers — `items(programDayId:)` is the authoring view and
+shows inactive items, `activeItems(programDayId:)` is the rotation view.
+
+**A per-session skip writes nothing.** Holding its rotation position *is* the
+absence of a write; the only record is `workoutBout.wasSkippedForSession`.
+`ExerciseAvailability.mutatesPool` says so, so a call site can't assume both
+mechanisms touch the database.
+
+### Fixed pre-existing
+
+`BodyMeasurementTests.swift:24`'s hardcoded `[41...48]` column-count assertion →
+`[41...49]`. The file's own comment says a human should edit that line when a
+migration lands; it did, with five new columns in scope across two tables.
+
+### Verification
+
+`swift test`, full suite: **900 tests, 95 suites, 0 failures** (168.7 s). Up from
+the 768/88 baseline captured before any of this work started; 132 new tests
+across seven suites — 10 migration, 18 program+day, 26 pool, 25 rotation,
+20 readiness, 18 progression, 15 graphs.
+
+App target: `xcodebuild` against `Native/Almanac.xcodeproj`, scheme `Almanac`,
+iPhone 16e simulator — **SUCCEEDED**, no errors. Nothing in `Native/Almanac`
+changed; the three warnings it printed are pre-existing and in unrelated files
+(`SettingsView.swift`, `ActivityRingViews.swift`, widget code signing).
 
 ## 2026-09-30 — Circadian context stops being a table nobody reads; catalog follow-ups; the README stops lying
 

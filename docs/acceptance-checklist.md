@@ -132,6 +132,36 @@ looks right" is visibly not the same as "this was checked".
 | 3.13–3.14 | Reaching 1–20 valid days needs seeded data and a photographed screen. The arithmetic is tested; the label's appearance is not. |
 | 4.\* | Requires a human, a physical device, and in two cases a day of waiting. |
 | Full UI suite | Exceeds a 50-minute command timeout. Six of 52 passed before the run was abandoned. The remaining 46 are **not** claimed either way. |
+| 7.\* | The Training Program feature has no UI at all. Its core is built and tested (900-test suite green), but nothing in this document's §7 can be driven until someone writes the screens, and a core test passing is not a driven step. |
+
+## 7. Training Program — **UNRUN, no UI exists**
+
+Added 2026-10-02. The core of this feature is built (`docs/features/training-program.md`),
+every step below is **UNRUN**, and none is claimed either way. This section exists
+so that when the screens are written there is a checklist to drive, and so that
+nobody later mistakes the core's test count for a driven acceptance pass.
+
+The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
+
+| # | Step | Result |
+|---|---|---|
+| 7.1 | Workout → "Start Workout" offers the program picker | **UNRUN** — screen does not exist |
+| 7.2 | Program picker lists every non-deleted program, several at once | **UNRUN** — no screen (`ProgramDayStore.daysWithPrograms()` has the read) |
+| 7.3 | Choosing a program offers its days in authoring order, not alphabetically | **UNRUN** — no screen |
+| 7.4 | Starting a day generates the session from the rotation, excluding permanently removed items | **UNRUN** — no screen (`RotationEngine.plan`) |
+| 7.5 | The generated list shows prescribed sets × reps × load per exercise | **UNRUN** — no screen |
+| 7.6 | "Skip just for today" and "Remove from rotation" are visible **together** in one prompt | **UNRUN** — no screen. Decision 3's flagged tension lives here. |
+| 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **UNRUN** — behaviour is tested in `RotationEngineTests`; nothing is driven |
+| 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **UNRUN** — tested in `ProgramDayExercisePoolStoreTests`; nothing is driven |
+| 7.9 | "Factor in your readiness score?" prompt, Yes and No | **UNRUN** — no screen |
+| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **UNRUN** — no screen. **Also unconfirmed:** the band multipliers are reconstructed, not the original table (`CONTEXT.md`). |
+| 7.11 | A very-low-readiness day presents as a rest day | **UNRUN** — no screen |
+| 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **UNRUN** — no screen |
+| 7.13 | Entering actuals updates the two graphs | **UNRUN** — no screen |
+| 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **UNRUN** — no screen (`EquipmentVariantDisplay`) |
+| 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **UNRUN** — no screen |
+| 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **UNRUN** — no screen. Tested as `EquipmentVariantGraphTests.unspecifiedIsASeries`. |
+| 7.17 | Deleting a session does not consume a rotation step | **UNRUN** — tested in `RotationEngineTests`; nothing is driven |
 
 ## 6. Defects found by driving this
 

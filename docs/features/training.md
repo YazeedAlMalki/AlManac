@@ -125,10 +125,16 @@ separately from the source:
   `sleep_episode`'s broken pattern (a `deletedAt` column that table never
   actually got before it was deleted and rebuilt as `SleepEpisodeStore` —
   see `docs/implementation-status.md`, 2026-09-16).
-- No `program`/`workout_day` multi-week structure, and no
-  `workout_merge_record` (the tech spec §10 HealthKit-merge-confidence
-  audit trail) — neither was ever designed for the prescription model;
-  building either now would be inventing spec, not implementing it.
+- ~~No `program`/`workout_day` multi-week structure~~ — **built 2026-10-02.**
+  This was recorded here as a deliberate absence and stayed an absence until the
+  2026-10-01 product handoff actually designed it. See
+  `docs/features/training-program.md` for the three tables
+  (`trainingProgram` / `programDay` / `programDayExercisePool`), the rotation
+  engine, readiness-adjusted prescription, per-exercise progression and the
+  equipment-variant graphs.
+- Still no `workout_merge_record` (the tech spec §10 HealthKit-merge-confidence
+  audit trail) — that one remains genuinely undesigned, and building it now
+  would still be inventing spec, not implementing it.
 
 ## 4. What's built
 
@@ -216,9 +222,12 @@ this repo has no way to verify whether that has since changed — it's
 out-of-band, personal correspondence). `WorkloadComputer` deliberately
 reports tonnage/distance/duration, never an energy estimate.
 
-**`program`/multi-week structure, workout-merge-confidence model.** Neither
-was ever designed for the prescription model (§3) — not a gap in this pass,
-an absence in the design itself.
+**`program`/multi-week structure** — **built 2026-10-02**, see
+`docs/features/training-program.md`. This section listed it as an absence in
+the design itself, which was true until the 2026-10-01 handoff designed it.
+
+**Workout-merge-confidence model.** Still undesigned for the prescription model
+(§3) — not a gap in this pass, an absence in the design itself.
 
 ## 6. Build plan, next
 

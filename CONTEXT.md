@@ -136,6 +136,10 @@ before the work continued. Each was resolved by taking the narrowest option that
 honours the request, and each is recorded here so it can be overruled without
 having to reverse-engineer the reasoning. **None of these has been confirmed.**
 
+Two more were put on 2026-10-01 with the Training Program handoff and resolved
+the same way. Both are recorded here for the same reason, and the first one
+reconstructed a table rather than choosing among options.
+
 **Macro targets — left null.** `goal_target_snapshot`'s protein, carbohydrate and
 fat columns are nullable and stay empty. Nothing in the BRD, the spec or the
 handoff says how to derive a macro split, and this repository does not invent a
@@ -159,6 +163,31 @@ allergy logging one deserves the same warning the search gives. It was not built
 because the owner's decision was "food allergies gate food suggestions", and
 saved meals are not suggestions. *Overrule by:* adding a warning at
 `NutritionSavedMealsView`.
+
+### Training program (2026-10-01)
+
+**Readiness→prescription coupling — reconstructed, and overrulable in one place.**
+The handoff asks for "readiness adjustment computation" and points at
+`prescription-model-v0.1.md` for the table. That file was never committed to
+this repository (`docs/features/training.md` §1 records why), so the coupling is
+gone. Two rules survive, quoted in the technical spec §5.17: `release` is the
+only prescription type that should ever *increase* on a low-readiness day, and
+`quality_reps` holds volume and drops complexity rather than reducing work.
+Everything else — every multiplier, every band boundary — was reconstructed from
+the two rules plus `ReadinessFormula`'s own six bands and its real 40/70
+thresholds. No threshold was invented; no new band was invented.
+`ReadinessAdjustment.BandRule` is the entire table, in one array, one row per
+band: load / duration / rest / release multipliers. *Overrule by:* editing that
+one array. Do not scatter the numbers into callers.
+`_Avoid_`: scaling the prescription in place, mutating a pool item on a low day
+
+**Volume graph — reps performed, not kilogram-reps.** The handoff says Graph B
+is "volume (sets × reps × load)". Built as sets × reps instead, because
+weighting volume by load makes the axis a statement about the barbell rather
+than about the session: a heavy triple outweighs a light set of twenty, and a
+heavy day's volume would spike for a reason the graph cannot explain. `ProgressGraph.volume`
+documents this; `EquipmentVariantGraphTests.theTwoGraphsMeasureDifferentThings`
+pins it. *Overrule by:* changing `EquipmentVariantGraph.value(row:graph:)`.
 
 ### Weighing
 

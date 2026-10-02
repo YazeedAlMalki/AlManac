@@ -11,10 +11,22 @@ public struct WorkoutSessionDraft: Sendable {
     public var prescribedWorkoutId: Int64?
     /// The user-selected sport/activity ("CrossFit", "football", "running", ...).
     public var sessionType: String?
+    /// Which program's day generated this session. Null on every ad-hoc and
+    /// HealthKit-derived session.
+    public var programDayId: Int64?
+    /// Which pass through the day's pool this session was. Advances only on a
+    /// completed session, never on a calendar gap (Decision 2).
+    public var rotationIndex: Int?
+    /// Whether the user chose to factor their readiness score into the
+    /// prescription when starting. Records the decision; `false` means "no", or
+    /// "nobody was asked" — the same answer either way.
+    public var readinessAdjusted: Bool
 
     public init(date: String, startTimestamp: Date? = nil, endTimestamp: Date? = nil,
                 durationMinutes: Int? = nil, rpe: Int? = nil, notes: String? = nil,
-                prescribedWorkoutId: Int64? = nil, sessionType: String? = nil) {
+                prescribedWorkoutId: Int64? = nil, sessionType: String? = nil,
+                programDayId: Int64? = nil, rotationIndex: Int? = nil,
+                readinessAdjusted: Bool = false) {
         self.date = date
         self.startTimestamp = startTimestamp
         self.endTimestamp = endTimestamp
@@ -23,6 +35,9 @@ public struct WorkoutSessionDraft: Sendable {
         self.notes = notes
         self.prescribedWorkoutId = prescribedWorkoutId
         self.sessionType = sessionType
+        self.programDayId = programDayId
+        self.rotationIndex = rotationIndex
+        self.readinessAdjusted = readinessAdjusted
     }
 }
 
@@ -45,15 +60,56 @@ public struct WorkoutSessionEntry: Sendable, Hashable, Identifiable {
     /// watch workout, null for the user's own. Distinct from `healthKitUUID`,
     /// which records only that a link exists.
     public let source: String?
+    /// Which program's day generated this session, and which pass through its
+    /// pool this was. Both null on an ad-hoc or HealthKit-derived session.
+    public let programDayId: Int64?
+    public let rotationIndex: Int?
+    /// Whether the user said yes to "Factor in your readiness score?" when
+    /// starting this session.
+    public let readinessAdjusted: Bool
     public let deletedAt: String?
     public let createdAt: String
     public let updatedAt: String
+
+    /// The three program columns default to "no program", so an ad-hoc session —
+    /// and every session logged before Migration049 — is expressible without
+    /// naming them. Absent is the overwhelmingly common case and should not cost
+    /// every construction site three arguments.
+    public init(id: Int64, date: String, startTimestamp: String? = nil,
+                endTimestamp: String? = nil, durationMinutes: Int? = nil,
+                rpe: Int? = nil, notes: String? = nil, prescribedWorkoutId: Int64? = nil,
+                sessionType: String? = nil, healthKitUUID: String? = nil, source: String? = nil,
+                programDayId: Int64? = nil, rotationIndex: Int? = nil,
+                readinessAdjusted: Bool = false, deletedAt: String? = nil,
+                createdAt: String = "", updatedAt: String = "") {
+        self.id = id
+        self.date = date
+        self.startTimestamp = startTimestamp
+        self.endTimestamp = endTimestamp
+        self.durationMinutes = durationMinutes
+        self.rpe = rpe
+        self.notes = notes
+        self.prescribedWorkoutId = prescribedWorkoutId
+        self.sessionType = sessionType
+        self.healthKitUUID = healthKitUUID
+        self.source = source
+        self.programDayId = programDayId
+        self.rotationIndex = rotationIndex
+        self.readinessAdjusted = readinessAdjusted
+        self.deletedAt = deletedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
 
     public var isDeleted: Bool { deletedAt != nil }
 
     /// True when the user logged this session themselves, so a manually logged
     /// bout belongs here rather than on a watch-derived one.
     public var isOwnLog: Bool { healthKitUUID == nil }
+
+    /// True when this session was generated from a program's day pool, so its
+    /// rotation index is a real position in a cycle rather than absent.
+    public var isFromProgram: Bool { programDayId != nil && rotationIndex != nil }
 }
 
 /// Completed-session storage over `workoutSession`.
@@ -81,8 +137,9 @@ public struct WorkoutSessionStore: @unchecked Sendable {
         try db.run("""
         INSERT INTO workoutSession
             (date, startTimestamp, endTimestamp, durationMinutes, rpe, notes,
-             prescribedWorkoutId, sessionType, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+             prescribedWorkoutId, sessionType, programDayId, rotationIndex, readinessAdjusted,
+             createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(draft.date),
             draft.startTimestamp.map { SQLValue.text(iso($0)) } ?? .null,
@@ -92,6 +149,9 @@ public struct WorkoutSessionStore: @unchecked Sendable {
             draft.notes.map { SQLValue.text($0) } ?? .null,
             draft.prescribedWorkoutId.map { SQLValue.integer($0) } ?? .null,
             draft.sessionType.map { SQLValue.text($0) } ?? .null,
+            draft.programDayId.map { SQLValue.integer($0) } ?? .null,
+            draft.rotationIndex.map { SQLValue.integer(Int64($0)) } ?? .null,
+            .integer(draft.readinessAdjusted ? 1 : 0),
             .text(now), .text(now)
         ])
         var id: Int64 = 0
@@ -158,6 +218,9 @@ public struct WorkoutSessionStore: @unchecked Sendable {
             notes: row.string("notes"), prescribedWorkoutId: row.int("prescribedWorkoutId"),
             sessionType: row.string("sessionType"),
             healthKitUUID: row.string("healthKitUUID"), source: row.string("source"),
+            programDayId: row.int("programDayId"),
+            rotationIndex: row.int("rotationIndex").map(Int.init),
+            readinessAdjusted: row.int("readinessAdjusted") == 1,
             deletedAt: row.string("deletedAt"), createdAt: createdAt, updatedAt: updatedAt
         )
     }
