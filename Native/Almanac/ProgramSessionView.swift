@@ -113,6 +113,7 @@ struct ProgramSessionView: View {
                         .accessibilityIdentifier("abandon-program-session")
                 }
             }
+            .editorError($error)
             .confirmationDialog(skipDialogTitle,
                                 isPresented: Binding(get: { promptingSkipForSlot != nil },
                                                      set: { if !$0 { promptingSkipForSlot = nil } }),
@@ -121,11 +122,10 @@ struct ProgramSessionView: View {
                 Button("Remove from rotation", role: .destructive) {
                     skip(promptingSkipForSlot, .permanent)
                 }
-                Button("Cancel", role: .cancel) {}
+                Button("Cancel") {}
             } message: {
                 Text("Skipping keeps this exercise in the rotation and offers it again the next time you train \(day.label). Removing takes it out until you put it back.")
             }
-            .editorError($error)
             .task { rebuild() }
         }
     }
@@ -219,6 +219,7 @@ struct ProgramSessionView: View {
                 Text(name(slot.entry.item))
                     .font(AlmanacTypography.font(.bodyMedium))
                     .foregroundStyle(AlmanacPalette.textPrimary)
+                    .accessibilityIdentifier("session-slot-\(slot.slot)")
                 Spacer(minLength: 12)
                 if slot.isSubstitute {
                     AlmanacStatusMark(text: "Standing in", tone: .neutral)
@@ -236,7 +237,6 @@ struct ProgramSessionView: View {
                 .accessibilityIdentifier("skip-slot-\(slot.slot)")
         }
         .padding(.vertical, 8)
-        .accessibilityIdentifier("session-slot-\(slot.slot)")
     }
 
     /// The fields that moved, named. `AdjustedPrescription.changes` is recorded

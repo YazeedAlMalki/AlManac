@@ -63,15 +63,15 @@ struct ProgramDayView: View {
         .sheet(item: $editing) { target in
             PoolItemEditor(model: model, catalog: trainingModel.exercises, target: target)
         }
+        .editorError($error)
         .confirmationDialog("Factor in your readiness score?",
                             isPresented: $promptReadiness,
                             titleVisibility: .visible) {
             Button(yesLabel) { onStart() }
-            Button("No, train as written", role: .cancel) { onStart() }
+            Button("No, train as written") { onStart() }
         } message: {
             Text(readinessMessage)
         }
-        .editorError($error)
     }
 
     // MARK: - Pieces

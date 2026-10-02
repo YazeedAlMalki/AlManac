@@ -232,9 +232,16 @@ values separately.
 
 ## 9. What's deliberately not built
 
-- **No UI automation.** The screens are built and compile, but nothing drives
-  them from a test; the acceptance checklist marks the steps "implemented, not
-  driven by automation" rather than claiming a driven pass.
+- **UI automation covers only the picker → authoring → session loop.** The
+  three `TrainingProgramUITests` drive Start Workout → picker, program + day
+  authoring with order, and a full day→session run with the skip prompt and the
+  readiness door (3 of 3 green in a full-file run, twice in a row, 2026-10-02).
+  What is still **not** driven from the UI, and is therefore UNRUN in the
+  acceptance checklist: skip-for-today's re-offer, permanent removal and
+  re-add, readiness-Yes prescription lowering, the rest-day presentation, the
+  equipment variant picker, actuals→graphs, the graph toggle and combined-mode
+  note, and abandoning a session. Those are built and core-tested; no UI test
+  drives them.
 - **`quality_reps` deferred**, per the owner's pre-resolution: zero source
   content, high authoring cost. The type exists in Migration016; no authoring
   surface for it was built.

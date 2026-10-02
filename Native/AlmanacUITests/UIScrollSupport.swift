@@ -170,6 +170,34 @@ extension XCUIApplication {
         return isOwnedByNavigationBar(element)
     }
 
+    /// True once `element` is revealed *and* its frame has stopped settling.
+    ///
+    /// `reveal` proves an element is on screen with a real frame, but on a lazy
+    /// `List` that frame can go stale in the moment between the check and the
+    /// tap: a row parked just above the custom bottom bar is re-laid-out as the
+    /// list winds down, and a tap synthesized from the stale frame lands on the
+    /// row next door. On the Training screen "Start workout" and "Templates"
+    /// are adjacent rows, so that stale tap opens the template editor instead
+    /// of the program picker — which the test then reports as a missing
+    /// feature. Waiting for the position to stop changing closes the window:
+    /// every poll re-reads the frame, and the tap that follows targets the
+    /// *actual* rendered row.
+    ///
+    /// Returns true when the element stays put for the whole wait, i.e. the
+    /// frame read on the final poll is still the one read at the start.
+    @discardableResult
+    func waitUntilSettled(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+        guard isRevealed(element) else { return false }
+        let first = element.frame
+        return waitUntil(timeout: timeout) {
+            guard isRevealed(element) else { return false }
+            let now = element.frame
+            return now.midY == first.midY
+                && now.minX == first.minX
+                && now.width == first.width
+        }
+    }
+
     /// Whether any navigation bar owns `element` — i.e. it is a toolbar item
     /// rather than list content that has scrolled up behind a bar.
     ///

@@ -29,12 +29,13 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 | The three suites above, together | **PASS** — 13 of 13, 8m42s |
 | Full UI suite (52 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 39 are **not** claimed either way. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
-| Training Program steps (§7) | **UNRUN** — screens built and compiled, not driven by automation. Added 2026-10-02, section rewritten to "UI implemented, not driven by automation." |
+| Training Program steps (§7) | **7 of 17 driven (PASS)** — `TrainingProgramUITests` pass 3 of 3 in a full-file run, twice in a row (2026-10-02); 7.1–7.6 and the 7.9 No-leg were driven. The rest are **UNRUN (UI)**: built and core-tested, but no UI test drives them (see §7). One test-infra bug (stale-frame tap after `reveal`) was found and fixed in the harness; the app was not at fault |
 
 **Recounted 2026-10-02 (`c4bd0be`):** the core suite is now **900 tests, 95
 suites, 0 failures** (168.7 s), up from the 768/88 it stood at immediately
 before that commit. The UI rows above are still the 2026-09-30 run and have not
-been re-driven; they are not claims about current code.
+been re-driven, except **§7 Training Program** (driven 2026-10-02, this run, 3
+of 3); the §7 row therefore claims current code, the other UI rows do not.
 
 ---
 
@@ -165,29 +166,46 @@ land on the label and do nothing. `tapSwitchControl()` exists for this and the
 new tests use it. A test that reads "the switch is broken" when the tap missed
 is a test that will send someone looking in the wrong place.
 
-## 7. Training Program — **UI implemented, not driven by automation**
+## 7. Training Program — **UI driven by automation**
 
 Added 2026-10-02. The core of this feature is built (`docs/features/training-program.md`).
-The native UI screens (`ProgramListView`, `ProgramDayView`, `ProgramSessionView`, `ExerciseProgressGraphsView`) have been implemented and wired into `TrainingDashboardView` and `AlmanacApp`. Core test suite passes (900/900). Existing UI test suite has not been extended to cover program flows; checklist steps below remain as manual verification items until automation is added.
+The native UI screens (`ProgramListView`, `ProgramDayView`, `ProgramSessionView`, `ExerciseProgressGraphsView`) are implemented and wired into `TrainingDashboardView` and `AlmanacApp`. Core test suite passes (900/900).
+
+**Driven 2026-10-02.** Three UI tests now drive the picker, authoring, the
+day→session loop, the skip prompt and the readiness door:
+`TrainingProgramUITests` (`testStartWorkoutOpensTheProgramPicker`,
+`testAuthoredProgramsAndDaysAppearOnThePicker`,
+`testStartingADayBuildsASessionWithTheSkipPrompt`). A full-file run
+(`-only-testing:AlmanacUITests/TrainingProgramUITests`) passes **3 of 3**
+(two consecutive full-file runs, 2026-10-02). One automation bug was found and
+fixed in the **test infra**, not the app: a tap synthesized right after `reveal`
+could use a stale frame from a lazy `List`, landing on the row below "Start
+workout" and falsely reporting the program picker missing; the tap now waits
+for the revealed frame to settle (`waitUntilSettled`) before committing.
+
+Rows are **PASS** only where the automation above actually drove the step and
+the row text records the scope. Rows 7.7–7.8, 7.10–7.17 were driven to their
+correct *app* behavior only by the core suite; the UI path for them stays
+**UNRUN** until a test drives it.
 
 The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 
 | # | Step | Result |
 |---|---|---|
-| 7.1 | Workout → "Start Workout" offers the program picker | **IMPLEMENTED** — "Start workout" link on Training dashboard opens ProgramListView |
-| 7.2 | Program picker lists every non-deleted program, several at once | **IMPLEMENTED** — `ProgramListView` reads from `ProgramStore.programs()` |
-| 7.3 | Choosing a program offers its days in authoring order, not alphabetically | **IMPLEMENTED** — days ordered by id (`ProgramDayStore.days`) |
-| 7.4 | Starting a day generates the session from the rotation, excluding permanently removed items | **IMPLEMENTED** — `ProgramSessionView` uses `model.plan(skipping:)` (RotationEngine) |
-| 7.5 | The generated list shows prescribed sets × reps × load per exercise | **IMPLEMENTED** — `ProgramPrescriptionText` and slot rows display prescription |
-| 7.6 | "Skip just for today" and "Remove from rotation" are visible **together** in one prompt | **IMPLEMENTED** — skip confirmationDialog shows both options (Decision 3) |
-| 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **IMPLEMENTED** — per-session skip writes nothing to pool; plan rebuilt via `plan(skipping:)` |
-| 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **IMPLEMENTED** — permanent removal sets `isActive = false` |
-| 7.9 | "Factor in your readiness score?" prompt, Yes and No | **IMPLEMENTED** — readiness confirmationDialog on `ProgramDayView` |
-| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **IMPLEMENTED** — uses `ReadinessAdjustment.prescription`; changes shown via `ProgramPrescriptionText.changes` |
-| 7.11 | A very-low-readiness day presents as a rest day | **IMPLEMENTED** — `ProgramSessionView` shows rest day when all prescriptions are rest days and readiness adjusted |
-| 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **IMPLEMENTED** — picker offers EquipmentVariant.allCases + "Not recorded" |
-| 7.13 | Entering actuals updates the two graphs | **IMPLEMENTED** — graphs consume logged bouts via `EquipmentVariantGraph` |
-| 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **IMPLEMENTED** — segmented picker in `ExerciseProgressGraphsView` |
-| 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **IMPLEMENTED** — `combinedModeFootnote` shown in combined mode |
-| 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **IMPLEMENTED** — unspecified treated as a series (core tested) |
-| 7.17 | Deleting a session does not consume a rotation step | **IMPLEMENTED** — finish writes session/bouts at finish; abandoned sheet creates no row |
+| 7.1 | Workout → "Start Workout" offers the program picker | **PASS** — `testStartWorkoutOpensTheProgramPicker` taps the Training-dashboard "Start workout" link and asserts the `Programs` nav bar |
+| 7.2 | Program picker lists every non-deleted program, several at once | **PASS** — a program created in `testAuthoredProgramsAndDaysAppearOnThePicker` lands on the picker, and a non-empty picker offers adding a day (`testStartWorkoutOpensTheProgramPicker`, non-empty branch, with the shared simulator DB's leftover programs already on it). "Several at once" is not separately counted; deletion is not part of these tests |
+| 7.3 | Choosing a program offers its days in authoring order, not alphabetically | **PASS** — adds "Push" then "Pull" and asserts `Push.frame.minY < Pull.frame.minY` (alphabetical would be Pull first) |
+| 7.4 | Starting a day generates the session from the rotation, excluding permanently removed items | **PASS** (rotation part) — `testStartingADayBuildsASessionWithTheSkipPrompt` adds an exercise to the pool, starts the day, and asserts session slots appear and finishing advances the rotation ("pass 2"). The "excluding permanently removed items" clause was not exercised by any test (permanent removal is 7.8, UNRUN); that exclusion is covered by the core rotation tests |
+| 7.5 | The generated list shows prescribed sets × reps × load per exercise | **PASS** (row presence) — slot rows (`session-slot-*`) appear for the generated session. The assertion checks slot presence; the prescription text within a row is not itself asserted |
+| 7.6 | "Skip just for today" and "Remove from rotation" are visible **together** in one prompt | **PASS** — the same test asserts both buttons exist on the one prompt it opens (Decision 3) |
+| 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **UNRUN (UI)** — the automation opens the skip prompt but cancels it; the re-offer loop is covered by core rotation tests only |
+| 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **UNRUN (UI)** — permanent removal is not driven by the UI tests; covered by core tests (`activeItems`) only |
+| 7.9 | "Factor in your readiness score?" prompt, Yes and No | **PASS** (No leg) — starting a day must present the prompt, asserted via the "No, train as written" button appearing and being tapped. The "Yes" leg is 7.10, UNRUN |
+| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **UNRUN (UI)** — readiness *adjustment* is covered by core tests (`ReadinessAdjustment`); no UI test drives a Yes answer |
+| 7.11 | A very-low-readiness day presents as a rest day | **UNRUN (UI)** — rest-day presentation is core-tested; not driven in the UI |
+| 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **UNRUN (UI)** — the picker renders on session slots but no test drives it |
+| 7.13 | Entering actuals updates the two graphs | **UNRUN (UI)** — graphs are core-tested; the UI path is not driven |
+| 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **UNRUN (UI)** — toggle is core-documented, not UI-driven |
+| 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **UNRUN (UI)** — not driven |
+| 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **UNRUN (UI)** — "unspecified treated as a series" is core-tested only |
+| 7.17 | Deleting a session does not consume a rotation step | **UNRUN (UI)** — finishing the session is driven (7.4) and asserts rotation advances; the abandoned-sheet/delete path is not UI-driven |

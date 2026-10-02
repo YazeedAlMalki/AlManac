@@ -22,8 +22,13 @@ of this file needs to know.
 **Core and UI implemented.** Native screens added (`ProgramListView`,
 `ProgramDayView`, `ProgramSessionView`, `ExerciseProgressGraphsView`) and wired
 into `AlmanacApp`, `MoreViews` and `TrainingDashboardView`. Core test suite passes
-(900/900). Existing UI tests remain unchanged; program acceptance steps in
-`docs/acceptance-checklist.md` have been updated to reflect implementation.
+(900/900). Program flows are now also driven from the UI: three
+`TrainingProgramUITests` cover Start Workout → picker, program/day authoring
+(persistence + authoring order), and the day→session loop with the skip prompt
+and readiness door; a full-file run passes 3 of 3 (see the checklist §7 and the
+Verification block below). One tap-stability bug was found while driving and
+fixed in the test harness, not the app (stale-frame tap after `reveal` on a
+lazy `List`).
 
 ### New
 
@@ -83,6 +88,15 @@ App target: `xcodebuild` against `Native/Almanac.xcodeproj`, scheme `Almanac`,
 iPhone 16e simulator — **SUCCEEDED**, no errors, with the four new program
 screens in the target; the warnings it printed are pre-existing and in unrelated
 files (`SettingsView.swift`, `ActivityRingViews.swift`, widget code signing).
+
+UI: `AlmanacUITests/TrainingProgramUITests` — full-file run
+(`-only-testing:AlmanacUITests/TrainingProgramUITests`) — **3 of 3**, twice in a
+row (2026-10-02).
+Drives 7.1–7.6 and the 7.9 No-leg of the acceptance checklist; the rest of §7
+stays UNRUN (UI). One harness bug found and fixed while driving: the tap after
+`reveal` could synthesize against a stale frame from a lazy `List` and land on
+the row below "Start workout"; the tap now waits for the revealed frame to
+settle (`waitUntilSettled`). The app code was not at fault.
 
 ## 2026-09-30 — Circadian context stops being a table nobody reads; catalog follow-ups; the README stops lying
 
