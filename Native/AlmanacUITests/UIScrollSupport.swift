@@ -269,9 +269,14 @@ extension XCUIApplication {
     }
 
     /// The first element whose identifier starts with `prefix`.
+    ///
+    /// `menus` and `pickers` come before `buttons` because a SwiftUI `.menu`
+    /// `Picker` — the session's equipment-variant selector — answers as a menu
+    /// or picker rather than as a button, and a test that means "find the
+    /// picker" must not be told the identifier matches nothing.
     func firstElement(identifierPrefix prefix: String) -> XCUIElement {
         let predicate = NSPredicate(format: "identifier BEGINSWITH %@", prefix)
-        for query in [buttons, cells, staticTexts, otherElements] {
+        for query in [menus, pickers, buttons, cells, staticTexts, otherElements] {
             let match = query.matching(predicate).firstMatch
             if match.exists { return match }
         }

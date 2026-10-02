@@ -253,6 +253,15 @@ final class ProgramModel: ObservableObject {
         if availability.mutatesPool { loadItems(programDayId: programDayId) }
     }
 
+    /// Decision 3's permanent-removal reversal: puts the item back in the
+    /// rotation, keeping its cycle position, prescription and progression rule
+    /// (the store's `setActive` is reversible by design — deletion is not).
+    func restore(item id: Int64, programDayId: Int64) throws {
+        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        try poolStore.setActive(id: id, to: true)
+        loadItems(programDayId: programDayId)
+    }
+
     func setProgression(id: Int64, programDayId: Int64, incrementKg: Double?, condition: ProgressionCondition?) throws {
         guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
         try poolStore.setProgression(id: id, incrementKg: incrementKg, condition: condition?.rawValue)

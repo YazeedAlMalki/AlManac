@@ -130,7 +130,8 @@ struct ProgramDayView: View {
                 HStack(spacing: 10) {
                     AlmanacStatusMark(text: "Removed from rotation", tone: .neutral)
                     Spacer(minLength: 8)
-                    Button("Put back") { setAvailability(.permanent, item: item) }
+                    Button("Put back") { restore(item: item) }
+                        .buttonStyle(.borderless)
                         .font(AlmanacTypography.font(.label))
                         .disabled(model.database == nil)
                         .accessibilityIdentifier("restore-pool-item-\(item.id)")
@@ -138,6 +139,7 @@ struct ProgramDayView: View {
             }
         }
         .padding(.vertical, 6)
+        .accessibilityElement(children: .contain)
         .contentShape(Rectangle())
         .onTapGesture { editing = .editing(item) }
         .accessibilityIdentifier("pool-item-\(item.id)")
@@ -146,7 +148,13 @@ struct ProgramDayView: View {
                 do { try model.deletePoolItem(id: item.id, programDayId: day.id) }
                 catch { self.error = String(describing: error) }
             }
-            Button(item.isActive ? "Remove" : "Put back") { setAvailability(.permanent, item: item) }
+            Button(item.isActive ? "Remove" : "Put back") {
+                if item.isActive {
+                    setAvailability(.permanent, item: item)
+                } else {
+                    restore(item: item)
+                }
+            }
                 .tint(AlmanacPalette.surfaceMuted)
         }
     }
@@ -200,6 +208,11 @@ struct ProgramDayView: View {
 
     private func setAvailability(_ availability: ExerciseAvailability, item: PoolItemEntry) {
         do { try model.setAvailability(availability, item: item.id, programDayId: day.id) }
+        catch { self.error = String(describing: error) }
+    }
+
+    private func restore(item: PoolItemEntry) {
+        do { try model.restore(item: item.id, programDayId: day.id) }
         catch { self.error = String(describing: error) }
     }
 

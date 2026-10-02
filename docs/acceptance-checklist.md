@@ -171,22 +171,34 @@ is a test that will send someone looking in the wrong place.
 Added 2026-10-02. The core of this feature is built (`docs/features/training-program.md`).
 The native UI screens (`ProgramListView`, `ProgramDayView`, `ProgramSessionView`, `ExerciseProgressGraphsView`) are implemented and wired into `TrainingDashboardView` and `AlmanacApp`. Core test suite passes (900/900).
 
-**Driven 2026-10-02.** Three UI tests now drive the picker, authoring, the
-day→session loop, the skip prompt and the readiness door:
-`TrainingProgramUITests` (`testStartWorkoutOpensTheProgramPicker`,
-`testAuthoredProgramsAndDaysAppearOnThePicker`,
-`testStartingADayBuildsASessionWithTheSkipPrompt`). A full-file run
-(`-only-testing:AlmanacUITests/TrainingProgramUITests`) passes **3 of 3**
-(two consecutive full-file runs, 2026-10-02). One automation bug was found and
-fixed in the **test infra**, not the app: a tap synthesized right after `reveal`
-could use a stale frame from a lazy `List`, landing on the row below "Start
-workout" and falsely reporting the program picker missing; the tap now waits
-for the revealed frame to settle (`waitUntilSettled`) before committing.
+**Driven 2026-10-02–03.** `TrainingProgramUITests` now drives the whole §7
+surface except the two engine-dependent rows (7.10–7.11): the picker,
+authoring, the day→session loop, all three skip-prompt answers, the readiness
+door, the equipment-variant selector, actuals reaching both graphs, the
+separate/combined toggle and its comparability note, pre-migration history, and
+the abandon/delete versus rotation-step rows. A full-file run
+(`-only-testing:AlmanacUITests/TrainingProgramUITests`) passes **10 of 10**
+(2026-10-03, after the known-failure passes on 2026-10-02). The runs found
+automation-side issues (SwiftUI steppers/pickers expose a bare `value`, so
+assertions read `label`-or-`value`; below-the-fold sheet rows are `reveal`ed; a
+tab switch resets the inner Programs→Day stack, so re-navigation settles the
+Modules home first) and one genuine **app bug**, fixed in the app:
+
+- **"Put back" never restored.** The pool row's restore button — and the same
+  swipe action — called `setAvailability(.permanent, …)`, i.e. wrote
+  `is_active = false` again: a no-op on an item already removed, so a removed
+  exercise could never come back. It now routes through a dedicated
+  `ProgramModel.restore` to the store's reversible `setActive(id:to: true)`,
+  keeping the item's cycle position, prescription and progression rule.
+- The same fix exposed the row's "Put back" button to the accessibility tree
+  (`.accessibilityElement(children: .contain)` on the row, `.borderless` on the
+  button); before it, the row's tap gesture swallowed the inner control and a
+  VoiceOver user had no way to restore an exercise.
 
 Rows are **PASS** only where the automation above actually drove the step and
-the row text records the scope. Rows 7.7–7.8, 7.10–7.17 were driven to their
-correct *app* behavior only by the core suite; the UI path for them stays
-**UNRUN** until a test drives it.
+the row text records the scope. 7.10–7.11 stay **UNRUN**: `ReadinessEngine`
+yields no score without sleep/vitals data, the simulator has neither, so no UI
+run can reach the "Yes" band or the very-low rest-day presentation.
 
 The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 
@@ -195,17 +207,17 @@ The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 | 7.1 | Workout → "Start Workout" offers the program picker | **PASS** — `testStartWorkoutOpensTheProgramPicker` taps the Training-dashboard "Start workout" link and asserts the `Programs` nav bar |
 | 7.2 | Program picker lists every non-deleted program, several at once | **PASS** — a program created in `testAuthoredProgramsAndDaysAppearOnThePicker` lands on the picker, and a non-empty picker offers adding a day (`testStartWorkoutOpensTheProgramPicker`, non-empty branch, with the shared simulator DB's leftover programs already on it). "Several at once" is not separately counted; deletion is not part of these tests |
 | 7.3 | Choosing a program offers its days in authoring order, not alphabetically | **PASS** — adds "Push" then "Pull" and asserts `Push.frame.minY < Pull.frame.minY` (alphabetical would be Pull first) |
-| 7.4 | Starting a day generates the session from the rotation, excluding permanently removed items | **PASS** (rotation part) — `testStartingADayBuildsASessionWithTheSkipPrompt` adds an exercise to the pool, starts the day, and asserts session slots appear and finishing advances the rotation ("pass 2"). The "excluding permanently removed items" clause was not exercised by any test (permanent removal is 7.8, UNRUN); that exclusion is covered by the core rotation tests |
+| 7.4 | Starting a day generates the session from the rotation, excluding permanently removed items | **PASS** — `testStartingADayBuildsASessionWithTheSkipPrompt` adds an exercise to the pool, starts the day, and asserts session slots appear and finishing advances the rotation ("pass 2"). The "excluding permanently removed items" clause is driven by 7.8's UI test and the core rotation tests |
 | 7.5 | The generated list shows prescribed sets × reps × load per exercise | **PASS** (row presence) — slot rows (`session-slot-*`) appear for the generated session. The assertion checks slot presence; the prescription text within a row is not itself asserted |
 | 7.6 | "Skip just for today" and "Remove from rotation" are visible **together** in one prompt | **PASS** — the same test asserts both buttons exist on the one prompt it opens (Decision 3) |
-| 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **UNRUN (UI)** — the automation opens the skip prompt but cancels it; the re-offer loop is covered by core rotation tests only |
-| 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **UNRUN (UI)** — permanent removal is not driven by the UI tests; covered by core tests (`activeItems`) only |
+| 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **PASS** — `testSkippingForTodayReoffersTheExerciseNextSession` skips the generated slot ("Skip just for today"), asserts the held row is shown and undoable, finishes, sees the day advance to pass 2, then starts again and asserts the same exercise is re-offered |
+| 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **PASS** — `testRemovingFromRotationThenRestoringItsPosition` removes an exercise ("Remove from rotation"); the day marks it "Removed from rotation" and counts "1 of 2 in rotation"; a fresh session offers only the remaining exercise; "Put back" restores it ("2 in rotation", mark cleared) and a later session offers both again. Driving this exposed an app bug — "Put back" wrote `is_active = false` again instead of restoring — fixed via `ProgramModel.restore` |
 | 7.9 | "Factor in your readiness score?" prompt, Yes and No | **PASS** (No leg) — starting a day must present the prompt, asserted via the "No, train as written" button appearing and being tapped. The "Yes" leg is 7.10, UNRUN |
-| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **UNRUN (UI)** — readiness *adjustment* is covered by core tests (`ReadinessAdjustment`); no UI test drives a Yes answer |
-| 7.11 | A very-low-readiness day presents as a rest day | **UNRUN (UI)** — rest-day presentation is core-tested; not driven in the UI |
-| 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **UNRUN (UI)** — the picker renders on session slots but no test drives it |
-| 7.13 | Entering actuals updates the two graphs | **UNRUN (UI)** — graphs are core-tested; the UI path is not driven |
-| 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **UNRUN (UI)** — toggle is core-documented, not UI-driven |
-| 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **UNRUN (UI)** — not driven |
-| 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **UNRUN (UI)** — "unspecified treated as a series" is core-tested only |
-| 7.17 | Deleting a session does not consume a rotation step | **UNRUN (UI)** — finishing the session is driven (7.4) and asserts rotation advances; the abandoned-sheet/delete path is not UI-driven |
+| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **UNRUN (UI)** — readiness *adjustment* is covered by core tests (`ReadinessAdjustment`); no UI run can reach a Yes answer because `ReadinessEngine.evaluate` yields no score without sleep/vitals data, and the simulator has neither, so the prompt offers no band to choose |
+| 7.11 | A very-low-readiness day presents as a rest day | **UNRUN (UI)** — rest-day presentation is core-tested; the very-low band is unreachable in the UI for the same engine reason as 7.10 |
+| 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **PASS** — `testEquipmentVariantPickerOffersTheFiveAnswers` opens the selector on a generated slot; the prompt offers "Not recorded" plus Barbell/Dumbbell/Cable/Machine; choosing Barbell records it on the control |
+| 7.13 | Entering actuals updates the two graphs | **PASS** — `testEnteringActualsUpdatesBothGraphs` adds a load-bearing exercise with 4 kg prescribed, marks the bout done (registering actuals), finishes, opens the progress screen, and asserts both the Load graph and the Reps-performed graph gained a logged point |
+| 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **PASS** — `testVariantModeToggleAppliesToBothGraphsAndShowsTheNote` flips the radio to Combined and asserts both the weight and volume graphs keep their logged points (the toggle is a read applied to both) |
+| 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **PASS** — the same test asserts the "Equipment variants may not be directly comparable" note is absent in separate mode and present in combined mode |
+| 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **PASS** — `testPreMigrationHistoryStillDrawsASeriesInSeparateMode` finishes a bodyweight bout with no variant (the shape pre-Migration049 history has), and asserts the volume graph still draws a series in the default separate mode ("N logged") while the weight graph honestly reports no load |
+| 7.17 | Deleting a session does not consume a rotation step | **PASS** — `testDeletingOrAbandoningASessionDoesNotConsumeARotationStep` drives both legs that skip a rotation step: *abandoning* ("Put down" writes nothing, the day stays pass 1) and *deleting* (Today → Rhythm → day editor → deleting that day's "1 min" training rows leaves the day back at pass 1). No assertions touch other days' sessions |
