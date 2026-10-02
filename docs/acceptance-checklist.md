@@ -29,7 +29,7 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 | The three suites above, together | **PASS** — 13 of 13, 8m42s |
 | Full UI suite (52 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 39 are **not** claimed either way. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
-| Training Program steps (§7) | **UNRUN** — no UI exists. Added 2026-10-02. |
+| Training Program steps (§7) | **UNRUN** — screens built and compiled, not driven by automation. Added 2026-10-02, section rewritten to "UI implemented, not driven by automation." |
 
 **Recounted 2026-10-02 (`c4bd0be`):** the core suite is now **900 tests, 95
 suites, 0 failures** (168.7 s), up from the 768/88 it stood at immediately
