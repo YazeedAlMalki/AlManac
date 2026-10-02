@@ -27,7 +27,7 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 | Notification settings UI tests | **PASS** — 5 of 5 |
 | Timeline UI tests | **PASS** — 3 of 3, after two defects were fixed (see §6) |
 | The three suites above, together | **PASS** — 13 of 13, 8m42s |
-| Full UI suite (52 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 39 are **not** claimed either way. |
+| Full UI suite (68 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 54 are **not** claimed either way. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
 | Training Program steps (§7) | **7 of 17 driven (PASS)** — `TrainingProgramUITests` pass 3 of 3 in a full-file run, twice in a row (2026-10-02); 7.1–7.6 and the 7.9 No-leg were driven. The rest are **UNRUN (UI)**: built and core-tested, but no UI test drives them (see §7). One test-infra bug (stale-frame tap after `reveal`) was found and fixed in the harness; the app was not at fault |
 
