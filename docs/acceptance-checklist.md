@@ -29,6 +29,12 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 | The three suites above, together | **PASS** — 13 of 13, 8m42s |
 | Full UI suite (52 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 39 are **not** claimed either way. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
+| Training Program steps (§7) | **UNRUN** — no UI exists. Added 2026-10-02. |
+
+**Recounted 2026-10-02 (`c4bd0be`):** the core suite is now **900 tests, 95
+suites, 0 failures** (168.7 s), up from the 768/88 it stood at immediately
+before that commit. The UI rows above are still the 2026-09-30 run and have not
+been re-driven; they are not claims about current code.
 
 ---
 
@@ -134,6 +140,31 @@ looks right" is visibly not the same as "this was checked".
 | Full UI suite | Exceeds a 50-minute command timeout. Six of 52 passed before the run was abandoned. The remaining 46 are **not** claimed either way. |
 | 7.\* | The Training Program feature has no UI at all. Its core is built and tested (900-test suite green), but nothing in this document's §7 can be driven until someone writes the screens, and a core test passing is not a driven step. |
 
+## 6. Defects found by driving this
+
+Two real defects surfaced while building item 4, both pre-existing and neither
+caused by the readiness work.
+
+**The Timeline UI tests had been failing since 2026-09-26** — passing on an
+empty database, failing on a populated one. The cause was not the Timeline
+screen. The shared `reveal` helper swipes, and a swipe on that particular
+`List` left the accessibility hierarchy byte-identical across a dozen attempts,
+so a budget-only loop reported "not there", which is indistinguishable from a
+control that genuinely was not offered. `reveal` now watches whether the content
+moved and falls back to a press-then-drag. Two wrong answers to "where is the
+anchor?" are documented in the fix: application-level `staticTexts` puts the
+fixed tab bar in the measurement, and `cells` is empty for SwiftUI lists.
+
+**A settings switch appeared not to work.** The reminders screen's switches read
+their value out of a `@State` array that was loaded once on appear, so a
+successful write was immediately overwritten by the stale copy. Found by
+`testASwitchFlipsAndReverts`; the reload now happens after every write.
+
+A third finding is not a defect but a note: `tap()` on a SwiftUI `Toggle` row can
+land on the label and do nothing. `tapSwitchControl()` exists for this and the
+new tests use it. A test that reads "the switch is broken" when the tap missed
+is a test that will send someone looking in the wrong place.
+
 ## 7. Training Program — **UNRUN, no UI exists**
 
 Added 2026-10-02. The core of this feature is built (`docs/features/training-program.md`),
@@ -162,28 +193,3 @@ The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 | 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **UNRUN** — no screen |
 | 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **UNRUN** — no screen. Tested as `EquipmentVariantGraphTests.unspecifiedIsASeries`. |
 | 7.17 | Deleting a session does not consume a rotation step | **UNRUN** — tested in `RotationEngineTests`; nothing is driven |
-
-## 6. Defects found by driving this
-
-Two real defects surfaced while building item 4, both pre-existing and neither
-caused by the readiness work.
-
-**The Timeline UI tests had been failing since 2026-09-26** — passing on an
-empty database, failing on a populated one. The cause was not the Timeline
-screen. The shared `reveal` helper swipes, and a swipe on that particular
-`List` left the accessibility hierarchy byte-identical across a dozen attempts,
-so a budget-only loop reported "not there", which is indistinguishable from a
-control that genuinely was not offered. `reveal` now watches whether the content
-moved and falls back to a press-then-drag. Two wrong answers to "where is the
-anchor?" are documented in the fix: application-level `staticTexts` puts the
-fixed tab bar in the measurement, and `cells` is empty for SwiftUI lists.
-
-**A settings switch appeared not to work.** The reminders screen's switches read
-their value out of a `@State` array that was loaded once on appear, so a
-successful write was immediately overwritten by the stale copy. Found by
-`testASwitchFlipsAndReverts`; the reload now happens after every write.
-
-A third finding is not a defect but a note: `tap()` on a SwiftUI `Toggle` row can
-land on the label and do nothing. `tapSwitchControl()` exists for this and the
-new tests use it. A test that reads "the switch is broken" when the tap missed
-is a test that will send someone looking in the wrong place.
