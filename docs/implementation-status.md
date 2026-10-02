@@ -1,9 +1,9 @@
 # Almanac implementation status
 
 Updated 2026-10-02. The Training Program layer above a single session is built
-in `AlmanacCore` — migration 049, three stores, three engines — with no UI yet;
-see `docs/features/training-program.md`. The entry for that is the topmost
-section below. The Technical Spec is now committed under `docs/`, so the
+in `AlmanacCore` — migration 049, three stores, three engines — and its screens
+are built in `Native/Almanac`; see `docs/features/training-program.md`. The
+entry for that is the topmost section below. The Technical Spec is now committed under `docs/`, so the
 references to it resolve from a fresh clone. The production nutrition reference
 bundle ships as an AlmanacCore resource and installs into the app database on
 first launch. The editorial shell, Today tracking calendar, Trends surface and
@@ -80,9 +80,9 @@ across seven suites — 10 migration, 18 program+day, 26 pool, 25 rotation,
 20 readiness, 18 progression, 15 graphs.
 
 App target: `xcodebuild` against `Native/Almanac.xcodeproj`, scheme `Almanac`,
-iPhone 16e simulator — **SUCCEEDED**, no errors. Nothing in `Native/Almanac`
-changed; the three warnings it printed are pre-existing and in unrelated files
-(`SettingsView.swift`, `ActivityRingViews.swift`, widget code signing).
+iPhone 16e simulator — **SUCCEEDED**, no errors, with the four new program
+screens in the target; the warnings it printed are pre-existing and in unrelated
+files (`SettingsView.swift`, `ActivityRingViews.swift`, widget code signing).
 
 ## 2026-09-30 — Circadian context stops being a table nobody reads; catalog follow-ups; the README stops lying
 
