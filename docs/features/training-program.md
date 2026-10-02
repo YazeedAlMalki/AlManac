@@ -1,8 +1,9 @@
 # Training Program — the layer above a session
 
-**Status:** core built, 2026-10-02. Migration 049, three stores, three engines.
-No UI — nothing in this slice touches `Native/Almanac`. The feature's
-definitions come from `docs/handoff-2026-10-01-training-program.md`, which is a
+**Status:** core + UI built, 2026-10-02. Migration 049, three stores, three
+engines; the screens in `Native/Almanac` (`ProgramListView`, `ProgramDayView`,
+`ProgramSessionView`, `ExerciseProgressGraphsView`). The feature's definitions
+come from `docs/handoff-2026-10-01-training-program.md`, which is a
 product-decisions handoff, not a status handoff; `docs/features/training.md`
 remains the doc for everything underneath it.
 
@@ -231,9 +232,9 @@ values separately.
 
 ## 9. What's deliberately not built
 
-- **No UI.** The handoff's UX flow (program/day picker, "Factor in your
-  readiness?", per-slot skip prompt) is a design, not code. Nothing in
-  `Native/Almanac` changed, and the acceptance checklist marks those steps UNRUN.
+- **No UI automation.** The screens are built and compile, but nothing drives
+  them from a test; the acceptance checklist marks the steps "implemented, not
+  driven by automation" rather than claiming a driven pass.
 - **`quality_reps` deferred**, per the owner's pre-resolution: zero source
   content, high authoring cost. The type exists in Migration016; no authoring
   surface for it was built.
