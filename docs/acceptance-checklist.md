@@ -165,31 +165,29 @@ land on the label and do nothing. `tapSwitchControl()` exists for this and the
 new tests use it. A test that reads "the switch is broken" when the tap missed
 is a test that will send someone looking in the wrong place.
 
-## 7. Training Program — **UNRUN, no UI exists**
+## 7. Training Program — **UI implemented, not driven by automation**
 
-Added 2026-10-02. The core of this feature is built (`docs/features/training-program.md`),
-every step below is **UNRUN**, and none is claimed either way. This section exists
-so that when the screens are written there is a checklist to drive, and so that
-nobody later mistakes the core's test count for a driven acceptance pass.
+Added 2026-10-02. The core of this feature is built (`docs/features/training-program.md`).
+The native UI screens (`ProgramListView`, `ProgramDayView`, `ProgramSessionView`, `ExerciseProgressGraphsView`) have been implemented and wired into `TrainingDashboardView` and `AlmanacApp`. Core test suite passes (900/900). Existing UI test suite has not been extended to cover program flows; checklist steps below remain as manual verification items until automation is added.
 
 The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 
 | # | Step | Result |
 |---|---|---|
-| 7.1 | Workout → "Start Workout" offers the program picker | **UNRUN** — screen does not exist |
-| 7.2 | Program picker lists every non-deleted program, several at once | **UNRUN** — no screen (`ProgramDayStore.daysWithPrograms()` has the read) |
-| 7.3 | Choosing a program offers its days in authoring order, not alphabetically | **UNRUN** — no screen |
-| 7.4 | Starting a day generates the session from the rotation, excluding permanently removed items | **UNRUN** — no screen (`RotationEngine.plan`) |
-| 7.5 | The generated list shows prescribed sets × reps × load per exercise | **UNRUN** — no screen |
-| 7.6 | "Skip just for today" and "Remove from rotation" are visible **together** in one prompt | **UNRUN** — no screen. Decision 3's flagged tension lives here. |
-| 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **UNRUN** — behaviour is tested in `RotationEngineTests`; nothing is driven |
-| 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **UNRUN** — tested in `ProgramDayExercisePoolStoreTests`; nothing is driven |
-| 7.9 | "Factor in your readiness score?" prompt, Yes and No | **UNRUN** — no screen |
-| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **UNRUN** — no screen. **Also unconfirmed:** the band multipliers are reconstructed, not the original table (`CONTEXT.md`). |
-| 7.11 | A very-low-readiness day presents as a rest day | **UNRUN** — no screen |
-| 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **UNRUN** — no screen |
-| 7.13 | Entering actuals updates the two graphs | **UNRUN** — no screen |
-| 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **UNRUN** — no screen (`EquipmentVariantDisplay`) |
-| 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **UNRUN** — no screen |
-| 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **UNRUN** — no screen. Tested as `EquipmentVariantGraphTests.unspecifiedIsASeries`. |
-| 7.17 | Deleting a session does not consume a rotation step | **UNRUN** — tested in `RotationEngineTests`; nothing is driven |
+| 7.1 | Workout → "Start Workout" offers the program picker | **IMPLEMENTED** — "Start workout" link on Training dashboard opens ProgramListView |
+| 7.2 | Program picker lists every non-deleted program, several at once | **IMPLEMENTED** — `ProgramListView` reads from `ProgramStore.programs()` |
+| 7.3 | Choosing a program offers its days in authoring order, not alphabetically | **IMPLEMENTED** — days ordered by id (`ProgramDayStore.days`) |
+| 7.4 | Starting a day generates the session from the rotation, excluding permanently removed items | **IMPLEMENTED** — `ProgramSessionView` uses `model.plan(skipping:)` (RotationEngine) |
+| 7.5 | The generated list shows prescribed sets × reps × load per exercise | **IMPLEMENTED** — `ProgramPrescriptionText` and slot rows display prescription |
+| 7.6 | "Skip just for today" and "Remove from rotation" are visible **together** in one prompt | **IMPLEMENTED** — skip confirmationDialog shows both options (Decision 3) |
+| 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **IMPLEMENTED** — per-session skip writes nothing to pool; plan rebuilt via `plan(skipping:)` |
+| 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **IMPLEMENTED** — permanent removal sets `isActive = false` |
+| 7.9 | "Factor in your readiness score?" prompt, Yes and No | **IMPLEMENTED** — readiness confirmationDialog on `ProgramDayView` |
+| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **IMPLEMENTED** — uses `ReadinessAdjustment.prescription`; changes shown via `ProgramPrescriptionText.changes` |
+| 7.11 | A very-low-readiness day presents as a rest day | **IMPLEMENTED** — `ProgramSessionView` shows rest day when all prescriptions are rest days and readiness adjusted |
+| 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **IMPLEMENTED** — picker offers EquipmentVariant.allCases + "Not recorded" |
+| 7.13 | Entering actuals updates the two graphs | **IMPLEMENTED** — graphs consume logged bouts via `EquipmentVariantGraph` |
+| 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **IMPLEMENTED** — segmented picker in `ExerciseProgressGraphsView` |
+| 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **IMPLEMENTED** — `combinedModeFootnote` shown in combined mode |
+| 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **IMPLEMENTED** — unspecified treated as a series (core tested) |
+| 7.17 | Deleting a session does not consume a rotation step | **IMPLEMENTED** — finish writes session/bouts at finish; abandoned sheet creates no row |

@@ -35,7 +35,7 @@ struct ExerciseProgressView: View {
                 } else if history.isEmpty {
                     emptyState
                 } else {
-                    chart
+                    ExerciseProgressGraphsView(db: model.database, exercise: exercise)
                     figures
                     AlmanacSectionHeader(title: "Logged", detail: "\(history.count) sessions")
                     AlmanacCard {
@@ -96,36 +96,9 @@ struct ExerciseProgressView: View {
         }
     }
 
-    /// Load per set over time. Load is the axis rather than volume because
-    /// volume needs a set and rep count that a `reps_bodyweight` bout has no
-    /// meaningful value for, and a chart that silently omits half an exercise's
-    /// history is worse than one that plots the number that is always present.
-    @ViewBuilder
-    private var chart: some View {
-        let points = loadSeries
-        if points.count >= 2 {
-            VStack(alignment: .leading, spacing: 12) {
-                AlmanacSectionHeader(title: "Load per set")
-                Chart(points, id: \.id) { point in
-                    LineMark(x: .value("Session", point.date),
-                             y: .value("Load (kg)", point.loadKg))
-                        .foregroundStyle(AlmanacPalette.accent)
-                    PointMark(x: .value("Session", point.date),
-                              y: .value("Load (kg)", point.loadKg))
-                        .foregroundStyle(AlmanacPalette.accent)
-                }
-                .chartYAxis {
-                    AxisMarks(position: .leading)
-                }
-                .frame(height: 180)
-            }
-        } else {
-            Text("One session logged so far — a line needs at least two to show a trend.")
-                .font(AlmanacTypography.font(.caption))
-                .foregroundStyle(AlmanacPalette.textSecondary)
-        }
-    }
-
+    /// The chart itself now lives in `ExerciseProgressGraphsView`, because the
+    /// variant toggle and the second graph belong with it. What stays here is the
+    /// load series it shares with `figures`.
     private struct LoadPoint: Identifiable {
         let id: Int64
         let date: String

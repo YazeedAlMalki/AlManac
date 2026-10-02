@@ -9,6 +9,7 @@ struct AlmanacApp: App {
     @StateObject private var hydrationModel = HydrationModel()
     @StateObject private var nutritionModel = NutritionModel()
     @StateObject private var trainingModel = TrainingModel()
+    @StateObject private var programModel = ProgramModel()
     @StateObject private var healthModel = HealthModel()
     @StateObject private var prayerModel = PrayerModel()
     @StateObject private var fastingModel = FastingModel()
@@ -117,6 +118,7 @@ struct AlmanacApp: App {
                 hydrationModel.configure(db: model.db)
                 nutritionModel.configure(db: model.db)
                 trainingModel.configure(db: model.db)
+                programModel.configure(db: model.db)
                 healthModel.configure(db: model.db)
                 trackingModel.configure(db: model.db)
                 prayerModel.configure(db: model.db)
@@ -160,6 +162,7 @@ struct AlmanacApp: App {
                 hydrationModel: hydrationModel,
                 nutritionModel: nutritionModel,
                 trainingModel: trainingModel,
+                programModel: programModel,
                 healthModel: healthModel,
                 readinessModel: readinessModel,
                 trackingModel: trackingModel,

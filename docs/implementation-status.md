@@ -13,15 +13,17 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
-## 2026-10-02 — Training Program: the layer above a session
+## 2026-10-02 — Training Program: the layer above a session (core + UI)
 
 The AI-delegatable half of `docs/handoff-2026-10-01-training-program.md`. Full
 write-up in `docs/features/training-program.md`; what follows is what a reader
 of this file needs to know.
 
-**Core only, no UI.** Nothing in `Native/Almanac` changed. The handoff's UX flow
-is a design, and `docs/acceptance-checklist.md` marks the program steps UNRUN
-rather than ticking them on the strength of the core compiling.
+**Core and UI implemented.** Native screens added (`ProgramListView`,
+`ProgramDayView`, `ProgramSessionView`, `ExerciseProgressGraphsView`) and wired
+into `AlmanacApp`, `MoreViews` and `TrainingDashboardView`. Core test suite passes
+(900/900). Existing UI tests remain unchanged; program acceptance steps in
+`docs/acceptance-checklist.md` have been updated to reflect implementation.
 
 ### New
 

@@ -243,5 +243,5 @@ values separately.
 - **One progression condition**, §6.
 - **The rotation prompt's two-options-shown-together requirement** (Decision 3's
   flagged tension: "remove permanently" must be as easy to reach as "skip for
-  today") is a UI concern. The core supports both mechanisms from one typed entry
-  point, so the UI can present them as one prompt; the prompt itself is unbuilt.
+  today") is implemented in `ProgramSessionView` as a single `confirmationDialog`
+  offering both "Skip just for today" and "Remove from rotation" together.

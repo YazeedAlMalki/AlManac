@@ -31,6 +31,7 @@ struct ModulesView: View {
     let hydrationModel: HydrationModel
     let nutritionModel: NutritionModel
     let trainingModel: TrainingModel
+    let programModel: ProgramModel
     let healthModel: HealthModel
     let readinessModel: ReadinessModel
     let trackingModel: TrackingCalendarModel
@@ -87,7 +88,7 @@ struct ModulesView: View {
     private func destination(for route: AppRoute) -> some View {
         switch route {
         case .training:
-            TrainingDashboardView(model: trainingModel, embedded: true)
+            TrainingDashboardView(model: trainingModel, programModel: programModel, embedded: true)
         case .hydration:
             HydrationDashboardView(model: hydrationModel, embedded: true)
         case .nutrition:

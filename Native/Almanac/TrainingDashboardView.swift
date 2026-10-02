@@ -4,13 +4,15 @@ import AlmanacCore
 @MainActor
 struct TrainingDashboardView: View {
     @ObservedObject var model: TrainingModel
+    @ObservedObject var programModel: ProgramModel
     private let embedded: Bool
     @State private var logging = false
     @State private var pendingExercise: ExerciseCatalogEntry?
     @State private var error: String?
 
-    init(model: TrainingModel, embedded: Bool = false) {
+    init(model: TrainingModel, programModel: ProgramModel, embedded: Bool = false) {
         self.model = model
+        self.programModel = programModel
         self.embedded = embedded
     }
 
@@ -50,6 +52,14 @@ struct TrainingDashboardView: View {
                     Label("Browse exercises", systemImage: "square.grid.2x2")
                 }
                 .accessibilityIdentifier("exercise-library-link")
+
+                NavigationLink {
+                    ProgramListView(model: programModel, trainingModel: model)
+                } label: {
+                    Label("Start workout", systemImage: AlmanacIcon.training)
+                }
+                .accessibilityIdentifier("training-programs-link")
+                .disabled(model.database == nil)
 
                 NavigationLink {
                     TrainingSessionReviewView(db: model.database, model: model)
