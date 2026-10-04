@@ -140,6 +140,10 @@ Two more were put on 2026-10-01 with the Training Program handoff and resolved
 the same way. Both are recorded here for the same reason, and the first one
 reconstructed a table rather than choosing among options.
 
+Four more were settled while making a readiness score reachable on a device with
+no watch (2026-10-04), where the BRD's "manual fallback" left the scope, the
+bounds and the read-for-which-day open. None is confirmed either.
+
 **Macro targets — left null.** `goal_target_snapshot`'s protein, carbohydrate and
 fat columns are nullable and stay empty. Nothing in the BRD, the spec or the
 handoff says how to derive a macro split, and this repository does not invent a
@@ -188,6 +192,42 @@ than about the session: a heavy triple outweighs a light set of twenty, and a
 heavy day's volume would spike for a reason the graph cannot explain. `ProgressGraph.volume`
 documents this; `EquipmentVariantGraphTests.theTwoGraphsMeasureDifferentThings`
 pins it. *Overrule by:* changing `EquipmentVariantGraph.value(row:graph:)`.
+
+### Readiness and vitals (2026-10-04)
+
+**Manual entry covers RHR and HRV, not all four vitals §6.7 names.** The BRD
+lists resting HR, HRV, steps and active energy with "manual fallback", and only
+the first two have a readiness term to land on; a step field with nothing behind
+it is a control waiting to become a lie. *Overrule by:* naming where steps or
+active energy are consumed — which is a §9.x change, not a screen change.
+`VitalsMetric` is the whole hand-enterable vocabulary and `recordManual` is the
+only way in.
+
+**The plausibility bounds are a typo guard, and "Save anyway" is always
+offered.** 25–250 bpm and 1–500 ms catch the failures a keyboard makes and
+claim nothing clinical; nothing in the BRD or spec states a normal range, and
+this repository does not invent one. `BodyMeasurementType.plausibleRange` set the
+precedent and the wording. *Overrule by:* replacing the ranges with sourced
+ones — and then saying so in the error copy.
+
+**A score reads the vitals of the day it is scoring, or nothing at all.**
+`latestValue(for:since:)` is bounded to the last primary episode's start, else
+the start of the logical day, and returns nil when neither resolves. The
+earlier "newest row wins" read was correct while the HealthKit bridge was the
+only writer and stopped being correct the moment a person types "this morning,
+about last night". *Overrule by:* removing the `since` argument — which restores
+the bug, in the specific shape of a score borrowing another night's reading.
+`nil` means missing; it never means zero and never falls back to history.
+
+**§9.8's baseline keeps today in it, so a single-reading day scores 66.**
+`meanPerDay` averages within a day and the window is the last 28 valid days
+*including today*, so on a day with one RHR and one HRV the baseline is that
+reading, `rhrScore` reads 95 and `hrvScore` 75 whatever the numbers were. Left
+exactly as §9.8 states it, because excluding today is a different reading of the
+spec and not a smaller version of this one. Recorded in
+`docs/features/readiness.md`. *Overrule by:* excluding today from the baseline —
+and re-reading every band with it, since the bands are tuned against a
+multi-reading day.
 
 ### Weighing
 

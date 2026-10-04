@@ -171,18 +171,25 @@ is a test that will send someone looking in the wrong place.
 Added 2026-10-02. The core of this feature is built (`docs/features/training-program.md`).
 The native UI screens (`ProgramListView`, `ProgramDayView`, `ProgramSessionView`, `ExerciseProgressGraphsView`) are implemented and wired into `TrainingDashboardView` and `AlmanacApp`. Core test suite passes (900/900).
 
-**Driven 2026-10-02–03.** `TrainingProgramUITests` now drives the whole §7
-surface except the two engine-dependent rows (7.10–7.11): the picker,
-authoring, the day→session loop, all three skip-prompt answers, the readiness
-door, the equipment-variant selector, actuals reaching both graphs, the
-separate/combined toggle and its comparability note, pre-migration history, and
-the abandon/delete versus rotation-step rows. A full-file run
-(`-only-testing:AlmanacUITests/TrainingProgramUITests`) passes **10 of 10**
-(2026-10-03, after the known-failure passes on 2026-10-02). The runs found
-automation-side issues (SwiftUI steppers/pickers expose a bare `value`, so
-assertions read `label`-or-`value`; below-the-fold sheet rows are `reveal`ed; a
-tab switch resets the inner Programs→Day stack, so re-navigation settles the
-Modules home first) and one genuine **app bug**, fixed in the app:
+**Driven 2026-10-02–04.** `TrainingProgramUITests` now drives the whole §7
+surface: the picker, authoring, the day→session loop, all three skip-prompt
+answers, both readiness answers, the equipment-variant selector, actuals
+reaching both graphs, the separate/combined toggle and its comparability note,
+pre-migration history, and the abandon/delete versus rotation-step rows. A
+full-file run (`-only-testing:AlmanacUITests/TrainingProgramUITests`) passes
+**12 of 12** (2026-10-04, after the known-failure passes on 2026-10-02). The
+first run at 12 tests was **11 of 12**, and the one failure was worth having
+found: the two new readiness tests sort first by name, so the abandon/delete
+test now runs against a day carrying their training sessions, and the longer
+list re-renders more of itself per delete than its drain loop allowed for. The
+runs found automation-side issues (SwiftUI steppers/pickers expose a bare
+`value`, so assertions read `label`-or-`value`; below-the-fold sheet rows are
+`reveal`ed; a tab switch resets the inner Programs→Day stack, so re-navigation
+settles the Modules home first; and the abandon/delete test's drain of today's
+log must wait for the row count to hold still before picking a row, because a
+query issued mid-animation matches the row being deleted and the swipe then
+fails on an element that is already gone) and three genuine **app bugs**, fixed
+in the app:
 
 - **"Put back" never restored.** The pool row's restore button — and the same
   swipe action — called `setAvailability(.permanent, …)`, i.e. wrote
@@ -194,11 +201,34 @@ Modules home first) and one genuine **app bug**, fixed in the app:
   (`.accessibilityElement(children: .contain)` on the row, `.borderless` on the
   button); before it, the row's tap gesture swallowed the inner control and a
   VoiceOver user had no way to restore an exercise.
+- **The readiness question's answer was discarded.** Both buttons on
+  "Factor in your readiness score?" called the same `onStart()`, and the session
+  opened unscaled either way, so answering **Yes** produced exactly the session
+  answering **No** did. This is the reason 7.10/7.11 needed a real fix and not
+  just a score: the checklist recorded them as unreachable "because the simulator
+  has no score", which was half the reason, and the half that adding a score
+  would not have revealed. `ProgramDayView.onStart` now carries the answer,
+  `ProgramListView` keeps it in one `StartingSession` value (not a separate
+  flag, which could disagree with the day it belongs to), and `ProgramSessionView`
+  opens already scaled when the answer was yes *and* a score exists.
 
 Rows are **PASS** only where the automation above actually drove the step and
-the row text records the scope. 7.10–7.11 stay **UNRUN**: `ReadinessEngine`
-yields no score without sleep/vitals data, the simulator has neither, so no UI
-run can reach the "Yes" band or the very-low rest-day presentation.
+the row text records the scope.
+
+**How 7.10/7.11 get a score to choose.** Both tests hand-enter a resting rate
+and an HRV through Modules → Vitals, which is BRD §6.7's "manual fallback" and
+the whole of the new `VitalsView`. Neither test drives the editor's `DatePicker`,
+so the readings it needs for a *baseline* cannot be back-dated; instead each test
+deletes any hand-entered readings already on the log and leaves three ordinary
+ones per metric before typing the pair it wants scored. That arrangement is not
+arbitrary: §9.8's baseline is the last 28 valid days **including today**, and
+`meanPerDay` averages within a day, so a day carrying a single reading *is* its
+own baseline, `rhrScore` reads it as 95 and `hrvScore` as 75 whatever the number
+was, and every such day scores **66** — moderate, every time. That is a real
+property of the app and not a test artefact (§9.7's "preliminary" state arriving
+as arithmetic); it is recorded in `docs/features/readiness.md` rather than worked
+around in the formula. The clear-then-seed also keeps the score independent of
+what an earlier run left in the shared, never-reset simulator database.
 
 The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 
@@ -212,9 +242,9 @@ The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 | 7.6 | "Skip just for today" and "Remove from rotation" are visible **together** in one prompt | **PASS** — the same test asserts both buttons exist on the one prompt it opens (Decision 3) |
 | 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **PASS** — `testSkippingForTodayReoffersTheExerciseNextSession` skips the generated slot ("Skip just for today"), asserts the held row is shown and undoable, finishes, sees the day advance to pass 2, then starts again and asserts the same exercise is re-offered |
 | 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **PASS** — `testRemovingFromRotationThenRestoringItsPosition` removes an exercise ("Remove from rotation"); the day marks it "Removed from rotation" and counts "1 of 2 in rotation"; a fresh session offers only the remaining exercise; "Put back" restores it ("2 in rotation", mark cleared) and a later session offers both again. Driving this exposed an app bug — "Put back" wrote `is_active = false` again instead of restoring — fixed via `ProgramModel.restore` |
-| 7.9 | "Factor in your readiness score?" prompt, Yes and No | **PASS** (No leg) — starting a day must present the prompt, asserted via the "No, train as written" button appearing and being tapped. The "Yes" leg is 7.10, UNRUN |
-| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **UNRUN (UI)** — readiness *adjustment* is covered by core tests (`ReadinessAdjustment`); no UI run can reach a Yes answer because `ReadinessEngine.evaluate` yields no score without sleep/vitals data, and the simulator has neither, so the prompt offers no band to choose |
-| 7.11 | A very-low-readiness day presents as a rest day | **UNRUN (UI)** — rest-day presentation is core-tested; the very-low band is unreachable in the UI for the same engine reason as 7.10 |
+| 7.9 | "Factor in your readiness score?" prompt, Yes and No | **PASS** (both legs) — the No leg is `startCurrentDay`, which asserts the "No, train as written" button appearing and being tapped; the Yes leg is `testAnsweringYesScalesThePrescriptionAndNamesWhatMoved`, which asserts the "Yes — today's score is N" button appearing and being tapped |
+| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **PASS** — `testAnsweringYesScalesThePrescriptionAndNamesWhatMoved` hand-enters a resting rate and an HRV through Modules → Vitals (BRD §6.7's "manual fallback"), starts a day and answers Yes. The sheet opens already scaled: `readiness-toggle` is on, it names the band ("Moderate") and the number ("scaled from N"), and the `prescription-changes-*` panel states what became what. Which fields move depends on the prescription's type, so the assertion is that the panel names a movement, not which one |
+| 7.11 | A very-low-readiness day presents as a rest day | **PASS** — `testAVeryLowDayPresentsAsARestDayAndCanBeTrainedAnyway` seeds the same two readings far off the baseline, answers Yes, and asserts "Today is a rest day" with no readiness toggle on screen (the rest day *replaces* the session rather than sitting above a scaled one), a disabled Finish, and a working "Train as written anyway" that restores the plan as written |
 | 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **PASS** — `testEquipmentVariantPickerOffersTheFiveAnswers` opens the selector on a generated slot; the prompt offers "Not recorded" plus Barbell/Dumbbell/Cable/Machine; choosing Barbell records it on the control |
 | 7.13 | Entering actuals updates the two graphs | **PASS** — `testEnteringActualsUpdatesBothGraphs` adds a load-bearing exercise with 4 kg prescribed, marks the bout done (registering actuals), finishes, opens the progress screen, and asserts both the Load graph and the Reps-performed graph gained a logged point |
 | 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **PASS** — `testVariantModeToggleAppliesToBothGraphsAndShowsTheNote` flips the radio to Combined and asserts both the weight and volume graphs keep their logged points (the toggle is a read applied to both) |

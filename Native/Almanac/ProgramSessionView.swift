@@ -39,6 +39,14 @@ struct ProgramSessionView: View {
     @ObservedObject var model: ProgramModel
     @ObservedObject var trainingModel: TrainingModel
     let day: ProgramDayEntry
+    /// The answer to "Factor in your readiness score?", asked on the day screen.
+    ///
+    /// The question is asked there because that is where the day is, and the
+    /// toggle here is where the answer can still be changed. Opening *already*
+    /// scaled is what makes the two answers different things: a person who said
+    /// yes has to see a smaller session without having to find a switch to make
+    /// it happen.
+    let startFactoringInReadiness: Bool
     let onFinish: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -126,7 +134,7 @@ struct ProgramSessionView: View {
             } message: {
                 Text("Skipping keeps this exercise in the rotation and offers it again the next time you train \(day.label). Removing takes it out until you put it back.")
             }
-            .task { rebuild() }
+            .task { rebuild(readinessAdjusted: opensScaled) }
         }
     }
 
@@ -194,6 +202,17 @@ struct ProgramSessionView: View {
         readinessAdjusted && !slots.isEmpty && slots.allSatisfy { $0.log.prescription.isRestDay }
     }
 
+    /// Whether this session opens scaled for today's score.
+    ///
+    /// The answer is honoured only when there *is* a score. "Yes" means "scale
+    /// this for how I read today", and a day with no reading has nothing to scale
+    /// by — the question's own message says exactly that — so the honest reading
+    /// of yes-with-no-score is the same as no, not a toggle switched on with
+    /// nothing behind it.
+    private var opensScaled: Bool {
+        startFactoringInReadiness && model.todayReadinessScore != nil
+    }
+
     // MARK: - The generated list
 
     private var prescriptionSection: some View {
@@ -258,6 +277,12 @@ struct ProgramSessionView: View {
                     .foregroundStyle(AlmanacPalette.textSecondary)
                 }
             }
+            // Combined into one element so "the change is shown" is a question
+            // about the whole panel rather than about which field happened to
+            // move first — the fields that move depend on the prescription's
+            // type, and a test that named them would be asserting the fixture.
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("prescription-changes-\(slot.slot)")
         }
         if let suggestion = suggestions[slot.entry.item.id] {
             suggestionLine(suggestion)

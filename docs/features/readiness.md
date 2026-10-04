@@ -1,9 +1,9 @@
 # Almanac — Readiness (Slice 2)
 
 **Status:** the pipeline is closed as of 2026-09-29. Baseline pipeline, §9.7
-calibration counting and §9.8's three baselines are built and tested. Four
-things remain unbuilt, and each is a missing data model rather than a missing
-call.
+calibration counting and §9.8's three baselines are built and tested, and as of
+2026-10-04 a person without a watch can produce a score at all. Four things
+remain unbuilt, and each is a missing data model rather than a missing call.
 
 ## What is built
 
@@ -21,6 +21,66 @@ call.
 | §9.4 religious-fast suffix, §9.6 fasted-session precedence | `ReadinessModel` | UI |
 | §9.4 shift-transition suffix | `ReadinessModel.isCircadianTransition` | UI |
 | §9.8 notices on screen | `ReadinessDashboardView` | UI |
+| §6.7 "manual fallback" for RHR and HRV | `VitalsRecordStore.recordManual`/`update`/`delete`, `VitalsView` | `VitalsManualEntryTests`, `ManualVitalsReadinessTests`, `TrainingProgramUITests` |
+| §9.1 missing-input redistribution, end to end | `ReadinessModel.refresh` | `ManualVitalsReadinessTests` |
+
+## Manual entry, and what it took to make a score reachable (2026-10-04)
+
+**The gap.** BRD §6.7 promises RHR, HRV, steps and active energy "imported
+(HealthKit-authoritative, §5.2) with **manual fallback**". `vitals_record` had
+exactly one writer — the HealthKit bridge — so a person without a watch, or one
+who declined the HRV permission §5.2's own scenario names, could never produce a
+readiness score. `ReadinessEngine` returns `score: nil` when duration, stages,
+RHR+baseline and HRV+baseline are all missing, so the two weighed inputs being
+unreachable took the whole feature with it.
+
+**Only RHR and HRV, and only because those are the two the formula weighs.**
+`ReadinessFormula` has no term for steps or active energy, so a field for them
+would be a control with nothing on the other side of it. The screen's footer
+says so rather than leaving the absence to be discovered.
+
+**Two defects found while driving it, both in the app:**
+
+1. **`latestValue(for:)` was the wrong read for today's score.** `ReadinessModel`
+   took the newest row in `vitals_record`, which was correct while the only
+   writer was the bridge — a HealthKit sample is always today's or last night's.
+   It stops being correct the moment a person types "this morning, about last
+   night": that reading is timestamped yesterday, and "newest row wins" hands
+   today's score a number from a different night while looking entirely
+   reasonable. `latestValue(for:since:)` bounds the read to the day being scored
+   (the last primary episode's start, else the start of the logical day); with no
+   resolvable start it reads nil rather than falling back to whole history,
+   because the fallback is the bug.
+2. **A manual wake marker scored as a zero-minute night.** §9.2's sleep-duration
+   bands put `0` minutes in the worst band, so a zero-duration episode was
+   scored as the worst possible night rather than as the absence of a
+   measurement. `StoredSleepEpisode.measuredDurationMinutes` returns nil for a
+   zero-duration row and `ReadinessModel` reads that instead.
+
+**A property of the formula worth knowing before anyone calls it a bug.** §9.8's
+baseline is the last 28 valid days *including today*, and `meanPerDay` averages
+within a day. So on a day carrying exactly one RHR and one HRV, the baseline *is*
+that reading: `rhrScore` reads it as 95 and `hrvScore` as 75 whatever the number
+was, and every such day scores **66**. That is §9.7's "preliminary" state
+arriving as arithmetic rather than as a label, and it is why the calibration
+count matters. It is not changed here — excluding today from the baseline would
+be a different reading of §9.8 than the one the spec states — but it is why the
+UI tests for 7.10/7.11 leave three ordinary readings behind before typing the
+pair they want scored, and it is worth revisiting when §9.7's calibration
+completes.
+
+**The training screen asked the question and then ignored the answer.**
+`ProgramDayView`'s "Factor in your readiness score?" dialog had both buttons
+calling the same `onStart()`, and `ProgramSessionView` opened with
+`readinessAdjusted` false either way. A person who said "Yes — today's score is
+22" got a session identical to the one they got by saying no. That is the other
+half of why checklist rows 7.10/7.11 were recorded as unreachable "because the
+simulator has no score", and the half nobody would have found by adding a score.
+`ProgramDayView.onStart` now carries the answer, `ProgramListView` holds it as one
+`StartingSession` value rather than a flag that could disagree with the day it
+belongs to, and `ProgramSessionView` opens scaled when the answer was yes *and*
+there is a score. The toggle stays, because the answer is changeable for as long
+as the sheet is up.
 
 ## The two design decisions worth arguing about
 

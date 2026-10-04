@@ -115,6 +115,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     case context
     case prayer
     case bodyCircumference
+    case vitals
     case laboratory
     case laboratoryImportHistory
     case timeline
@@ -135,7 +136,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .todayRoot: return .today
         case .trendsRoot, .trendsDetail: return .trends
         case .training, .hydration, .nutrition, .fasting, .supplements, .context,
-             .prayer, .bodyCircumference, .laboratory, .laboratoryImportHistory,
+             .prayer, .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
              .timeline, .bodyComposition, .profile, .settings:
             return .modules
         }
@@ -155,6 +156,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .context: return "Context"
         case .prayer: return "Prayer"
         case .bodyCircumference: return "Body circumferences"
+        case .vitals: return "Vitals"
         case .laboratory: return "Laboratory"
         case .laboratoryImportHistory: return "Import history"
         case .timeline: return "Timeline"
@@ -176,6 +178,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .context: return AlmanacIcon.context
         case .prayer: return AlmanacIcon.prayer
         case .bodyCircumference: return AlmanacIcon.body
+        case .vitals: return AlmanacIcon.vitals
         case .laboratory: return AlmanacIcon.laboratory
         case .laboratoryImportHistory: return AlmanacIcon.importHistory
         case .timeline: return AlmanacIcon.timeline
@@ -198,8 +201,8 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
             return .track
         case .prayer, .fasting:
             return .dailyContext
-        case .bodyCircumference, .laboratory, .laboratoryImportHistory, .timeline,
-             .bodyComposition, .profile:
+        case .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
+             .timeline, .bodyComposition, .profile:
             return .records
         case .settings:
             return .app

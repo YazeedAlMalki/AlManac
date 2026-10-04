@@ -41,4 +41,7 @@ public enum AlmanacIcon {
     /// circumferences, which is a different screen and has its own route.
     public static let bodyComposition = "figure.stand"
     public static let importHistory = "clock.arrow.circlepath"
+    /// Vitals — a heart trace rather than a stethoscope, because the screen is
+    /// two numbers read off a measurement, not an examination.
+    public static let vitals = "waveform.path.ecg"
 }

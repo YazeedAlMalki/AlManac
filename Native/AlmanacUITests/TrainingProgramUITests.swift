@@ -11,7 +11,11 @@ import XCTest
 /// from the pool (7.4) and shows a prescription per exercise (7.5), the skip
 /// prompt offers both mechanisms on one dialog (7.6), and the readiness question
 /// is the door into the session (7.9, No leg). Then the rest of the rotation's
-/// mechanics, all driven rather than core-read: skip-for-today re-offers the
+/// mechanics, all driven rather than core-read: answering that question **Yes**
+/// scales the session for today's band and names what moved (7.10), and a
+/// very-low band presents as a rest day rather than a smaller session (7.11) —
+/// both of which need a score first, so both hand-enter their vitals through
+/// Modules → Vitals. Then skip-for-today re-offers the
 /// exercise next session (7.7), permanent removal drops it and re-adding
 /// restores it (7.8), the variant selector offers the five answers (7.12),
 /// entering actuals updates both graphs (7.13), the separate/combined toggle
@@ -159,6 +163,98 @@ final class TrainingProgramUITests: XCTestCase {
         XCTAssertTrue(app.waitUntil(timeout: 5) {
             app.staticTexts["This is pass 2 through 1 exercise."].exists
         }, "finishing the session did not advance the rotation")
+    }
+
+    // MARK: - 7.10 / 7.11: the readiness question, with a score to answer it
+
+    /// Choosing **Yes** scales the session for today's band, and every field
+    /// that moved is named (7.10).
+    ///
+    /// The score is hand-entered first, through Modules → Vitals, because that
+    /// is the whole of §6.7's "manual fallback" and it is what gives a person
+    /// without a watch — and the simulator — a score to scale by. Until that
+    /// screen existed the Yes leg had no band behind it and this row could not
+    /// be driven at all.
+    func testAnsweringYesScalesThePrescriptionAndNamesWhatMoved() {
+        // Moderate: "train at reduced intensity" rather than rest, which is the
+        // distinction 7.10 is about — 7.11 has the rest-day leg.
+        openVitals()
+        clearHandEnteredReadings()
+        seedTodaysReadiness(rhr: "54", hrv: "50")
+        XCTAssertTrue(app.element("vitals-today-rhr").label.contains("54 bpm"),
+                      "the hand-entered resting rate did not reach today's card")
+        XCTAssertTrue(app.element("vitals-today-hrv").label.contains("50 ms"),
+                      "the hand-entered HRV did not reach today's card")
+
+        settleModulesHome()
+        openPrograms()
+        let dayLabel = unique("Scaled day")
+        ensureDay(named: dayLabel)
+        openDay(named: dayLabel)
+        // A loaded movement, so there is more than a set count to move.
+        addExercise(1, withLoad: 4)
+
+        startCurrentDayFactoringInReadiness()
+
+        // The answer took effect: the toggle is on, and the sheet says which
+        // band it scaled for rather than leaving the number unattributed.
+        let toggle = app.element("readiness-toggle")
+        XCTAssertTrue(app.reveal(toggle), "the session has no readiness toggle to show the answer")
+        XCTAssertEqual(toggle.value as? String, "1",
+                       "answering yes did not open the session already scaled")
+        XCTAssertTrue(app.staticTexts["Moderate"].exists,
+                      "the seeded readings did not land in the moderate band")
+        XCTAssertTrue(app.staticText(beginningWith: "scaled from ").exists,
+                      "the session does not say what it scaled from")
+
+        // ...and the change is shown rather than silently applied. Which fields
+        // move depends on the prescription's type, so the assertion is that the
+        // panel names a movement, not which one it picked.
+        let changes = app.element("prescription-changes-0")
+        XCTAssertTrue(app.reveal(changes), "scaling the session named no field that moved")
+        XCTAssertTrue(changes.label.contains("→"),
+                      "the change panel does not say what became what (now: \(changes.label))")
+        abandonCurrentSession(dayLabel: dayLabel)
+    }
+
+    /// A very-low day presents as a rest day — no prescription rather than a
+    /// small one — and it is still a choice rather than a dead end (7.11).
+    func testAVeryLowDayPresentsAsARestDayAndCanBeTrainedAnyway() {
+        openVitals()
+        clearHandEnteredReadings()
+        seedTodaysReadiness(rhr: "64", hrv: "34")
+
+        settleModulesHome()
+        openPrograms()
+        let dayLabel = unique("Rest day")
+        ensureDay(named: dayLabel)
+        openDay(named: dayLabel)
+        addExercise(1, withLoad: 4)
+
+        startCurrentDayFactoringInReadiness()
+
+        // The rest day replaces the session rather than sitting above a scaled
+        // one: there is no toggle to turn off because there is nothing to scale.
+        XCTAssertTrue(app.staticTexts["Today is a rest day"].exists,
+                      "a very low reading did not present as a rest day")
+        XCTAssertFalse(app.element("readiness-toggle").exists,
+                       "the rest day is showing a readiness toggle, so it is a scaled session, not a rest day")
+        let anyway = app.element("train-as-written-anyway")
+        XCTAssertTrue(app.reveal(anyway), "the rest day offers no way back into the session")
+        XCTAssertFalse(app.buttons["finish-program-session"].isEnabled,
+                       "a rest day must not be finishable as if it were a session")
+
+        // Taking the session anyway is the real exit, and it produces the plan as
+        // written: the toggle comes back, switched off, and the movements return.
+        anyway.tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) {
+            app.element("readiness-toggle").exists && app.staticText(beginningWith: "not scaled").exists
+        }, "training the rest day anyway did not restore the plan as written")
+        XCTAssertTrue(app.element("readiness-toggle").value as? String == "0",
+                      "the plan as written must not be scaled by the very low reading")
+        XCTAssertTrue(app.reveal(app.firstElement(identifierPrefix: "session-slot-")),
+                      "training anyway did not bring the day's movements back")
+        abandonCurrentSession(dayLabel: dayLabel)
     }
 
     // MARK: - 7.7 / 7.8: the two skip mechanisms, beyond one dialog
@@ -475,9 +571,23 @@ final class TrainingProgramUITests: XCTestCase {
         // duration sub-text is the fallback when it is not. Today's log holds
         // the whole shared database for this date and ours is among them, so
         // drain the list until no training row remains.
+        //
+        // Each pass first waits for the row count to hold still. Deleting a row
+        // re-renders the list, and a query issued while that re-render is in
+        // flight still matches the row being animated away — so the row found is
+        // gone by the time `swipeLeft` re-resolves it, and the failure reads as
+        // "no matches found" rather than as the harness losing a race. It only
+        // appears once the earlier tests in this file have left more sessions
+        // behind, because a longer list re-renders more of itself per delete.
         var deleted = 0
         for _ in 0..<40 {
-            guard let row = firstTrainingRow() else { break }
+            var previous = -1
+            let settled = app.waitUntil(timeout: 5) {
+                let count = trainingRowCount()
+                defer { previous = count }
+                return count == previous
+            }
+            guard settled, let row = firstTrainingRow() else { break }
             row.swipeLeft()
             let delete = app.buttons["Delete"]
             guard delete.waitForExistence(timeout: 2) else { break }
@@ -510,12 +620,31 @@ final class TrainingProgramUITests: XCTestCase {
     // MARK: - Helpers
 
     /// Modules → Training → Start workout → Programs.
+    ///
+    /// The tab is only tapped when the Modules home is not already on screen, and
+    /// the direction of the search depends on which of the two that is. Popping
+    /// back out of a pushed Modules screen restores the list to wherever it was
+    /// when that screen was opened — which is *below* "Training", the row being
+    /// looked for — and `reveal` only ever scrolls one way, so from there it has
+    /// to be scrolled towards the top instead of away from it. Tapping the
+    /// destination you are already on would pop the stack to root and get to the
+    /// same place by accident; asking for the row directly is the honest version.
     private func openPrograms() {
-        let modules = app.buttons["Modules"].firstMatch
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
-        modules.tap()
         let training = app.buttons["Training"]
-        XCTAssertTrue(app.reveal(training), "Training is missing from Modules")
+        if app.navigationBars["Modules"].firstMatch.exists {
+            // Three swipes each way before committing to a full pass, because
+            // one of the two directions is a wasted 24 and the other finds the
+            // row in the first or second.
+            XCTAssertTrue(app.reveal(training, maxSwipes: 3)
+                                || app.reveal(training, maxSwipes: 3, direction: .down)
+                                || app.reveal(training),
+                          "Training is missing from Modules")
+        } else {
+            let modules = app.buttons["Modules"].firstMatch
+            XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
+            modules.tap()
+            XCTAssertTrue(app.reveal(training), "Training is missing from Modules")
+        }
         training.tap()
         XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 5))
 
@@ -549,6 +678,99 @@ final class TrainingProgramUITests: XCTestCase {
         }
         XCTAssertTrue(app.buttons["Training"].firstMatch.waitForExistence(timeout: 5),
                       "the Modules home is unreachable after returning to the tab")
+    }
+
+    /// Modules → Vitals, the screen §6.7's "manual fallback" lives on.
+    private func openVitals() {
+        let modules = app.buttons["Modules"].firstMatch
+        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
+        modules.tap()
+        let vitals = app.buttons["Vitals"].firstMatch
+        XCTAssertTrue(app.reveal(vitals), "Vitals is missing from Modules")
+        vitals.tap()
+        XCTAssertTrue(app.navigationBars["Vitals"].waitForExistence(timeout: 5),
+                      "the Vitals screen did not open")
+    }
+
+    /// Types one reading into the hand-entry sheet: opens it, picks the
+    /// measurement, types the number, saves.
+    ///
+    /// The editor is a `Form` in a `NavigationStack`, so the measurement picker
+    /// is a menu button and Save lives in the navigation bar above the keyboard
+    /// — the decimal pad has no return key of its own. The numbers are strings
+    /// because that is what a keyboard types.
+    private func logReading(_ metric: String, value: String) {
+        let log = app.element("vitals-log")
+        XCTAssertTrue(app.reveal(log), "the Vitals screen offers no way to log a reading")
+        log.tap()
+        XCTAssertTrue(app.navigationBars["Log a reading"].waitForExistence(timeout: 5),
+                      "the reading editor did not open")
+
+        let picker = app.element("vitals-metric")
+        XCTAssertTrue(picker.waitForExistence(timeout: 5),
+                      "the editor offers no way to choose the measurement")
+        picker.tap()
+        let option = app.buttons[metric]
+        XCTAssertTrue(option.waitForExistence(timeout: 5),
+                      "the measurement picker does not offer \"\(metric)\"")
+        option.tap()
+
+        let field = app.textFields["vitals-value"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the editor has no field for the number")
+        field.tap()
+        field.typeText(value)
+        let save = app.buttons["Save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 5), "the editor has no Save button")
+        save.tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { !save.exists },
+                      "saving \(metric) \(value) did not close the editor")
+    }
+
+    /// Removes every hand-entered reading from the Vitals log.
+    ///
+    /// The simulator's database is shared and never reset, so a previous run's
+    /// readings would still be inside §9.8's 28-day baseline window and would
+    /// move the score out from under the assertions below. A test that means to
+    /// assert about *today's* readings has to arrange that today's readings are
+    /// its own, and deleting is the affordance the screen already offers for
+    /// that. Nothing else in this suite asserts on a hand-entered reading.
+    private func clearHandEnteredReadings() {
+        var deleted = 0
+        for _ in 0..<24 {
+            let row = app.firstElement(identifierPrefix: "vitals-reading-")
+            guard row.exists, app.reveal(row) else { break }
+            row.swipeLeft()
+            let remove = app.element("vitals-delete")
+            guard remove.waitForExistence(timeout: 2) else { break }
+            remove.tap()
+            XCTAssertTrue(app.waitUntil(timeout: 5) { !app.element("vitals-delete").exists },
+                          "deleting a reading did not close its actions")
+            deleted += 1
+        }
+        XCTAssertFalse(app.firstElement(identifierPrefix: "vitals-reading-").exists,
+                       "\(deleted) hand-entered readings were left on the Vitals log")
+    }
+
+    /// Puts eight readings on today's date: three ordinary ones for each metric,
+    /// then the pair this test wants scored.
+    ///
+    /// **Three of each first, and three is not a magic number.** §9.8's baseline
+    /// is the last 28 valid days *including today*, and `meanPerDay` averages
+    /// the readings within a day — so a day carrying a single reading is its own
+    /// baseline, `rhrScore` reads that as 95 and `hrvScore` as 75 whatever the
+    /// number was, and every score lands on 66. That is a property of the app
+    /// and not of this test; it is what §9.7 means by a preliminary score.
+    /// Reaching any other band therefore means being far from an average the
+    /// reading is itself part of, and with no watch — and no driving the editor's
+    /// date picker back to last night — the only way to arrange that is to leave
+    /// the average behind and then read off it.
+    private func seedTodaysReadiness(rhr: String, hrv: String) {
+        for _ in 0..<3 {
+            logReading(Metric.restingHeartRate, value: "52")
+            logReading(Metric.heartRateVariability, value: "55")
+        }
+        logReading(Metric.restingHeartRate, value: rhr)
+        logReading(Metric.heartRateVariability, value: hrv)
     }
 
     /// Creates a program with `name` when the picker is empty, and does nothing
@@ -668,10 +890,10 @@ final class TrainingProgramUITests: XCTestCase {
         }, "incrementing the Load stepper did not reach \(kg) kg (now: \(load.label))")
     }
 
-    /// Starts the open day. The readiness question is always asked first; the
-    /// No leg runs the day as written. The simulator writes no readiness score,
-    /// so there is nothing to scale by either way — which is why the answer is
-    /// deterministically "as written".
+    /// Starts the open day. The readiness question is always asked first, and
+    /// this answers it **No** — the leg every other test in this file wants,
+    /// because a session that scales itself for a reading is the thing 7.10 and
+    /// 7.11 are about and nothing else here is.
     private func startCurrentDay() {
         let startDay = app.element("start-program-day")
         XCTAssertTrue(app.waitUntil(timeout: 5) { startDay.isEnabled },
@@ -685,6 +907,32 @@ final class TrainingProgramUITests: XCTestCase {
         XCTAssertTrue(app.waitUntil(timeout: 5) {
             app.firstElement(identifierPrefix: "session-slot-").exists
         }, "no session sheet appeared after starting the day")
+    }
+
+    /// Starts the open day, answering its readiness question **Yes**.
+    ///
+    /// Matched on the label's prefix rather than on the number in it: the score
+    /// is the formula's arithmetic over readings this test typed, and pinning it
+    /// here would make a button label a second place to keep in step with the
+    /// weights. What matters is that the question carries a score to choose.
+    private func startCurrentDayFactoringInReadiness() {
+        let startDay = app.element("start-program-day")
+        XCTAssertTrue(app.waitUntil(timeout: 5) { startDay.isEnabled },
+                      "start must enable once the pool has an exercise")
+        XCTAssertTrue(app.waitUntilSettled(startDay), "Start's frame kept moving")
+        startDay.tap()
+        let yes = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "Yes — today's score is "))
+            .firstMatch
+        XCTAssertTrue(yes.waitForExistence(timeout: 5),
+                      "starting a day with a readiness score must offer to scale the session by it")
+        yes.tap()
+        // Either consequence is the sheet: the toggle when there is a session to
+        // scale, the rest-day card when there is not. Neither exists on the
+        // screen underneath, so either one means the answer was taken.
+        XCTAssertTrue(app.waitUntil(timeout: 8) {
+            app.element("readiness-toggle").exists || app.staticTexts["Today is a rest day"].exists
+        }, "answering the readiness question did not open the session sheet")
     }
 
     /// Finishes the session and follows it back to the day screen.
@@ -751,6 +999,23 @@ final class TrainingProgramUITests: XCTestCase {
         return duration.exists ? duration : nil
     }
 
+    /// How many training rows the day-log editor is showing right now.
+    ///
+    /// The same two shapes `firstTrainingRow` looks for, counted the same way,
+    /// so the drain loop's idea of "is it over" and its idea of "which row to
+    /// swipe" cannot disagree. `max`, not a sum: on a merged row both queries
+    /// match the same session, and adding them would count each row twice and
+    /// never reach zero.
+    private func trainingRowCount() -> Int {
+        let merged = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "Training"))
+            .matching(NSPredicate(format: "label CONTAINS %@", "min"))
+        return max(merged.count,
+                   app.staticTexts
+                       .matching(NSPredicate(format: "label == %@", "1 min"))
+                       .count)
+    }
+
     /// The Rhythm calendar's day cell for today, e.g. "activity-ring-day-2026-10-02".
     private var todayIdentifier: String { "activity-ring-day-\(todayDateString)" }
 
@@ -769,4 +1034,14 @@ final class TrainingProgramUITests: XCTestCase {
         let ymd = calendar.dateComponents([.year, .month, .day], from: day)
         return String(format: "%04d-%02d-%02d", ymd.year ?? 0, ymd.month ?? 0, ymd.day ?? 0)
     }
+}
+
+/// `VitalsMetric.displayName` as the editor's picker spells it.
+///
+/// Written out rather than imported because this target links the app and not
+/// `AlmanacCore`, and reading the expected label out of the code that produces
+/// it would make the test pass when the picker said something else entirely.
+private enum Metric {
+    static let restingHeartRate = "Resting heart rate"
+    static let heartRateVariability = "Heart-rate variability"
 }

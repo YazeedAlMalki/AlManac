@@ -21,6 +21,27 @@ public struct StoredSleepEpisode: Sendable, Hashable, Identifiable {
     public let updatedAt: Date
 
     public var effectiveType: SleepEpisodeType { userCorrectedType ?? episodeType }
+
+    /// The episode's duration **when it is a measured span**, `nil` when it is
+    /// not one.
+    ///
+    /// `durationMinutes == 0` is not a night of zero length. It is what
+    /// `upsertManualWake` writes: a marker recording only *when* someone woke
+    /// up, for someone whose device measured no sleep at all. The two were
+    /// previously indistinguishable at this type, so a marker flowed into
+    /// `ReadinessInputs.sleepDurationMinutes` as a hard zero — and zero is a
+    /// real, scorable reading of the worst possible night, so it would be
+    /// weighted, banded and prescribed against rather than treated as the
+    /// absence of data it is. `ReadinessEngine` scores a missing duration by
+    /// imputing §9.2's neutral 50 and flagging it missing, which is the honest
+    /// shape for "nobody measured this"; a marker must take that path.
+    ///
+    /// `nil`, not zero, and not an exception: the distinction belongs where the
+    /// value is read, and every reader that wants the raw number still has
+    /// `durationMinutes`.
+    public var measuredDurationMinutes: Int? {
+        durationMinutes > 0 ? durationMinutes : nil
+    }
 }
 
 /// Persists `SleepClassifier`'s output into `sleep_episode`. The classifier

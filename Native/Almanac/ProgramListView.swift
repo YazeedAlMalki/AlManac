@@ -23,7 +23,7 @@ struct ProgramListView: View {
     @State private var editingProgram: TrainingProgramEntry?
     @State private var addingDayTo: TrainingProgramEntry?
     @State private var editingDay: ProgramDayEntry?
-    @State private var starting: ProgramDayEntry?
+    @State private var starting: StartingSession?
     @State private var error: String?
 
     private var catalog: [ExerciseCatalogEntry] { trainingModel.exercises }
@@ -98,9 +98,10 @@ struct ProgramListView: View {
         .sheet(item: $editingDay) { day in
             DayEditor(model: model, programId: day.programId, day: day)
         }
-        .fullScreenCover(item: $starting) { day in
-            ProgramSessionView(model: model, trainingModel: trainingModel, day: day) {
-                model.loadItems(programDayId: day.id)
+        .fullScreenCover(item: $starting) { start in
+            ProgramSessionView(model: model, trainingModel: trainingModel, day: start.day,
+                               startFactoringInReadiness: start.factorInReadiness) {
+                model.loadItems(programDayId: start.day.id)
                 trainingModel.refresh()
             }
         }
@@ -136,8 +137,8 @@ struct ProgramListView: View {
 
             NavigationLink {
                 ProgramDayView(model: model, trainingModel: trainingModel, day: day,
-                               programName: program.name) {
-                    starting = day
+                               programName: program.name) { factorInReadiness in
+                    starting = StartingSession(day: day, factorInReadiness: factorInReadiness)
                 }
             } label: {
                 Label("Exercises in \(day.label)", systemImage: "list.bullet")
@@ -147,7 +148,9 @@ struct ProgramListView: View {
             .accessibilityIdentifier("program-day-link-\(day.id)")
 
             Button {
-                starting = day
+                // The picker's own Start button never asks, so it runs the day
+                // as written rather than inheriting whatever the last answer was.
+                starting = StartingSession(day: day, factorInReadiness: false)
             } label: {
                 Label("Start \(day.label)", systemImage: AlmanacIcon.training)
             }
@@ -165,6 +168,19 @@ struct ProgramListView: View {
     private func delete(_ day: ProgramDayEntry) {
         do { try model.deleteDay(id: day.id) } catch { self.error = String(describing: error) }
     }
+}
+
+/// A day being started, together with the answer to its readiness question.
+///
+/// One value rather than a day and a second `@State` flag: the answer belongs to
+/// the start it was given at, and two pieces of state can disagree — a flag left
+/// `true` by yesterday's dialog would silently scale the next day started from
+/// the picker's own Start button, which never asked.
+private struct StartingSession: Identifiable {
+    let day: ProgramDayEntry
+    let factorInReadiness: Bool
+
+    var id: Int64 { day.id }
 }
 
 /// Create or rename a program.

@@ -57,12 +57,15 @@ public struct VitalsRecordStore: @unchecked Sendable {
     let db: Database
     private let clock: any Clock
     private let zone: ZoneContext
+    private let timeModel: TimeModel
 
     public init(db: Database, clock: any Clock = SystemClock(),
-                zone: ZoneContext = ZoneContext(TimeZone.current)) {
+                zone: ZoneContext = ZoneContext(TimeZone.current),
+                timeModel: TimeModel = TimeModel(timeZone: .current)) {
         self.db = db
         self.clock = clock
         self.zone = zone
+        self.timeModel = timeModel
     }
 
     private var nowText: String { iso(clock.now) }
@@ -104,6 +107,107 @@ public struct VitalsRecordStore: @unchecked Sendable {
         return id
     }
 
+    // MARK: - Manual entry
+
+    /// The `source` a hand-entered row carries. Compared as a string because
+    /// `vitals_record.source` is a plain TEXT column with no CHECK and no enum
+    /// — `VitalsRecordHealthBridge` writes `"healthkit"` by the same kind of
+    /// literal, so the same constant is the honest way to agree with it.
+    public static let manualSource = "manual"
+
+    /// A reading typed by a person rather than synced from Apple Health.
+    ///
+    /// `measuredAt` is explicit rather than "now" because the reading is usually
+    /// taken somewhere other than the moment it is written down — a watch
+    /// battery died overnight, so the number is from this morning but the entry
+    /// is made at lunch. It also has to be explicit for `latestValue(for:since:)`
+    /// to mean anything: a store that stamped every manual row with the clock
+    /// would make back-dating impossible and would quietly turn a truthful
+    /// past reading into a fresh one.
+    ///
+    /// The logical day comes from `TimeModel`, never from the caller, for the
+    /// reason §5.1 gives: the day a sample belongs to is decided by the 04:00
+    /// boundary, so a reading taken at 03:00 belongs to the day before. Handing
+    /// the day in as a parameter — which is what `record(_:logicalDay:)` does —
+    /// is how that rule gets re-implemented slightly wrong somewhere else.
+    @discardableResult
+    public func recordManual(metric: VitalsMetric, value: Double, measuredAt: Date,
+                             allowUnusualValue: Bool = false) throws -> Int64 {
+        try validate(value, metric: metric, allowUnusualValue: allowUnusualValue)
+        return try db.transaction {
+            try db.run("""
+            INSERT INTO vitals_record
+                (timestamp, timezoneOffset, timezoneIdentifier, logicalDay, metric, value,
+                 unit, source, createdAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+            """, [
+                .text(iso(measuredAt)),
+                zone.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
+                zone.identifier.map(SQLValue.text) ?? .null,
+                .text(timeModel.logicalDay(measuredAt).value),
+                .text(metric.rawValue),
+                .real(value),
+                .text(metric.unit),
+                .text(Self.manualSource),
+                .text(nowText)
+            ])
+            return try db.query("SELECT last_insert_rowid() AS id;").first!.int("id")!
+        }
+    }
+
+    /// Correct a hand-entered reading in place.
+    ///
+    /// Only `value` moves. The metric, unit and instant stay as recorded,
+    /// because the reading is a measurement of a moment: changing when it was
+    /// taken is a different claim, not a correction of this one, and letting a
+    /// correction rewrite the timestamp would quietly move the reading into
+    /// another logical day and out of the score it was part of.
+    public func update(id: Int64, value: Double, allowUnusualValue: Bool = false) throws {
+        guard let existing = try record(id: id) else { throw VitalsEntryError.notFound }
+        guard existing.source == Self.manualSource else { throw VitalsEntryError.notManual }
+        guard let metric = VitalsMetric(rawValue: existing.metric) else {
+            throw VitalsEntryError.notHandEnterable
+        }
+        try validate(value, metric: metric, allowUnusualValue: allowUnusualValue)
+        try db.run("UPDATE vitals_record SET value = ? WHERE id = ?;",
+                   [.real(value), .integer(id)])
+    }
+
+    /// Remove a hand-entered reading outright, like `BodyMeasurementStore.delete`.
+    ///
+    /// Deleted rather than soft-deleted: `deletedAt` exists for HealthKit, where
+    /// a retraction arrives from outside and the tombstone is what stops the
+    /// next sync resurrecting the row. A person changing their mind needs no
+    /// such protection — they are the only writer, and there is no next sync
+    /// coming to disagree.
+    public func delete(id: Int64) throws {
+        guard let existing = try record(id: id) else { throw VitalsEntryError.notFound }
+        guard existing.source == Self.manualSource else { throw VitalsEntryError.notManual }
+        try db.run("DELETE FROM vitals_record WHERE id = ?;", [.integer(id)])
+    }
+
+    /// The hand-entered readings of `metric` on `logicalDay`, newest first.
+    /// One metric at a time because that is what an editor shows; a day's mixed
+    /// vitals are still available from `records(for:)`.
+    public func manualRecords(metric: VitalsMetric, for logicalDay: String) throws -> [VitalsRecord] {
+        try db.query("""
+        SELECT id, metric, value, unit, timestamp, logicalDay, source, healthKitUUID, createdAt
+        FROM vitals_record
+        WHERE metric = ? AND logicalDay = ? AND source = ? AND deletedAt IS NULL
+        ORDER BY timestamp DESC;
+        """, [.text(metric.rawValue), .text(logicalDay), .text(Self.manualSource)]).compactMap(rowToRecord)
+    }
+
+    private func validate(_ value: Double, metric: VitalsMetric, allowUnusualValue: Bool) throws {
+        // `isFinite` first: NaN fails every comparison, so an `allowUnusualValue`
+        // save would otherwise write a NaN that no score could interpret and no
+        // band could exclude.
+        guard value.isFinite, value > 0 else { throw VitalsEntryError.invalidValue(metric) }
+        guard allowUnusualValue || metric.plausibleRange.contains(value) else {
+            throw VitalsEntryError.unusuallySized
+        }
+    }
+
     // MARK: - Read
 
     public func record(id: Int64) throws -> VitalsRecord? {
@@ -139,6 +243,33 @@ public struct VitalsRecordStore: @unchecked Sendable {
         FROM vitals_record WHERE metric = ? AND deletedAt IS NULL
         ORDER BY timestamp DESC LIMIT 1;
         """, [.text(metric)]).first.flatMap(rowToRecord)
+    }
+
+    /// The newest reading of `metric` at or after `since`.
+    ///
+    /// Bounded on purpose, and this is the second of two API-level facts about
+    /// a readiness input. Whole-history `latestValue(for:)` answers "what is
+    /// the last number anyone recorded", which is a question about the archive
+    /// rather than about today. Once a reading can be back-dated — and manual
+    /// entry deliberately allows that, see `recordManual` — the difference stops
+    /// being theoretical: someone who logs last night's resting HR *this
+    /// morning* has a row timestamped yesterday, and the unbounded read returns
+    /// yesterday's number as today's input on the strength of being the newest
+    /// row in the table.
+    ///
+    /// So a caller scoring today asks for `since:` the start of the thing being
+    /// scored, and a reading from before it is not an input. That is the same
+    /// reasoning already in `ReadinessModel`'s comment about reading stages from
+    /// the episode the duration came from: a score about one night may not mix
+    /// a duration from one night with a heart rate from another. Callers that
+    /// genuinely want the archive — the timeline, the trend charts — keep using
+    /// `latestValue(for:)`.
+    public func latestValue(for metric: VitalsMetric, since: Date) throws -> VitalsRecord? {
+        return try db.query("""
+        SELECT id, metric, value, unit, timestamp, logicalDay, source, healthKitUUID, createdAt
+        FROM vitals_record WHERE metric = ? AND timestamp >= ? AND deletedAt IS NULL
+        ORDER BY timestamp DESC LIMIT 1;
+        """, [.text(metric.rawValue), .text(iso(since))]).first.flatMap(rowToRecord)
     }
 
     /// Fetch vitals for a range of logical days by metric.

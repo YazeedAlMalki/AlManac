@@ -13,7 +13,16 @@ struct ProgramDayView: View {
     let trainingModel: TrainingModel
     let day: ProgramDayEntry
     let programName: String
-    let onStart: () -> Void
+    /// Carries the answer, because the answer is what the session opens as.
+    ///
+    /// It used to be `onStart: () -> Void` with both buttons calling it, which
+    /// made the question a formality: a person who said "Yes — today's score is
+    /// 22" got a session identical to the one they got by saying no, and
+    /// §7.10/§7.11 were unreachable for a second reason the checklist did not
+    /// name — not only could the simulator produce no score, but a score would
+    /// not have been acted on either. `true` scales this session's prescription;
+    /// `false` runs the day as written.
+    let onStart: (_ factorInReadiness: Bool) -> Void
 
     @State private var addingExercise = false
     @State private var editing: PoolEditTarget?
@@ -67,8 +76,8 @@ struct ProgramDayView: View {
         .confirmationDialog("Factor in your readiness score?",
                             isPresented: $promptReadiness,
                             titleVisibility: .visible) {
-            Button(yesLabel) { onStart() }
-            Button("No, train as written") { onStart() }
+            Button(yesLabel) { onStart(true) }
+            Button("No, train as written") { onStart(false) }
         } message: {
             Text(readinessMessage)
         }

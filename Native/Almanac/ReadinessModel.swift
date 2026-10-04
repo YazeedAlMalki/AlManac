@@ -125,11 +125,34 @@ final class ReadinessModel: ObservableObject {
 
             let episodes = try sleepStore.episodes(for: today.value)
             let primary = episodes.first { $0.effectiveType == .primary }
-            sleepDurationMinutes = primary?.durationMinutes
+            // `measuredDurationMinutes`, not `durationMinutes`: a manual wake
+            // marker is a zero-duration row, and zero is a real reading of the
+            // worst possible night rather than the absence of a measurement.
+            sleepDurationMinutes = primary?.measuredDurationMinutes
             let totalSleep = episodes.isEmpty ? nil : episodes.reduce(0) { $0 + $1.durationMinutes }
 
-            latestRHR = try vitalsStore.latestValue(for: "rhr")?.value
-            latestHRV = try vitalsStore.latestValue(for: "hrv")?.value
+            // **Bounded to the day being scored**, and the bound is the last
+            // primary episode's start when there is one. `latestValue(for:)`
+            // would answer with the newest row in the table, which before manual
+            // entry was the same thing — a HealthKit sample is always today's or
+            // last night's. It is not any more: a reading typed in this morning
+            // about last night is timestamped yesterday, so the unbounded read
+            // would hand today's score a number from a different night — and
+            // "newest row wins" is exactly the rule that makes it look reasonable
+            // while doing it. The sleep duration above is read from one episode
+            // for the same reason; §9.2 scores a night, not a history.
+            let cycleStart = primary?.start ?? timeModel.start(of: today)
+            if let cycleStart {
+                latestRHR = try vitalsStore.latestValue(for: .restingHeartRate, since: cycleStart)?.value
+                latestHRV = try vitalsStore.latestValue(for: .heartRateVariability, since: cycleStart)?.value
+            } else {
+                // No window means no way to tell which reading belongs to today,
+                // and a reading that might be from any day is not today's input.
+                // The whole-history read is not the fallback: that is the bug
+                // above, and it would be reintroduced by exactly this line.
+                latestRHR = nil
+                latestHRV = nil
+            }
 
             // §9.7's calibration count and §9.8's three baselines, from the
             // stores that hold the underlying days rather than from an average

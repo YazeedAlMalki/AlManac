@@ -303,9 +303,19 @@ struct ReadinessDashboardView: View {
         VStack(spacing: 0) {
             inputRow("Sleep", value: model.sleepDurationMinutes.map(durationLabel), missingValue: "Not available")
             AlmanacRule()
-            inputRow("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.compact($0)) bpm" }, missingValue: "Not available")
+            // The two rows that were dead ends until §6.7's manual fallback
+            // existed. They are doors now, and only because they became doors
+            // honestly: tapping "Not available" used to do nothing at all, which
+            // is the worst state to be in for a number the score is waiting on.
+            // They lead to the editor rather than to a sync toggle, because a
+            // person reading "Not available" here is someone with nothing
+            // syncing them — asking them to go and fix a permission is a
+            // different conversation from asking for the number they measured.
+            metricDoor("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.compact($0)) bpm" },
+                       missingValue: "Not available", identifier: "readiness-input-rhr")
             AlmanacRule()
-            inputRow("HRV", value: model.latestHRV.map { "\(AlmanacNumber.compact($0)) ms" }, missingValue: "Not available")
+            metricDoor("HRV", value: model.latestHRV.map { "\(AlmanacNumber.compact($0)) ms" },
+                       missingValue: "Not available", identifier: "readiness-input-hrv")
             AlmanacRule()
             inputRow("Mood", value: model.todayMood.map { "\($0.score)/10" }, missingValue: "Not logged")
             AlmanacRule()
@@ -359,6 +369,26 @@ struct ReadinessDashboardView: View {
                 .foregroundStyle(value == nil ? AlmanacPalette.textSecondary : AlmanacPalette.textPrimary)
         }
         .padding(.vertical, 10)
+    }
+
+    /// `inputRow` as a door, keeping the row's own type and spacing.
+    ///
+    /// A plain `Button` with `.buttonStyle(.plain)` rather than
+    /// `AlmanacMetricRowStyle`, because this row has no icon well and sits in a
+    /// ruled stack rather than a card; what it borrows from `inputRow` is the
+    /// reading's own typography and the 50pt target, so a door and a reading in
+    /// the same column are the same size and do not shift when one becomes the
+    /// other.
+    private func metricDoor(_ label: String, value: String?, missingValue: String?,
+                            identifier: String) -> some View {
+        Button(action: goTo(.vitals) ?? {}) {
+            inputRow(label, value: value, missingValue: missingValue)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .frame(minHeight: AlmanacMetrics.minimumControl)
+        .accessibilityHint(Text("Opens Vitals"))
+        .accessibilityIdentifier(identifier)
     }
 
     private var hydrationGoal: Double {

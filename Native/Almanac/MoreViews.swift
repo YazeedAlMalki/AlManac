@@ -103,6 +103,8 @@ struct ModulesView: View {
             PrayerView(model: prayerModel)
         case .bodyCircumference:
             BodyCircumferenceView(db: db, healthModel: healthModel)
+        case .vitals:
+            VitalsView(db: db, readinessModel: readinessModel, healthModel: healthModel)
         case .laboratory:
             ReportListView(model: labModel)
         case .laboratoryImportHistory:

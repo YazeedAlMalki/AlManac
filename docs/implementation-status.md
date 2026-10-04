@@ -1,9 +1,12 @@
 # Almanac implementation status
 
-Updated 2026-10-02. The Training Program layer above a single session is built
-in `AlmanacCore` — migration 049, three stores, three engines — and its screens
-are built in `Native/Almanac`; see `docs/features/training-program.md`. The
-entry for that is the topmost section below. The Technical Spec is now
+Updated 2026-10-04. Manual vitals entry — BRD §6.7's "manual fallback" — is
+built in `AlmanacCore` and in `Native/Almanac`, and it makes the two
+engine-dependent readiness rows in the acceptance checklist drivable; the entry
+for that is the topmost section below. The Training Program layer above a single
+session is built in `AlmanacCore` — migration 049, three stores, three engines —
+and its screens are built in `Native/Almanac`; see
+`docs/features/training-program.md`. The Technical Spec is now
 committed under `docs/`, so the references to it resolve from a fresh clone. The production nutrition reference
 bundle ships as an AlmanacCore resource and installs into the app database on
 first launch. The editorial shell, Today tracking calendar, Trends surface and
@@ -12,6 +15,110 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-04 — Manual vitals, and the readiness question that ignored its own answer
+
+**The gap.** BRD §6.7 promises resting HR, HRV, steps and active energy
+"imported (HealthKit-authoritative, §5.2) with **manual fallback**". There was
+no fallback: `vitals_record` had exactly one writer, the HealthKit bridge. A
+person without a watch — or one who declined the HRV permission §5.2's own
+scenario names — could never produce a readiness score, because
+`ReadinessEngine.evaluate` returns `score: nil` when duration, stages,
+RHR+baseline and HRV+baseline are all missing. That is what left checklist rows
+7.10 and 7.11 undrivable.
+
+**Only RHR and HRV, because those are the two the formula weighs.**
+`ReadinessFormula` has no term for steps or active energy, so a field for them
+would be a control with nothing on the other side of it; the screen's footer
+says so rather than leaving the absence to be discovered. No `VitalsModel`
+either — `BodyCircumferenceView` and `SupplementView` both drive their store
+straight from the view, and the one thing this screen needed beyond that was
+`readinessModel.refresh()`.
+
+### New
+
+- **`VitalsMetric`, `VitalsEntryError`** (`Sources/AlmanacCore/Vitals/VitalsVocabulary.swift`)
+  — the two hand-enterable metrics, their units and their plausible ranges
+  (a typo guard, not a clinical range), and four typed reasons a reading was
+  refused. The raw values are the contract with the HealthKit bridge and
+  `ReadinessBaselineService`, so a rename here would silently stop every stored
+  row from being found; `VitalsManualEntryTests` pins the vocabulary against the
+  bridge through its public API.
+- **`VitalsRecordStore.recordManual` / `update` / `delete` / `manualRecords` /
+  `latestValue(for:since:)`** — the fallback itself. `recordManual` derives
+  `logicalDay` from `TimeModel` rather than trusting the caller, stamps the
+  metric's unit, and refuses a synced row's correction.
+- **`VitalsView`** (`Native/Almanac/VitalsView.swift`) — today's two readings in
+  the one prominent card, one "Log a reading" door, a fortnight of history with
+  edit/delete on hand-entered rows only. Wired as `AppRoute.vitals` in the
+  Modules **Records** section; Today's RHR/HRV "Inputs used" rows are doors into
+  it.
+- **`StoredSleepEpisode.measuredDurationMinutes`** — nil for a zero-duration row.
+
+### Fixed
+
+- **Today's score could be handed a reading from another night.** `ReadinessModel`
+  read the newest row in `vitals_record`, which is the right answer while the only
+  writer is the bridge and wrong the moment a person types a reading *about last
+  night* this morning — it is timestamped yesterday, and "newest row wins" looks
+  entirely reasonable while doing it. The read is now bounded to the day being
+  scored, and with no resolvable day it reads nil rather than falling back to
+  whole history, because the fallback is the bug.
+- **A manual wake marker scored as the worst possible night.** §9.2's duration
+  bands put 0 minutes at the bottom, so a zero-duration episode was a 10/100 sleep
+  score rather than an absent measurement.
+- **The readiness question discarded its answer.** `ProgramDayView`'s "Factor in
+  your readiness score?" had both buttons calling the same `onStart()` and the
+  session opened unscaled either way, so answering **Yes** produced exactly the
+  session answering **No** did. This is the half of "7.10/7.11 are unreachable"
+  that adding a score would never have revealed. The answer is now carried
+  through `ProgramListView` as one `StartingSession` value — not a second
+  `@State` flag, which could disagree with the day it belongs to — and
+  `ProgramSessionView` opens already scaled when the answer was yes and a score
+  exists. The toggle stays: the answer is changeable for as long as the sheet is.
+
+### Found, and left as it is
+
+**A day with a single reading of each metric always scores 66.** §9.8's baseline
+is the last 28 valid days *including today*, and `meanPerDay` averages within a
+day, so on a day with one RHR and one HRV the baseline *is* that reading:
+`rhrScore` reads it as 95 and `hrvScore` as 75 whatever the numbers were, and
+the score lands on 66 — moderate — every time. That is §9.7's "preliminary"
+state arriving as arithmetic rather than as a label, and it is not changed here:
+excluding today from the baseline would be a different reading of §9.8 than the
+one the spec states. It is recorded in `docs/features/readiness.md`, and it is why
+the 7.10/7.11 UI tests leave three ordinary readings behind before typing the
+pair they want scored.
+
+### Verification
+
+`swift test`, full suite: **921 tests, 98 suites, 0 failures**. Up from the
+900/95 captured at the previous entry; 21 new tests across three suites — 14
+manual-entry, 3 manual-wake-marker, 4 manual-readings-reach-readiness.
+
+App target: `xcodebuild` against `Native/Almanac.xcodeproj`, scheme `Almanac`,
+iPhone 16e simulator — **BUILD SUCCEEDED**.
+
+UI: `AlmanacUITests/TrainingProgramUITests` — full-file run
+(`-only-testing:AlmanacUITests/TrainingProgramUITests`) — **12 of 12**
+(2026-10-04). The first run at 12 tests was 11 of 12, and the failure was the
+useful kind: the two new readiness tests sort first by name, so the
+abandon/delete test ran against a day now carrying their training sessions and
+its drain loop miscounted how long the list takes to settle after a delete.
+Checklist §7 is now fully driven, 7.10 and 7.11 included; those two
+hand-enter their vitals through Modules → Vitals first. Harness fixes found while
+driving: `AlmanacMetricRow` published its identifier on each of its three texts,
+so a query for today's resting rate matched three elements and raised instead of
+answering (the row is now one accessibility element, which is also what VoiceOver
+should have been reading); `reveal` only scrolls one way, so re-entering the
+Modules tab from a pushed screen needed the search direction chosen rather than
+assumed — tapping the destination you are already on pops that stack to root and
+rewinds the list past the row being looked for; and the abandon/delete test's
+drain of today's log asked for a row, then swiped it, and a query issued while
+the previous delete was still animating the list matched the row on its way out,
+so the swipe failed with "no matches found" instead of swiping anything. The
+drain now waits for the row count to hold still before choosing a row, which is
+the same stale-frame problem the `reveal`→tap race had, one layer down.
 
 ## 2026-10-02 — Training Program: the layer above a session (core + UI)
 
