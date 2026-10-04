@@ -221,14 +221,18 @@ the whole of the new `VitalsView`. Neither test drives the editor's `DatePicker`
 so the readings it needs for a *baseline* cannot be back-dated; instead each test
 deletes any hand-entered readings already on the log and leaves three ordinary
 ones per metric before typing the pair it wants scored. That arrangement is not
-arbitrary: §9.8's baseline is the last 28 valid days **including today**, and
-`meanPerDay` averages within a day, so a day carrying a single reading *is* its
-own baseline, `rhrScore` reads it as 95 and `hrvScore` as 75 whatever the number
-was, and every such day scores **66** — moderate, every time. That is a real
-property of the app and not a test artefact (§9.7's "preliminary" state arriving
-as arithmetic); it is recorded in `docs/features/readiness.md` rather than worked
-around in the formula. The clear-then-seed also keeps the score independent of
-what an earlier run left in the shared, never-reset simulator database.
+arbitrary: §9.8's baseline window keeps today, and `meanPerDay` averages within a
+day, so on a day whose only reading is the one being scored the baseline *is* that
+reading — `rhrScore` reads 95 and `hrvScore` 75 whatever the numbers were, and the
+score lands on 66 with no sleep data. Re-measured 2026-10-04: with an 8-hour sleep
+episode also present, which is the ordinary shape of a scored day, the same
+arrangement scores **74 and reads "ready for a strong session"** — a vacuous
+baseline paying out positive credit rather than admitting it has none. That is a
+real property of the app and not a test artefact; it is recorded, with the measured
+figures and the test-coverage hole behind it, in `docs/features/readiness.md`
+rather than worked around in the formula. The clear-then-seed also keeps the score
+independent of what an earlier run left in the shared, never-reset simulator
+database.
 
 The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 

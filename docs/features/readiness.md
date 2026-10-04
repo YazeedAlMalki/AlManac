@@ -57,17 +57,63 @@ says so rather than leaving the absence to be discovered.
    measurement. `StoredSleepEpisode.measuredDurationMinutes` returns nil for a
    zero-duration row and `ReadinessModel` reads that instead.
 
-**A property of the formula worth knowing before anyone calls it a bug.** §9.8's
-baseline is the last 28 valid days *including today*, and `meanPerDay` averages
-within a day. So on a day carrying exactly one RHR and one HRV, the baseline *is*
-that reading: `rhrScore` reads it as 95 and `hrvScore` as 75 whatever the number
-was, and every such day scores **66**. That is §9.7's "preliminary" state
-arriving as arithmetic rather than as a label, and it is why the calibration
-count matters. It is not changed here — excluding today from the baseline would
-be a different reading of §9.8 than the one the spec states — but it is why the
-UI tests for 7.10/7.11 leave three ordinary readings behind before typing the
-pair they want scored, and it is worth revisiting when §9.7's calibration
-completes.
+**The baseline can be today's own reading, and the score that follows is not
+66 — it is usually 74 and it is wrong in the dangerous direction.** Re-measured
+2026-10-04, after the "always 66" note below was found to be an artefact of
+measuring it without sleep data.
+
+`meanPerDay` averages within a day, and `recent(_:through:)` keeps `$0 <= date`,
+so today is inside §9.8's 28-valid-day window. But a window day contributes to a
+metric's mean *only if it carries that metric*. **When today is the only day in
+the window carrying an RHR — which is the normal state for anyone who types
+vitals occasionally — the "28-day baseline" is one day long and consists of the
+reading being scored.** Then `delta ≡ 0` by construction, so `rhrScore` returns
+its `delta ≤ 0` row (**95**) and `hrvScore` its `pct ≥ -5%` row (**75**),
+whatever the numbers were.
+
+Those two rows are the defect, and they are worse than they look. §9.2's tables
+assume a baseline assembled over many stable days, where "exactly at baseline"
+deserves near-perfect marks. A self-comparison is vacuously at baseline, so a
+baseline that does not exist yet pays out **+95 and +75 of unearned credit**
+rather than reporting nothing. Measured against the real engine:
+
+| Today | Current score | What it says |
+|---|---|---|
+| one RHR + one HRV, no sleep | **66** | "Moderate recovery — train at reduced intensity" |
+| the same, plus an 8h sleep episode | **74** | "Recovery is good — ready for a strong session" (green) |
+
+The second row is the one that matters, because an 8h night is the ordinary
+shape of a scored day. A morning whose resting rate is 13 bpm above baseline and
+whose HRV is 70% below it reads **74, green, "ready for a strong session"**.
+`confidence` says `medium`, because the two inputs are counted as *present* — the
+app reports high confidence in a number derived from a comparison with itself.
+
+**It is not a calibration-phase artefact, and the earlier note saying to revisit
+it "when §9.7's calibration completes" was wrong.** Measured with 27 prior
+sleep-only valid days: `validDayCount = 28`, `calibrationDay = nil` — calibration
+finished 7 valid days earlier — and the score is still the degenerate one. The
+trigger is *data shape*, not phase: it recurs for the life of the record, on
+every first entry after any gap, for exactly the population the manual fallback
+was built for. Ten consecutive single-reading days score
+`66, 63, 63, 63, 63, 57, 49, 49, 49, 42` — the first is always degenerate
+because today is alone in the window, and only then does a baseline begin to
+accumulate.
+
+**Why it shipped.** `ReadinessBaselineServiceTests.logDays` seeds days *before*
+the day under test, with the comment "so today's own data is never part of what
+today's score is measured against." That is true of the helper and false of the
+production window, which includes today. No test in the suite has ever logged a
+vital on the day being scored, so the degenerate case was never executed.
+
+**What a fix costs, measured.** Treating a degenerate baseline as *no* baseline —
+the metric's input becomes missing and its weight redistributes, which is §9.1's
+own rule and invents no threshold — moves the realistic case 74 → 72 and leaves
+the recommendation unchanged, but moves `confidence` from `medium` to `veryLow`.
+That is the honest gain: it does not rescue the number, it stops the app
+over-claiming how much it knows. The sleep-only score behind it (72) is
+defensible on its own terms. Open question, and a product decision rather than an
+arithmetic one: whether a missing personal baseline should also *withhold* a
+recommendation, or merely mark it preliminary.
 
 **The training screen asked the question and then ignored the answer.**
 `ProgramDayView`'s "Factor in your readiness score?" dialog had both buttons

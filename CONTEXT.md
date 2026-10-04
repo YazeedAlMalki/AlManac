@@ -219,15 +219,38 @@ about last night". *Overrule by:* removing the `since` argument — which restor
 the bug, in the specific shape of a score borrowing another night's reading.
 `nil` means missing; it never means zero and never falls back to history.
 
-**§9.8's baseline keeps today in it, so a single-reading day scores 66.**
-`meanPerDay` averages within a day and the window is the last 28 valid days
-*including today*, so on a day with one RHR and one HRV the baseline is that
-reading, `rhrScore` reads 95 and `hrvScore` 75 whatever the numbers were. Left
-exactly as §9.8 states it, because excluding today is a different reading of the
-spec and not a smaller version of this one. Recorded in
-`docs/features/readiness.md`. *Overrule by:* excluding today from the baseline —
-and re-reading every band with it, since the bands are tuned against a
-multi-reading day.
+**§9.8's baseline can be today's own reading, and the score is inflated when it
+is.** `meanPerDay` averages within a day and `recent(_:through:)` keeps
+`$0 <= date`, so today is inside the 28-valid-day window — but a window day
+contributes to a metric's mean only if it *carries* that metric. When today is
+the only day in the window with an RHR, the "28-day baseline" is one day long and
+*is* the reading being scored, so `delta ≡ 0` and §9.2's `delta ≤ 0 → 95` and
+`pct ≥ -5% → 75` rows pay out **+95 and +75 of unearned credit** instead of
+reporting that no baseline exists.
+
+**Corrected 2026-10-04.** This was first recorded as "a single-reading day always
+scores 66", which was an artefact of measuring it with no sleep data. The real
+shape is an 8-hour night plus that first reading, which scores **74 — green,
+"Recovery is good — ready for a strong session"** — while `confidence` reads
+`medium`, because the two vacuous inputs are counted as present. It is also not
+a calibration-phase artefact: with 27 prior sleep-only valid days,
+`validDayCount = 28` and `calibrationDay = nil`, and the degenerate score is
+still produced. It recurs on every first entry after a gap, forever, for the
+sporadic manual-entry user §6.7's fallback exists to serve.
+
+**Not changed, because the honest fix is a product decision rather than an
+arithmetic one.** Treating a degenerate baseline as no baseline (§9.1's own
+redistribution rule, inventing no threshold) moves the realistic case 74 → 72 and
+`confidence` `medium → veryLow`. The number barely moves because an 8-hour night
+legitimately scores high; what is wrong is the *confidence claim*. Whether a
+missing personal baseline should also withhold a recommendation, or merely mark
+it preliminary, is the open question. *Overrule by:* excluding today from the
+window — which is a different reading of §9.8 than the one the spec states, and
+would need every band re-read, since the bands are tuned against a multi-reading
+day — or by making `ReadinessBaseline` carry the number of days behind each
+metric and having `ReadinessEngine` refuse to score against a depth it can name.
+Measured figures and the coverage hole that let it ship are in
+`docs/features/readiness.md`.
 
 ### Weighing
 

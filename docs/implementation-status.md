@@ -1,9 +1,12 @@
 # Almanac implementation status
 
-Updated 2026-10-04. Manual vitals entry — BRD §6.7's "manual fallback" — is
-built in `AlmanacCore` and in `Native/Almanac`, and it makes the two
-engine-dependent readiness rows in the acceptance checklist drivable; the entry
-for that is the topmost section below. The Training Program layer above a single
+Updated 2026-10-04. Second pass the same day: the "a single-reading day always
+scores 66" note recorded below was **measured and found to be an artefact of
+measuring it without sleep data**, and correcting it changes what the note should
+say. No product behaviour changed; the entry is at the top. Manual vitals entry —
+BRD §6.7's "manual fallback" — is built in `AlmanacCore` and in `Native/Almanac`,
+and it makes the two engine-dependent readiness rows in the acceptance checklist
+drivable; the entry for that is below. The Training Program layer above a single
 session is built in `AlmanacCore` — migration 049, three stores, three engines —
 and its screens are built in `Native/Almanac`; see
 `docs/features/training-program.md`. The Technical Spec is now
@@ -15,6 +18,61 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-04 (second pass) — the degenerate baseline, re-measured
+
+**No product behaviour changed. The record was wrong and is now corrected.**
+
+The note in the entry below, and the same claim in `CONTEXT.md` and
+`docs/acceptance-checklist.md`, described a single-reading day as always scoring
+**66**, framed as §9.7's "preliminary" state arriving as arithmetic, to be
+revisited "when §9.7's calibration completes". Driven against the real engine
+with real stores, both halves of that are wrong.
+
+**Wrong: the 66.** It is what you get with no sleep data. The ordinary shape of a
+scored day also carries a sleep episode, and then the same degenerate baseline
+scores **74 — green — "Recovery is good — ready for a strong session."** An
+8-hour night legitimately scores 100 on duration, so it dominates; the point is
+that the two vacuous vitals inputs are added on top of it.
+
+**Wrong: that it is a calibration-phase artefact.** With 27 prior sleep-only
+valid days and today's single pair, `validDayCount = 28`, `calibrationDay = nil`
+— calibration completed 7 valid days earlier — and the degenerate score is still
+produced. The trigger is data shape, not phase. It recurs on every first entry
+after any gap, for the life of the record, for exactly the sporadic
+manual-entry user §6.7's fallback exists to serve. Ten consecutive
+single-reading days score `66, 63, 63, 63, 63, 57, 49, 49, 49, 42`.
+
+**The mechanism, which is worse than "the baseline includes today."** A window
+day contributes to a metric's mean only if it carries that metric, so a
+first-entry day has a *one-day* baseline consisting of the reading being scored.
+`delta ≡ 0` by construction, and §9.2's `delta ≤ 0 → 95` and `pct ≥ -5% → 75`
+rows — written for a baseline assembled over many stable days — pay out **+95 and
++75 of unearned credit** rather than reporting that no baseline exists.
+`confidence` compounds it: both inputs are counted as *present*, so the score is
+labelled `medium` confidence while being derived from a comparison with itself.
+
+**Why it shipped.** `ReadinessBaselineServiceTests.logDays` seeds days *before*
+the day under test, commented "so today's own data is never part of what today's
+score is measured against". That is true of the helper and false of production,
+where `recent(_:through:)` keeps `$0 <= date`. No test in the suite has ever
+logged a vital on the day being scored.
+
+**What a fix costs, measured.** Treating a degenerate baseline as *no* baseline —
+§9.1's own redistribution rule, inventing no threshold — moves the realistic case
+74 → 72 and `confidence` `medium` → `veryLow`. The recommendation is unchanged.
+So the fix is not a number fix; it is a stop-overclaiming fix. Whether a missing
+personal baseline should also *withhold* a recommendation is a product question
+and is left open. Also left open, from the handoff: per-test isolation for the UI
+suite, which is a harness investment and not a gap.
+
+Full analysis and the measured table: `docs/features/readiness.md`.
+
+### Gates
+
+`swift test`, full suite: **921 tests, 98 suites, 0 failures** (190.9 s) —
+unchanged, as expected for a documentation-only commit; the probes used to take
+the measurements above were scratch and are not committed.
 
 ## 2026-10-04 — Manual vitals, and the readiness question that ignored its own answer
 
@@ -78,6 +136,11 @@ straight from the view, and the one thing this screen needed beyond that was
   exists. The toggle stays: the answer is changeable for as long as the sheet is.
 
 ### Found, and left as it is
+
+> **Superseded by the second-pass entry above.** The "always scores 66" figure
+> below was measured without sleep data; with an 8-hour episode the same state
+> scores 74 and reads "ready for a strong session", and it is not confined to
+> calibration. Read the newer entry instead.
 
 **A day with a single reading of each metric always scores 66.** §9.8's baseline
 is the last 28 valid days *including today*, and `meanPerDay` averages within a
