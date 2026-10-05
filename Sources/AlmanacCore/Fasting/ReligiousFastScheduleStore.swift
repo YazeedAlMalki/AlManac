@@ -174,6 +174,7 @@ public struct ReligiousFastScheduleStore: @unchecked Sendable {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(identifier: "UTC")
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.date(from: dateString)
     }
 
@@ -182,6 +183,7 @@ public struct ReligiousFastScheduleStore: @unchecked Sendable {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(identifier: "UTC")
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.string(from: date)
     }
 

@@ -193,6 +193,7 @@ public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
         f.calendar = Calendar(identifier: .gregorian)
         f.timeZone = timeModel.timeZone
         f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
         return f.string(from: instant)
     }
 }

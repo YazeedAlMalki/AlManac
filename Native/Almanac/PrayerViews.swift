@@ -117,6 +117,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             formatter.calendar = Calendar(identifier: .gregorian)
             formatter.timeZone = .current
             formatter.dateFormat = "yyyy-MM-dd"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
             today = try cache.cachedDay(formatter.string(from: Date()))
         } catch {
             self.error = String(describing: error)
