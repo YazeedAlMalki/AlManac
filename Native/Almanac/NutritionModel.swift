@@ -31,7 +31,9 @@ final class NutritionModel: ObservableObject {
     private var logStore: NutritionLogStore?
     private var summary: NutritionSummary?
     private var dishEditor: NutritionDishEditor?
-    private var db: Database?
+    /// Readable outside this file so Kitchen (`NutritionModel+Kitchen.swift`)
+    /// shares this connection instead of being configured with its own.
+    private(set) var db: Database?
     private let timeModel = TimeModel(timeZone: .current)
 
     func configure(db: Database?) {

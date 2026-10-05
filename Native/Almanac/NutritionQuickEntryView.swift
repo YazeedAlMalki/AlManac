@@ -18,6 +18,7 @@ struct NutritionQuickEntryView: View {
     @State private var mealType: NutritionMealType?
     @State private var showingSearch = false
     @State private var showingSavedMeals = false
+    @State private var showingRecipes = false
     @State private var error: String?
 
     init(model: NutritionModel, embedded: Bool = false, onSaved: @escaping () -> Void = {}) {
@@ -94,6 +95,10 @@ struct NutritionQuickEntryView: View {
                 Button("Saved meals") { showingSavedMeals = true }
                     .disabled(!model.isReferenceAvailable)
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button("Recipes") { showingRecipes = true }
+                    .disabled(!model.isReferenceAvailable)
+            }
         }
         .sheet(isPresented: $showingSearch) {
             NutritionFoodSearchView(model: model) { food in
@@ -103,6 +108,13 @@ struct NutritionQuickEntryView: View {
         }
         .sheet(isPresented: $showingSavedMeals) {
             NutritionSavedMealsView(model: model) { ref, name, defaultGrams in
+                selectedRef = ref
+                selectedName = name
+                if let defaultGrams { gramsText = String(Int(defaultGrams)) }
+            }
+        }
+        .sheet(isPresented: $showingRecipes) {
+            KitchenRecipesView(model: model) { ref, name, defaultGrams in
                 selectedRef = ref
                 selectedName = name
                 if let defaultGrams { gramsText = String(Int(defaultGrams)) }
