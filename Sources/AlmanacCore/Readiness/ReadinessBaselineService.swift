@@ -165,7 +165,7 @@ public struct ReadinessBaselineService: @unchecked Sendable {
             let shiftDays = recent(try validDays(on: shiftType, facts: facts), through: day.value)
             if shiftDays.count >= Self.shiftBaselineActivationDays {
                 return ReadinessBaselineResolution(
-                    baseline: try averages(over: shiftDays, context: .shiftSpecific),
+                    baseline: try averages(over: shiftDays, context: .shiftSpecific, scoredDay: day.value),
                     calibrationDay: calibrationDay, notice: nil, validDayCount: validDayCount,
                     windowStartDate: shiftDays.first, windowEndDate: shiftDays.last)
             }
@@ -189,7 +189,7 @@ public struct ReadinessBaselineService: @unchecked Sendable {
                                    calibrationDay: Int?, validDayCount: Int) throws -> ReadinessBaselineResolution {
         let days = recent(try facts.validDays(), through: day.value)
         return ReadinessBaselineResolution(
-            baseline: try averages(over: days, context: .general),
+            baseline: try averages(over: days, context: .general, scoredDay: day.value),
             calibrationDay: calibrationDay, notice: nil, validDayCount: validDayCount,
             windowStartDate: days.first, windowEndDate: days.last)
     }
@@ -211,7 +211,7 @@ public struct ReadinessBaselineService: @unchecked Sendable {
         // own days.
         guard let scheduleStart = schedule.startGregorianDate else {
             let general = try generalWindow(for: day, facts: facts)
-            return (try averages(over: general, context: .general),
+            return (try averages(over: general, context: .general, scoredDay: day.value),
                     .ramadanContextCalibrating, general.first, general.last)
         }
         let prior = try facts.validDays().filter { $0 < scheduleStart }
@@ -227,10 +227,10 @@ public struct ReadinessBaselineService: @unchecked Sendable {
             // calibrating' notice". The general baseline is the fall-back *and*
             // the notice is what makes it honest, so neither is optional.
             let general = try generalWindow(for: day, facts: facts)
-            return (try averages(over: general, context: .general),
+            return (try averages(over: general, context: .general, scoredDay: day.value),
                     .ramadanContextCalibrating, general.first, general.last)
         }
-        return (try averages(over: usable, context: .ramadan), nil, usable.first, usable.last)
+        return (try averages(over: usable, context: .ramadan, scoredDay: day.value), nil, usable.first, usable.last)
     }
 
     private func generalWindow(for day: LogicalDay, facts: ValidDayFacts) throws -> [String] {
@@ -254,21 +254,59 @@ public struct ReadinessBaselineService: @unchecked Sendable {
 
     /// The averages themselves. Averages over days rather than over readings,
     /// so a day with six RHR samples does not outvote a day with one.
-    private func averages(over days: [String], context: ReadinessBaselineContext) throws -> ReadinessBaseline {
+    ///
+    /// `scoredDay` is the day the baseline is being built for. It is passed in
+    /// rather than assumed, because a baseline made only of the day it scores
+    /// measures nothing — see `meanPerDay`.
+    private func averages(over days: [String], context: ReadinessBaselineContext,
+                          scoredDay: String) throws -> ReadinessBaseline {
         guard !days.isEmpty else {
             return ReadinessBaseline(context: context, validDayCount: 0)
         }
         return ReadinessBaseline(
             context: context,
-            restingHeartRate: try meanPerDay(days, metric: "rhr"),
-            hrv: try meanPerDay(days, metric: "hrv"),
+            restingHeartRate: try meanPerDay(days, metric: "rhr", excluding: scoredDay),
+            hrv: try meanPerDay(days, metric: "hrv", excluding: scoredDay),
             validDayCount: days.count)
     }
 
-    private func meanPerDay(_ days: [String], metric: String) throws -> Double? {
+    /// The mean of each day's mean, over the days that carry `metric`.
+    ///
+    /// **A window day contributes only if it carries this metric, so a day whose
+    /// only reading is today's has a baseline of one day — today's.** That makes
+    /// `delta` identically zero for RHR and `pctDiff` identically zero for HRV,
+    /// whatever the readings were, and §9.2 answers both with its near-perfect
+    /// "at baseline" rows (95 and 75) rather than with "I have nothing to compare
+    /// this against." Those two inputs then carry 22% and 23% of a score they did
+    /// not measure, and `ReadinessEngine` counts them as *present* so the
+    /// confidence level understates the gap as well.
+    ///
+    /// Measured: an 8-hour night plus a first-ever hand-entered pair scored 74,
+    /// green, "ready for a strong session" — against a resting rate 13 bpm above
+    /// the person's actual level and an HRV 70% below it.
+    ///
+    /// So a baseline assembled *only* from the day being scored is reported as
+    /// **no baseline**, and §9.1's own redistribution rule does the rest: the
+    /// input counts as missing and its weight moves to the inputs that are real.
+    /// This is the degenerate case rather than a calibration choice — the baseline
+    /// is vacuous by identity, not by being short — so it introduces no
+    /// threshold the spec does not already state, and it leaves every genuine
+    /// multi-day baseline exactly as it was.
+    ///
+    /// `ReadinessBaseline` still reports `validDayCount` unchanged. §9.8 counts
+    /// *valid days*, and §9.7's calibration legitimately counts a day that carried
+    /// its first reading; that count is a fact about the record, and only the
+    /// baseline itself is unavailable.
+    private func meanPerDay(_ days: [String], metric: String, excluding scoredDay: String) throws -> Double? {
         let records = try vitals.records(metric: metric, logicalDays: days)
         var byDay: [String: [Double]] = [:]
         for record in records { byDay[record.logicalDay, default: []].append(record.value) }
+
+        // Any contributing day other than the one being scored is a real
+        // comparison. Without one there is nothing to compare against.
+        guard days.contains(where: { $0 != scoredDay && !(byDay[$0]?.isEmpty ?? true) }) else {
+            return nil
+        }
 
         var dailyMeans: [Double] = []
         for day in days {

@@ -187,6 +187,88 @@ struct ReadinessBaselineServiceTests {
         #expect(resolution.windowStartDate == nil)
     }
 
+    // MARK: - §9.8 a baseline made only of the day it scores
+
+    @Test("A day's own first reading is not a baseline for that day")
+    func firstReadingIsNotItsOwnBaseline() throws {
+        // 27 prior valid days, valid by §9.7's sleep clause, carrying no vitals —
+        // a person who sleeps nightly and types vitals occasionally.
+        for offset in 1...27 {
+            try logDay(LogicalDay(formatted("2025-09-%02d", 30 - offset)), rhr: nil, hrv: nil)
+        }
+        try logDay(today, sleep: false, rhr: 71, hrv: 19)
+
+        let resolution = try service.resolve(for: today)
+        // The window is a day long and holds only today, so there is nothing to
+        // compare 71 against. Reporting 71 would make delta identically zero.
+        #expect(resolution.baseline.restingHeartRate == nil)
+        #expect(resolution.baseline.hrv == nil)
+    }
+
+    @Test("That is not a calibration-phase problem — it outlives the 21st valid day")
+    func firstReadingIsNotACalibrationProblem() throws {
+        for offset in 1...27 {
+            try logDay(LogicalDay(formatted("2025-09-%02d", 30 - offset)), rhr: nil, hrv: nil)
+        }
+        try logDay(today, sleep: false, rhr: 71, hrv: 19)
+
+        let resolution = try service.resolve(for: today)
+        #expect(resolution.validDayCount == 28)
+        #expect(resolution.calibrationDay == nil)   // calibration finished 7 days ago
+        #expect(resolution.baseline.restingHeartRate == nil)
+    }
+
+    @Test("Calibration still counts a day whose baseline could not be built")
+    func calibrationCountsTheDayAnyway() throws {
+        try logDay(today, sleep: false, rhr: 71, hrv: 19)
+
+        let resolution = try service.resolve(for: today)
+        // §9.7 counts the day — it carried both readings — and §9.8's window
+        // still records it. Only the baseline itself is unavailable.
+        #expect(resolution.baseline.validDayCount == 1)
+        #expect(resolution.windowEndDate == today.value)
+        #expect(resolution.calibrationDay == 1)
+        #expect(resolution.baseline.restingHeartRate == nil)
+    }
+
+    @Test("Today's reading still counts toward its baseline once a baseline exists")
+    func todayStillCountsOnceABaselineExists() throws {
+        for offset in 1...27 { try logDay(LogicalDay(formatted("2025-09-%02d", 30 - offset))) }
+        try logDay(today, sleep: false, rhr: 71, hrv: 19)
+
+        let resolution = try service.resolve(for: today)
+        // §9.8's window is unchanged: the last 28 valid days, today among them,
+        // so today's 71 is one of the 28 votes. Mean of 27×58 and one 71.
+        #expect(abs(try #require(resolution.baseline.restingHeartRate) - 58.464285714285715) < 0.0001)
+        #expect(abs(try #require(resolution.baseline.hrv) - 60.464285714285715) < 0.0001)
+    }
+
+    @Test("A missing baseline is reported as missing, not scored as neutral")
+    func missingBaselineRedistributesRatherThanScoringIt() throws {
+        for offset in 1...27 {
+            try logDay(LogicalDay(formatted("2025-09-%02d", 30 - offset)), rhr: nil, hrv: nil)
+        }
+        // Today's own 8-hour sleep episode is present, so the day is scoreable —
+        // this is the ordinary shape of a scored day, and the case that read 74.
+        try logDay(today, rhr: 71, hrv: 19)
+        let resolution = try service.resolve(for: today)
+
+        let outcome = ReadinessEngine.evaluate(
+            state: .provisional,
+            inputs: ReadinessInputs(sleepDurationMinutes: 480, restingHeartRate: 71, hrv: 19),
+            baseline: resolution.baseline,
+            context: ReadinessContext(calibrationDay: resolution.calibrationDay))
+
+        // §9.1 — both inputs are missing, so both are excluded and their 45% is
+        // redistributed onto sleep duration and quality. The two vacuous 95 and
+        // 75 rows never enter the sum: (0.33×100 + 0.22×50)/0.55 × 0.9 = 72,
+        // not the 74 that scoring today against itself produced.
+        #expect(outcome.missingInputs.contains(.rhr))
+        #expect(outcome.missingInputs.contains(.hrv))
+        #expect(outcome.score == 72)
+        #expect(outcome.confidence == .veryLow)
+    }
+
     // MARK: - §9.8 shift-specific
 
     @Test("A shift baseline activates at exactly 14 valid days on that shift type")

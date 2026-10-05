@@ -349,6 +349,24 @@ final class LaboratoryModel: ObservableObject {
             self.importJobs = LabImportJobStore(db: db)
             #if DEBUG
             try LabReportFixture.seedIfNeeded(into: store)
+            // The only way anything is ever planted here is a launch argument
+            // naming it; `fromLaunchArguments` returns nil for every ordinary
+            // launch, and `VitalsSeedPlanTests` pins that. The `#if DEBUG` is a
+            // second gate, not the first.
+            //
+            // It does **not** keep `VitalsSeedPlan` out of a Release binary —
+            // checked: the type and the argument string are both present there,
+            // because AlmanacCore is compiled whole into the app. What the gate
+            // removes is the only call site, so a Release build cannot reach
+            // `apply` at all. Reachability, not absence, is the claim.
+            //
+            // It runs here rather than in a view because a UI test relaunches the
+            // app and then drives it: the readings have to be in place before the
+            // first screen reads them. See `VitalsSeedPlan` for why the editor's
+            // own date picker could not be driven instead.
+            if let plan = VitalsSeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
+                try plan.apply(into: VitalsRecordStore(db: db))
+            }
             #endif
             startupError = nil
         } catch {

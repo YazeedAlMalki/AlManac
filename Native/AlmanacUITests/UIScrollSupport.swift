@@ -6,6 +6,96 @@ enum RevealDirection {
     case down
 }
 
+/// Plants hand-entered vitals on named logical days by relaunching the app with
+/// `-AlmanacSeedVitals`, and the record of why that is the mechanism.
+///
+/// ## What it is for
+///
+/// `VitalsEntryEditor`'s "Measured at" picker is a compact `DatePicker`, so a
+/// test cannot name a day by typing one: every hand-entered reading a UI test
+/// creates lands on the current logical day. That was survivable while a day
+/// could serve as its own baseline. It is not survivable now — a baseline
+/// assembled only from the day being scored is reported as no baseline, which is
+/// the point of the fix — so a test that wants a real multi-day baseline has to
+/// be able to put a reading on a day that is not today.
+///
+/// ## Why a launch argument, and not the picker
+///
+/// The picker *was* measured, on the simulator this suite runs against. Tapping
+/// `vitals-measured-at` expands a **graphical calendar**, not a set of wheels:
+/// the day cells are buttons labelled `Thursday 1 October`, `Sunday 4 October`,
+/// with `DatePicker.PreviousMonth` / `DatePicker.NextMonth` / `DatePicker.Show`
+/// beside them. Tapping one does work — the field goes from `5 Oct 2026` to
+/// `4 Oct 2026` — so the naive route is available and it was rejected on two
+/// counts.
+///
+/// **It is locale-dependent, and the locale is not ours.** Those labels are
+/// formatted dates: `Sunday 4 October` under en_GB, `Sunday, October 4` under
+/// en_US. A helper would have to rebuild the label with its own formatter and
+/// hope it matched.
+///
+/// **And it is version-dependent, which is the part that decided it.** `test-ios`
+/// resolves the *newest* installed iOS runtime rather than pinning one — the
+/// same discovery that makes a green run legible also means there is no fixed
+/// UIKit to assert against. So a value string that works on a desk is not
+/// guaranteed on a runner, and a green local run is evidence of nothing. The
+/// seeding argument is locale-independent and runtime-independent: `rhr=52@-1`
+/// means the same thing on every OS the suite has ever run on.
+///
+/// The cost is two lines of app code — an `if let` in `LaboratoryModel.open` —
+/// and the logic itself lives in `VitalsSeedPlan` in `AlmanacCore`, so `swift
+/// test` covers the guard, the grammar and the day arithmetic on every push and
+/// on Linux. `VitalsSeedPlanTests` pins that a launch without the argument asks
+/// for nothing.
+///
+/// **What protects a shipped build is reachability, not absence.** Checked
+/// against a Release binary: `VitalsSeedPlan` and the string
+/// `-AlmanacSeedVitals` are both present there, because AlmanacCore is compiled
+/// whole into the app. The `#if DEBUG` around the one call site is what makes it
+/// unreachable — a Release build has no path to `apply` — and the argument is the
+/// gate that matters, since it is the one no ordinary launch can satisfy.
+///
+/// ## What it deliberately does not do
+///
+/// It does not *plant* what the test is meant to be driving. Today's readings are
+/// still typed through the editor, because §6.7's manual fallback *is* what
+/// checklist rows 7.10 and 7.11 claim to cover. Only the history the baseline
+/// needs is planted.
+///
+/// It does *clear* today, and that is not the same thing. A spec entry with no
+/// value — `rhr@0` — removes that metric's manual readings for today, because
+/// `VitalsView` keeps today's readings off its log (`records(metric:from:to:)`'s
+/// `to:` is exclusive) and the today card has no delete, so **nothing in the UI
+/// can remove one**. Measured on this simulator: four runs of the two readiness
+/// tests had left 16 readings on today, invisible to the delete helper the whole
+/// time, and both tests still passed because `meanPerDay` averages within a day
+/// before averaging across days. A test that means to assert about today's
+/// readings has to name today.
+extension XCUIApplication {
+    /// Relaunches with `spec` planted, e.g.
+    /// `seedVitals("rhr@0,hrv@0,rhr=52@-1,hrv=55@-1")` — which clears today's
+    /// readings and plants yesterday's.
+    ///
+    /// Terminates rather than launching over the top: XCTest does not reliably
+    /// deliver changed launch arguments to an already-running process, and a
+    /// silently-unplanted launch would fail three screens later with a message
+    /// about a score.
+    ///
+    /// Authoritative per `(metric, day)` rather than additive
+    /// (`VitalsSeedPlan.apply`), so calling it twice with the same spec leaves
+    /// the same state — which matters here because the simulator's database is
+    /// shared across runs and never reset.
+    @discardableResult
+    func seedVitals(_ spec: String) -> Bool {
+        terminate()
+        launchArguments = launchArguments.filter { $0 != "-AlmanacSeedVitals" }
+        launchArguments += ["-AlmanacSeedVitals", spec]
+        launch()
+        let failure = staticTexts["Almanac could not open"]
+        return !failure.waitForExistence(timeout: 5)
+    }
+}
+
 extension XCUIApplication {
     /// Scrolls until `element` is genuinely on screen, clear of the navigation
     /// bar above and the custom bottom bar below. Returns whether it got there.

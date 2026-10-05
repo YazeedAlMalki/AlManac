@@ -57,8 +57,14 @@ says so rather than leaving the absence to be discovered.
    measurement. `StoredSleepEpisode.measuredDurationMinutes` returns nil for a
    zero-duration row and `ReadinessModel` reads that instead.
 
-**The baseline can be today's own reading, and the score that follows is not
-66 — it is usually 74 and it is wrong in the dangerous direction.** Re-measured
+> **Fixed 2026-10-05.** The section below is the record of the defect as
+> measured, kept because the numbers are what justify the fix and because the
+> coverage hole is what let it ship. `ReadinessBaselineService.meanPerDay` now
+> reports a baseline assembled only from the day being scored as **no baseline**;
+> see "What the fix cost, measured" further down.
+
+**The baseline could be today's own reading, and the score that followed was not
+66 — it was usually 74, and it was wrong in the dangerous direction.** Re-measured
 2026-10-04, after the "always 66" note below was found to be an artefact of
 measuring it without sleep data.
 
@@ -105,15 +111,52 @@ today's score is measured against." That is true of the helper and false of the
 production window, which includes today. No test in the suite has ever logged a
 vital on the day being scored, so the degenerate case was never executed.
 
-**What a fix costs, measured.** Treating a degenerate baseline as *no* baseline —
-the metric's input becomes missing and its weight redistributes, which is §9.1's
-own rule and invents no threshold — moves the realistic case 74 → 72 and leaves
-the recommendation unchanged, but moves `confidence` from `medium` to `veryLow`.
-That is the honest gain: it does not rescue the number, it stops the app
-over-claiming how much it knows. The sleep-only score behind it (72) is
-defensible on its own terms. Open question, and a product decision rather than an
-arithmetic one: whether a missing personal baseline should also *withhold* a
-recommendation, or merely mark it preliminary.
+**What the fix cost, measured.** `ReadinessBaselineService.meanPerDay` now
+reports a baseline assembled *only* from the day being scored as **no baseline**.
+The metric's input becomes missing and its weight redistributes, which is §9.1's
+own rule and invents no threshold — a baseline made only of the day it scores is
+vacuous by identity, not by being short, so this is the degenerate case rather
+than a calibration choice. It moves the realistic case 74 → 72 and leaves the
+recommendation unchanged, but moves `confidence` from `medium` to `veryLow`. That
+is the honest gain: it does not rescue the number, it stops the app over-claiming
+how much it knows. The sleep-only score behind it (72) is defensible on its own
+terms. `ReadinessBaseline.validDayCount` is deliberately *unchanged* — §9.8
+counts valid days, and §9.7's calibration legitimately counts a day that carried
+its first reading, so only the baseline itself is unavailable.
+
+Open question, and a product decision rather than an arithmetic one: whether a
+missing personal baseline should also *withhold* a recommendation, or merely mark
+it preliminary.
+
+**What the fix cost the tests, measured.** Two checklist rows failed on it, and
+both were asserting on nothing. `TrainingProgramUITests` planted every reading
+on today — three ordinary ones per metric plus the pair under test — and that
+arrangement produced a score *only* because a day could serve as its own
+baseline: "Scaled from N" and "Today is a rest day" were both reading numbers
+obtained by comparing a value against itself. With the fix they produce no score
+at all, which is the correct answer for the state they were arranging.
+
+Repairing them needed the one thing the harness could not do. A UI test could not
+place a reading on a day other than today: `VitalsEntryEditor`'s "Measured at"
+control is a compact `DatePicker`, so tapping it expands a *graphical* calendar
+whose day cells are locale-formatted buttons (`Sunday 4 October` under en_GB,
+`Sunday, October 4` under en_US), and `test-ios` resolves the newest installed
+runtime rather than pinning one — so a value string that works on a desk is not
+guaranteed on a runner. `VitalsSeedPlan` plants readings from a launch argument
+instead, so the mechanism is locale- and version-independent; it exists only when
+that argument is present, and `VitalsSeedPlanTests` pins that an ordinary launch
+asks for nothing. Both rows now run against three prior days of history and
+exactly two readings typed through the editor.
+
+A second, quieter defect surfaced while doing it. `VitalsView.reload` reads its
+log with `records(metric:from:to:)`, whose `to:` is exclusive, so a reading taken
+today is never in the list and the today card offers no delete —
+`TrainingProgramUITests.clearHandEnteredReadings` therefore *cannot* remove one,
+while reporting success. Sixteen of them had accumulated across runs, invisible
+the whole time; both readiness rows still passed, because `meanPerDay` averages
+within a day before averaging across days, so sixteen same-day readings moved the
+baseline only slightly. Today is therefore cleared through the seeding spec
+(`rhr@0,hrv@0`) rather than through the screen.
 
 **The training screen asked the question and then ignored the answer.**
 `ProgramDayView`'s "Factor in your readiness score?" dialog had both buttons

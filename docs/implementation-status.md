@@ -1,9 +1,11 @@
 # Almanac implementation status
 
-Updated 2026-10-04. Second pass the same day: the "a single-reading day always
-scores 66" note recorded below was **measured and found to be an artefact of
-measuring it without sleep data**, and correcting it changes what the note should
-say. No product behaviour changed; the entry is at the top. Manual vitals entry —
+Updated 2026-10-05. The degenerate-baseline defect recorded below is **fixed**
+and the two checklist rows that were asserting on it are repaired; the entry is
+at the top. The 2026-10-04 second-pass correction still stands: the "a single-
+reading day always scores 66" note lower down was measured without sleep data,
+and with an 8-hour episode the same state scored 74 and read "ready for a strong
+session". Manual vitals entry —
 BRD §6.7's "manual fallback" — is built in `AlmanacCore` and in `Native/Almanac`,
 and it makes the two engine-dependent readiness rows in the acceptance checklist
 drivable; the entry for that is below. The Training Program layer above a single
@@ -18,6 +20,84 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-05 — the degenerate baseline is fixed, and the tests that asserted on it are repaired
+
+**One product behaviour changed: a baseline assembled only from the day being
+scored is now reported as no baseline.**
+
+`ReadinessBaselineService.meanPerDay` returns nil for a metric when every day
+contributing to its mean is the day being scored. The delta is then identically
+zero by construction, so §9.2's `delta ≤ 0 → 95` and `pct ≥ -5% → 75` rows paid
+out +95 and +75 of unearned credit for a comparison with itself. §9.1's own
+redistribution rule then treats both vitals inputs as missing, which is the whole
+of the fix — it invents no threshold, because a baseline made only of the day it
+scores is vacuous by identity rather than by being short.
+`ReadinessBaseline.validDayCount` is deliberately unchanged: §9.8 counts valid
+days and §9.7's calibration legitimately counts a day that carried its first
+reading, so only the baseline itself is unavailable.
+
+Measured cost: the realistic case moves 74 → 72 with the recommendation
+unchanged, and `confidence` moves `medium` → `veryLow`. It is a
+stop-overclaiming fix, not a number fix.
+
+**Two checklist rows failed on it, and both were asserting on nothing.**
+`TrainingProgramUITests` planted every reading on today — three filler readings
+per metric plus the pair under test — and that produced a score only because a
+day could serve as its own baseline. "Scaled from N" and "Today is a rest day"
+were both reading a number obtained by comparing a value with itself.
+
+Repairing that needed a harness capability that did not exist: placing a reading
+on a day other than today. The editor's "Measured at" control is a compact
+`DatePicker`, so tapping it expands a **graphical calendar** whose day cells are
+locale-formatted buttons (`Sunday 4 October` under en_GB, `Sunday, October 4`
+under en_US), and `test-ios` resolves the newest installed runtime rather than
+pinning one — a value string that works on a desk is not guaranteed on a runner,
+so a green local run would be evidence of nothing. `VitalsSeedPlan` plants
+readings from a `-AlmanacSeedVitals` launch argument instead: locale- and
+version-independent, `swift test`-covered, DEBUG-gated *and* argument-gated, with
+`VitalsSeedPlanTests` pinning that an ordinary launch asks for nothing. Note what
+that gating is and is not: checked against a Release binary, `VitalsSeedPlan` and
+the `-AlmanacSeedVitals` string are both *present* there, because AlmanacCore is
+compiled whole into the app. What `#if DEBUG` removes is the single call site, so
+a Release build has no path to `apply`. Reachability, not absence.
+The mechanism and the measurement behind choosing it are recorded at
+`XCUIApplication.seedVitals` in `Native/AlmanacUITests/UIScrollSupport.swift`.
+
+**A second defect surfaced, and it had been hiding.** `VitalsView.reload` reads its
+log with `records(metric:from:to:)`, whose `to:` is exclusive, so a reading taken
+today is never in the list; the today card has no delete. So
+`TrainingProgramUITests.clearHandEnteredReadings` could never remove one while
+reporting success, and **16 readings on today** had accumulated across runs,
+invisible the whole time. Both readiness rows still passed — `meanPerDay` averages
+within a day before averaging across days, so sixteen same-day readings moved the
+baseline only slightly and the bands held. That was luck, and it is exactly the
+"the score depends on how many rows the test left behind" arrangement the rewrite
+was meant to remove. Today is now cleared through the seeding spec (`rhr@0,hrv@0`),
+and the helper's own doc says plainly what it cannot reach.
+
+### Verification
+
+`swift test`, full suite: **938 tests, 99 suites, 0 failures** (189.2 s) — 12 new,
+all in `VitalsSeedPlanTests`: the guard, the spec grammar including the clear
+form, day resolution against §7.1's 04:00 boundary, authoritative-not-additive,
+and that a seeded reading is a real reading carrying `recordManual`'s own source,
+unit, zone and plausibility check.
+
+UI: both rows pass against a three-day seeded baseline, and **were also run with
+the baseline removed, where both fail** — at "starting a day with a readiness
+score must offer to scale the session by it", and only there. That is the check
+that they are not silently back to asserting on a vacuous score.
+`testAReadingCanBePlantedOnADayOtherThanToday` is the seeding hook's own test, so
+its first failure would be about the hook rather than about a band three screens
+later. Full `TrainingProgramUITests` file: **13 of 13, 0 failures** (1839 s,
+iPhone 16e, iOS 26.3) — on a *shared and dirty* database, which is the harder
+state. Not run against a virgin simulator, which is what CI sees.
+
+App target, Release: `xcodebuild -configuration Release -destination
+'generic/platform=iOS Simulator'` — **BUILD SUCCEEDED**, and the resulting binary
+was inspected for the seeding symbols. See the gating note above for what that
+found.
 
 ## 2026-10-04 (second pass) — the degenerate baseline, re-measured
 
@@ -58,13 +138,19 @@ score is measured against". That is true of the helper and false of production,
 where `recent(_:through:)` keeps `$0 <= date`. No test in the suite has ever
 logged a vital on the day being scored.
 
-**What a fix costs, measured.** Treating a degenerate baseline as *no* baseline —
+**What a fix costs, measured — and it has since been paid.** Treating a
+degenerate baseline as *no* baseline —
 §9.1's own redistribution rule, inventing no threshold — moves the realistic case
 74 → 72 and `confidence` `medium` → `veryLow`. The recommendation is unchanged.
 So the fix is not a number fix; it is a stop-overclaiming fix. Whether a missing
 personal baseline should also *withhold* a recommendation is a product question
 and is left open. Also left open, from the handoff: per-test isolation for the UI
 suite, which is a harness investment and not a gap.
+
+> **Acted on in the 2026-10-05 entry above.** The treatment described here is
+> what shipped. The cost it had not been priced against is that the fix removes
+> the score the 7.10/7.11 UI tests were built on, so both had to be given a real
+> baseline.
 
 Full analysis and the measured table: `docs/features/readiness.md`.
 
@@ -152,6 +238,11 @@ excluding today from the baseline would be a different reading of §9.8 than the
 one the spec states. It is recorded in `docs/features/readiness.md`, and it is why
 the 7.10/7.11 UI tests leave three ordinary readings behind before typing the
 pair they want scored.
+
+> **Superseded by the 2026-10-05 entry above, including the last sentence.** That
+> arrangement was the defect's only consumer, and it is gone: a baseline made
+> only of the scored day is now no baseline, so those rows run against a seeded
+> three-day history and type exactly two readings.
 
 ### Verification
 

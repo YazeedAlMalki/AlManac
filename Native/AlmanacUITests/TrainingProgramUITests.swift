@@ -14,8 +14,11 @@ import XCTest
 /// mechanics, all driven rather than core-read: answering that question **Yes**
 /// scales the session for today's band and names what moved (7.10), and a
 /// very-low band presents as a rest day rather than a smaller session (7.11) —
-/// both of which need a score first, so both hand-enter their vitals through
-/// Modules → Vitals. Then skip-for-today re-offers the
+/// both of which need a score first, so both type today's vitals through
+/// Modules → Vitals and plant a multi-day baseline behind them by launch
+/// argument (`seedReadinessBaseline`, and `XCUIApplication.seedVitals` for why
+/// the editor's own date picker cannot be driven). `testAReadingCanBePlantedOnADayOtherThanToday`
+/// is that mechanism's own test. Then skip-for-today re-offers the
 /// exercise next session (7.7), permanent removal drops it and re-adding
 /// restores it (7.8), the variant selector offers the five answers (7.12),
 /// entering actuals updates both graphs (7.13), the separate/combined toggle
@@ -180,10 +183,11 @@ final class TrainingProgramUITests: XCTestCase {
         // distinction 7.10 is about — 7.11 has the rest-day leg.
         openVitals()
         clearHandEnteredReadings()
-        seedTodaysReadiness(rhr: "54", hrv: "50")
-        XCTAssertTrue(app.element("vitals-today-rhr").label.contains("54 bpm"),
+        seedReadinessBaseline()
+        enterTodaysReadiness(rhr: "51", hrv: "53")
+        XCTAssertTrue(app.element("vitals-today-rhr").label.contains("51 bpm"),
                       "the hand-entered resting rate did not reach today's card")
-        XCTAssertTrue(app.element("vitals-today-hrv").label.contains("50 ms"),
+        XCTAssertTrue(app.element("vitals-today-hrv").label.contains("53 ms"),
                       "the hand-entered HRV did not reach today's card")
 
         settleModulesHome()
@@ -222,7 +226,8 @@ final class TrainingProgramUITests: XCTestCase {
     func testAVeryLowDayPresentsAsARestDayAndCanBeTrainedAnyway() {
         openVitals()
         clearHandEnteredReadings()
-        seedTodaysReadiness(rhr: "64", hrv: "34")
+        seedReadinessBaseline()
+        enterTodaysReadiness(rhr: "64", hrv: "34")
 
         settleModulesHome()
         openPrograms()
@@ -726,14 +731,39 @@ final class TrainingProgramUITests: XCTestCase {
                       "saving \(metric) \(value) did not close the editor")
     }
 
-    /// Removes every hand-entered reading from the Vitals log.
+    /// Removes every hand-entered reading from the Vitals log — which is **not** the
+    /// same as every hand-entered reading, and the difference has already cost
+    /// two real bugs.
     ///
-    /// The simulator's database is shared and never reset, so a previous run's
-    /// readings would still be inside §9.8's 28-day baseline window and would
-    /// move the score out from under the assertions below. A test that means to
-    /// assert about *today's* readings has to arrange that today's readings are
-    /// its own, and deleting is the affordance the screen already offers for
-    /// that. Nothing else in this suite asserts on a hand-entered reading.
+    /// The simulator's database is shared across runs and never reset, so a
+    /// previous run's readings would still be inside §9.8's 28-day baseline
+    /// window and would move the score out from under the assertions below. A
+    /// test that means to assert about *today's* readings has to arrange that
+    /// today's readings are its own, and deleting is the affordance the screen
+    /// already offers for that. Nothing else in this suite asserts on a
+    /// hand-entered reading.
+    ///
+    /// ## It cannot remove a reading taken today, and it looks like it can
+    ///
+    /// `VitalsView.reload` reads the log with
+    /// `records(metric:from:to:)`, whose `to:` is **exclusive**, so
+    /// `logicalDay == today` never reaches the list. Today's readings appear on
+    /// the "today" card and nowhere else, and that card has no delete. So this
+    /// helper deletes yesterday and older, reports "0 readings left", and leaves
+    /// today exactly as it found it — while its own `XCTAssertFalse` passes,
+    /// because there is genuinely no row on this screen to find.
+    ///
+    /// Measured 2026-10-05: four runs of the two readiness tests left **16
+    /// readings on today**, invisible here the whole time. Both tests still
+    /// passed, because `meanPerDay` averages within a day before averaging across
+    /// days, so sixteen same-day readings moved the baseline only slightly and
+    /// the bands held. That was luck, and it is exactly the "the score depends on
+    /// how many rows the test left behind" arrangement these rows were rewritten
+    /// to remove.
+    ///
+    /// **Today is cleared through `seedVitals` instead** — `rhr@0,hrv@0` — because
+    /// the app is the only actor that can reach those rows. Use both: this for the
+    /// days the log does show, the spec for today.
     private func clearHandEnteredReadings() {
         var deleted = 0
         for _ in 0..<24 {
@@ -747,30 +777,113 @@ final class TrainingProgramUITests: XCTestCase {
                           "deleting a reading did not close its actions")
             deleted += 1
         }
+        // Read the caveat above before trusting this. It means "nothing left *on this
+        // screen*", which excludes today by construction and is therefore not a
+        // statement about today's readings.
         XCTAssertFalse(app.firstElement(identifierPrefix: "vitals-reading-").exists,
                        "\(deleted) hand-entered readings were left on the Vitals log")
     }
 
-    /// Puts eight readings on today's date: three ordinary ones for each metric,
-    /// then the pair this test wants scored.
+    // MARK: - The seeding hook this file's readiness rows stand on
+
+    /// Plants three prior days of ordinary readings, so §9.8's baseline window
+    /// has something in it besides today.
     ///
-    /// **Three of each first, and three is not a magic number.** §9.8's baseline
-    /// is the last 28 valid days *including today*, and `meanPerDay` averages
-    /// the readings within a day — so a day carrying a single reading is its own
-    /// baseline, `rhrScore` reads that as 95 and `hrvScore` as 75 whatever the
-    /// number was, and every score lands on 66. That is a property of the app
-    /// and not of this test; it is what §9.7 means by a preliminary score.
-    /// Reaching any other band therefore means being far from an average the
-    /// reading is itself part of, and with no watch — and no driving the editor's
-    /// date picker back to last night — the only way to arrange that is to leave
-    /// the average behind and then read off it.
-    private func seedTodaysReadiness(rhr: String, hrv: String) {
-        for _ in 0..<3 {
-            logReading(Metric.restingHeartRate, value: "52")
-            logReading(Metric.heartRateVariability, value: "55")
-        }
+    /// **Without this there is no baseline at all, and that is the point.** A
+    /// baseline assembled only from the day being scored measures nothing — the
+    /// deltas are identically zero, so `rhrScore` answers with its "at baseline"
+    /// row (95) and `hrvScore` with its own (75) whatever the numbers were — so
+    /// it is now reported as *no baseline* (`ReadinessBaselineService`). With
+    /// duration, stages and both heart-rate terms missing, §9.1 returns no score
+    /// at all, and there is nothing for the readiness question to scale by.
+    ///
+    /// Three days rather than one because three is what lets the two rows mean
+    /// different things: 7.10's reading sits a little *inside* this history and
+    /// lands mid-scale, 7.11's sits far outside it and lands in the rest band.
+    /// One seeded day would make the baseline a function of a single number.
+    ///
+    /// Seeded rather than typed because the editor cannot be told which day to
+    /// write on — `XCUIApplication.seedVitals` records the measurement behind
+    /// that, and why driving the picker instead was rejected.
+    ///
+    /// **`rhr@0,hrv@0` first, and it is not optional.** It clears today's manual
+    /// readings, which `clearHandEnteredReadings` above structurally cannot do —
+    /// see that helper for why. Without it the score depends on however many
+    /// pairs a previous run left on today.
+    private func seedReadinessBaseline() {
+        let history = [1, 2, 3]
+            .map { "rhr=52@-\($0),hrv=55@-\($0)" }
+            .joined(separator: ",")
+        XCTAssertTrue(app.seedVitals("rhr@0,hrv@0,\(history)"),
+                      "the app refused to launch with a vitals baseline seeded")
+        openVitals()
+    }
+
+    /// Types today's two readings through the editor, and nothing else.
+    ///
+    /// Exactly two, and the count is load-bearing rather than incidental:
+    /// `ReadinessBaselineService.meanPerDay` averages within a day before
+    /// averaging across days, so how many readings today carries moves today's
+    /// own contribution to the baseline. This used to plant three filler readings
+    /// per metric first, to drag that within-day average away from the pair being
+    /// scored — which only ever worked because a day could serve as its own
+    /// baseline, and which made the score a function of how many rows the test
+    /// happened to leave behind.
+    private func enterTodaysReadiness(rhr: String, hrv: String) {
         logReading(Metric.restingHeartRate, value: rhr)
         logReading(Metric.heartRateVariability, value: hrv)
+    }
+
+    /// A reading can be planted on a day other than today, and the log says so.
+    ///
+    /// This is what makes `seedReadinessBaseline` a checked mechanism rather than
+    /// an assumption. Without it, the first sign that seeding had stopped working
+    /// would be a readiness score quietly landing in a different band three
+    /// screens later, reported as a failure to scale a prescription. Asserting
+    /// the *day* is what tests the hook: the day is the only thing the launch
+    /// argument controls.
+    func testAReadingCanBePlantedOnADayOtherThanToday() {
+        openVitals()
+        clearHandEnteredReadings()
+        XCTAssertTrue(app.seedVitals("rhr@0,hrv@0,rhr=61@-1,hrv=44@-2"),
+                      "the app refused to launch with readings seeded")
+
+        openVitals()
+        let yesterday = logicalDayLabel(1)
+        let twoDaysAgo = logicalDayLabel(2)
+
+        // Both readings are on the log, each attributed to the day it named. The
+        // label carries `record.logicalDay` as a raw `yyyy-MM-dd`, so unlike the
+        // editor's own controls this one is the same string in every locale.
+        XCTAssertTrue(app.waitUntil(timeout: 5) {
+            app.staticText(beginningWith: "61 bpm, Resting heart rate · \(yesterday)").exists
+                && app.staticText(beginningWith: "44 ms, Heart-rate variability · \(twoDaysAgo)").exists
+        }, "the seeded readings are not on the log under the days they named")
+
+        // And neither counted as today's, which is the whole mechanism: today's
+        // card reads them as absent, so they can only ever be baseline.
+        XCTAssertTrue(app.element("vitals-today-rhr").label.contains("—"),
+                      "a reading planted on yesterday was presented as today's resting rate")
+        XCTAssertTrue(app.element("vitals-today-hrv").label.contains("—"),
+                      "a reading planted on two days ago was presented as today's HRV")
+    }
+
+    /// `days` logical days before today, as the `yyyy-MM-dd` the Vitals log prints.
+    ///
+    /// The four hours are §7.1's boundary, which `TimeModel` owns and this target
+    /// cannot import: a logical day starts at 04:00 local, so between midnight and
+    /// 04:00 "today" is still yesterday and a plain calendar date would name the
+    /// wrong one. Which is also what makes this survive a run crossing midnight.
+    private func logicalDayLabel(_ days: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        // `en_US_POSIX` because this formats for a machine rather than for a
+        // reader: a locale with its own default order would put the year last.
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(
+            from: Date().addingTimeInterval(-Double(days) * 24 * 3600 - 4 * 3600))
     }
 
     /// Creates a program with `name` when the picker is empty, and does nothing

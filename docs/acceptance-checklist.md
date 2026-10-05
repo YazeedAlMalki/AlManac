@@ -217,22 +217,37 @@ the row text records the scope.
 
 **How 7.10/7.11 get a score to choose.** Both tests hand-enter a resting rate
 and an HRV through Modules → Vitals, which is BRD §6.7's "manual fallback" and
-the whole of the new `VitalsView`. Neither test drives the editor's `DatePicker`,
-so the readings it needs for a *baseline* cannot be back-dated; instead each test
-deletes any hand-entered readings already on the log and leaves three ordinary
-ones per metric before typing the pair it wants scored. That arrangement is not
-arbitrary: §9.8's baseline window keeps today, and `meanPerDay` averages within a
-day, so on a day whose only reading is the one being scored the baseline *is* that
-reading — `rhrScore` reads 95 and `hrvScore` 75 whatever the numbers were, and the
-score lands on 66 with no sleep data. Re-measured 2026-10-04: with an 8-hour sleep
-episode also present, which is the ordinary shape of a scored day, the same
-arrangement scores **74 and reads "ready for a strong session"** — a vacuous
-baseline paying out positive credit rather than admitting it has none. That is a
-real property of the app and not a test artefact; it is recorded, with the measured
-figures and the test-coverage hole behind it, in `docs/features/readiness.md`
-rather than worked around in the formula. The clear-then-seed also keeps the score
-independent of what an earlier run left in the shared, never-reset simulator
-database.
+the whole of the new `VitalsView`. Each test first clears the hand-entered
+readings left by earlier runs — from the Vitals log for past days, and from the
+seeding spec for today, because the log deliberately excludes today's readings
+(`records(metric:from:to:)`'s `to:` is exclusive) and the today card offers no
+delete. It then plants three prior days of ordinary readings and types exactly
+two readings of its own, for today.
+
+The prior days are planted by launch argument (`-AlmanacSeedVitals`, parsed by
+`VitalsSeedPlan`) rather than typed, because the editor's `DatePicker` cannot be
+told which day to write on: tapping it expands a graphical calendar whose day
+cells are locale-formatted buttons, and CI resolves the newest iOS runtime
+instead of pinning one. The mechanism, the measurement behind it and the reason
+the picker route was rejected are recorded at `XCUIApplication.seedVitals` in
+`Native/AlmanacUITests/UIScrollSupport.swift`.
+
+**Those three days are not decoration.** Before the degenerate-baseline fix, a
+baseline assembled only from the day being scored reported `rhrScore` 95 and
+`hrvScore` 75 whatever the numbers were, so the two rows were asserting on scores
+produced by comparing a value with itself; both tests seeded three filler
+readings per metric purely to drag that within-day average away from the pair
+under test. With the fix that arrangement yields no score at all, which is the
+right answer for what it was arranging. Measured figures and the test-coverage
+hole behind the defect are in `docs/features/readiness.md`.
+
+Two checks keep this honest rather than merely passing. Both rows were run with
+the baseline removed and **fail** — at "starting a day with a readiness score
+must offer to scale the session by it", and only there. And
+`testAReadingCanBePlantedOnADayOtherThanToday` asserts the seeding hook itself
+puts a reading on the day it names and not on today's card, so the first sign it
+had stopped working is a failure about the hook rather than a score three screens
+later.
 
 The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 
@@ -247,8 +262,8 @@ The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 | 7.7 | Skip-for-today offers the same exercise again on the next session of that day | **PASS** — `testSkippingForTodayReoffersTheExerciseNextSession` skips the generated slot ("Skip just for today"), asserts the held row is shown and undoable, finishes, sees the day advance to pass 2, then starts again and asserts the same exercise is re-offered |
 | 7.8 | Remove-from-rotation never offers it again, and re-adding restores its position | **PASS** — `testRemovingFromRotationThenRestoringItsPosition` removes an exercise ("Remove from rotation"); the day marks it "Removed from rotation" and counts "1 of 2 in rotation"; a fresh session offers only the remaining exercise; "Put back" restores it ("2 in rotation", mark cleared) and a later session offers both again. Driving this exposed an app bug — "Put back" wrote `is_active = false` again instead of restoring — fixed via `ProgramModel.restore` |
 | 7.9 | "Factor in your readiness score?" prompt, Yes and No | **PASS** (both legs) — the No leg is `startCurrentDay`, which asserts the "No, train as written" button appearing and being tapped; the Yes leg is `testAnsweringYesScalesThePrescriptionAndNamesWhatMoved`, which asserts the "Yes — today's score is N" button appearing and being tapped |
-| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **PASS** — `testAnsweringYesScalesThePrescriptionAndNamesWhatMoved` hand-enters a resting rate and an HRV through Modules → Vitals (BRD §6.7's "manual fallback"), starts a day and answers Yes. The sheet opens already scaled: `readiness-toggle` is on, it names the band ("Moderate") and the number ("scaled from N"), and the `prescription-changes-*` panel states what became what. Which fields move depends on the prescription's type, so the assertion is that the panel names a movement, not which one |
-| 7.11 | A very-low-readiness day presents as a rest day | **PASS** — `testAVeryLowDayPresentsAsARestDayAndCanBeTrainedAnyway` seeds the same two readings far off the baseline, answers Yes, and asserts "Today is a rest day" with no readiness toggle on screen (the rest day *replaces* the session rather than sitting above a scaled one), a disabled Finish, and a working "Train as written anyway" that restores the plan as written |
+| 7.10 | Choosing Yes lowers the prescription per the day's readiness band, and the change is shown | **PASS** — `testAnsweringYesScalesThePrescriptionAndNamesWhatMoved` plants three prior days of readings as a real baseline, hand-enters a resting rate and an HRV for today through Modules → Vitals (BRD §6.7's "manual fallback"), starts a day and answers Yes. The sheet opens already scaled: `readiness-toggle` is on, it names the band ("Moderate") and the number ("scaled from N"), and the `prescription-changes-*` panel states what became what. Which fields move depends on the prescription's type, so the assertion is that the panel names a movement, not which one. Fails if the baseline is removed (see "How 7.10/7.11 get a score to choose") |
+| 7.11 | A very-low-readiness day presents as a rest day | **PASS** — `testAVeryLowDayPresentsAsARestDayAndCanBeTrainedAnyway` seeds the same three-day baseline and types a pair far outside it, answers Yes, and asserts "Today is a rest day" with no readiness toggle on screen (the rest day *replaces* the session rather than sitting above a scaled one), a disabled Finish, and a working "Train as written anyway" that restores the plan as written. Fails if the baseline is removed (see "How 7.10/7.11 get a score to choose") |
 | 7.12 | Equipment variant selector per exercise, four options plus "not specified" | **PASS** — `testEquipmentVariantPickerOffersTheFiveAnswers` opens the selector on a generated slot; the prompt offers "Not recorded" plus Barbell/Dumbbell/Cable/Machine; choosing Barbell records it on the control |
 | 7.13 | Entering actuals updates the two graphs | **PASS** — `testEnteringActualsUpdatesBothGraphs` adds a load-bearing exercise with 4 kg prescribed, marks the bout done (registering actuals), finishes, opens the progress screen, and asserts both the Load graph and the Reps-performed graph gained a logged point |
 | 7.14 | The separate/combined radio toggle on the graph, applying to both graphs | **PASS** — `testVariantModeToggleAppliesToBothGraphsAndShowsTheNote` flips the radio to Combined and asserts both the weight and volume graphs keep their logged points (the toggle is a read applied to both) |

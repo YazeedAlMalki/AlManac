@@ -238,19 +238,26 @@ a calibration-phase artefact: with 27 prior sleep-only valid days,
 still produced. It recurs on every first entry after a gap, forever, for the
 sporadic manual-entry user §6.7's fallback exists to serve.
 
-**Not changed, because the honest fix is a product decision rather than an
-arithmetic one.** Treating a degenerate baseline as no baseline (§9.1's own
-redistribution rule, inventing no threshold) moves the realistic case 74 → 72 and
-`confidence` `medium → veryLow`. The number barely moves because an 8-hour night
-legitimately scores high; what is wrong is the *confidence claim*. Whether a
-missing personal baseline should also withhold a recommendation, or merely mark
-it preliminary, is the open question. *Overrule by:* excluding today from the
-window — which is a different reading of §9.8 than the one the spec states, and
-would need every band re-read, since the bands are tuned against a multi-reading
+**Fixed 2026-10-05, by the narrowest reading that removes it.** A baseline
+assembled *only* from the day being scored is now reported as **no baseline**
+(§9.1's own redistribution rule then treats both vitals inputs as missing). The
+realistic case moves 74 → 72 and `confidence` `medium → veryLow`; the number
+barely moves because an 8-hour night legitimately scores high, so what was wrong
+was the *confidence claim*. `validDayCount` is deliberately unchanged — §9.8
+counts valid days. This is the degenerate case rather than a calibration choice:
+a baseline made only of the day it scores is vacuous by identity, not by being
+short, so it invents no threshold the spec does not already state.
+
+Still open, and still a product decision rather than an arithmetic one: whether a
+missing personal baseline should also *withhold* a recommendation, or merely mark
+it preliminary. *Overrule by:* excluding today from the window — which is a
+different reading of §9.8 than the one the spec states, and would need every band
+re-read, since the bands are tuned against a multi-reading
 day — or by making `ReadinessBaseline` carry the number of days behind each
 metric and having `ReadinessEngine` refuse to score against a depth it can name.
-Measured figures and the coverage hole that let it ship are in
-`docs/features/readiness.md`.
+Measured figures are in `docs/features/readiness.md`; what it cost the two
+checklist rows that were asserting on the defect, and the launch-argument seeding
+hook that repaired them, are in `docs/implementation-status.md`.
 
 ### Weighing
 
