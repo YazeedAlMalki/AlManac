@@ -108,7 +108,15 @@ struct NotificationPlannerTests {
         let suhoor = planned(plan, .suhoor)
         #expect(suhoor.count == 1)
         #expect(suhoor.first?.fireAt == fajr.addingTimeInterval(-20 * 60))
-        #expect(suhoor.first?.body.contains("4:30") == true, "the body names Fajr's time")
+        // Rendered the way the planner renders it — in the device's locale, so
+        // "4:30 AM" in English and "٤:٣٠ ص" in Arabic. Only the day key is pinned.
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = timeModel.timeZone
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let fajrText = formatter.string(from: fajr)
+        #expect(suhoor.first?.body.contains(fajrText) == true, "the body names Fajr's time")
 
         let iftar = planned(plan, .iftar)
         #expect(iftar.map(\.fireAt) == [maghrib])
