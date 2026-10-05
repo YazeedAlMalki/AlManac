@@ -8,14 +8,18 @@ import AlmanacCore
 /// back to `NutritionQuickEntryView`, which logs it through `log(...)` — so the
 /// totals refresh and the §7.2 night-window assignment stay on one path.
 ///
-/// Allergens are read per call, for the reason `search(_:)` gives.
+/// Allergens are read per call, for the reason `search(_:)` gives — but a failed
+/// read throws rather than becoming an empty set. An empty set means "no
+/// allergies recorded", which drops both the filter and the disclaimer, so a
+/// person with a peanut allergy would be shown an unfiltered list with nothing
+/// on screen to say so. The picker shows the error instead.
 extension NutritionModel {
     /// How far back "recently eaten" reaches. A week covers a normal shop.
     static let recentRecipeWindow: TimeInterval = 7 * 24 * 60 * 60
 
     func recipesFromPantry() throws -> RecipeResults {
         guard let db else { return RecipeResults() }
-        return try RecipeFinder(db: db).fromPantry(excluding: allergens(db))
+        return try RecipeFinder(db: db).fromPantry(excluding: try allergens(db))
     }
 
     func recipesFromRecentLog(now: Date = Date()) throws -> RecipeResults {
@@ -25,12 +29,12 @@ extension NutritionModel {
             from: format.string(from: now.addingTimeInterval(-NutritionModel.recentRecipeWindow)),
             // Half-open, so a meal logged this second is still inside it.
             to: format.string(from: now.addingTimeInterval(60)),
-            excluding: allergens(db))
+            excluding: try allergens(db))
     }
 
     func browseRecipes(_ text: String) throws -> RecipeResults {
         guard let db else { return RecipeResults() }
-        return try RecipeFinder(db: db).browse(text, excluding: allergens(db))
+        return try RecipeFinder(db: db).browse(text, excluding: try allergens(db))
     }
 
     func pantryItems() throws -> [PantryItem] {
@@ -48,9 +52,7 @@ extension NutritionModel {
         try KitchenPantry(db: db).remove(ref)
     }
 
-    /// Same fallback as `search(_:)`: an unreadable allergen list is an empty
-    /// set, `isFiltered` is then false, and no note claims a filter ran.
-    private func allergens(_ db: Database) -> Set<FoodAllergen> {
-        (try? ProfileStore(db: db).allergenSet()) ?? []
+    private func allergens(_ db: Database) throws -> Set<FoodAllergen> {
+        try ProfileStore(db: db).allergenSet()
     }
 }

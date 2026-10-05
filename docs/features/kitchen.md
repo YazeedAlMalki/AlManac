@@ -56,7 +56,10 @@ egg" and "I logged an egg" are the same entry. *Overrule by:* not doing it.
 **Allergens withhold recipes, same rule as food search.** A recipe is withheld
 when its name or any ingredient name — through nested dishes — declares one of
 the person's allergens. Everything else is `.noDeclaration`, and the screen
-shows the disclaimer whenever allergens are recorded. This covers Kitchen's
+shows the disclaimer whenever allergens are recorded. One deliberate difference
+from food search: a failed read of the allergen list is an error on screen, not
+an empty set — an empty set drops the filter *and* the disclaimer, which is an
+unfiltered list with nothing to say so. This covers Kitchen's
 suggestions; it does *not* close the saved-meals gap recorded in `CONTEXT.md`,
 because that is a different screen.
 
