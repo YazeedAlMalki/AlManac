@@ -56,8 +56,8 @@ final class MigrationFixtureTests: XCTestCase {
         // Upgrade 001→head. `migrate` returns only the migrations it applied
         // in this call (11...head were pending on a v010 install).
         let applied = try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
-        XCTAssertEqual(Set(applied), Set((11...head)), "every pending migration from the fixture version to head runs")
-        XCTAssertEqual(try appliedVersions(db), Array(1...head))
+        XCTAssertEqual(Set(applied), Set(contiguousMigrationVersions(11, through: head)), "every pending migration from the fixture version to head runs")
+        XCTAssertEqual(try appliedVersions(db), contiguousMigrationVersions(1, through: head))
 
         // Rows seeded before the upgrade survive.
         let sample = try XCTUnwrap(db.query("SELECT * FROM health_sample WHERE id = 'hs-1';").first)
@@ -107,8 +107,8 @@ final class MigrationFixtureTests: XCTestCase {
 
         // Upgrade 001→head.
         let applied = try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
-        XCTAssertEqual(Set(applied), Set((16...head)), "016..head are the new migrations for a v015 db")
-        XCTAssertEqual(try appliedVersions(db), Array(1...head))
+        XCTAssertEqual(Set(applied), Set(contiguousMigrationVersions(16, through: head)), "016..head are the new migrations for a v015 db")
+        XCTAssertEqual(try appliedVersions(db), contiguousMigrationVersions(1, through: head))
 
         // Hydration rows survive with their columns intact.
         let manual = try XCTUnwrap(db.query("SELECT * FROM hydration_log WHERE id = ?;", [.text(manualID)]).first)

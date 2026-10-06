@@ -1,6 +1,6 @@
 import Foundation
 
-/// Migration 050 — Kitchen's pantry: the foods a person has said are in the
+/// Migration 051 — Kitchen's pantry: the foods a person has said are in the
 /// house, so recipes can be matched against them.
 ///
 /// **This is the only table Kitchen adds.** A recipe here is an `almanac:` dish
@@ -19,8 +19,15 @@ import Foundation
 /// publisher's, and removing a source must not reach into it.
 /// `food_name_text` keeps an orphaned row readable. There is no `user_id`:
 /// Almanac holds one person.
-public enum Migration050_KitchenPantry: Migration {
-    public static let version = 50
+///
+/// Numbered 051, not 050, on purpose (2026-10-06). 050 belongs to the fasting
+/// and prayer work (prayer preferences), which lands on master first. Until it
+/// does, this list has a gap at 050, and `MigrationRunner` refuses a pending
+/// migration below the applied head — so a database that has run 051 cannot
+/// later take 050. Do not run this branch on a device that will later need the
+/// fasting work until that work has merged.
+public enum Migration051_KitchenPantry: Migration {
+    public static let version = 51
     public static let name = "kitchen_pantry"
 
     public static func up(_ db: Database) throws {
