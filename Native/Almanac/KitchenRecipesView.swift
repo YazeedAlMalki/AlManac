@@ -117,9 +117,10 @@ struct KitchenRecipesView: View {
     }
 
     private func choose(_ match: RecipeMatch) {
-        // No default amount: a recipe's total weight is usually several
-        // servings, and pre-filling it would log the whole pot.
-        onSelect(match.recipe, match.name, nil)
+        // One serving (owner, 2026-10-06), still editable in the form: the
+        // finished weight over the serving count, or the whole dish when no
+        // count is set (`RecipeMatch.oneServingGrams`).
+        onSelect(match.recipe, match.name, match.oneServingGrams)
         dismiss()
     }
 }

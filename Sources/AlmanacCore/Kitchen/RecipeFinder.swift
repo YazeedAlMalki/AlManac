@@ -27,6 +27,20 @@ public struct RecipeMatch: Sendable, Hashable {
 
     public var verdict: AllergenVerdict { allergen.verdict }
 
+    /// One serving's weight — the amount pre-filled when the recipe is chosen
+    /// (owner, 2026-10-06). The finished weight (stated yield, else the sum of
+    /// the ingredients) over the serving count, or the whole dish when no count
+    /// is set. Same arithmetic as `NutritionDishEditor.oneServingGrams`.
+    public var oneServingGrams: Double? {
+        let total = yieldGrams ?? ingredients.reduce(0) { $0 + $1.grams }
+        guard total > 0 else { return nil }
+        return total / Double(servingCount ?? 1)
+    }
+
+    /// `nutrition_dish.yield_grams` and `serving_count`, as stored.
+    public let yieldGrams: Double?
+    public let servingCount: Int?
+
     public var missing: [RecipeIngredient] { ingredients.filter { !$0.isOnHand } }
     public var onHandCount: Int { ingredients.count - missing.count }
 }
@@ -175,12 +189,14 @@ public struct RecipeFinder: Sendable {
         var order: [SourceIdentifier] = []
         var names: [SourceIdentifier: String] = [:]
         var ingredients: [SourceIdentifier: [RecipeIngredient]] = [:]
+        var sizes: [SourceIdentifier: (yield: Double?, servings: Int?)] = [:]
         for row in try db.query("""
             SELECT c.dish_ref, d.name AS dish_name, c.component_ref, c.grams,
-                   n.name AS component_name
+                   n.name AS component_name, dd.yield_grams, dd.serving_count
             FROM nutrition_dish_component c
             LEFT JOIN nutrition_food_name d ON d.food_ref = c.dish_ref AND d.is_primary = 1
             LEFT JOIN nutrition_food_name n ON n.food_ref = c.component_ref AND n.is_primary = 1
+            LEFT JOIN nutrition_dish dd ON dd.food_ref = c.dish_ref
             WHERE \(condition)
             ORDER BY c.dish_ref, c.sequence;
             """, parameters) {
@@ -190,6 +206,7 @@ public struct RecipeFinder: Sendable {
             if ingredients[dish] == nil {
                 order.append(dish)
                 names[dish] = row.string("dish_name") ?? dish.description
+                sizes[dish] = (row.double("yield_grams"), row.int("serving_count").map { Int($0) })
             }
             ingredients[dish, default: []].append(
                 RecipeIngredient(ref: ref, name: row.string("component_name"), grams: grams,
@@ -198,7 +215,8 @@ public struct RecipeFinder: Sendable {
         return order.map {
             RecipeMatch(recipe: $0, name: names[$0] ?? $0.description,
                         ingredients: ingredients[$0] ?? [],
-                        allergen: DishAllergenJudgement(ref: $0, verdict: AllergenVerdict(status: .notApplicable)))
+                        allergen: DishAllergenJudgement(ref: $0, verdict: AllergenVerdict(status: .notApplicable)),
+                        yieldGrams: sizes[$0]?.yield, servingCount: sizes[$0]?.servings)
         }
     }
 
@@ -220,7 +238,8 @@ public struct RecipeFinder: Sendable {
             let judgement = judged[match.recipe]
                 ?? DishAllergenJudgement(ref: match.recipe, verdict: AllergenVerdict(status: .notApplicable))
             let judged = RecipeMatch(recipe: match.recipe, name: match.name,
-                                     ingredients: match.ingredients, allergen: judgement)
+                                     ingredients: match.ingredients, allergen: judgement,
+                                     yieldGrams: match.yieldGrams, servingCount: match.servingCount)
             if judgement.isHidden {
                 withheld.append(judged)
                 triggered.formUnion(judgement.verdict.declared)

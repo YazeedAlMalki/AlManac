@@ -7,6 +7,7 @@ public enum NutritionError: Error, CustomStringConvertible, Sendable {
     case notANativeFood(SourceIdentifier)
     case recipeCycle(SourceIdentifier)
     case dishHasNoRecipe(SourceIdentifier)
+    case invalidServingCount(Int)
 
     public var description: String {
         switch self {
@@ -23,6 +24,8 @@ public enum NutritionError: Error, CustomStringConvertible, Sendable {
             return "'\(ref)' would end up an ingredient of itself, directly or through "
                  + "another dish. The reduction would then compute each from the other's "
                  + "previous answer and report a number with nothing behind it."
+        case .invalidServingCount(let n):
+            return "a dish makes at least one serving; got \(n)."
         case .dishHasNoRecipe(let ref):
             return "'\(ref)' has no recipe to recompute from. Its values were entered "
                  + "directly, and reducing an empty ingredient list would replace them "
