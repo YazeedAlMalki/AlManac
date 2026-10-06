@@ -54,6 +54,8 @@ expansion, someone who mostly logs saved meals gets no suggestions.
 
 **The pantry is declared, never inferred from the log.** "I logged the last
 egg" and "I logged an egg" are the same entry. *Overrule by:* not doing it.
+**Confirmed by the owner 2026-10-06, with suggestions he approves** — see §6,
+step 3.
 
 **Allergens — superseded 2026-10-06 by the owner's call ("withhold and add a
 warning", "same rule everywhere"); see §6.** A recipe is withheld when its name
@@ -179,3 +181,19 @@ finished weight (yield when stated), clearing goes back, a label food has none,
 a count of 0 is refused by the editor and the column, and Kitchen's match agrees
 with the editor. `KitchenUITests.testChoosingARecipeHandsItToTheLoggingForm` now
 also checks the 200 g pre-fill — not run.
+
+### Step 3 — pantry suggestions, approved one at a time
+
+`PantrySuggestions` (`Sources/AlmanacCore/Kitchen/`) offers a food when it was
+logged on at least **3 distinct logical days in the last 14** (today included),
+is not in the pantry, has not been dismissed, and is not itself a recipe. The
+Pantry screen lists the offers above the pantry under "Logged often — add to
+your pantry?", each with **Add** and **Dismiss**. Add puts it in the pantry;
+Dismiss is stored in `kitchen_pantry_dismissal` (Migration **053**) so the food
+is never offered again. Nothing is added without a tap. The thresholds and the
+"not a recipe" rule are unconfirmed (`CONTEXT.md`).
+
+Tests: `PantrySuggestionTests` (6) — days not entries, the 14-day window edge,
+nothing added on its own and accept adds it, a stored dismissal survives a new
+instance, recipes not offered, most-logged first. The screen is not compiled
+here and has no UI test.

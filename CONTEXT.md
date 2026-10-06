@@ -316,6 +316,16 @@ many servings does this make?" the first time one is chosen, storing the answer
 in `serving_count`. Not built: there is no import (the terms gate is shut).
 *Overrule by:* having the importer write an estimate into `serving_count`.
 
+**Pantry suggestions: 3 distinct days in the last 14, recipes excluded.** The
+owner chose "declared, with suggestions" and left the threshold open. A food is
+offered when it was logged on at least 3 distinct logical days among the last 14
+(today included) — days rather than entries, so three eggs at one breakfast are
+one day of eggs — and is not already in the pantry, not dismissed, and not a
+recipe (a recipe is made from a pantry, not kept in one). Only foods logged
+directly count; a logged recipe's ingredients do not. A dismissal is permanent
+for that food. *Overrule by:* changing `PantrySuggestions.minimumDays` /
+`windowDays`, or the filters in `PantrySuggestions.suggestions`.
+
 ### Weighing
 
 **Meter fraction**:
