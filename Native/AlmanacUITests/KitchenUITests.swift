@@ -49,7 +49,9 @@ final class KitchenUITests: XCTestCase {
     /// A food added to the pantry is listed, and a swiped-away one is gone.
     func testAPantryItemCanBeAddedAndRemoved() throws {
         try openRecipes()
-        app.buttons["Pantry"].tap()
+        // The toolbar's, not the "Pantry" segment of the mode picker: both are
+        // buttons named Pantry (CI, 2026-10-06: "Multiple matching elements").
+        app.navigationBars["Recipes"].buttons["Pantry"].tap()
         XCTAssertTrue(app.navigationBars["Pantry"].waitForExistence(timeout: 10), "the pantry never opened")
         XCTAssertTrue(app.waitUntil(timeout: 5) {
             app.staticTexts.allElementsBoundByIndex.contains { $0.label.contains("Your pantry is empty") }
@@ -130,8 +132,12 @@ final class KitchenUITests: XCTestCase {
                       "nothing was hidden: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
         XCTAssertTrue(hidden.label.contains("Hidden because of your allergens"),
                       "the hidden entry is not labelled as such: \(hidden.label)")
-        XCTAssertTrue(app.staticTexts.allElementsBoundByIndex.contains { $0.label.hasPrefix("Checked recipe and ingredient names only") },
-                      "the allergen disclaimer is missing")
+        // Any element type, and *contains*: the note is an `AlmanacProblemNote`,
+        // one element (not a static text) whose label starts with what was
+        // hidden and goes on to the disclaimer (CI, 2026-10-06).
+        let disclaimer = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Checked recipe and ingredient names only")).firstMatch
+        XCTAssertTrue(disclaimer.exists, "the allergen disclaimer is missing")
         XCTAssertFalse(app.buttons.allElementsBoundByIndex.contains { $0.label.hasPrefix(Self.satay) },
                        "the hidden recipe is offered as an ordinary one before the entry is opened")
         XCTAssertTrue(app.buttons.allElementsBoundByIndex.contains { $0.label.hasPrefix(Self.bowl) },

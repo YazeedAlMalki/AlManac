@@ -131,6 +131,14 @@ CI (`.github/workflows/ci.yml`), run on every push to this branch:
     every failure message at the end of the log, so the next run says exactly
     what failed.
 
+  The second run, `0e6fd55`, with every failure message printed: **83 run,
+  5 failed**.
+  - The template test and all of NotificationSettings passed.
+  - Two failures are master's own.
+  - One is a navigation flake in a test that runs before Kitchen.
+  - Two are the Kitchen tests' own lookups: a "Pantry" name shared by two
+    buttons, and the disclaimer searched for as plain text. Both are fixed.
+
   Details are in `docs/acceptance-checklist.md`.
 
 **Not run:**
