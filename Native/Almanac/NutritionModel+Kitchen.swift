@@ -52,6 +52,24 @@ extension NutritionModel {
         try KitchenPantry(db: db).remove(ref)
     }
 
+    /// Foods logged often enough to offer for the pantry (`PantrySuggestions`).
+    /// Offered only; nothing is added until the person approves one.
+    func pantrySuggestions(now: Date = Date()) throws -> [PantrySuggestion] {
+        guard let db else { return [] }
+        let time = TimeModel(timeZone: .current)
+        return try PantrySuggestions(db: db).suggestions(today: time.logicalDay(now), timeModel: time)
+    }
+
+    func acceptPantrySuggestion(_ suggestion: PantrySuggestion) throws {
+        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        try PantrySuggestions(db: db).accept(suggestion)
+    }
+
+    func dismissPantrySuggestion(_ suggestion: PantrySuggestion) throws {
+        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        try PantrySuggestions(db: db).dismiss(suggestion.ref)
+    }
+
     private func allergens(_ db: Database) throws -> Set<FoodAllergen> {
         try ProfileStore(db: db).allergenSet()
     }

@@ -150,18 +150,23 @@ private struct RecipeRow: View {
 }
 
 /// The declared pantry: what Kitchen matches recipes against.
+///
+/// Above it, foods logged often are *offered* (`PantrySuggestions`), and the
+/// person adds or dismisses each — the owner's "declared, with suggestions"
+/// (2026-10-06). Nothing reaches the pantry without a tap here.
 @MainActor
 private struct KitchenPantryView: View {
     @ObservedObject var model: NutritionModel
     @Environment(\.dismiss) private var dismiss
     @State private var items: [PantryItem] = []
+    @State private var suggestions: [PantrySuggestion] = []
     @State private var showingSearch = false
     @State private var error: String?
 
     var body: some View {
         NavigationStack {
             Group {
-                if items.isEmpty {
+                if items.isEmpty && suggestions.isEmpty {
                     ContentUnavailableView {
                         Label("Your pantry is empty", systemImage: "basket")
                     } description: {
@@ -169,10 +174,27 @@ private struct KitchenPantryView: View {
                     }
                 } else {
                     List {
-                        ForEach(items, id: \.ref) { item in
-                            Text(item.nameText ?? item.ref.description)
+                        if !suggestions.isEmpty {
+                            Section {
+                                ForEach(suggestions, id: \.ref) { suggestion in
+                                    suggestionRow(suggestion)
+                                }
+                            } header: {
+                                Text("Logged often — add to your pantry?")
+                            } footer: {
+                                Text("Foods you logged on \(PantrySuggestions.minimumDays) or more of the last \(PantrySuggestions.windowDays) days. Nothing is added unless you add it, and a dismissed food is not offered again.")
+                            }
                         }
-                        .onDelete(perform: remove)
+                        Section("In your pantry") {
+                            if items.isEmpty {
+                                Text("Your pantry is empty").foregroundStyle(.secondary)
+                            } else {
+                                ForEach(items, id: \.ref) { item in
+                                    Text(item.nameText ?? item.ref.description)
+                                }
+                                .onDelete(perform: remove)
+                            }
+                        }
                     }
                 }
             }
@@ -190,9 +212,43 @@ private struct KitchenPantryView: View {
         }
     }
 
+    private func suggestionRow(_ suggestion: PantrySuggestion) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(suggestion.name ?? suggestion.ref.description)
+                Text("Logged on \(suggestion.daysLogged) of the last \(PantrySuggestions.windowDays) days")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            // Borderless, so the two buttons in one row are two targets rather
+            // than one row-wide tap that fires both.
+            Button("Dismiss") { decide(suggestion, accept: false) }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .accessibilityIdentifier("pantry-suggestion-dismiss-\(suggestion.ref.localID)")
+            Button("Add") { decide(suggestion, accept: true) }
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("pantry-suggestion-add-\(suggestion.ref.localID)")
+        }
+    }
+
     private func load() {
         do {
             items = try model.pantryItems()
+            suggestions = try model.pantrySuggestions()
+        } catch {
+            self.error = String(describing: error)
+        }
+    }
+
+    private func decide(_ suggestion: PantrySuggestion, accept: Bool) {
+        do {
+            if accept {
+                try model.acceptPantrySuggestion(suggestion)
+            } else {
+                try model.dismissPantrySuggestion(suggestion)
+            }
+            load()
         } catch {
             self.error = String(describing: error)
         }
