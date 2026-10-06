@@ -168,6 +168,15 @@ because the owner's decision was "food allergies gate food suggestions", and
 saved meals are not suggestions. *Overrule by:* adding a warning at
 `NutritionSavedMealsView`.
 
+**Answered and closed, 2026-10-06 (confirmed by the owner): "same rule
+everywhere."** Saved meals and Kitchen recipes are the same rows and now share
+one check, `DishAllergenCheck`. On both screens a dish naming a recorded allergen
+is hidden by default, listed under a collapsed "Hidden because of your
+allergens" entry, and opens on its own page under a warning naming the allergen.
+The fail-closed error on an unreadable allergen list stays on both. Food search
+is unchanged (it still lists withheld foods by name and reason, not openable);
+aligning it was not trivial, because a food has no page of its own to open.
+
 ### Training program (2026-10-01)
 
 **Readiness→prescription coupling — reconstructed, and overrulable in one place.**
@@ -258,6 +267,25 @@ metric and having `ReadinessEngine` refuse to score against a depth it can name.
 Measured figures are in `docs/features/readiness.md`; what it cost the two
 checklist rows that were asserting on the defect, and the launch-argument seeding
 hook that repaired them, are in `docs/implementation-status.md`.
+
+### Kitchen (2026-10-06)
+
+The owner's six Kitchen calls are logged in `docs/features/kitchen.md` §3. The
+details below were left to the build. **None of these has been confirmed.**
+
+**Logging a hidden dish asks first.** A dish hidden by the allergen check can be
+opened and logged, and "Log anyway…" on its page raises a confirmation naming the
+warning before the dish reaches the logging form. The owner said a hidden recipe
+is reachable and carries a warning; he did not say whether logging it should ask
+again. *Overrule by:* calling `onLogAnyway()` directly in `HiddenDishPage`
+(`Native/Almanac/HiddenDishViews.swift`) instead of setting `confirming`.
+
+**The warning's wording and place.** On the dish's own page, first, as a problem
+note: "Allergen warning: this names Peanuts, which you have recorded as an
+allergen. Found in: Peanut sauce." — the allergen by the title he chose it under,
+and the names it was found in. It says "names", not "contains", because the check
+reads names. The disclaimer follows lower on the page. *Overrule by:* editing
+`DishAllergenJudgement.warning` (one string, shared by both screens).
 
 ### Weighing
 
