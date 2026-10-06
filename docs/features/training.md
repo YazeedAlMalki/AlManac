@@ -353,4 +353,65 @@ error naming it rather than a raw SQLite CHECK failure.
 container shape and the bouts come from logging, so there is nothing in the
 store to apply yet; `TrainingModel.logBout` still creates ad-hoc sessions with
 `prescribedWorkoutId: nil`. That needs a product decision about whether a
-template prescribes exercises or only the shape of a session.
+template prescribes exercises or only the shape of a session. **Decided by the
+owner 2026-10-06: exercises, but editable** — see "Applying a template to a
+session" below for the proposal; nothing is built yet.
+
+### Applying a template to a session — proposal, not built (2026-10-06)
+
+**The owner has decided what a template is: exercises, but editable.** Applying
+one fills the session with its exercises (with sets and reps where the template
+has them) as a starting point, and the session then stays his to change.
+
+**What a template stores today, checked against the code:** a name, a
+`containerType` and free-text notes (`prescribedWorkout`, Migration 016;
+`PrescribedWorkoutStore`). No exercises, no sets, no reps. So there is nothing to
+apply, and per the 2026-10-06 handoff this stops at a proposal: **no fields have
+been added.**
+
+**The smallest additive change** that makes "exercises, but editable" true:
+
+1. **One table, one migration** (the next free number — 055 on top of Kitchen's
+   054): `prescribedWorkoutItem` — `id`, `prescribedWorkoutId` → template,
+   `exerciseCatalogId` → exercise, `sequenceIndex`, `prescriptionType` (copied
+   from the catalog at the time, as `workoutBout` copies it), and the eight
+   nullable `prescribed*` columns `workoutBout` already has (`Sets`, `Reps`,
+   `LoadKg`, `DurationSeconds`, `DistanceMeters`, `WorkSeconds`, `RestSeconds`,
+   `Rounds`). No `deletedAt`: a template's items are replaced as a whole, the way
+   `NutritionDishEditor.setRecipe` replaces a recipe. Nothing existing changes.
+2. **Store:** `PrescribedWorkoutStore.items(of:)` and `setItems(_:for:)`.
+3. **Apply:** `TemplateApplier.apply(template:to:)` copies each item into a new
+   `workoutBout` — exercise, prescription type, the template's `containerType`,
+   and the `prescribed*` values; every `actual*` column left empty, because
+   nothing has been done yet — and sets `workoutSession.prescribedWorkoutId`,
+   which already exists and which `TrainingSessionReviewView` already reads
+   ("From template: …"). **Copied, not referenced:** editing the template later
+   never rewrites a session, which is the rule `PrescribedWorkoutStore`'s header
+   already states.
+4. **Editable afterwards with what exists:** the bouts are ordinary rows, so
+   `WorkoutBoutStore.updateActuals` fills in what was done and `delete` removes
+   an exercise he skips. `LogBoutView` adds one he adds.
+5. **Entry point:** "Start from template" on the Training dashboard beside the
+   existing bout logging, plus "Use today" on a template's row in
+   `TrainingTemplateView`. Separate from the Training Program layer
+   (`ProgramDayExercisePool`), which keeps its own rotation and is not touched.
+6. **Template editing:** the template editor gains an exercise list (pick from
+   the catalog, optional sets/reps/load). Without it the table above can only be
+   filled by code.
+
+**Two calls the proposal makes, to be confirmed with it:**
+
+- **A session that already has logged bouts is not filled silently.** Apply
+  only to an empty session; on a non-empty one, ask: "Add the template's
+  exercises after the N already logged?" (Add / Cancel). Replacing is not
+  offered, because it would delete logged work.
+- **Applying creates the exercises with no values logged** — the plan in the
+  `prescribed*` columns, the `actual*` columns empty — so a session nobody
+  trained shows as planned, not as done. `WorkoutBoutEntry` already separates the
+  two.
+
+**Tests it would need:** core — apply into an empty session copies every item
+and leaves every `actual*` empty; a non-empty session is refused with the count;
+a later template edit leaves the applied session unchanged; a discontinued
+template cannot be applied. UI — apply a template from the Training screen, edit
+one set, delete one exercise, and see the session keep both changes.
