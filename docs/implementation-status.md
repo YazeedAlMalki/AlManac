@@ -117,9 +117,21 @@ CI (`.github/workflows/ci.yml`), run on every push to this branch:
   6.0.3 does not, fixed in `62248d6`, and was green from then on;
 - `xcodebuild` of the app and widget was **green**, so the `Native/` changes
   compile;
-- the full UI suite (`test-ios`, about 2.5 hours on a fresh simulator) — see
-  `docs/acceptance-checklist.md` for the result recorded against master's
-  baseline of 78 run, 7 failed.
+- the full UI suite (`test-ios`, about 2.5 hours on a fresh simulator) ran on
+  `3653be0`: **83 run, 7 failed**.
+  - Four of the failures are master's own.
+  - Three are this branch's new tests failing on their first run: two Kitchen
+    tests and the template test.
+  - Three of master's failures passed here.
+  - `TrainingProgramUITests` passed 13 of 13, including 7.10 and 7.11 on the
+    new way of clearing today's readings.
+  - The new failures' messages were not readable from the session (only the
+    log tail is reachable). The definite cause in the template test and a
+    likely one in the Kitchen allergen test are fixed, and a CI step now prints
+    every failure message at the end of the log, so the next run says exactly
+    what failed.
+
+  Details are in `docs/acceptance-checklist.md`.
 
 **Not run:**
 

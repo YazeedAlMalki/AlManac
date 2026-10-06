@@ -51,8 +51,9 @@ final class KitchenUITests: XCTestCase {
         try openRecipes()
         app.buttons["Pantry"].tap()
         XCTAssertTrue(app.navigationBars["Pantry"].waitForExistence(timeout: 10), "the pantry never opened")
-        XCTAssertTrue(app.staticTexts["Your pantry is empty"].waitForExistence(timeout: 5),
-                      "the seed should leave the pantry empty of its own foods")
+        XCTAssertTrue(app.waitUntil(timeout: 5) {
+            app.staticTexts.allElementsBoundByIndex.contains { $0.label.contains("Your pantry is empty") }
+        }, "the seed should leave the pantry empty of its own foods: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
 
         app.navigationBars["Pantry"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["Food search"].waitForExistence(timeout: 10),
@@ -71,7 +72,8 @@ final class KitchenUITests: XCTestCase {
         result.tap()
 
         let row = app.staticTexts[Self.rice]
-        XCTAssertTrue(row.waitForExistence(timeout: 10), "the added food is not listed in the pantry")
+        XCTAssertTrue(row.waitForExistence(timeout: 10),
+                      "the added food is not listed in the pantry: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
 
         row.swipeLeft()
         let delete = app.buttons["Delete"]
@@ -121,7 +123,9 @@ final class KitchenUITests: XCTestCase {
         try openRecipes()
         app.buttons["All"].tap()
 
-        let hidden = app.element("allergen-hidden-toggle")
+        // Any element type: on a `DisclosureGroup` in a `List` the identifier
+        // can land on the cell, which `app.element(_:)` does not search.
+        let hidden = anyElement("allergen-hidden-toggle")
         XCTAssertTrue(hidden.waitForExistence(timeout: 10),
                       "nothing was hidden: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
         XCTAssertTrue(hidden.label.contains("Hidden because of your allergens"),
@@ -135,15 +139,15 @@ final class KitchenUITests: XCTestCase {
 
         // Reachable: open the entry, then the recipe's own page.
         hidden.tap()
-        let row = app.element("allergen-hidden-row-ui-kitchen-satay")
+        let row = anyElement("allergen-hidden-row-ui-kitchen-satay")
         XCTAssertTrue(row.waitForExistence(timeout: 5), "the hidden recipe is not listed once the entry is opened")
         row.tap()
-        let warning = app.element("allergen-warning")
+        let warning = anyElement("allergen-warning")
         XCTAssertTrue(warning.waitForExistence(timeout: 5), "the hidden recipe's page shows no warning")
         XCTAssertTrue(warning.label.contains("Peanuts"), "the warning does not name the allergen: \(warning.label)")
 
         // Logging asks first; cancelling leaves the page where it was.
-        app.element("allergen-log-anyway").tap()
+        anyElement("allergen-log-anyway").tap()
         let confirm = app.buttons["Log anyway"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "logging a hidden recipe did not ask for confirmation")
         app.buttons["Cancel"].firstMatch.tap()
@@ -151,6 +155,11 @@ final class KitchenUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// The first element of any type carrying `identifier`.
+    private func anyElement(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
 
     /// Modules → Nutrition → Recipes, waiting for the catalogue: the button is
     /// disabled until the reference bundle has installed.

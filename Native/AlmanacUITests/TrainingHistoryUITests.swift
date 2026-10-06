@@ -197,8 +197,11 @@ final class TrainingHistoryUITests: XCTestCase {
         row.tap()
         let save = app.element("template-item-save")
         XCTAssertTrue(save.waitForExistence(timeout: 5), "the exercise's numbers did not open")
-        if let sets { type(sets, into: app.element("template-item-sets")) }
-        if let reps { type(reps, into: app.element("template-item-reps")) }
+        // `textFields`, not `app.element(_:)`: that helper never looks at text
+        // fields, so it reported a field that was there as missing (CI,
+        // 2026-10-06).
+        if let sets { type(sets, into: app.textFields["template-item-sets"]) }
+        if let reps { type(reps, into: app.textFields["template-item-reps"]) }
         save.tap()
         XCTAssertTrue(app.waitUntil(timeout: 5) { !save.exists }, "adding the exercise did not close its editor")
     }
