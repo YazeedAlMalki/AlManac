@@ -21,7 +21,7 @@ struct BodyMeasurementTests {
         // the point of the test more plainly — these are the migrations a
         // profile predating 041 has to be upgraded through, and adding a
         // migration should make a human edit this line on purpose.
-        #expect(try runner.migrate(existing) == [41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 52, 53])
+        #expect(try runner.migrate(existing) == [41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 52, 53, 54])
         #expect(try runner.migrate(existing).isEmpty)
         let profile = try ProfileStore(db: existing).profile()
         #expect(profile.displayName == "Existing user")

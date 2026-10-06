@@ -306,6 +306,19 @@ directly count; a logged recipe's ingredients do not. A dismissal is permanent
 for that food. *Overrule by:* changing `PantrySuggestions.minimumDays` /
 `windowDays`, or the filters in `PantrySuggestions.suggestions`.
 
+**The ingredient-merge rule.** The owner chose to build the ingredient table;
+the rule is a build decision. Two catalog foods are one ingredient when their
+names agree once preparation (raw, roasted, grilled, frozen, organic…) and
+cut-and-skin qualifiers (meat only, without skin, lean flesh…) are set aside.
+Form words (dried, canned, smoked, salted, juice, powder) are kept. A name that
+says something was *added* — coated, breaded, battered, sauce, stuffed,
+marinated, glazed, filled, nuggets, ready meal — is never merged with anything,
+because the addition is where an allergen hides. Skin-on and skin-off breast are
+the same ingredient; dried and fresh apricots are not. The allergen check reads
+each food's own names plus the canonical name, never fewer. *Overrule by:*
+editing the word lists in `IngredientNormaliser`, adding aliases to
+`IngredientTable.curatedAliases`, or pinning a food with `IngredientTable.curate`.
+
 ### Weighing
 
 **Meter fraction**:
