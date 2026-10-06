@@ -144,6 +144,11 @@ Four more were settled while making a readiness score reachable on a device with
 no watch (2026-10-04), where the BRD's "manual fallback" left the scope, the
 bounds and the read-for-which-day open. None is confirmed either.
 
+More were settled on 2026-10-06 while carrying out that day's handoff (readiness,
+vitals, Kitchen, workout templates). Each sits in the subsection for its area and
+is marked with that date. **None of these has been confirmed.** Where the owner
+*did* answer, the entry says "confirmed by the owner" and names the date.
+
 **Macro targets — left null.** `goal_target_snapshot`'s protein, carbohydrate and
 fat columns are nullable and stay empty. Nothing in the BRD, the spec or the
 handoff says how to derive a macro split, and this repository does not invent a
@@ -248,16 +253,31 @@ counts valid days. This is the degenerate case rather than a calibration choice:
 a baseline made only of the day it scores is vacuous by identity, not by being
 short, so it invents no threshold the spec does not already state.
 
-Still open, and still a product decision rather than an arithmetic one: whether a
-missing personal baseline should also *withhold* a recommendation, or merely mark
-it preliminary. *Overrule by:* excluding today from the window — which is a
-different reading of §9.8 than the one the spec states, and would need every band
-re-read, since the bands are tuned against a multi-reading
-day — or by making `ReadinessBaseline` carry the number of days behind each
-metric and having `ReadinessEngine` refuse to score against a depth it can name.
-Measured figures are in `docs/features/readiness.md`; what it cost the two
-checklist rows that were asserting on the defect, and the launch-argument seeding
-hook that repaired them, are in `docs/implementation-status.md`.
+**Confirmed by the owner, 2026-10-06: a missing personal baseline withholds the
+recommendation**, rather than merely marking it preliminary. He also confirmed
+the same day that the score's colour and the Training Program's score-based
+scaling stay exactly as they are. Built in `ReadinessEngine`; see
+`docs/features/readiness.md` ("No personal baseline withholds the
+recommendation"). The two overrules recorded earlier for the baseline itself
+still stand: excluding today from the window — which is a different reading of
+§9.8 than the one the spec states, and would need every band re-read — or making
+`ReadinessBaseline` carry the number of days behind each metric and having
+`ReadinessEngine` refuse to score against a depth it can name. Measured figures
+are in `docs/features/readiness.md`; what it cost the two checklist rows that
+were asserting on the defect, and the launch-argument seeding hook that repaired
+them, are in `docs/implementation-status.md`.
+
+**When the withhold applies — unconfirmed (2026-10-06).** The owner confirmed
+*that* a missing baseline withholds; *what counts as missing* was read here as:
+the scored day carries at least one resting-HR or HRV reading, and **none** of
+the readings it carries has a baseline. A sleep-only day is "inputs missing" and
+unchanged; a day where one reading was compared against a real baseline keeps
+its sentence. What is withheld is the band sentence, in `textDescription` and
+`recommendation`; the score, colour, confidence and context text stay.
+*Overrule by:* the stricter reading — withhold when **any** reading present lacks
+a baseline — by making `ReadinessEngine.lacksPersonalBaseline` return
+`(rhrPresent && baseline.restingHeartRate == nil) || (hrvPresent && baseline.hrv == nil)`,
+and inverting `testOneComparedReadingKeepsTheBandSentence`.
 
 ### Weighing
 

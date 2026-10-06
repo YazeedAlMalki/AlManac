@@ -171,6 +171,53 @@ belongs to, and `ProgramSessionView` opens scaled when the answer was yes *and*
 there is a score. The toggle stays, because the answer is changeable for as long
 as the sheet is up.
 
+## No personal baseline withholds the recommendation (2026-10-06)
+
+**Owner's decision, confirmed 2026-10-06:** a missing personal baseline
+*withholds* the recommendation; it is not merely marked preliminary. Same day,
+he added that the score's colour and the Training Program's score-based scaling
+stay exactly as they are.
+
+**The condition** (`ReadinessEngine.lacksPersonalBaseline`): the scored day
+carries at least one resting-HR or HRV reading, and none of the readings it
+carries has a baseline to compare against. Since `efb1c0b`
+`ReadinessBaselineService.meanPerDay` returns nil when the scored day is the only
+contributor, so a first reading after a gap lands here. A day with no vitals at
+all (sleep only) is "inputs missing", a different case, and is unchanged. A day
+where one reading has a baseline and the other does not keeps its sentence. That
+reading of the decision is **unconfirmed**; see `CONTEXT.md`.
+
+**What is withheld:** the §9.3 band sentence ("Recovery is good — ready for a
+strong session" and its siblings), from both fields that carried it:
+
+- `textDescription` leads with `ReadinessEngine.noPersonalBaselineText` ("No
+  personal baseline yet to compare today's readings against") in place of the
+  band, followed by the usual §9.4 suffixes.
+- `recommendation` is nil when no §9.6 rule applies. Where a rule quotes the
+  band (active injury, fasted session), it quotes the no-baseline line instead.
+  Recovery day, rest day and deload are not baseline-derived and read as before.
+
+**What stays:** the score, its colour, the confidence ("very low" in the
+realistic case), every context suffix, and what the Training Program scales by.
+
+**Where it shows:** `ReadinessDashboardView`'s headline is `textDescription` and
+its "For this cycle" card is `recommendation`, so the card is simply absent when
+nothing is recommended; `TrendsView` shows both fields of a stored record.
+`ProgramDayView.readinessMessage` never showed the band sentence (it states the
+score and that the prescription will be scaled), so it is unchanged. No view
+needed a code change: each renders the outcome's fields.
+
+**History is not rewritten.** Records stored before this keep their sentence;
+new records in this case store a nil `recommendation`.
+
+**Tests:** `ReadinessEngineTests` — withheld (score, colour and confidence equal
+the same day without vitals), sleep-only unchanged, one compared reading keeps
+the sentence, context text survives (rest day, injury, fasted session);
+`ReadinessBaselineServiceTests.missingBaselineRedistributesRatherThanScoringIt`
+pins it end to end on real stores. With the withhold switched off, the withhold,
+context and end-to-end tests fail (6 XCTest and 3 Swift Testing assertions); the
+two "unchanged" tests pass either way, as they should.
+
 ## The two design decisions worth arguing about
 
 **Calibration counts from the first valid day, not from a rolling window.**

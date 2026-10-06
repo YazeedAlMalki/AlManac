@@ -206,6 +206,78 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertEqual(outcome.precedenceApplied.first, .injuryRestriction)
     }
 
+    // MARK: - No personal baseline (owner, 2026-10-06)
+
+    /// Vitals present, no baseline for any of them: the score, colour and
+    /// confidence stand, and the band sentence is withheld from both fields.
+    func testNoPersonalBaselineWithholdsTheBandSentence() {
+        let none = ReadinessBaseline(context: .general, restingHeartRate: nil, hrv: nil, validDayCount: 28)
+        let outcome = ReadinessEngine.evaluate(state: .provisional, inputs: perfectInputs(), baseline: none)
+
+        // The same day with no vitals at all scores the same — the readings
+        // were never compared, so they were never in the sum.
+        var sleepOnly = perfectInputs()
+        sleepOnly.restingHeartRate = nil
+        sleepOnly.hrv = nil
+        let reference = ReadinessEngine.evaluate(state: .provisional, inputs: sleepOnly, baseline: none)
+
+        XCTAssertEqual(outcome.score, reference.score, "the score is not withheld")
+        XCTAssertEqual(outcome.color, reference.color, "the colour is not withheld")
+        XCTAssertEqual(outcome.confidence, reference.confidence, "the confidence is not withheld")
+        XCTAssertEqual(outcome.textDescription, ReadinessEngine.noPersonalBaselineText)
+        XCTAssertNil(outcome.recommendation, "no rule applied, so nothing is recommended")
+    }
+
+    /// No vitals at all is "inputs missing", a different case, and unchanged.
+    func testASleepOnlyDayKeepsItsBandSentence() {
+        let none = ReadinessBaseline(context: .general, restingHeartRate: nil, hrv: nil, validDayCount: 28)
+        var sleepOnly = perfectInputs()
+        sleepOnly.restingHeartRate = nil
+        sleepOnly.hrv = nil
+        let outcome = ReadinessEngine.evaluate(state: .provisional, inputs: sleepOnly, baseline: none)
+        let band = ReadinessFormula.bandText(for: outcome.score!)
+
+        XCTAssertFalse(ReadinessEngine.lacksPersonalBaseline(inputs: sleepOnly, baseline: none))
+        XCTAssertEqual(outcome.textDescription, band)
+        XCTAssertEqual(outcome.recommendation, band)
+    }
+
+    /// One reading compared against a real baseline is a real comparison, so
+    /// the sentence stays — the narrower of the two readings of the decision.
+    func testOneComparedReadingKeepsTheBandSentence() {
+        let rhrOnly = ReadinessBaseline(context: .general, restingHeartRate: 52, hrv: nil, validDayCount: 28)
+        let outcome = ReadinessEngine.evaluate(state: .provisional, inputs: perfectInputs(), baseline: rhrOnly)
+        XCTAssertFalse(ReadinessEngine.lacksPersonalBaseline(inputs: perfectInputs(), baseline: rhrOnly))
+        XCTAssertEqual(outcome.recommendation, ReadinessFormula.bandText(for: outcome.score!))
+    }
+
+    /// Context-derived text is not baseline-derived, so it survives the withhold
+    /// in both fields; only the band half is replaced.
+    func testContextTextSurvivesTheWithhold() {
+        let none = ReadinessBaseline(context: .general, restingHeartRate: nil, hrv: nil, validDayCount: 28)
+
+        let rest = ReadinessEngine.evaluate(
+            state: .provisional, inputs: perfectInputs(), baseline: none,
+            context: ReadinessContext(plannedRestDay: true))
+        XCTAssertEqual(rest.recommendation, "Rest day as planned.")
+        XCTAssertEqual(rest.textDescription,
+                       "\(ReadinessEngine.noPersonalBaselineText). · Planned rest day")
+
+        let injured = ReadinessEngine.evaluate(
+            state: .provisional, inputs: perfectInputs(), baseline: none,
+            context: ReadinessContext(activeInjuryBodyArea: "left shoulder", injuryAffectsTraining: true))
+        XCTAssertEqual(injured.recommendation,
+                       "Active injury (left shoulder) — train around it. \(ReadinessEngine.noPersonalBaselineText).")
+        XCTAssertFalse(injured.recommendation!.contains("Recovery"))
+
+        let fasted = ReadinessEngine.evaluate(
+            state: .provisional, inputs: perfectInputs(), baseline: none,
+            context: ReadinessContext(religiousFastDay: true, fastedSessionPlanned: true))
+        XCTAssertTrue(fasted.recommendation!.hasSuffix("compared against fasted days only."))
+        XCTAssertTrue(fasted.textDescription!.contains("Fasted training context noted"))
+        XCTAssertFalse(fasted.textDescription!.contains("Recovery"))
+    }
+
     func testInactiveInjuryDoesNotChangeTheRecommendation() {
         let outcome = ReadinessEngine.evaluate(
             state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline,
