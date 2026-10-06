@@ -106,7 +106,8 @@ public enum AlmanacMigrations {
         Migration051_KitchenPantry.self,
         Migration052_DishServingCount.self,
         Migration053_PantrySuggestionDismissal.self,
-        Migration054_KitchenIngredient.self
+        Migration054_KitchenIngredient.self,
+        Migration055_PrescribedWorkoutItem.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with
