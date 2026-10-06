@@ -55,15 +55,13 @@ expansion, someone who mostly logs saved meals gets no suggestions.
 **The pantry is declared, never inferred from the log.** "I logged the last
 egg" and "I logged an egg" are the same entry. *Overrule by:* not doing it.
 
-**Allergens withhold recipes, same rule as food search.** A recipe is withheld
-when its name or any ingredient name — through nested dishes — declares one of
-the person's allergens. Everything else is `.noDeclaration`, and the screen
-shows the disclaimer whenever allergens are recorded. One deliberate difference
-from food search: a failed read of the allergen list is an error on screen, not
-an empty set — an empty set drops the filter *and* the disclaimer, which is an
-unfiltered list with nothing to say so. This covers Kitchen's
-suggestions; it does *not* close the saved-meals gap recorded in `CONTEXT.md`,
-because that is a different screen.
+**Allergens — superseded 2026-10-06 by the owner's call ("withhold and add a
+warning", "same rule everywhere"); see §6.** A recipe is withheld when its name
+or any ingredient name — through nested dishes — declares one of the person's
+allergens. Everything else is `.noDeclaration`, and the screen shows the
+disclaimer whenever allergens are recorded. A failed read of the allergen list is
+an error on screen, not an empty set — an empty set drops the filter *and* the
+disclaimer, which is an unfiltered list with nothing to say so.
 
 **No default amount when a recipe is chosen.** A recipe's total weight is
 usually several servings. *Overrule by:* passing a weight in
@@ -118,3 +116,40 @@ usually several servings. *Overrule by:* passing a weight in
 - `project.pbxproj` gained four `KC…` entries. Its group and sources-phase
   lists are single lines, so a parallel branch adding Native files will conflict
   there; keep both sides' IDs.
+
+## 6. The owner's six calls (2026-10-06), and how each was built
+
+| Call | Built |
+|---|---|
+| Recipes: import TheMealDB, if its terms permit bundling and redistribution | **Gate shut.** The terms could not be read from the session's network (`docs/features/themealdb-terms.md`); nothing imported, no import tool. |
+| Matching: build the ingredient table now | Step 4 — see below. |
+| "Recent": last 7 days, as built | Unchanged. |
+| Pantry: declared, with suggestions he approves | Step 3 — see below. |
+| Allergens: withhold and add a warning, on the recipe itself; same rule on Saved meals | Step 1 — `DishAllergenCheck`, shared. |
+| Default amount: one serving | Step 2 — see below. |
+
+Meal planning: still not decided, not built.
+
+### Step 1 — one allergen check for Kitchen and Saved meals
+
+`DishAllergenCheck` (`Sources/AlmanacCore/Nutrition/`) is the single
+implementation: `RecipeFinder.finish` and `SavedMeals.list` both call it, because
+a recipe and a saved meal are the same `almanac:` row. On both screens:
+
+- a dish naming a recorded allergen is **hidden by default**;
+- a collapsed **"Hidden because of your allergens (N)"** entry
+  (`HiddenDishesSection`, shared) lists them;
+- opened, each dish has **its own page** (`HiddenDishPage`) with the warning
+  first — "Allergen warning: this names Peanuts, which you have recorded as an
+  allergen. Found in: Peanut sauce." — its ingredients, and the disclaimer;
+- **"Log anyway…" asks for confirmation** before handing the dish to the logging
+  form (unconfirmed, `CONTEXT.md`);
+- an unreadable allergen list is an error on screen, on both
+  (`SavedMeals.list()` reads it and throws; Kitchen's model already did).
+
+Food search is unchanged. Tests: `DishAllergenCheckTests` (6) — hidden by
+default, through nested dishes, reachable with a warning naming the allergen and
+where it was found, nothing hidden or said with no allergens recorded, a failed
+read is an error, and Kitchen and Saved meals giving the same judgement for the
+same dish. `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` now
+opens the hidden entry, the page and the confirmation — **not run**.

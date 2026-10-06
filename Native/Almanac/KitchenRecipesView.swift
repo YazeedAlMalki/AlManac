@@ -57,16 +57,13 @@ struct KitchenRecipesView: View {
                     }
                 }
 
-                if !results.withheld.isEmpty {
-                    Section("Hidden by your allergens") {
-                        ForEach(results.withheld, id: \.recipe) { match in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(match.name)
-                                if let reason = match.verdict.reason {
-                                    Text(reason).font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                        }
+                // Hidden by default and reachable: collapsed, and each one opens
+                // on its own page under its warning (`HiddenDishesSection`, the
+                // same entry Saved meals shows).
+                HiddenDishesSection(rows: results.withheld.map(hiddenRow),
+                                    disclaimer: results.disclaimer) { row in
+                    if let match = results.withheld.first(where: { $0.recipe == row.ref }) {
+                        choose(match)
                     }
                 }
             }
@@ -111,6 +108,12 @@ struct KitchenRecipesView: View {
         } catch {
             self.error = String(describing: error)
         }
+    }
+
+    private func hiddenRow(_ match: RecipeMatch) -> HiddenDishRow {
+        HiddenDishRow(ref: match.recipe, name: match.name, reason: match.verdict.reason,
+                      warning: match.allergen.warning ?? match.verdict.reason ?? "",
+                      ingredients: match.ingredients.map { $0.name ?? "An unnamed ingredient" })
     }
 
     private func choose(_ match: RecipeMatch) {

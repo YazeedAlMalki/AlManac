@@ -22,7 +22,10 @@ public struct RecipeMatch: Sendable, Hashable {
     public let recipe: SourceIdentifier
     public let name: String
     public let ingredients: [RecipeIngredient]
-    public let verdict: AllergenVerdict
+    /// The shared dish allergen check's judgement (`DishAllergenCheck`).
+    public let allergen: DishAllergenJudgement
+
+    public var verdict: AllergenVerdict { allergen.verdict }
 
     public var missing: [RecipeIngredient] { ingredients.filter { !$0.isOnHand } }
     public var onHandCount: Int { ingredients.count - missing.count }
@@ -58,8 +61,7 @@ public struct RecipeResults: Sendable, Hashable {
     /// recipe *is* its ingredient list. What is still true is that every check
     /// is a check of a name.
     public var disclaimer: String? {
-        guard isFiltered else { return nil }
-        return "Checked recipe and ingredient names only — a name can be silent about an allergen, so Almanac cannot confirm a recipe is allergen-free."
+        DishAllergenCheck.disclaimer(noun: "recipe", allergens: allergens)
     }
 
     public var note: String? {
@@ -93,7 +95,8 @@ public struct RecipeResults: Sendable, Hashable {
 ///
 /// ## Allergens
 ///
-/// Same contract as `NutritionCatalog.search(_:limit:excluding:)`: the person's
+/// Judged by `DishAllergenCheck`, the one check Saved meals uses as well. Same
+/// contract as `NutritionCatalog.search(_:limit:excluding:)`: the person's
 /// allergens are a parameter, not a dependency. A recipe is withheld when its
 /// own name, or any ingredient's name — through nested dishes — declares one of
 /// them. Everything else is `.noDeclaration`, which is not a safety claim.
@@ -195,29 +198,32 @@ public struct RecipeFinder: Sendable {
         return order.map {
             RecipeMatch(recipe: $0, name: names[$0] ?? $0.description,
                         ingredients: ingredients[$0] ?? [],
-                        verdict: AllergenVerdict(status: .notApplicable))
+                        allergen: DishAllergenJudgement(ref: $0, verdict: AllergenVerdict(status: .notApplicable)))
         }
     }
 
-    /// Applies the allergen filter to an already-ranked list, then the limit.
+    /// Applies the allergen check to an already-ranked list, then the limit.
+    ///
+    /// The check is `DishAllergenCheck`, the one Saved meals uses too: a recipe
+    /// and a saved meal are the same row, so they cannot be judged by two rules.
     ///
     /// The limit comes after the filter, unlike the food search, because the
     /// ranking needs every candidate anyway — there is no `LIMIT` in SQL to put
     /// it before — and a withheld recipe should not cost a kept one its place.
     private func finish(_ ranked: [RecipeMatch], excluding allergens: Set<FoodAllergen>,
                         limit: Int) throws -> RecipeResults {
-        let names = allergens.isEmpty ? [:] : try namesUnder(ranked.map(\.recipe))
+        let judged = try DishAllergenCheck(db: db).judge(ranked.map(\.recipe), allergens: allergens)
         var kept: [RecipeMatch] = []
         var withheld: [RecipeMatch] = []
         var triggered: Set<FoodAllergen> = []
         for match in ranked {
-            let verdict = RecipeFinder.verdict(for: names[match.recipe] ?? [match.name],
-                                               allergens: allergens)
+            let judgement = judged[match.recipe]
+                ?? DishAllergenJudgement(ref: match.recipe, verdict: AllergenVerdict(status: .notApplicable))
             let judged = RecipeMatch(recipe: match.recipe, name: match.name,
-                                     ingredients: match.ingredients, verdict: verdict)
-            if verdict.isFilteredOut {
+                                     ingredients: match.ingredients, allergen: judgement)
+            if judgement.isHidden {
                 withheld.append(judged)
-                triggered.formUnion(verdict.declared)
+                triggered.formUnion(judgement.verdict.declared)
             } else if kept.count < limit {
                 kept.append(judged)
             }
@@ -226,29 +232,6 @@ public struct RecipeFinder: Sendable {
                              effect: AllergenFilterEffect(removed: withheld.count, kept: kept.count,
                                                           triggeredBy: triggered),
                              allergens: allergens)
-    }
-
-    /// Every primary name under each recipe: its own, its ingredients', and
-    /// theirs where an ingredient is itself a dish. `UNION` rather than
-    /// `UNION ALL`, so a cycle already in the data ends instead of recursing —
-    /// `setRecipe` refuses to create one, and this does not rely on it.
-    private func namesUnder(_ recipes: [SourceIdentifier]) throws -> [SourceIdentifier: [String]] {
-        var names: [SourceIdentifier: [String]] = [:]
-        for row in try db.query("""
-            WITH RECURSIVE part(root, ref) AS (
-                SELECT value, value FROM json_each(?)
-                UNION
-                SELECT part.root, c.component_ref
-                FROM part JOIN nutrition_dish_component c ON c.dish_ref = part.ref
-            )
-            SELECT part.root, n.name FROM part
-            JOIN nutrition_food_name n ON n.food_ref = part.ref AND n.is_primary = 1;
-            """, [.text(try RecipeFinder.json(Set(recipes)))]) {
-            guard let root = row.string("root").flatMap(SourceIdentifier.init(parsing:)),
-                  let name = row.string("name") else { continue }
-            names[root, default: []].append(name)
-        }
-        return names
     }
 
     /// `refs`, plus every ingredient under any of them that is a dish.
@@ -267,18 +250,6 @@ public struct RecipeFinder: Sendable {
     }
 
     // MARK: Helpers
-
-    /// One verdict for a recipe from all the names in it: declared if any name
-    /// declares, using `AllergenVerdict.forFood` so the word lists stay in one place.
-    private static func verdict(for names: [String],
-                                allergens: Set<FoodAllergen>) -> AllergenVerdict {
-        guard !allergens.isEmpty else { return AllergenVerdict(status: .notApplicable) }
-        let declared = names.reduce(into: Set<FoodAllergen>()) {
-            $0.formUnion(AllergenVerdict.forFood(named: $1, personAllergens: allergens).declared)
-        }
-        return AllergenVerdict(declared: declared,
-                               status: declared.isEmpty ? .noDeclaration : .declares)
-    }
 
     /// A set of refs as a JSON array, for `json_each(?)` — one bound parameter
     /// however many refs, rather than a `?` per ref spliced into the SQL.

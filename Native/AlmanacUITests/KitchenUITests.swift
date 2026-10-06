@@ -106,21 +106,42 @@ final class KitchenUITests: XCTestCase {
 
     // MARK: - Allergens
 
-    /// With peanuts recorded, the satay is withheld — listed under "Hidden by
-    /// your allergens", not among the recipes — and the disclaimer shows.
+    /// With peanuts recorded, the satay is hidden by default — not among the
+    /// recipes, but behind a collapsed "Hidden because of your allergens" entry —
+    /// and the disclaimer shows. Opened, it carries a warning naming the
+    /// allergen on its own page, and logging it asks first (owner, 2026-10-06).
     func testARecipeDeclaringARecordedAllergenIsWithheld() throws {
         XCTAssertTrue(app.seedKitchen("recipes,peanuts"), "the app refused to open with peanuts recorded")
         try openRecipes()
         app.buttons["All"].tap()
 
-        XCTAssertTrue(app.staticTexts["Hidden by your allergens"].waitForExistence(timeout: 10),
-                      "nothing was withheld: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
+        let hidden = app.element("allergen-hidden-toggle")
+        XCTAssertTrue(hidden.waitForExistence(timeout: 10),
+                      "nothing was hidden: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
+        XCTAssertTrue(hidden.label.contains("Hidden because of your allergens"),
+                      "the hidden entry is not labelled as such: \(hidden.label)")
         XCTAssertTrue(app.staticTexts.allElementsBoundByIndex.contains { $0.label.hasPrefix("Checked recipe and ingredient names only") },
                       "the allergen disclaimer is missing")
         XCTAssertFalse(app.buttons.allElementsBoundByIndex.contains { $0.label.hasPrefix(Self.satay) },
-                       "the withheld recipe is offered as an ordinary, choosable one")
+                       "the hidden recipe is offered as an ordinary one before the entry is opened")
         XCTAssertTrue(app.buttons.allElementsBoundByIndex.contains { $0.label.hasPrefix(Self.bowl) },
-                      "the recipe with no declared allergen was withheld too")
+                      "the recipe with no declared allergen was hidden too")
+
+        // Reachable: open the entry, then the recipe's own page.
+        hidden.tap()
+        let row = app.element("allergen-hidden-row-ui-kitchen-satay")
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "the hidden recipe is not listed once the entry is opened")
+        row.tap()
+        let warning = app.element("allergen-warning")
+        XCTAssertTrue(warning.waitForExistence(timeout: 5), "the hidden recipe's page shows no warning")
+        XCTAssertTrue(warning.label.contains("Peanuts"), "the warning does not name the allergen: \(warning.label)")
+
+        // Logging asks first; cancelling leaves the page where it was.
+        app.element("allergen-log-anyway").tap()
+        let confirm = app.buttons["Log anyway"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "logging a hidden recipe did not ask for confirmation")
+        app.buttons["Cancel"].firstMatch.tap()
+        XCTAssertTrue(warning.exists, "cancelling the confirmation left the recipe's page")
     }
 
     // MARK: - Helpers

@@ -126,8 +126,13 @@ final class NutritionModel: ObservableObject {
         return try? catalog.energy(for: ref, basis: .per100g)?.kilocalories
     }
 
-    func savedMeals() throws -> [NativeDish] {
-        try dishEditor?.dishes() ?? []
+    /// Saved meals with the allergen check applied — the same check Kitchen
+    /// uses (`DishAllergenCheck`), because a saved meal and a recipe are the same
+    /// row. Fails closed: a failed allergen read throws (`SavedMeals.list()`),
+    /// and the screen shows the error rather than an unchecked list.
+    func savedMeals() throws -> SavedMealResults {
+        guard let db else { return SavedMealResults() }
+        return try SavedMeals(db: db).list()
     }
 
     /// Household measures imported for a food. Most foods have none, so the
