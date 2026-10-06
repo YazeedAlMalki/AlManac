@@ -45,6 +45,15 @@ Both Kitchen failures were the tests' own lookups, not the app.
   - `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`.
   - `NotificationSettingsUITests` ×2: "Settings does not offer the reminders screen".
 
+**Fourth run, `83578ea`** (run 37515020087): **83 run, 6 failed.**
+
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` got past every check of the app: the hidden entry, the disclaimer, opening the entry, the recipe's own page, the warning naming Peanuts, and "Log anyway" asking for confirmation. It then failed on its last line: "Failed to tap Cancel". On iOS 26 that dialog is a popover with no Cancel button, and tapping outside it cancels. The test now taps outside when there is no Cancel button. **Not yet re-run.**
+- The other five, again tests this branch does not touch:
+  - `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`.
+  - `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, both a harness snapshot error at `UIScrollSupport.swift:174`.
+  - `NotificationSettingsUITests` ×3: "Settings does not offer the reminders screen".
+- `AllergenFilterUITests` passed this time.
+
 They flip between runs, which is the shared-state flakiness `docs/implementation-status.md` describes for this suite. That is the baseline a branch is compared against; the 2026-10-06 handoff's "four known failures" (BodyCircumference 1, BodyCompositionWellness 2, Attributions 1) does not match it, and none of the seven is diagnosed. The 2026-10-06 work was written without Xcode; CI's `xcodebuild` compiled it, and CI's `test-ios` is its only UI run. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
 | Training Program steps (§7) | **17 of 17 recorded PASS** — the last full-file run was 2026-10-05: `TrainingProgramUITests` 13 of 13 (iPhone 16e, iOS 26.3, on a shared and dirty database; see `docs/implementation-status.md`). The "7 of 17" that stood here was 2026-10-02's. **Re-run needed:** the 2026-10-06 branch changed how 7.10 and 7.11 clear today's readings (the Vitals log now includes today), and that has not been driven. |
