@@ -222,6 +222,8 @@ this repo has no way to verify whether that has since changed — it's
 out-of-band, personal correspondence). `WorkloadComputer` deliberately
 reports tonnage/distance/duration, never an energy estimate.
 
+**2026-10-06 — on hold, owner's decision:** he will try to build his own data first. If that fails, the licensed sources are the fallback — SFDA, the Compendium (MET values) and yuhonas/wrkout (exercise library) — and the three emails above are how that fallback starts. They are not to be drafted or sent meanwhile, and nothing is to be built that assumes those datasets.
+
 **`program`/multi-week structure** — **built 2026-10-02**, see
 `docs/features/training-program.md`. This section listed it as an absence in
 the design itself, which was true until the 2026-10-01 handoff designed it.
@@ -295,7 +297,9 @@ windows, which one wins," not where the candidates come from.
    `ReadinessDashboardView`. **The three things left open in this item are
    now built (2026-09-28)** — see "Training history and templates" below.
 3. Calorie burn — blocked on the Compendium/MET licensing question; not
-   scheduled.
+   scheduled. **2026-10-06:** on hold — the owner is building his own data
+   first; the Compendium email is the fallback (see "Calorie burn from
+   training load" above).
 
 ### Training history and templates (2026-09-28)
 

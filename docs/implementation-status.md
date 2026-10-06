@@ -1,8 +1,10 @@
 # Almanac implementation status
 
-Updated 2026-10-05. The degenerate-baseline defect recorded below is **fixed**
-and the two checklist rows that were asserting on it are repaired; the entry is
-at the top. The 2026-10-04 second-pass correction still stands: the "a single-
+Updated 2026-10-06: the newest entry is the cloud session's handoff work, on
+branch `claude/handoff-2026-10-06` and not merged; read it first. Before that,
+updated 2026-10-05. The degenerate-baseline defect recorded below is **fixed**
+and the two checklist rows that were asserting on it are repaired; that entry
+is second from the top. The 2026-10-04 second-pass correction still stands: the "a single-
 reading day always scores 66" note lower down was measured without sleep data,
 and with an 8-hour episode the same state scored 74 and read "ready for a strong
 session". Manual vitals entry —
@@ -20,6 +22,97 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-06 — handoff work from a cloud session: Kitchen merge-ready and built out, readiness withhold, Vitals log
+
+**Where this is.** Branch `claude/handoff-2026-10-06`, pushed, **not merged to
+master**. `claude/kitchen-merge-ready` points at `ebdb51d`, Kitchen as built
+plus what it needed to merge. Done in a Linux cloud container: Swift 6.3.3 ran
+the core suite; there was **no Xcode**, so no Swift in `Native/` was compiled
+and no UI test was run.
+
+**Not done: the fasting and prayer work (handoff task 1).** It exists only as an
+uncommitted working tree on the owner's iMac, and is not on GitHub under any
+branch, so it could not be backed up, verified, committed or merged from here.
+The two notification bugs it fixes are confirmed present on master by reading
+the code: `NotificationScheduler.swift:62,111,122` test
+`Self.ownedPrefix.hasPrefix($0)`, which is backwards, and
+`NotificationPlanner.plan` never filters candidates to `(now, now + horizon]`.
+They were left for that work to fix, to avoid a conflicting second fix.
+
+**Merge order.** The fasting work lands first, as the handoff recommended, and
+keeps its migration 050. This branch numbers its migrations 051–054 and reserves
+050 in the tests (`Tests/AlmanacCoreTests/MigrationReservation.swift`). The
+contiguity checks subtract the reservation rather than being loosened, and
+`testNoReservedVersionHasLanded` fails the moment 050 merges, which is the
+prompt to empty the set. Merging this branch first would force the larger work
+to renumber, and would break any database that already applied its 050, since
+`MigrationRunner` refuses a renamed migration.
+
+### What changed
+
+- **Kitchen, merge-ready (task 4).** Rebased onto `efb1c0b`; it already sat on
+  it, so the original commits are kept. Migration 050 → **051**. Found and fixed
+  a real defect: the shipped `almanac.sqlite` has no `almanac` row in
+  `nutrition_source`, so `NutritionDishEditor.create` failed its foreign key on
+  every device. Nothing in the app had created a dish, so it never showed.
+  `create` now writes the row, and a test on the shipped bundle fails without
+  that change. Added `KitchenSeedPlan` (`-AlmanacSeedKitchen`, DEBUG- and
+  argument-gated, like `VitalsSeedPlan`) and `KitchenUITests` (4).
+- **Readiness (task 2).** With vitals present and no personal baseline for any
+  of them, the band sentence is withheld from `textDescription` and
+  `recommendation`. Score, colour and confidence stay. See
+  `docs/features/readiness.md`.
+- **Vitals (task 3).** `VitalsRecordStore.log` includes today, and `VitalsView`
+  uses it. `clearHandEnteredReadings` now reaches today's readings, and the
+  readiness UI tests no longer clear today through the seeding spec.
+- **Kitchen build-out (task 5), one commit per step.** 0: TheMealDB's terms
+  could not be read from this network (403 on every route), so the gate is shut
+  and nothing is imported (`docs/features/themealdb-terms.md`). 1:
+  `DishAllergenCheck` is one check for Kitchen and Saved meals: hidden by
+  default, collapsed and reachable, a warning page, and confirm before logging.
+  2: migration **052** `serving_count`; one serving is the default amount. 3:
+  migration **053**; pantry suggestions the owner adds or dismisses. 4:
+  migration **054**, the ingredient table. Pantry, log and allergen check all go
+  through it, and the allergen check reads more names, never fewer. 5:
+  skipped.
+- **Workout templates (task 6).** A template stores only a name, a container
+  shape and notes, so nothing was built. The smallest additive change is
+  proposed in `docs/features/training.md`.
+- **Housekeeping (task 7).** The checklist summary now carries real counts.
+  Slice 8 and Slice 4's MET and exercise-library data are marked "owner building
+  his own data first", with the licence emails kept as the fallback.
+
+### Verification
+
+`swift test` (Swift 6.3.3, x86_64 Linux):
+
+| Tree | Swift Testing | XCTest |
+|---|---|---|
+| master `efb1c0b` | 938 tests, 99 suites, 0 failures | 373, 1 skipped, 0 failures |
+| branch head | **979 tests, 106 suites, 0 failures** | **379, 1 skipped, 0 failures** |
+
+The skipped test is the opt-in `NutritionRealBundleTests`. The handoff's 374
+XCTest for master is one more than this run counted.
+
+Revert-and-run checks, each fails without its fix and passes with it:
+
+| Fix | Test | Without the fix |
+|---|---|---|
+| Dish foreign key | `testADishCanBeCreatedOnTheShippedReference` | "FOREIGN KEY constraint failed" |
+| Readiness withhold | withhold, context and end-to-end tests | 6 XCTest + 3 Swift Testing assertions |
+| Vitals log | `logIncludesToday`, with the old exclusive bound | 4 issues |
+
+**Not run:**
+
+- any UI test, including the 4 new `KitchenUITests` and the changed
+  `TrainingProgramUITests` helpers;
+- any build of `Native/`, so the SwiftUI changes for Kitchen, Saved meals and the
+  pantry are unverified against the compiler;
+- notification delivery and HealthKit, which need a device.
+
+The four known UI failures (`BodyCircumferenceUITests` 1,
+`BodyCompositionWellnessUITests` 2, `AttributionsUITests` 1) were not diagnosed.
 
 ## 2026-10-05 — the degenerate baseline is fixed, and the tests that asserted on it are repaired
 

@@ -21,21 +21,20 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 
 | | |
 |---|---|
-| Core suite | **PASS** — 627 tests, 78 suites, zero failures (recounted 2026-09-30 against `f3c10e2`; the 606/75 recorded earlier was captured before the last commit's tests landed) |
+| Core suite | **PASS** — recounted 2026-10-06 on Swift 6.3.3, x86_64 Linux (a cloud container, `swift test`): branch `claude/handoff-2026-10-06` **979 Swift Testing tests in 106 suites + 379 XCTest (1 skipped, the opt-in real-bundle test), 0 failures**; master `efb1c0b` **938 in 99 suites + 373 XCTest (1 skipped), 0 failures**. The 627/78 that stood here was 2026-09-30's. |
 | App + widget build (iPhone 16e simulator) | **PASS** |
 | Insights UI tests | **PASS** — 5 of 5 |
 | Notification settings UI tests | **PASS** — 5 of 5 |
 | Timeline UI tests | **PASS** — 3 of 3, after two defects were fixed (see §6) |
 | The three suites above, together | **PASS** — 13 of 13, 8m42s |
-| Full UI suite (68 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 54 are **not** claimed either way. |
+| Full UI suite | **UNRUN** — **82 test methods** by grep on the 2026-10-06 branch (78 on master, plus 4 in the new `KitchenUITests`); the "68" that stood here was 2026-09-30's. Never run as a whole. Four are known to fail on a clean tree and are undiagnosed: one in `BodyCircumferenceUITests` (`testSidedLoggingWarningAndPersistence`, state-dependent), two in `BodyCompositionWellnessUITests`, one in `AttributionsUITests`. The 2026-10-06 work was done without Xcode, so none of its UI changes or UI tests has been compiled or run. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
-| Training Program steps (§7) | **7 of 17 driven (PASS)** — `TrainingProgramUITests` pass 3 of 3 in a full-file run, twice in a row (2026-10-02); 7.1–7.6 and the 7.9 No-leg were driven. The rest are **UNRUN (UI)**: built and core-tested, but no UI test drives them (see §7). One test-infra bug (stale-frame tap after `reveal`) was found and fixed in the harness; the app was not at fault |
+| Training Program steps (§7) | **17 of 17 recorded PASS** — the last full-file run was 2026-10-05: `TrainingProgramUITests` 13 of 13 (iPhone 16e, iOS 26.3, on a shared and dirty database; see `docs/implementation-status.md`). The "7 of 17" that stood here was 2026-10-02's. **Re-run needed:** the 2026-10-06 branch changed how 7.10 and 7.11 clear today's readings (the Vitals log now includes today), and that has not been driven. |
 
-**Recounted 2026-10-02 (`c4bd0be`):** the core suite is now **900 tests, 95
-suites, 0 failures** (168.7 s), up from the 768/88 it stood at immediately
-before that commit. The UI rows above are still the 2026-09-30 run and have not
-been re-driven, except **§7 Training Program** (driven 2026-10-02, this run, 3
-of 3); the §7 row therefore claims current code, the other UI rows do not.
+**Recounted 2026-10-02 (`c4bd0be`):** the core suite was then **900 tests, 95
+suites, 0 failures** (168.7 s). Superseded by the 2026-10-06 count in the table.
+The Insights, Notification settings and Timeline UI rows are still the
+2026-09-30 run and have not been re-driven; they do not claim current code.
 
 ---
 
@@ -44,10 +43,10 @@ of 3); the §7 row therefore claims current code, the other UI rows do not.
 | # | Step | Result |
 |---|---|---|
 | 1.1 | `swift build` clean | **PASS** |
-| 1.2 | `swift test` green | **PASS** — 627/627 |
+| 1.2 | `swift test` green | **PASS** — 2026-10-06: 979 + 379 (1 skipped) on the branch, 938 + 373 (1 skipped) on master; see the status table |
 | 1.3 | App target builds for a simulator | **PASS** |
 | 1.4 | Widget extension is built and embedded | **PASS** — `AlmanacWidgets.appex` present in the built app |
-| 1.5 | Every migration applies to a virgin database | **PASS** — 45 migrations, exercised by every core test |
+| 1.5 | Every migration applies to a virgin database | **PASS** — 2026-10-06: 49 on master; 53 on the branch (001–049 and 051–054, 050 reserved for the fasting work), exercised by every core test |
 | 1.6 | A profile from before migration 041 upgrades without being replaced | **PASS** |
 | 1.7 | A second `migrate` on an up-to-date database is a no-op | **PASS** |
 

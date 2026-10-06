@@ -295,6 +295,8 @@ dishes authored** — `NutritionDishEditor` exists, nothing has been entered.
 3. Send the SFDA licence enquiry, and the Open Food Facts (CSV format
    decided) and Frida downloads — all scripted, all still not run as of
    2026‑09‑12.
+   **2026-10-06 — on hold:** the owner is building his own regional food data
+   first; the SFDA enquiry is the fallback if that fails.
 4. Branded Foods: hold to v2 confirmed as a default, but not yet a final
    product decision.
 5. Whether nutrition needs its own logging screens before body‑measurement
@@ -421,6 +423,8 @@ No `exercise_*` migration exists. No code, no schema, no screens.
 2. Email the Compendium authors re: commercial MET reuse; email
    yuhonas/wrkout re: photograph provenance (the public‑domain claim behind
    free‑exercise‑db is asserted, not traced).
+   **2026-10-06 — on hold:** the owner is building his own MET and
+   exercise-library data first; these emails are the fallback if that fails.
 3. Restyle the CC BY‑SA art (Everkinetic/workout‑guide/OpenTraining) and
    release it back, or ship it unmodified with attribution.
 4. Is `quality_reps` worth shipping in v1, or does fencing‑style skill work
@@ -577,6 +581,12 @@ missed because it was filed under a different section.
 | 15 | `quality_reps` in v1 or v2 | exercise |
 | 16 | Keep or drop `session_only` as a catch‑all | exercise |
 | 17 | Scoping order for Sleep / Body measurement / GI | new domains |
+
+**2026-10-06:** items 9, 10, 11 and 13 are on hold. The owner is building his own
+regional food data, MET values and exercise library first (Slice 8, and Slice 4's
+calorie burn and exercise library). The SFDA enquiry and the Compendium and
+yuhonas/wrkout emails remain the fallback if that fails, and are not to be sent
+meanwhile.
 
 ---
 
