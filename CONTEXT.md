@@ -339,6 +339,31 @@ each food's own names plus the canonical name, never fewer. *Overrule by:*
 editing the word lists in `IngredientNormaliser`, adding aliases to
 `IngredientTable.curatedAliases`, or pinning a food with `IngredientTable.curate`.
 
+### Training templates (2026-10-06)
+
+**Confirmed by the owner, 2026-10-06: a template is exercises, but editable.**
+Applying one fills the session with its exercises, with sets and reps where the
+template has them, as a starting point. The session then stays his to change.
+Built: `TemplateApplier`, Migration 055; see `docs/features/training.md`. The
+calls below were left to the build. **None of these has been confirmed.**
+
+**A session that already has logged bouts asks first.** The template's exercises
+are added after them only on "Add after them". Replacing is never offered,
+because it would delete logged work. *Overrule by:* passing
+`appendingAfterExisting: true` from the start in `TrainingDashboardView.apply`,
+or refusing outright.
+
+**Applying records nothing as done.** The plan goes in the `prescribed*`
+columns, `actual*` stays empty, and the row reads "Planned · …" until something
+is recorded. *Overrule by:* copying the plan into `actual*` in
+`TemplateApplier.apply`, which would make an untrained session read as done.
+
+**One entry point: "Start from a template" on the Training screen, applied to
+today.** It fills his own ad-hoc session for the day, never a watch workout or a
+program day's session. The first template applied names the session. *Overrule
+by:* adding a "Use today" action to `TrainingTemplateView`'s rows, which the
+proposal had suggested.
+
 ### Weighing
 
 **Meter fraction**:

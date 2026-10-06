@@ -41,7 +41,7 @@ the code: `NotificationScheduler.swift:62,111,122` test
 They were left for that work to fix, to avoid a conflicting second fix.
 
 **Merge order.** The fasting work lands first, as the handoff recommended, and
-keeps its migration 050. This branch numbers its migrations 051–054 and reserves
+keeps its migration 050. This branch numbers its migrations 051–055 and reserves
 050 in the tests (`Tests/AlmanacCoreTests/MigrationReservation.swift`). The
 contiguity checks subtract the reservation rather than being loosened, and
 `testNoReservedVersionHasLanded` fails the moment 050 merges, which is the
@@ -76,9 +76,17 @@ to renumber, and would break any database that already applied its 050, since
   migration **054**, the ingredient table. Pantry, log and allergen check all go
   through it, and the allergen check reads more names, never fewer. 5:
   skipped.
-- **Workout templates (task 6).** A template stores only a name, a container
-  shape and notes, so nothing was built. The smallest additive change is
-  proposed in `docs/features/training.md`.
+- **Workout templates (task 6).** A template stored only a name, a container
+  shape and notes, so the first pass stopped at a proposal. The owner then
+  unblocked it ("exercises, but editable"), and it is built:
+  - Migration **055**, `prescribedWorkoutItem`;
+  - `PrescribedWorkoutStore.setItems` and `TemplateApplier`, which copies the
+    exercises onto today's own session as planned bouts with nothing marked
+    done;
+  - screens: an exercise list in the template editor, **Start from a template**
+    on Training, and today's rows open the shared `BoutActualsEditor`;
+  - tests: `TemplateApplierTests` (8), and one UI test.
+  See `docs/features/training.md`.
 - **Housekeeping (task 7).** The checklist summary now carries real counts.
   Slice 8 and Slice 4's MET and exercise-library data are marked "owner building
   his own data first", with the licence emails kept as the fallback.
@@ -90,7 +98,7 @@ to renumber, and would break any database that already applied its 050, since
 | Tree | Swift Testing | XCTest |
 |---|---|---|
 | master `efb1c0b` | 938 tests, 99 suites, 0 failures | 373, 1 skipped, 0 failures |
-| branch head | **979 tests, 106 suites, 0 failures** | **379, 1 skipped, 0 failures** |
+| branch head | **987 tests, 107 suites, 0 failures** | **379, 1 skipped, 0 failures** |
 
 The skipped test is the opt-in `NutritionRealBundleTests`. The handoff's 374
 XCTest for master is one more than this run counted.
@@ -103,12 +111,19 @@ Revert-and-run checks, each fails without its fix and passes with it:
 | Readiness withhold | withhold, context and end-to-end tests | 6 XCTest + 3 Swift Testing assertions |
 | Vitals log | `logIncludesToday`, with the old exclusive bound | 4 issues |
 
+CI (`.github/workflows/ci.yml`), run on every push to this branch:
+
+- the Linux job (Swift **6.0.3**) caught one test line that 6.3.3 accepts and
+  6.0.3 does not, fixed in `62248d6`, and was green from then on;
+- `xcodebuild` of the app and widget was **green**, so the `Native/` changes
+  compile;
+- the full UI suite (`test-ios`, about 2.5 hours on a fresh simulator) — see
+  `docs/acceptance-checklist.md` for the result recorded against master's
+  baseline of 78 run, 7 failed.
+
 **Not run:**
 
-- any UI test, including the 4 new `KitchenUITests` and the changed
-  `TrainingProgramUITests` helpers;
-- any build of `Native/`, so the SwiftUI changes for Kitchen, Saved meals and the
-  pantry are unverified against the compiler;
+- any UI test locally;
 - notification delivery and HealthKit, which need a device.
 
 The four known UI failures (`BodyCircumferenceUITests` 1,

@@ -21,13 +21,13 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 
 | | |
 |---|---|
-| Core suite | **PASS** — recounted 2026-10-06 on Swift 6.3.3, x86_64 Linux (a cloud container, `swift test`): branch `claude/handoff-2026-10-06` **979 Swift Testing tests in 106 suites + 379 XCTest (1 skipped, the opt-in real-bundle test), 0 failures**; master `efb1c0b` **938 in 99 suites + 373 XCTest (1 skipped), 0 failures**. The 627/78 that stood here was 2026-09-30's. |
+| Core suite | **PASS** — recounted 2026-10-06 on Swift 6.3.3, x86_64 Linux (a cloud container, `swift test`): branch `claude/handoff-2026-10-06` **987 Swift Testing tests in 107 suites + 379 XCTest (1 skipped, the opt-in real-bundle test), 0 failures**; master `efb1c0b` **938 in 99 suites + 373 XCTest (1 skipped), 0 failures**. The 627/78 that stood here was 2026-09-30's. |
 | App + widget build (iPhone 16e simulator) | **PASS** |
 | Insights UI tests | **PASS** — 5 of 5 |
 | Notification settings UI tests | **PASS** — 5 of 5 |
 | Timeline UI tests | **PASS** — 3 of 3, after two defects were fixed (see §6) |
 | The three suites above, together | **PASS** — 13 of 13, 8m42s |
-| Full UI suite | **UNRUN** — **82 test methods** by grep on the 2026-10-06 branch (78 on master, plus 4 in the new `KitchenUITests`); the "68" that stood here was 2026-09-30's. The whole suite **does** run in CI (`test-ios`, a fresh simulator, about 2.5 hours). On master `efb1c0b` (run 37354673943, 2026-10-05): **78 run, 7 failed** — `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, `NotificationSettingsUITests` ×3 (`testASwitchFlipsAndReverts`, `testTheScreenSaysWhetherNotificationsAreAllowed`, `testTurningEverythingOffAsksFirst`), `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`, `TrainingProgramUITests.testRemovingFromRotationThenRestoringItsPosition`. That is the baseline a branch is compared against; the 2026-10-06 handoff's "four known failures" (BodyCircumference 1, BodyCompositionWellness 2, Attributions 1) does not match it, and none of the seven is diagnosed. The 2026-10-06 work was done without Xcode, so none of its UI changes or UI tests has been compiled or run. |
+| Full UI suite | **UNRUN** — **83 test methods** by grep on the 2026-10-06 branch (78 on master, plus 4 in the new `KitchenUITests` and 1 template test in `TrainingHistoryUITests`); the "68" that stood here was 2026-09-30's. The whole suite **does** run in CI (`test-ios`, a fresh simulator, about 2.5 hours). On master `efb1c0b` (run 37354673943, 2026-10-05): **78 run, 7 failed** — `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, `NotificationSettingsUITests` ×3 (`testASwitchFlipsAndReverts`, `testTheScreenSaysWhetherNotificationsAreAllowed`, `testTurningEverythingOffAsksFirst`), `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`, `TrainingProgramUITests.testRemovingFromRotationThenRestoringItsPosition`. That is the baseline a branch is compared against; the 2026-10-06 handoff's "four known failures" (BodyCircumference 1, BodyCompositionWellness 2, Attributions 1) does not match it, and none of the seven is diagnosed. The 2026-10-06 work was written without Xcode; CI's `xcodebuild` compiled it, and CI's `test-ios` is its only UI run. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
 | Training Program steps (§7) | **17 of 17 recorded PASS** — the last full-file run was 2026-10-05: `TrainingProgramUITests` 13 of 13 (iPhone 16e, iOS 26.3, on a shared and dirty database; see `docs/implementation-status.md`). The "7 of 17" that stood here was 2026-10-02's. **Re-run needed:** the 2026-10-06 branch changed how 7.10 and 7.11 clear today's readings (the Vitals log now includes today), and that has not been driven. |
 
@@ -43,10 +43,10 @@ The Insights, Notification settings and Timeline UI rows are still the
 | # | Step | Result |
 |---|---|---|
 | 1.1 | `swift build` clean | **PASS** |
-| 1.2 | `swift test` green | **PASS** — 2026-10-06: 979 + 379 (1 skipped) on the branch, 938 + 373 (1 skipped) on master; see the status table |
+| 1.2 | `swift test` green | **PASS** — 2026-10-06: 987 + 379 (1 skipped) on the branch, 938 + 373 (1 skipped) on master; see the status table |
 | 1.3 | App target builds for a simulator | **PASS** |
 | 1.4 | Widget extension is built and embedded | **PASS** — `AlmanacWidgets.appex` present in the built app |
-| 1.5 | Every migration applies to a virgin database | **PASS** — 2026-10-06: 49 on master; 53 on the branch (001–049 and 051–054, 050 reserved for the fasting work), exercised by every core test |
+| 1.5 | Every migration applies to a virgin database | **PASS** — 2026-10-06: 49 on master; 54 on the branch (001–049 and 051–055, 050 reserved for the fasting work), exercised by every core test |
 | 1.6 | A profile from before migration 041 upgrades without being replaced | **PASS** |
 | 1.7 | A second `migrate` on an up-to-date database is a no-op | **PASS** |
 
