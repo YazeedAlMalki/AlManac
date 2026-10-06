@@ -94,6 +94,23 @@ extension XCUIApplication {
         let failure = staticTexts["Almanac could not open"]
         return !failure.waitForExistence(timeout: 5)
     }
+
+    /// Relaunches with Kitchen's fixture recipes planted (`KitchenSeedPlan`):
+    /// `"recipes"`, `"recipes,peanuts"` or `"recipes,noallergens"`. Same shape
+    /// and same reasons as `seedVitals`.
+    @discardableResult
+    func seedKitchen(_ spec: String) -> Bool {
+        terminate()
+        // The flag and the spec after it, so a second call does not leave the
+        // first call's spec behind as a stray argument.
+        while let index = launchArguments.firstIndex(of: "-AlmanacSeedKitchen") {
+            launchArguments.removeSubrange(index..<min(index + 2, launchArguments.count))
+        }
+        launchArguments += ["-AlmanacSeedKitchen", spec]
+        launch()
+        let failure = staticTexts["Almanac could not open"]
+        return !failure.waitForExistence(timeout: 5)
+    }
 }
 
 extension XCUIApplication {

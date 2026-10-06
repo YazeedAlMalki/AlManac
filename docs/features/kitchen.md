@@ -1,6 +1,7 @@
 # Kitchen — recipes from the pantry, the food log, or by name
 
-**Status:** core and screens built 2026-10-05 (Migration 050, `Sources/AlmanacCore/Kitchen/`,
+**Status:** core and screens built 2026-10-05; made merge-ready 2026-10-06
+(Migration 051 — renumbered from 050, see §5 — `Sources/AlmanacCore/Kitchen/`,
 `Native/Almanac/KitchenRecipesView.swift`). No recipe data ships: Kitchen
 works over the person's own dishes until an import is licensed (§4).
 
@@ -8,11 +9,12 @@ works over the person's own dishes until an import is licensed (§4).
 
 | Piece | Where |
 |---|---|
-| Pantry table | `kitchen_pantry_item` — Migration 050, the only table Kitchen adds |
+| Pantry table | `kitchen_pantry_item` — Migration 051, the only table Kitchen adds |
 | Pantry store | `KitchenPantry` — add / remove / items |
 | Recipe lookup | `RecipeFinder` — `fromPantry`, `fromRecentLog(from:to:)`, `browse(_:)`, and the general `recipes(using:)` |
 | App wiring | `NutritionModel+Kitchen.swift`; **Recipes** button beside **Saved meals** on the Nutrition screen |
-| Tests | `KitchenTests` (11) |
+| Tests | `KitchenTests` (11), `KitchenSeedPlanTests` (3); UI: `KitchenUITests` (4, **not yet run** — see §4) |
+| UI-test seed | `KitchenSeedPlan` — `-AlmanacSeedKitchen recipes[,peanuts|,noallergens]`, DEBUG- and argument-gated like `VitalsSeedPlan`, because no screen creates a recipe |
 
 A recipe is an `almanac:` dish with at least one component — the same row the
 **Saved meals** list shows. Choosing one in the Recipes picker hands the dish
@@ -81,14 +83,38 @@ usually several servings. *Overrule by:* passing a weight in
   none of the four functions it asked to be wired was a planner.
 - **Ingredient names are the only allergen evidence.** As for food search: a
   name can be silent about an allergen.
-- **Unrun:** the UI test suite. The screens were compiled (`xcodebuild build`)
-  but not driven; no `AlmanacUITests` case covers Kitchen yet.
+- **UI tests written, not run (2026-10-06).** `KitchenUITests` covers: opening
+  Recipes from the Nutrition screen; adding and removing a pantry item; choosing
+  a recipe and seeing it in the logging form; and a recipe whose ingredient
+  declares a recorded allergen being withheld, with the disclaimer shown. They
+  were written in a Linux container with no Xcode, so they have never been
+  compiled or driven. The first Mac run is the check.
+- **Dish creation was broken on a device, and is fixed (2026-10-06).** The
+  shipped `almanac.sqlite` carries no `almanac` row in `nutrition_source`, and
+  `nutrition_food.namespace` references it, so `NutritionDishEditor.create`
+  failed its foreign key on every real install. `NutritionDishTests` seeded the
+  row by hand with a comment saying the bundle always carries it. `create` now
+  writes the row when it is absent;
+  `NutritionBundleImportTests.testADishCanBeCreatedOnTheShippedReference` fails
+  without that and passes with it. Nothing in the app created a dish before
+  Kitchen's seed, which is why it never showed.
 
 ## 5. Coordination notes
 
-- Migration **050** is taken by `Migration050_KitchenPantry`. A branch that also
-  adds a 050 must renumber before merging; `BodyMeasurementTests.migrationUpgrade`
-  lists every migration since 041 and will fail until it is updated.
+- **Renumbered 050 → 051 on 2026-10-06** (`Migration051_KitchenPantry`, file
+  `Migration051.swift`). 050 belongs to the fasting and prayer work (prayer
+  preferences), which was still uncommitted on the iMac and lands on master
+  first. Until it does, the migration list has a gap at 050, which the runner
+  tolerates on a fresh database. It does **not** tolerate the reverse: once a
+  database has applied 051, `MigrationRunner` refuses a pending 050 as
+  `outOfOrder`. So merge the fasting work first, and do not run this branch on
+  a device that will later need it. `BodyMeasurementTests.migrationUpgrade`
+  lists `[41 … 49, 51]` here and gains the 50 when the fasting work merges.
+- The contiguity checks (`CoreDailySchemaTests`, `MigrationFixtureTests`) were
+  kept, not loosened: they subtract `reservedUnmergedMigrationVersions` (`[50]`,
+  in `Tests/AlmanacCoreTests/MigrationReservation.swift`), and
+  `testNoReservedVersionHasLanded` fails as soon as a 050 is in the list. **On
+  merging the fasting work, empty that set** — the failing test says so.
 - `project.pbxproj` gained four `KC…` entries. Its group and sources-phase
   lists are single lines, so a parallel branch adding Native files will conflict
   there; keep both sides' IDs.
