@@ -164,16 +164,11 @@ final class KitchenUITests: XCTestCase {
         anyElement("allergen-log-anyway").tap()
         let confirm = app.buttons["Log anyway"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "logging a hidden recipe did not ask for confirmation")
-        // iOS 26 shows the dialog as a popover with no Cancel button; tapping
-        // outside it is the cancel (CI, 2026-10-06: "Failed to tap Cancel").
-        let cancel = app.buttons["Cancel"].firstMatch
-        if cancel.exists {
-            cancel.tap()
-        } else {
-            // The navigation bar's title: outside the popover, and harmless if
-            // the tap passes through.
-            app.navigationBars.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        }
+        // An alert, so Cancel is always there (the iOS 26 confirmation dialog
+        // had none, and tapping outside it did not close it in CI).
+        let cancel = app.alerts.buttons["Cancel"]
+        XCTAssertTrue(cancel.exists, "the confirmation offers no Cancel")
+        cancel.tap()
         XCTAssertTrue(app.waitUntil(timeout: 5) { !confirm.exists }, "the confirmation did not close")
         XCTAssertTrue(warning.exists, "cancelling the confirmation left the recipe's page")
     }

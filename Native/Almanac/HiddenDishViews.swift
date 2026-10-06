@@ -95,8 +95,10 @@ struct HiddenDishPage: View {
         }
         .navigationTitle(row.name)
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("Log \(row.name) anyway?", isPresented: $confirming,
-                            titleVisibility: .visible) {
+        // An alert, not a confirmation dialog: on iOS 26 the dialog is a popover
+        // with no Cancel button, and backing out of it was not obvious (CI,
+        // 2026-10-06). An alert always shows Cancel.
+        .alert("Log \(row.name) anyway?", isPresented: $confirming) {
             Button("Log anyway", role: .destructive) { onLogAnyway() }
             Button("Cancel", role: .cancel) {}
         } message: {

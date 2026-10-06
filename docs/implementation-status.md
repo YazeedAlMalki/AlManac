@@ -154,6 +154,13 @@ CI (`.github/workflows/ci.yml`), run on every push to this branch:
   - The other five are the same tests as before, which this branch does not
     touch.
 
+  The fifth run, `8e7b555`: **83 run, 3 failed**.
+  - Two are master's own (BodyCircumference, ProblemChannel).
+  - The Kitchen allergen test failed on its last check: the iOS 26
+    confirmation popover did not close on a tap outside it, and it has no
+    Cancel button. The page now asks with an alert, which always shows Cancel.
+    This is the one app change the UI runs led to. Not yet re-run.
+
   Details are in `docs/acceptance-checklist.md`.
 
 **Not run:**

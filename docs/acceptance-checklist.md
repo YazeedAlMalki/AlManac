@@ -54,6 +54,12 @@ Both Kitchen failures were the tests' own lookups, not the app.
   - `NotificationSettingsUITests` ×3: "Settings does not offer the reminders screen".
 - `AllergenFilterUITests` passed this time.
 
+**Fifth run, `8e7b555`** (run 37534202710): **83 run, 3 failed** — the fewest yet.
+
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` failed on its last check, "the confirmation did not close": tapping outside the iOS 26 popover did not close it either. That was a usability problem as well as a test one, because the popover had no visible way to back out. The page now asks with an **alert**, which always shows Cancel, and the test taps that Cancel. **Not yet re-run.**
+- `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence` and `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`: master's own, the harness snapshot error at `UIScrollSupport.swift:174`.
+- BodyCompositionWellness, all of NotificationSettings and AllergenFilter passed this time.
+
 They flip between runs, which is the shared-state flakiness `docs/implementation-status.md` describes for this suite. That is the baseline a branch is compared against; the 2026-10-06 handoff's "four known failures" (BodyCircumference 1, BodyCompositionWellness 2, Attributions 1) does not match it, and none of the seven is diagnosed. The 2026-10-06 work was written without Xcode; CI's `xcodebuild` compiled it, and CI's `test-ios` is its only UI run. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
 | Training Program steps (§7) | **17 of 17 recorded PASS** — the last full-file run was 2026-10-05: `TrainingProgramUITests` 13 of 13 (iPhone 16e, iOS 26.3, on a shared and dirty database; see `docs/implementation-status.md`). The "7 of 17" that stood here was 2026-10-02's. **Re-run needed:** the 2026-10-06 branch changed how 7.10 and 7.11 clear today's readings (the Vitals log now includes today), and that has not been driven. |
