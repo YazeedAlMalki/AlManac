@@ -218,11 +218,13 @@ the row text records the scope.
 **How 7.10/7.11 get a score to choose.** Both tests hand-enter a resting rate
 and an HRV through Modules → Vitals, which is BRD §6.7's "manual fallback" and
 the whole of the new `VitalsView`. Each test first clears the hand-entered
-readings left by earlier runs — from the Vitals log for past days, and from the
-seeding spec for today, because the log deliberately excludes today's readings
-(`records(metric:from:to:)`'s `to:` is exclusive) and the today card offers no
-delete. It then plants three prior days of ordinary readings and types exactly
-two readings of its own, for today.
+readings left by earlier runs from the Vitals log. Until 2026-10-06 the log left
+out today's readings (an exclusive upper bound, a defect), so today was cleared
+through the seeding spec instead; the log now ends with today and the one helper
+reaches it. **That change has not been driven yet** — the two rows below stand on
+the 2026-10-05 run, which used the old clearing route. It then plants three
+prior days of ordinary readings and types exactly two readings of its own, for
+today.
 
 The prior days are planted by launch argument (`-AlmanacSeedVitals`, parsed by
 `VitalsSeedPlan`) rather than typed, because the editor's `DatePicker` cannot be

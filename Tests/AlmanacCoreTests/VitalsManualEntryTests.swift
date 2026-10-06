@@ -347,6 +347,39 @@ struct VitalsManualEntryTests {
         #expect(try store.manualRecords(metric: .heartRateVariability, for: "2026-10-03")
             .map(\.value) == [44])
     }
+
+    /// The Vitals log shows a reading taken today, because the log is the only
+    /// place on the screen a hand-entered reading can be corrected or deleted.
+    ///
+    /// Until 2026-10-06 `VitalsView` read it with `records(metric:from:to:)`
+    /// passing today as the exclusive `to:`, so today's readings appeared on the
+    /// today card (which has no delete) and nowhere else.
+    @Test("The log includes today and the 13 days before it, newest first")
+    func logIncludesToday() throws {
+        let db = try TestDatabase()
+        let store = makeStore(db)
+        let time = TimeModel(timeZone: zone, boundary: .almanac)
+        let today = LogicalDay("2026-10-03")
+
+        try store.recordManual(metric: .restingHeartRate, value: 51, measuredAt: instantAt0900())
+        try store.recordManual(metric: .heartRateVariability, value: 44, measuredAt: instantAt0900().addingTimeInterval(60))
+        try store.recordManual(metric: .restingHeartRate, value: 52, measuredAt: instantAt0330())
+        // 13 days back is the window's first day; 14 back is outside it.
+        try store.recordManual(metric: .restingHeartRate, value: 53,
+                               measuredAt: time.start(of: LogicalDay("2026-09-20"))!.addingTimeInterval(9 * 3600))
+        try store.recordManual(metric: .restingHeartRate, value: 54,
+                               measuredAt: time.start(of: LogicalDay("2026-09-19"))!.addingTimeInterval(9 * 3600))
+
+        let log = try store.log(metrics: VitalsMetric.allCases, dayCount: 14, endingOn: today,
+                                timeModel: time, limit: 40)
+        #expect(log.map(\.value) == [44, 51, 52, 53], "got \(log.map(\.value))")
+        #expect(log.first?.logicalDay == "2026-10-03")
+
+        #expect(try store.log(metrics: VitalsMetric.allCases, dayCount: 14, endingOn: today,
+                              timeModel: time, limit: 2).map(\.value) == [44, 51])
+        #expect(try store.log(metrics: [.restingHeartRate], dayCount: 1, endingOn: today,
+                              timeModel: time, limit: 40).map(\.value) == [51])
+    }
 }
 
 /// The wake-time marker is not a night of zero minutes.

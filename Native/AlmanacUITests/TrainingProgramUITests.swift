@@ -731,9 +731,7 @@ final class TrainingProgramUITests: XCTestCase {
                       "saving \(metric) \(value) did not close the editor")
     }
 
-    /// Removes every hand-entered reading from the Vitals log — which is **not** the
-    /// same as every hand-entered reading, and the difference has already cost
-    /// two real bugs.
+    /// Removes every hand-entered reading from the Vitals log, today's included.
     ///
     /// The simulator's database is shared across runs and never reset, so a
     /// previous run's readings would still be inside §9.8's 28-day baseline
@@ -743,30 +741,22 @@ final class TrainingProgramUITests: XCTestCase {
     /// already offers for that. Nothing else in this suite asserts on a
     /// hand-entered reading.
     ///
-    /// ## It cannot remove a reading taken today, and it looks like it can
+    /// **Until 2026-10-06 this could not reach today**, and looked as if it
+    /// could. `VitalsView` read its log with today as an exclusive upper bound,
+    /// so today's readings were on the today card (no delete) and nowhere else;
+    /// this helper deleted yesterday and older, reported nothing left, and four
+    /// runs of the two readiness tests left 16 readings on today. The tests
+    /// cleared today through `seedVitals("rhr@0,hrv@0,…")` instead. The log now
+    /// ends with today (`VitalsRecordStore.log`), so this one helper is enough
+    /// and the seeding specs no longer carry the clear.
     ///
-    /// `VitalsView.reload` reads the log with
-    /// `records(metric:from:to:)`, whose `to:` is **exclusive**, so
-    /// `logicalDay == today` never reaches the list. Today's readings appear on
-    /// the "today" card and nowhere else, and that card has no delete. So this
-    /// helper deletes yesterday and older, reports "0 readings left", and leaves
-    /// today exactly as it found it — while its own `XCTAssertFalse` passes,
-    /// because there is genuinely no row on this screen to find.
-    ///
-    /// Measured 2026-10-05: four runs of the two readiness tests left **16
-    /// readings on today**, invisible here the whole time. Both tests still
-    /// passed, because `meanPerDay` averages within a day before averaging across
-    /// days, so sixteen same-day readings moved the baseline only slightly and
-    /// the bands held. That was luck, and it is exactly the "the score depends on
-    /// how many rows the test left behind" arrangement these rows were rewritten
-    /// to remove.
-    ///
-    /// **Today is cleared through `seedVitals` instead** — `rhr@0,hrv@0` — because
-    /// the app is the only actor that can reach those rows. Use both: this for the
-    /// days the log does show, the spec for today.
+    /// Readings synced from Apple Health are not deletable here and are not
+    /// counted: they carry no `vitals-delete`, and none exist on a simulator.
     private func clearHandEnteredReadings() {
         var deleted = 0
-        for _ in 0..<24 {
+        // A cap rather than `while`, so a delete that silently fails cannot spin
+        // forever. 48 covers a fortnight of two readings a day plus slack.
+        for _ in 0..<48 {
             let row = app.firstElement(identifierPrefix: "vitals-reading-")
             guard row.exists, app.reveal(row) else { break }
             row.swipeLeft()
@@ -777,9 +767,7 @@ final class TrainingProgramUITests: XCTestCase {
                           "deleting a reading did not close its actions")
             deleted += 1
         }
-        // Read the caveat above before trusting this. It means "nothing left *on this
-        // screen*", which excludes today by construction and is therefore not a
-        // statement about today's readings.
+        // "Nothing left on the log", which since 2026-10-06 includes today.
         XCTAssertFalse(app.firstElement(identifierPrefix: "vitals-reading-").exists,
                        "\(deleted) hand-entered readings were left on the Vitals log")
     }
@@ -806,15 +794,13 @@ final class TrainingProgramUITests: XCTestCase {
     /// write on — `XCUIApplication.seedVitals` records the measurement behind
     /// that, and why driving the picker instead was rejected.
     ///
-    /// **`rhr@0,hrv@0` first, and it is not optional.** It clears today's manual
-    /// readings, which `clearHandEnteredReadings` above structurally cannot do —
-    /// see that helper for why. Without it the score depends on however many
-    /// pairs a previous run left on today.
+    /// Today is not named: `clearHandEnteredReadings`, which every caller runs
+    /// first, now reaches today's readings itself.
     private func seedReadinessBaseline() {
         let history = [1, 2, 3]
             .map { "rhr=52@-\($0),hrv=55@-\($0)" }
             .joined(separator: ",")
-        XCTAssertTrue(app.seedVitals("rhr@0,hrv@0,\(history)"),
+        XCTAssertTrue(app.seedVitals(history),
                       "the app refused to launch with a vitals baseline seeded")
         openVitals()
     }
@@ -845,7 +831,7 @@ final class TrainingProgramUITests: XCTestCase {
     func testAReadingCanBePlantedOnADayOtherThanToday() {
         openVitals()
         clearHandEnteredReadings()
-        XCTAssertTrue(app.seedVitals("rhr@0,hrv@0,rhr=61@-1,hrv=44@-2"),
+        XCTAssertTrue(app.seedVitals("rhr=61@-1,hrv=44@-2"),
                       "the app refused to launch with readings seeded")
 
         openVitals()

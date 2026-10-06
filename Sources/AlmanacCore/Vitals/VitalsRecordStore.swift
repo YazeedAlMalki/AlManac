@@ -235,6 +235,28 @@ public struct VitalsRecordStore: @unchecked Sendable {
         """, [.text(metric), .text(from), .text(to)]).compactMap(rowToRecord)
     }
 
+    /// The Vitals log: every reading of `metrics` on the `dayCount` logical days
+    /// ending with `today` — **today included** — newest first, at most `limit`.
+    ///
+    /// `records(metric:from:to:)` is half-open, which is right for a range and
+    /// wrong for "the last fortnight up to now": `VitalsView` passed today as its
+    /// `to:`, so until 2026-10-06 a reading taken today never reached the log, and
+    /// the log is where a hand-entered reading is corrected or deleted. The upper
+    /// bound here is the day *after* today, walked with `day(after:)` so a DST
+    /// day stays the calendar's problem.
+    public func log(metrics: [VitalsMetric], dayCount: Int, endingOn today: LogicalDay,
+                    timeModel: TimeModel, limit: Int) throws -> [VitalsRecord] {
+        guard dayCount > 0, limit > 0, let end = timeModel.day(after: today) else { return [] }
+        var start = today
+        for _ in 1..<dayCount {
+            start = timeModel.day(before: start) ?? start
+        }
+        let rows = try metrics.flatMap {
+            try records(metric: $0.rawValue, from: start.value, to: end.value)
+        }
+        return Array(rows.sorted { $0.timestamp > $1.timestamp }.prefix(limit))
+    }
+
     /// Fetch the latest value for a specific metric. Excludes soft-deleted
     /// (e.g. HealthKit-retracted) entries.
     public func latestValue(for metric: String) throws -> VitalsRecord? {
