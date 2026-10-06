@@ -144,10 +144,18 @@ final class KitchenUITests: XCTestCase {
                       "the recipe with no declared allergen was hidden too")
 
         // Reachable: open the entry, then the recipe's own page.
-        hidden.tap()
-        let row = anyElement("allergen-hidden-row-ui-kitchen-satay")
-        XCTAssertTrue(row.waitForExistence(timeout: 5), "the hidden recipe is not listed once the entry is opened")
-        row.tap()
+        // Tap the disclosure's own button, not whatever carries the identifier:
+        // a tap on the cell's centre left it collapsed (CI, 2026-10-06). Then
+        // find the recipe by identifier or, failing that, by its name.
+        let disclosure = app.buttons
+            .matching(NSPredicate(format: "label CONTAINS %@", "Hidden because of your allergens")).firstMatch
+        (disclosure.exists ? disclosure : hidden).tap()
+        let byID = anyElement("allergen-hidden-row-ui-kitchen-satay")
+        let byName = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.satay)).firstMatch
+        XCTAssertTrue(app.waitUntil(timeout: 5) { byID.exists || byName.exists },
+                      "the hidden recipe is not listed once the entry is opened: "
+                      + "\(app.buttons.allElementsBoundByIndex.map(\.label))")
+        (byID.exists ? byID : byName).tap()
         let warning = anyElement("allergen-warning")
         XCTAssertTrue(warning.waitForExistence(timeout: 5), "the hidden recipe's page shows no warning")
         XCTAssertTrue(warning.label.contains("Peanuts"), "the warning does not name the allergen: \(warning.label)")

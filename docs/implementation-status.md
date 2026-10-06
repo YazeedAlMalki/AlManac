@@ -139,6 +139,13 @@ CI (`.github/workflows/ci.yml`), run on every push to this branch:
   - Two are the Kitchen tests' own lookups: a "Pantry" name shared by two
     buttons, and the disclaimer searched for as plain text. Both are fixed.
 
+  The third run, `12ffa44`: **83 run, 6 failed**.
+  - The Kitchen pantry test and the template test pass.
+  - The Kitchen allergen test reached its last stage and failed on a tap that
+    left the hidden entry collapsed. The tap is fixed.
+  - The other five are tests this branch does not touch, failing on some runs
+    and passing on others.
+
   Details are in `docs/acceptance-checklist.md`.
 
 **Not run:**
