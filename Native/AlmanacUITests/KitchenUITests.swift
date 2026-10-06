@@ -102,6 +102,12 @@ final class KitchenUITests: XCTestCase {
                 || app.staticTexts[Self.bowl].exists
         }, "the logging form does not show the chosen recipe")
         XCTAssertTrue(app.buttons["Log"].exists, "the logging form offers no Log once a recipe is chosen")
+
+        // One serving is pre-filled (owner, 2026-10-06). The seeded bowl is 200 g
+        // with no serving count, so the whole bowl is one serving. Still editable.
+        let grams = app.textFields["Amount, in grams"]
+        XCTAssertTrue(app.reveal(grams), "the logging form has no gram amount")
+        XCTAssertEqual(grams.value as? String, "200", "one serving was not pre-filled")
     }
 
     // MARK: - Allergens

@@ -287,6 +287,15 @@ and the names it was found in. It says "names", not "contains", because the chec
 reads names. The disclaimer follows lower on the page. *Overrule by:* editing
 `DishAllergenJudgement.warning` (one string, shared by both screens).
 
+**Imported recipes get a serving count by asking, not by estimate.** The owner
+chose "one serving" as the default amount; a dish nobody has counted is the
+whole dish. For an imported recipe that default is the whole pot, and an
+estimate ("TheMealDB recipes serve 4") would be a number nobody chose. So when an
+import is built, imported recipes are stored with no count and Kitchen asks "How
+many servings does this make?" the first time one is chosen, storing the answer
+in `serving_count`. Not built: there is no import (the terms gate is shut).
+*Overrule by:* having the importer write an estimate into `serving_count`.
+
 ### Weighing
 
 **Meter fraction**:

@@ -67,8 +67,8 @@ struct NutritionSavedMealsView: View {
         HStack {
             VStack(alignment: .leading) {
                 Text(dish.nameText).foregroundStyle(.primary)
-                if let yield = dish.yieldGrams {
-                    Text("Serving: \(Int(yield)) g")
+                if let serving = model.oneServingGrams(dish.ref) {
+                    Text("Serving: \(Int(serving.rounded())) g")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -88,7 +88,9 @@ struct NutritionSavedMealsView: View {
     }
 
     private func choose(_ dish: NativeDish) {
-        onSelect(dish.ref, dish.nameText, dish.yieldGrams)
+        // One serving, as Kitchen does — the same row, the same default
+        // (2026-10-06). Was the whole stated yield, which is the whole pot.
+        onSelect(dish.ref, dish.nameText, model.oneServingGrams(dish.ref))
         dismiss()
     }
 

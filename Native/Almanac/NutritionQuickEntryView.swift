@@ -110,14 +110,14 @@ struct NutritionQuickEntryView: View {
             NutritionSavedMealsView(model: model) { ref, name, defaultGrams in
                 selectedRef = ref
                 selectedName = name
-                if let defaultGrams { gramsText = String(Int(defaultGrams)) }
+                if let defaultGrams { gramsText = String(Int(defaultGrams.rounded())) }
             }
         }
         .sheet(isPresented: $showingRecipes) {
             KitchenRecipesView(model: model) { ref, name, defaultGrams in
                 selectedRef = ref
                 selectedName = name
-                if let defaultGrams { gramsText = String(Int(defaultGrams)) }
+                if let defaultGrams { gramsText = String(Int(defaultGrams.rounded())) }
             }
         }
         .editorError($error)

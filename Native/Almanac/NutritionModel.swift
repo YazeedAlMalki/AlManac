@@ -130,6 +130,12 @@ final class NutritionModel: ObservableObject {
     /// uses (`DishAllergenCheck`), because a saved meal and a recipe are the same
     /// row. Fails closed: a failed allergen read throws (`SavedMeals.list()`),
     /// and the screen shows the error rather than an unchecked list.
+    /// One serving's weight of a dish — the amount a chosen saved meal
+    /// pre-fills, as a chosen recipe does. Nil when the dish has no weight.
+    func oneServingGrams(_ ref: SourceIdentifier) -> Double? {
+        try? dishEditor?.oneServingGrams(of: ref)
+    }
+
     func savedMeals() throws -> SavedMealResults {
         guard let db else { return SavedMealResults() }
         return try SavedMeals(db: db).list()

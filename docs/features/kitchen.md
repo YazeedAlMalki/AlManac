@@ -63,9 +63,8 @@ disclaimer whenever allergens are recorded. A failed read of the allergen list i
 an error on screen, not an empty set — an empty set drops the filter *and* the
 disclaimer, which is an unfiltered list with nothing to say so.
 
-**No default amount when a recipe is chosen.** A recipe's total weight is
-usually several servings. *Overrule by:* passing a weight in
-`KitchenRecipesView.choose`.
+**Default amount — superseded 2026-10-06 by the owner's call: one serving.**
+See §6, step 2.
 
 ## 4. Not done, and why
 
@@ -153,3 +152,30 @@ where it was found, nothing hidden or said with no allergens recorded, a failed
 read is an error, and Kitchen and Saved meals giving the same judgement for the
 same dish. `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` now
 opens the hidden entry, the page and the confirmation — **not run**.
+
+### Step 2 — one serving is the default amount
+
+Dishes carried no serving count, so Migration **052** adds
+`nutrition_dish.serving_count` (nullable, `> 0`). Nobody's count set means **the
+whole dish is one serving** until it is, as the handoff asked.
+`NutritionDishEditor.oneServingGrams` and `RecipeMatch.oneServingGrams` are the
+one rule: the finished weight (stated yield, else the sum of the ingredients)
+over the count. A food with no recipe and no yield has no serving weight, and
+nothing is pre-filled.
+
+Choosing a recipe **and choosing a saved meal** pre-fill one serving, still
+editable. Saved meals used to pre-fill the whole stated yield; it is the same
+row, so it now takes the same default. The pre-filled figure is rounded rather
+than truncated. `DishEdit.servingCount` sets a count; **no screen sets one yet**,
+because no screen edits a dish at all.
+
+Imported recipes (when there is an import — §4): TheMealDB's records are
+believed to carry no serving count; that was not checkable from this session
+(`docs/features/themealdb-terms.md`). The decision for them is in `CONTEXT.md`
+(Kitchen, 2026-10-06): ask, not estimate.
+
+Tests: `DishServingTests` (5) — no count is the whole dish, a count divides the
+finished weight (yield when stated), clearing goes back, a label food has none,
+a count of 0 is refused by the editor and the column, and Kitchen's match agrees
+with the editor. `KitchenUITests.testChoosingARecipeHandsItToTheLoggingForm` now
+also checks the 200 g pre-fill — not run.
