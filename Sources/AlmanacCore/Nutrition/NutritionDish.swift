@@ -112,6 +112,17 @@ public struct NutritionDishEditor: Sendable {
                        edibleProportion: Double? = nil) throws -> SourceIdentifier {
         let ref = SourceIdentifier(namespace: .almanac, localID: localID)
         try db.transaction {
+            // `nutrition_food.namespace` references `nutrition_source`, and the
+            // shipped bundle carries no `almanac` row — so without this every
+            // `create` on a device failed its foreign key (2026-10-06). Written
+            // only when absent: a bundle that does ship the row owns its
+            // wording, and the importer never deletes it.
+            try db.run("""
+            INSERT INTO nutrition_source
+                (namespace, dataset_id, name, release, licence, licence_group, attribution, url)
+            VALUES ('almanac', 'almanac', 'Almanac (your own dishes)', '', 'Your own data', ?, '', '')
+            ON CONFLICT(namespace) DO NOTHING;
+            """, [.text(LicenceGroup.native.rawValue)])
             try db.run("""
             INSERT INTO nutrition_food
                 (food_ref, namespace, local_id, licence_group, food_group_code,
