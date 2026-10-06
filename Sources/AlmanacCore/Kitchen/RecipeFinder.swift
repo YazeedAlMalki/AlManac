@@ -12,6 +12,9 @@ public struct RecipeIngredient: Sendable, Hashable {
     public let name: String?
     public let grams: Double
     public let isOnHand: Bool
+    /// The canonical ingredient this food is (`IngredientTable`), when mapped.
+    /// On hand means *that ingredient* is on hand, by whichever food.
+    public var ingredientName: String? = nil
 }
 
 /// A recipe, its ingredients, and how much of it is on hand.
@@ -97,15 +100,14 @@ public struct RecipeResults: Sendable, Hashable {
 /// screen are the same row, with the same numbers. A dish with values typed in
 /// from a label and no components is a food, not a recipe, and never appears.
 ///
-/// ## Matching is by `food_ref`, exactly
+/// ## Matching is by ingredient (2026-10-06)
 ///
-/// The pantry, the food log and a dish's components all hold `food_ref`s picked
-/// from the same catalog search, so a match is a set intersection in SQL and no
-/// ingredient text is parsed at read time. The cost is that "Chicken breast,
-/// raw" (USDA) and "Chicken breast, roasted" (CoFID) are different ingredients.
-/// Folding those together is a canonical-ingredient table's job, and it belongs
-/// with whatever imports third-party recipes (docs/features/kitchen.md), not
-/// with a query that has to be right for the person's own dishes today.
+/// The pantry, the food log and a dish's components all hold `food_ref`s, and
+/// each is matched through `IngredientTable`: "Chicken breast, raw" (USDA) and
+/// "Chicken breast, roasted" (CoFID) are the same ingredient, so either on hand
+/// covers a recipe that names the other. A food the table has not mapped
+/// matches by its own ref, exactly as before the table existed. Still a set
+/// intersection in SQL; no ingredient text is parsed at read time.
 ///
 /// ## Allergens
 ///
@@ -127,10 +129,16 @@ public struct RecipeFinder: Sendable {
                         excluding allergens: Set<FoodAllergen>,
                         limit: Int = 50) throws -> RecipeResults {
         guard !onHand.isEmpty, limit > 0 else { return RecipeResults(allergens: allergens) }
+        // Through the ingredient table: a recipe uses what is on hand when one
+        // of its ingredients *is the same ingredient*, whichever catalog row
+        // each side picked. Unmapped foods match by ref, as before.
+        let keys = Set(try IngredientTable(db: db).matchKeys(for: onHand).values)
         let matches = try load(where: """
-            c.dish_ref IN (SELECT dish_ref FROM nutrition_dish_component
-                           WHERE component_ref IN (SELECT value FROM json_each(?)))
-            """, [.text(try RecipeFinder.json(onHand))], onHand: onHand)
+            c.dish_ref IN (SELECT c2.dish_ref FROM nutrition_dish_component c2
+                           LEFT JOIN kitchen_ingredient_food m2 ON m2.food_ref = c2.component_ref
+                           WHERE COALESCE(m2.ingredient_id, c2.component_ref)
+                                 IN (SELECT value FROM json_each(?)))
+            """, [.text(try RecipeFinder.json(keys))], onHand: keys)
         return try finish(matches.sorted(by: RecipeFinder.fewestMissingFirst),
                           excluding: allergens, limit: limit)
     }
@@ -162,7 +170,7 @@ public struct RecipeFinder: Sendable {
                        excluding allergens: Set<FoodAllergen>,
                        limit: Int = 50) throws -> RecipeResults {
         guard limit > 0 else { return RecipeResults(allergens: allergens) }
-        let pantry = try KitchenPantry(db: db).refs()
+        let pantry = Set(try IngredientTable(db: db).matchKeys(for: try KitchenPantry(db: db).refs()).values)
         let folded = TextFold.fold(text)
         let matches: [RecipeMatch]
         if folded.isEmpty {
@@ -184,19 +192,26 @@ public struct RecipeFinder: Sendable {
     /// Every recipe satisfying `condition` (over `nutrition_dish_component c`),
     /// with all of its ingredients — not only the ones that matched — in recipe
     /// order. One query; grouping is done here.
+    ///
+    /// `onHand` holds match keys (`IngredientTable.matchKeys`): ingredient ids
+    /// for mapped foods, refs for the rest.
     private func load(where condition: String, _ parameters: [SQLValue],
-                      onHand: Set<SourceIdentifier>) throws -> [RecipeMatch] {
+                      onHand: Set<String>) throws -> [RecipeMatch] {
         var order: [SourceIdentifier] = []
         var names: [SourceIdentifier: String] = [:]
         var ingredients: [SourceIdentifier: [RecipeIngredient]] = [:]
         var sizes: [SourceIdentifier: (yield: Double?, servings: Int?)] = [:]
         for row in try db.query("""
             SELECT c.dish_ref, d.name AS dish_name, c.component_ref, c.grams,
-                   n.name AS component_name, dd.yield_grams, dd.serving_count
+                   n.name AS component_name, dd.yield_grams, dd.serving_count,
+                   COALESCE(m.ingredient_id, c.component_ref) AS match_key,
+                   i.name AS ingredient_name
             FROM nutrition_dish_component c
             LEFT JOIN nutrition_food_name d ON d.food_ref = c.dish_ref AND d.is_primary = 1
             LEFT JOIN nutrition_food_name n ON n.food_ref = c.component_ref AND n.is_primary = 1
             LEFT JOIN nutrition_dish dd ON dd.food_ref = c.dish_ref
+            LEFT JOIN kitchen_ingredient_food m ON m.food_ref = c.component_ref
+            LEFT JOIN kitchen_ingredient i ON i.id = m.ingredient_id
             WHERE \(condition)
             ORDER BY c.dish_ref, c.sequence;
             """, parameters) {
@@ -210,7 +225,8 @@ public struct RecipeFinder: Sendable {
             }
             ingredients[dish, default: []].append(
                 RecipeIngredient(ref: ref, name: row.string("component_name"), grams: grams,
-                                 isOnHand: onHand.contains(ref)))
+                                 isOnHand: onHand.contains(row.string("match_key") ?? ref.description),
+                                 ingredientName: row.string("ingredient_name")))
         }
         return order.map {
             RecipeMatch(recipe: $0, name: names[$0] ?? $0.description,
@@ -273,7 +289,11 @@ public struct RecipeFinder: Sendable {
     /// A set of refs as a JSON array, for `json_each(?)` — one bound parameter
     /// however many refs, rather than a `?` per ref spliced into the SQL.
     private static func json(_ refs: Set<SourceIdentifier>) throws -> String {
-        String(decoding: try JSONEncoder().encode(refs.map(\.description).sorted()), as: UTF8.self)
+        try json(Set(refs.map(\.description)))
+    }
+
+    private static func json(_ values: Set<String>) throws -> String {
+        String(decoding: try JSONEncoder().encode(values.sorted()), as: UTF8.self)
     }
 
     private static func fewestMissingFirst(_ a: RecipeMatch, _ b: RecipeMatch) -> Bool {

@@ -40,12 +40,8 @@ resolved to something this schema already had:
 
 None of these has been confirmed. Each can be overruled in one place.
 
-**Matching is by exact `food_ref`.** Pantry, log and recipe components all come
-from the same catalog search, so the match is a set intersection in SQL. The cost:
-USDA "Chicken breast, raw" and CoFID "Chicken breast, roasted" do not match.
-*Overrule by:* adding a canonical-ingredient table (`food_ref` → ingredient)
-and joining through it in `RecipeFinder.load` — the natural home for the
-standalone module's `ak_ingredients`.
+**Matching — superseded 2026-10-06 by the owner's call: build the ingredient
+table.** Was exact `food_ref`; now through `IngredientTable`. See §6, step 4.
 
 **"Recent" is the last 7 days, and a logged dish counts its ingredients.**
 `NutritionModel.recentRecipeWindow`; `RecipeFinder.throughRecipes`. Without the
@@ -197,3 +193,41 @@ Tests: `PantrySuggestionTests` (6) — days not entries, the 14-day window edge,
 nothing added on its own and accept adds it, a stored dismissal survives a new
 instance, recipes not offered, most-logged first. The screen is not compiled
 here and has no UI test.
+
+### Step 4 — the ingredient table
+
+Migration **054** adds `kitchen_ingredient` (a canonical ingredient: id, name)
+and `kitchen_ingredient_food` (`food_ref` → ingredient, with `source` =
+`normalised` or `curated`). `IngredientTable.rebuild` fills it from every
+primary name in the catalog — USDA, CIQUAL, CoFID, AFCD and the person's own
+dishes — and runs after the reference bundle installs (`NutritionModel`), and
+once on a database that predates the table.
+
+**The merge rule** (`IngredientNormaliser`, unconfirmed — `CONTEXT.md`): set
+aside how a food was prepared (raw, roasted, grilled, frozen, organic…) and its
+cut-and-skin qualifiers (meat only, without skin, lean flesh…); keep words that
+change what it is in a kitchen (dried, canned, smoked, salted, juice, powder);
+and **never merge a name that says something was added** — coated, breaded,
+battered, sauce, stuffed, marinated, glazed, filled, nuggets, ready meal. What
+remains, folded and singularised, is the key. Curated overrides: three aliases
+in `IngredientTable.curatedAliases` (CIQUAL's "Egg, raw" is a whole hen's egg;
+breast strips are breast), plus per-food `curate(_:as:)` rows that a rebuild
+never touches.
+
+Measured on the shipped lake: 8,354 foods → 5,816 keys; 871 keys hold more than
+one food, 251 of them across sources; 1,184 foods are held back by the
+composition guard and match only themselves.
+
+**Everything goes through it.** `RecipeFinder` matches pantry, log and recipe
+ingredients by match key — the ingredient id when mapped, else the ref itself,
+so an unmapped food (a new dish, a guarded food) matches exactly as before.
+The allergen check (`DishAllergenCheck`) reads each food's own names **plus**
+its canonical ingredient's name; it never reads fewer names than before, so it
+cannot get weaker.
+
+Tests: `IngredientTableTests` (9) — raw and roasted chicken breast are one
+ingredient, a breaded or coated variant never merges, form words are kept,
+pantry and log match through the table, an unmapped food matches itself,
+curated rows survive a rebuild, the allergen check still hides a recipe when the
+canonical name is silent, and reads a canonical name that declares; and
+`IngredientTableShippedLakeTests` (1) against the real bundle.

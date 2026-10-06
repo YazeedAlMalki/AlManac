@@ -138,6 +138,11 @@ public struct DishAllergenCheck: Sendable {
     /// where an ingredient is itself a dish. `UNION` rather than `UNION ALL`, so
     /// a cycle already in the data ends instead of recursing — `setRecipe`
     /// refuses to create one, and this does not rely on it.
+    ///
+    /// **Plus the canonical ingredient's name** for every food the ingredient
+    /// table maps (2026-10-06). Added to the food's own names, never in place of
+    /// them: matching through the table must not make the check weaker, and a
+    /// union of names can only find more.
     private func namesUnder(_ dishes: [SourceIdentifier]) throws -> [SourceIdentifier: [String]] {
         guard !dishes.isEmpty else { return [:] }
         let json = String(decoding: try JSONEncoder().encode(Set(dishes).map(\.description).sorted()),
@@ -151,7 +156,11 @@ public struct DishAllergenCheck: Sendable {
                 FROM part JOIN nutrition_dish_component c ON c.dish_ref = part.ref
             )
             SELECT part.root, n.name FROM part
-            JOIN nutrition_food_name n ON n.food_ref = part.ref AND n.is_primary = 1;
+            JOIN nutrition_food_name n ON n.food_ref = part.ref AND n.is_primary = 1
+            UNION ALL
+            SELECT part.root, i.name FROM part
+            JOIN kitchen_ingredient_food m ON m.food_ref = part.ref
+            JOIN kitchen_ingredient i ON i.id = m.ingredient_id;
             """, [.text(json)]) {
             guard let root = row.string("root").flatMap(SourceIdentifier.init(parsing:)),
                   let name = row.string("name") else { continue }
