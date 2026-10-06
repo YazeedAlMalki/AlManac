@@ -77,6 +77,8 @@ struct DishServingTests {
         #expect(match.recipe == stew)
         #expect(match.servingCount == 2)
         #expect(match.oneServingGrams == 140)
-        #expect(match.oneServingGrams == (try editor.oneServingGrams(of: stew)))
+        // Hoisted: Swift 6.0.3's `#expect` rejects a `try` on the right of `==`.
+        let fromEditor = try editor.oneServingGrams(of: stew)
+        #expect(match.oneServingGrams == fromEditor)
     }
 }
