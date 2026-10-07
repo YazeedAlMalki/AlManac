@@ -3,6 +3,9 @@ import PackageDescription
 
 let package = Package(
     name: "AlmanacCore",
+    // Interface text AlmanacCore writes is English-keyed with an Arabic table
+    // (`Sources/AlmanacCore/Localization`, #4).
+    defaultLocalization: "en",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "AlmanacCore", targets: ["AlmanacCore"])
@@ -38,7 +41,8 @@ let package = Package(
         .target(name: "AlmanacCore", dependencies: ["CSQLite", "Adhan"], path: "Sources/AlmanacCore",
                 resources: [.copy("Nutrition/Resources/almanac.sqlite"),
                             .copy("Prayer/Resources/manual-cities.json"),
-                            .copy("Training/Resources/workout-guide")]),
+                            .copy("Training/Resources/workout-guide"),
+                            .process("Localization/Resources")]),
         .testTarget(name: "AlmanacCoreTests", dependencies: ["AlmanacCore"], path: "Tests/AlmanacCoreTests")
     ]
 )

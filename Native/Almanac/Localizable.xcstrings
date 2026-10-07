@@ -1,0 +1,326 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld mL": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld مل"
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حول"
+          }
+        }
+      }
+    },
+    "Activity rings": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حلقات النشاط"
+          }
+        }
+      }
+    },
+    "All reminders": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل التذكيرات"
+          }
+        }
+      }
+    },
+    "Almanac follows the language chosen for it in iOS Settings. Changing it restarts the app.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يتبع Almanac اللغة المختارة له في إعدادات iOS. يُعاد تشغيل التطبيق عند تغييرها."
+          }
+        }
+      }
+    },
+    "Appearance": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المظهر"
+          }
+        }
+      }
+    },
+    "Applies to new entries. Existing left/right measurements are kept while their treatment is awaiting a decision.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُطبَّق على الإدخالات الجديدة. تُحفَظ قياسات اليمين واليسار الحالية إلى أن يُتَّخذ قرار بشأن معالجتها."
+          }
+        }
+      }
+    },
+    "Attributions": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حقوق المصادر"
+          }
+        }
+      }
+    },
+    "Backup & restore": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النسخ الاحتياطي والاستعادة"
+          }
+        }
+      }
+    },
+    "Connect to Health": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الربط بتطبيق الصحة"
+          }
+        }
+      }
+    },
+    "Connected.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تم الربط."
+          }
+        }
+      }
+    },
+    "Daily goal": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الهدف اليومي"
+          }
+        }
+      }
+    },
+    "Dark": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "داكن"
+          }
+        }
+      }
+    },
+    "Data": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "البيانات"
+          }
+        }
+      }
+    },
+    "Every %lld min": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل %lld دقيقة"
+          }
+        }
+      }
+    },
+    "From %lld:00": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "من الساعة %lld:00"
+          }
+        }
+      }
+    },
+    "Health": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصحة"
+          }
+        }
+      }
+    },
+    "Health data": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بيانات الصحة"
+          }
+        }
+      }
+    },
+    "HealthKit": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HealthKit"
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اللغة"
+          }
+        }
+      }
+    },
+    "Light": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فاتح"
+          }
+        }
+      }
+    },
+    "Modules": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأقسام"
+          }
+        }
+      }
+    },
+    "Remind me to drink water": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ذكّرني بشرب الماء"
+          }
+        }
+      }
+    },
+    "Reminders": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التذكيرات"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإعدادات"
+          }
+        }
+      }
+    },
+    "Show digestion ring": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إظهار حلقة الهضم"
+          }
+        }
+      }
+    },
+    "Sleep, heart rate, steps and body composition sync from Apple Health.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُزامَن بيانات النوم ونبض القلب والخطوات وتكوين الجسم من تطبيق الصحة."
+          }
+        }
+      }
+    },
+    "System": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النظام"
+          }
+        }
+      }
+    },
+    "The digestion display is separate. Its daily fill rule remains undefined, so no completion state is inferred.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عرض الهضم منفصل. لم تُحدَّد بعدُ قاعدة امتلائه اليومية، لذا لا يُستنتَج أي اكتمال."
+          }
+        }
+      }
+    },
+    "Track left/right arms and thighs": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتبّع الذراعين والفخذين يمينًا ويسارًا"
+          }
+        }
+      }
+    },
+    "Until %lld:00": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حتى الساعة %lld:00"
+          }
+        }
+      }
+    },
+    "Which source wins": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أي مصدر يُعتمد"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -12,9 +12,9 @@ public enum AppTab: String, Sendable, Hashable, CaseIterable, Identifiable {
 
     public var title: String {
         switch self {
-        case .today: return "Today"
-        case .trends: return "Trends"
-        case .modules: return "Modules"
+        case .today: return localized("Today")
+        case .trends: return localized("Trends")
+        case .modules: return localized("Modules")
         }
     }
 

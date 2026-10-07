@@ -1,0 +1,8 @@
+/* Arabic for the interface text AlmanacCore writes (Modern Standard Arabic).
+   Keys are the English text. A key with a format specifier (%@, %lld) keeps
+   the same specifiers here; LocalizationTableTests checks that. */
+
+/* AppTab.title — the bottom bar. */
+"Today" = "اليوم";
+"Trends" = "الاتجاهات";
+"Modules" = "الأقسام";
