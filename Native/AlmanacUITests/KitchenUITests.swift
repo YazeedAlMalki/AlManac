@@ -13,9 +13,9 @@ import XCTest
 /// of them recipes, and none of them in the pantry. The seed is authoritative,
 /// so the shared, never-reset simulator database starts each test the same way.
 ///
-/// Written 2026-10-06 in a Linux container with no Xcode: **not yet run**.
-/// The first run on a Mac is the check that the queries below match the
-/// screen; a failure there is as likely to be the test as the app.
+/// Written 2026-10-06 in a Linux container with no Xcode. CI's UI run on a
+/// macOS simulator found and fixed the lookups below over five runs, and all
+/// four tests passed there on `cccf311` (run 37548425210).
 final class KitchenUITests: XCTestCase {
     private var app: XCUIApplication!
 

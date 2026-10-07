@@ -161,6 +161,13 @@ CI (`.github/workflows/ci.yml`), run on every push to this branch:
     Cancel button. The page now asks with an alert, which always shows Cancel.
     This is the one app change the UI runs led to. Not yet re-run.
 
+  The sixth run, `cccf311`: **83 run, 4 failed, none of them this branch's**.
+  - Every new test passes: the four Kitchen tests and the template test.
+  - The four failures (BodyCircumference, BodyCompositionWellness,
+    ProblemChannel, one NotificationSettings) are all on master's own failing
+    list and are not diagnosed.
+  - `xcodebuild` and the Linux core suite are green.
+
   Details are in `docs/acceptance-checklist.md`.
 
 **Not run:**

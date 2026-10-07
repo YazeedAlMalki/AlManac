@@ -47,7 +47,7 @@ Both Kitchen failures were the tests' own lookups, not the app.
 
 **Fourth run, `83578ea`** (run 37515020087): **83 run, 6 failed.**
 
-- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` got past every check of the app: the hidden entry, the disclaimer, opening the entry, the recipe's own page, the warning naming Peanuts, and "Log anyway" asking for confirmation. It then failed on its last line: "Failed to tap Cancel". On iOS 26 that dialog is a popover with no Cancel button, and tapping outside it cancels. The test now taps outside when there is no Cancel button. **Not yet re-run.**
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` got past every check of the app: the hidden entry, the disclaimer, opening the entry, the recipe's own page, the warning naming Peanuts, and "Log anyway" asking for confirmation. It then failed on its last line: "Failed to tap Cancel". On iOS 26 that dialog is a popover with no Cancel button, and tapping outside it cancels. The test then tapped outside when there was no Cancel button; that failed too (fifth run).
 - The other five, again tests this branch does not touch:
   - `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`.
   - `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, both a harness snapshot error at `UIScrollSupport.swift:174`.
@@ -56,13 +56,24 @@ Both Kitchen failures were the tests' own lookups, not the app.
 
 **Fifth run, `8e7b555`** (run 37534202710): **83 run, 3 failed** — the fewest yet.
 
-- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` failed on its last check, "the confirmation did not close": tapping outside the iOS 26 popover did not close it either. That was a usability problem as well as a test one, because the popover had no visible way to back out. The page now asks with an **alert**, which always shows Cancel, and the test taps that Cancel. **Not yet re-run.**
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` failed on its last check, "the confirmation did not close": tapping outside the iOS 26 popover did not close it either. That was a usability problem as well as a test one, because the popover had no visible way to back out. The page now asks with an **alert**, which always shows Cancel, and the test taps that Cancel. **Passed on the sixth run.**
 - `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence` and `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`: master's own, the harness snapshot error at `UIScrollSupport.swift:174`.
 - BodyCompositionWellness, all of NotificationSettings and AllergenFilter passed this time.
 
+**Sixth run, `cccf311`** (run 37548425210, finished 2026-10-07 01:20 UTC): **83 run, 4 failed, none of them this branch's.**
+
+- **Every test this branch added passes:** all four `KitchenUITests` (opening Recipes, pantry add and remove, choosing a recipe with one serving pre-filled, and the allergen test end to end, including Cancel on the new alert) and `TrainingHistoryUITests.testApplyingATemplateFillsTodayAndStaysEditable`. `TrainingProgramUITests` passed again.
+- The four failures are all on master's own failing list (run 37354673943):
+  - `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`.
+  - `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`.
+  - `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`, these three at the harness snapshot error in `UIScrollSupport.swift:174`.
+  - `NotificationSettingsUITests.testRemindersScreenOpensFromSettings`: "Settings does not offer the reminders screen".
+- None of the four is diagnosed. They are master's to fix, not this branch's.
+- `xcodebuild` (app + widget) and the Linux core suite were green on `cccf311`.
+
 They flip between runs, which is the shared-state flakiness `docs/implementation-status.md` describes for this suite. That is the baseline a branch is compared against; the 2026-10-06 handoff's "four known failures" (BodyCircumference 1, BodyCompositionWellness 2, Attributions 1) does not match it, and none of the seven is diagnosed. The 2026-10-06 work was written without Xcode; CI's `xcodebuild` compiled it, and CI's `test-ios` is its only UI run. |
 | Device-only steps (§4) | **UNRUN** — no agent can drive these. |
-| Training Program steps (§7) | **17 of 17 recorded PASS** — the last full-file run was 2026-10-05: `TrainingProgramUITests` 13 of 13 (iPhone 16e, iOS 26.3, on a shared and dirty database; see `docs/implementation-status.md`). The "7 of 17" that stood here was 2026-10-02's. **Re-run needed:** the 2026-10-06 branch changed how 7.10 and 7.11 clear today's readings (the Vitals log now includes today), and that has not been driven. |
+| Training Program steps (§7) | **17 of 17 recorded PASS** — the last full-file run was 2026-10-05: `TrainingProgramUITests` 13 of 13 (iPhone 16e, iOS 26.3, on a shared and dirty database; see `docs/implementation-status.md`). The "7 of 17" that stood here was 2026-10-02's. The 2026-10-06 branch changed how 7.10 and 7.11 clear today's readings (the Vitals log now includes today); `TrainingProgramUITests` then passed 13 of 13 in CI on that branch (first run `3653be0`, and again on `cccf311`), 7.10 and 7.11 included. |
 
 **Recounted 2026-10-02 (`c4bd0be`):** the core suite was then **900 tests, 95
 suites, 0 failures** (168.7 s). Superseded by the 2026-10-06 count in the table.
