@@ -13,7 +13,7 @@ works over the person's own dishes until an import is licensed (§4).
 | Pantry store | `KitchenPantry` — add / remove / items |
 | Recipe lookup | `RecipeFinder` — `fromPantry`, `fromRecentLog(from:to:)`, `browse(_:)`, and the general `recipes(using:)` |
 | App wiring | `NutritionModel+Kitchen.swift`; **Recipes** button beside **Saved meals** on the Nutrition screen |
-| Tests | `KitchenTests` (11), `KitchenSeedPlanTests` (3); UI: `KitchenUITests` (4, **not yet run** — see §4) |
+| Tests | `KitchenTests` (11), `KitchenSeedPlanTests` (4); UI: `KitchenUITests` (7 — the first four passed on CI 2026-10-06, the three added 2026-10-07 are in §7) |
 | UI-test seed | `KitchenSeedPlan` — `-AlmanacSeedKitchen recipes[,peanuts|,noallergens]`, DEBUG- and argument-gated like `VitalsSeedPlan`, because no screen creates a recipe |
 
 A recipe is an `almanac:` dish with at least one component — the same row the
@@ -81,12 +81,13 @@ See §6, step 2.
   none of the four functions it asked to be wired was a planner.
 - **Ingredient names are the only allergen evidence.** As for food search: a
   name can be silent about an allergen.
-- **UI tests written, not run (2026-10-06).** `KitchenUITests` covers: opening
+- **UI tests: run on CI, not on a desk.** `KitchenUITests` covers: opening
   Recipes from the Nutrition screen; adding and removing a pantry item; choosing
   a recipe and seeing it in the logging form; and a recipe whose ingredient
-  declares a recorded allergen being withheld, with the disclaimer shown. They
-  were written in a Linux container with no Xcode, so they have never been
-  compiled or driven. The first Mac run is the check.
+  declares a recorded allergen being withheld, with the disclaimer shown. Written
+  in a Linux container with no Xcode, then corrected over five CI runs on a
+  macOS simulator; all four passed on 2026-10-06 (run 37548425210). Three more
+  were added 2026-10-07 (§7).
 - **Dish creation was broken on a device, and is fixed (2026-10-06).** The
   shipped `almanac.sqlite` carries no `almanac` row in `nutrition_source`, and
   `nutrition_food.namespace` references it, so `NutritionDishEditor.create`
@@ -152,7 +153,7 @@ default, through nested dishes, reachable with a warning naming the allergen and
 where it was found, nothing hidden or said with no allergens recorded, a failed
 read is an error, and Kitchen and Saved meals giving the same judgement for the
 same dish. `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` now
-opens the hidden entry, the page and the confirmation — **not run**.
+opens the hidden entry, the page and the confirmation — passed on CI 2026-10-06.
 
 ### Step 2 — one serving is the default amount
 
@@ -179,7 +180,7 @@ Tests: `DishServingTests` (5) — no count is the whole dish, a count divides th
 finished weight (yield when stated), clearing goes back, a label food has none,
 a count of 0 is refused by the editor and the column, and Kitchen's match agrees
 with the editor. `KitchenUITests.testChoosingARecipeHandsItToTheLoggingForm` now
-also checks the 200 g pre-fill — not run.
+also checks the 200 g pre-fill — passed on CI 2026-10-06.
 
 ### Step 3 — pantry suggestions, approved one at a time
 
@@ -194,8 +195,8 @@ is never offered again. Nothing is added without a tap. The thresholds and the
 
 Tests: `PantrySuggestionTests` (6) — days not entries, the 14-day window edge,
 nothing added on its own and accept adds it, a stored dismissal survives a new
-instance, recipes not offered, most-logged first. The screen is not compiled
-here and has no UI test.
+instance, recipes not offered, most-logged first. UI:
+`KitchenUITests.testAFoodLoggedOftenIsOfferedAndTheChoiceIsKept` (2026-10-07, §7).
 
 ### Step 4 — the ingredient table
 
@@ -234,3 +235,52 @@ pantry and log match through the table, an unmapped food matches itself,
 curated rows survive a rebuild, the allergen check still hides a recipe when the
 canonical name is silent, and reads a canonical name that declares; and
 `IngredientTableShippedLakeTests` (1) against the real bundle.
+
+## 7. 2026-10-07 — a Kitchen-only branch, three more UI tests, and the open items
+
+**Branch.** `claude/kitchen-build-2026-10-07` holds Kitchen and nothing else:
+`claude/kitchen-merge-ready` (the as-built module, the 051 renumber, the dish
+creation fix, the first UI tests), then one commit per decision (steps 1–4,
+cherry-picked from `claude/handoff-2026-10-06`), then the Kitchen-only parts of
+that branch's UI-test fixes. The readiness, vitals and training-template work
+on the handoff branch is left where it is. Master had not moved since Kitchen
+branched from it (`efb1c0b`), so there was nothing to rebase onto, and
+**master has no migration 050**: the fasting and prayer work is not on it.
+
+**Core suite on that branch:** 978 tests passed on Swift 6.0.3 (CI run
+37607099402), `KitchenTests` 11 of 11 among them; the app and widget built.
+
+**Three more UI tests**, for what only a UI test can catch:
+
+| Test | What it proves |
+|---|---|
+| `testAPantryItemBringsUpTheRecipesThatUseIt` | Adding the rice to the pantry makes the Pantry list offer the rice bowl ("Everything on hand") and the satay ("Missing Kitchen test peanut sauce"). Until now no test checked that the pantry changes the list, which is what the pantry is for. |
+| `testAFoodLoggedOftenIsOfferedAndTheChoiceIsKept` | The oats, logged on each of the last three days, are offered; Add puts them in the pantry and stops the offer; removed again they are offered again; Dismiss removes the offer, and it stays gone after the pantry is closed and reopened. |
+| `testSavedMealsWithholdTheSameRecipe` | With peanuts recorded, Saved meals hides the satay behind the same "Hidden because of your allergens" entry, and still lists the rice bowl. |
+
+The suggestion test needs a food logged often, so `KitchenSeedPlan` now plants
+**Kitchen test oats** and logs it at noon on each of the three logical days
+before today — never today, so no other screen's totals move. The entries carry
+an external id per day offset, so re-applying the seed revises the same three
+rows; it also clears the oats' dismissal and takes them out of the pantry, so
+the test can be run again. `KitchenSeedPlanTests.pantrySuggestion` pins all of
+that.
+
+**Screen polish** (within `DesignSystem.swift`'s rules, identifiers unchanged):
+a recipe row carries an ingredient tally — one mark per ingredient, filled when
+on hand, over the count — and "Everything on hand" takes the good colour; a
+hidden dish's page opens on the warning as its headline (what the dish names,
+at section-title size in the critical colour) above the full sentence in body
+text, rather than the caption-sized problem note.
+
+**Still open:**
+
+- **TheMealDB** — re-checked; conditionally permitted and still unverified
+  (`themealdb-terms.md`, "Re-check, 2026-10-07"). v1 recipes are the person's
+  own dishes.
+- **The language toggle** — named as a seventh Kitchen decision on 2026-10-07,
+  but not defined anywhere this session could read. Not built. A proposed
+  reading is in the spec issue (#3, D7).
+- **Merge order** — §5 still holds: once a database has applied 051,
+  `MigrationRunner` refuses a pending 050. Merge the fasting work first, or keep
+  every device off master until it lands.
