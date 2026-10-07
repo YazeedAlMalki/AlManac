@@ -122,15 +122,15 @@ struct NotificationSettingsView: View {
 
     static func title(for type: NotificationType) -> String {
         switch type {
-        case .readiness: return "Morning check-in"
-        case .water: return "Drink water"
-        case .meal: return "Meal reminders"
-        case .bedtime: return "Bedtime"
-        case .supplement: return "Supplements"
-        case .suhoor: return "Suhoor"
-        case .iftar: return "Iftar"
-        case .contextualSnack: return "Pre-workout snack"
-        case .contextualHydration: return "Pre-meal drink"
+        case .readiness: return String(localized: "Morning check-in")
+        case .water: return String(localized: "Drink water")
+        case .meal: return String(localized: "Meal reminders")
+        case .bedtime: return String(localized: "Bedtime")
+        case .supplement: return String(localized: "Supplements")
+        case .suhoor: return String(localized: "Suhoor")
+        case .iftar: return String(localized: "Iftar")
+        case .contextualSnack: return String(localized: "Pre-workout snack")
+        case .contextualHydration: return String(localized: "Pre-meal drink")
         }
     }
 
@@ -138,15 +138,15 @@ struct NotificationSettingsView: View {
     /// a mystery. Kept short deliberately: this is a settings list, not §14.2.
     static func blurb(for type: NotificationType) -> String {
         switch type {
-        case .readiness: return "After you wake, or at your expected wake time on a shift."
-        case .water: return "Through your active window, pausing during a dry fast."
-        case .meal: return "At the times you set, never during a confirmed fast."
-        case .bedtime: return "Before your expected sleep window, not during a night shift."
-        case .supplement: return "At each plan's own time, from the supplement screen."
-        case .suhoor: return "Twenty minutes before Fajr, on religious fast days."
-        case .iftar: return "At Maghrib, on religious fast days."
-        case .contextualSnack: return "When a long gap opens before a planned workout."
-        case .contextualHydration: return "About an hour before a meal you usually eat."
+        case .readiness: return String(localized: "After you wake, or at your expected wake time on a shift.")
+        case .water: return String(localized: "Through your active window, pausing during a dry fast.")
+        case .meal: return String(localized: "At the times you set, never during a confirmed fast.")
+        case .bedtime: return String(localized: "Before your expected sleep window, not during a night shift.")
+        case .supplement: return String(localized: "At each plan's own time, from the supplement screen.")
+        case .suhoor: return String(localized: "Twenty minutes before Fajr, on religious fast days.")
+        case .iftar: return String(localized: "At Maghrib, on religious fast days.")
+        case .contextualSnack: return String(localized: "When a long gap opens before a planned workout.")
+        case .contextualHydration: return String(localized: "About an hour before a meal you usually eat.")
         }
     }
 }

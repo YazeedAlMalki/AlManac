@@ -96,7 +96,7 @@ struct TrendsView: View {
                     if let error {
                         AlmanacCard {
                             VStack(alignment: .leading, spacing: 12) {
-                                AlmanacStatusMark(text: "Could not load trends", tone: .critical)
+                                AlmanacStatusMark(text: String(localized: "Could not load trends"), tone: .critical)
                                 Text(error)
                                     .font(AlmanacTypography.font(.body))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
@@ -181,7 +181,7 @@ struct TrendsView: View {
     private var chart: some View {
         AlmanacCard(padding: 16) {
             VStack(alignment: .leading, spacing: 14) {
-                AlmanacSectionHeader(title: "Readiness", detail: "0–100")
+                AlmanacSectionHeader(title: String(localized: "Readiness"), detail: "0–100")
                 Chart {
                     RuleMark(y: .value("Reference band", ReadinessFormula.compromisedThreshold))
                         .foregroundStyle(AlmanacPalette.warning.opacity(0.55))
@@ -267,7 +267,7 @@ struct TrendsView: View {
                             Text(point.date.formatted(date: .complete, time: .omitted))
                                 .font(AlmanacTypography.font(.sectionTitle))
                                 .foregroundStyle(AlmanacPalette.textPrimary)
-                            Text(point.record.state == .final ? "Final check-in" : "Provisional estimate")
+                            Text(point.record.state == .final ? String(localized: "Final check-in") : String(localized: "Provisional estimate"))
                                 .font(AlmanacTypography.font(.label))
                                 .foregroundStyle(AlmanacPalette.accent)
                         }
@@ -278,12 +278,12 @@ struct TrendsView: View {
                             .monospacedDigit()
                     }
                     if let text = point.record.textDescription {
-                        Text(text)
+                        Text(ReadinessText.display(text))
                             .font(AlmanacTypography.font(.body))
                             .foregroundStyle(AlmanacPalette.textSecondary)
                     }
                     if let recommendation = point.record.recommendation {
-                        Text(recommendation)
+                        Text(ReadinessText.display(recommendation))
                             .font(AlmanacTypography.font(.body))
                             .foregroundStyle(AlmanacPalette.textPrimary)
                     }
@@ -326,9 +326,9 @@ struct TrendsView: View {
 
     private func directionLabel(_ direction: TrendDirection) -> String {
         switch direction {
-        case .up: return "Rising"
-        case .down: return "Easing"
-        case .flat: return "Steady"
+        case .up: return String(localized: "Rising")
+        case .down: return String(localized: "Easing")
+        case .flat: return String(localized: "Steady")
         }
     }
 }

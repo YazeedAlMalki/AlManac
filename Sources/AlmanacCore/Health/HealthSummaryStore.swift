@@ -125,18 +125,18 @@ public struct HealthSummaryStore: Sendable {
         .vitals(.steps, "Steps", "steps", "count"),
         .vitals(.activeEnergy, "Active energy", "activeEnergy", "kcal"),
         .vitals(.restingEnergy, "Resting energy", "restingEnergy", "kcal"),
-        .body(.bodyMass, "Weight", "weight", "kg"),
-        .body(.bodyFatPercentage, "Body fat", "body_fat_pct", "%"),
-        .body(.leanBodyMass, "Lean mass", "lean_mass_kg", "kg"),
+        .body(.bodyMass, localized("Weight"), "weight", "kg"),
+        .body(.bodyFatPercentage, localized("Body fat"), "body_fat_pct", "%"),
+        .body(.leanBodyMass, localized("Lean mass"), "lean_mass_kg", "kg"),
         // Episodes are counted and measured in minutes rather than valued, and
         // a manual wake-time marker is not a synced episode.
-        .init(domain: .sleep, title: "Sleep", table: "sleep_episode",
+        .init(domain: .sleep, title: localized("Sleep"), table: "sleep_episode",
               timeColumn: "endTimestamp", valueColumn: "durationMinutes", unit: "min",
               scope: "source = 'healthkit'"),
         // Workouts become sessions. Scoped to `source = 'healthkit'` for the
         // same reason sleep is: a session the user logged is their record, not
         // something HealthKit gave us, and the screen reports the latter.
-        .init(domain: .workouts, title: "Workouts", table: "workoutSession",
+        .init(domain: .workouts, title: localized("Workouts"), table: "workoutSession",
               timeColumn: "endTimestamp", valueColumn: "durationMinutes", unit: "min",
               scope: "source = 'healthkit' AND deletedAt IS NULL"),
     ]

@@ -39,7 +39,7 @@ struct ExerciseProgressGraphsView: View {
             controls
 
             if let readProblem {
-                AlmanacProblemNote(text: readProblem, action: "The graphs below may be incomplete.")
+                AlmanacProblemNote(text: readProblem, action: String(localized: "The graphs below may be incomplete."))
             }
 
             if !loaded {
@@ -165,10 +165,10 @@ struct ExerciseProgressGraphsView: View {
     // MARK: - Text
 
     private func title(_ which: ProgressGraph) -> String {
-        which == .weight ? "Load" : "Reps performed"
+        which == .weight ? String(localized: "Load") : String(localized: "Reps performed")
     }
 
     private func axisTitle(_ which: ProgressGraph) -> String {
-        which == .weight ? "Load (kg)" : "Reps (sets × reps)"
+        which == .weight ? String(localized: "Load (kg)") : String(localized: "Reps (sets × reps)")
     }
 }

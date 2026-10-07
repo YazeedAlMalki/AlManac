@@ -51,7 +51,7 @@ struct ProgramDayView: View {
                     .disabled(model.database == nil)
                     .accessibilityIdentifier("add-pool-exercise")
             } header: {
-                AlmanacSectionHeader(title: "Rotation", detail: poolSummary)
+                AlmanacSectionHeader(title: String(localized: "Rotation"), detail: poolSummary)
             } footer: {
                 Text("A session takes \(slotCount) exercises from the cycle, moving one place along each time you train this day. The order only changes when you change it here.")
             }
@@ -137,7 +137,7 @@ struct ProgramDayView: View {
                 // rotation exactly as it was — which is why this is a button and
                 // not an "undo".
                 HStack(spacing: 10) {
-                    AlmanacStatusMark(text: "Removed from rotation", tone: .neutral)
+                    AlmanacStatusMark(text: String(localized: "Removed from rotation"), tone: .neutral)
                     Spacer(minLength: 8)
                     Button("Put back") { restore(item: item) }
                         .buttonStyle(.borderless)
@@ -157,7 +157,7 @@ struct ProgramDayView: View {
                 do { try model.deletePoolItem(id: item.id, programDayId: day.id) }
                 catch { self.error = String(describing: error) }
             }
-            Button(item.isActive ? "Remove" : "Put back") {
+            Button(item.isActive ? String(localized: "Remove") : String(localized: "Put back")) {
                 if item.isActive {
                     setAvailability(.permanent, item: item)
                 } else {
@@ -230,19 +230,19 @@ struct ProgramDayView: View {
     /// and lack of equipment both resolve to permanent removal, and a prompt
     /// asking "do you enjoy this?" would send both to the same wrong button.
     private var yesLabel: String {
-        guard let score = model.todayReadinessScore else { return "Yes — though there is no score today" }
-        return "Yes — today's score is \(score)"
+        guard let score = model.todayReadinessScore else { return String(localized: "Yes — though there is no score today") }
+        return String(localized: "Yes — today's score is \(score)")
     }
 
     private var readinessMessage: String {
         guard let score = model.todayReadinessScore else {
-            return "There is no readiness score for today yet, so there is nothing to scale by. The day runs as written either way."
+            return String(localized: "There is no readiness score for today yet, so there is nothing to scale by. The day runs as written either way.")
         }
         let band = ReadinessBand.band(for: score)
         if band == .veryLow {
-            return "Today scores \(score), which presents as a rest day rather than a lighter one. Your plan is kept exactly as written — a bad day never edits it."
+            return String(localized: "Today scores \(score), which presents as a rest day rather than a lighter one. Your plan is kept exactly as written — a bad day never edits it.")
         }
-        return "Today scores \(score). The prescription will be scaled for that reading; your plan itself is not changed."
+        return String(localized: "Today scores \(score). The prescription will be scaled for that reading; your plan itself is not changed.")
     }
 }
 
@@ -371,7 +371,7 @@ private struct PoolItemEditor: View {
                 }
             }
             .almanacModuleSurface()
-            .navigationTitle(isNew ? "Add exercise" : "Edit exercise")
+            .navigationTitle(isNew ? String(localized: "Add exercise") : String(localized: "Edit exercise"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -474,7 +474,7 @@ enum ProgramPrescriptionText {
     static func summary(_ kind: PrescriptionKind?,
                         sets: Int?, reps: Int?, loadKg: Double?,
                         durationSeconds: Double?, restSeconds: Double?) -> String {
-        guard let kind else { return "No prescription set" }
+        guard let kind else { return String(localized: "No prescription set") }
         var parts: [String] = []
         if let sets, let reps {
             parts.append("\(sets) × \(reps)")

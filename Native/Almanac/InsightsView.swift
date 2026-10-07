@@ -91,7 +91,7 @@ struct InsightsView: View {
                     }
                 }
             } header: {
-                AlmanacSectionHeader(title: "Trends")
+                AlmanacSectionHeader(title: String(localized: "Trends"))
             } footer: {
                 Text("Direction compares the older half of the recorded days to the newer half, so one noisy day does not flip the arrow.")
             }
@@ -107,7 +107,7 @@ struct InsightsView: View {
                     }
                 }
             } header: {
-                AlmanacSectionHeader(title: "Associations")
+                AlmanacSectionHeader(title: String(localized: "Associations"))
             } footer: {
                 // The BRD's guardrail, stated on the screen rather than in a
                 // comment. `r` is association; nothing here measures a cause.
@@ -117,7 +117,7 @@ struct InsightsView: View {
             Section {
                 badgeRow
             } header: {
-                AlmanacSectionHeader(title: "Today")
+                AlmanacSectionHeader(title: String(localized: "Today"))
             } footer: {
                 Text("Badges are recomputed each time this screen opens. “Perfect log” is not awarded: what a perfect log means is not decided.")
             }
@@ -185,7 +185,7 @@ struct InsightsView: View {
                 // The insufficient state, in words, with the number that would
                 // clear it. Not a dash and not a zero.
                 AlmanacStatusMark(
-                    text: "Not enough paired days — \(summary.sampleSize) of \(summary.minimumRequired)",
+                    text: String(localized: "Not enough paired days — \(summary.sampleSize) of \(summary.minimumRequired)"),
                     tone: .neutral)
             }
             // The comparable-day filter, stated rather than applied silently. A
@@ -260,11 +260,11 @@ struct InsightsView: View {
 
     private func badgeTitle(_ badge: AchievementBadge) -> String {
         switch badge {
-        case .stepsTargetMet: return "Steps recorded"
-        case .highLoadDay: return "Heavy training day"
-        case .fastedDay: return "Dry fast"
-        case .nutritionTargetsMet: return "Nutrition targets met"
-        case .perfectLog: return "Perfect log"
+        case .stepsTargetMet: return String(localized: "Steps recorded")
+        case .highLoadDay: return String(localized: "Heavy training day")
+        case .fastedDay: return String(localized: "Dry fast")
+        case .nutritionTargetsMet: return String(localized: "Nutrition targets met")
+        case .perfectLog: return String(localized: "Perfect log")
         }
     }
 

@@ -74,7 +74,7 @@ struct ProgramSessionView: View {
             List {
                 if let planProblem {
                     Section {
-                        AlmanacProblemNote(text: planProblem, action: "Nothing has been recorded for this session.")
+                        AlmanacProblemNote(text: planProblem, action: String(localized: "Nothing has been recorded for this session."))
                     }
                 } else if isRestDay {
                     restDaySection
@@ -182,7 +182,7 @@ struct ProgramSessionView: View {
         Section {
             AlmanacCard(prominent: true) {
                 VStack(alignment: .leading, spacing: 10) {
-                    AlmanacEyebrow(text: "Readiness \(model.todayReadinessScore ?? 0) · \(bandName(model.todayReadinessScore ?? 0))")
+                    AlmanacEyebrow(text: String(localized: "Readiness \(model.todayReadinessScore ?? 0) · \(bandName(model.todayReadinessScore ?? 0))"))
                     Text("Today is a rest day")
                         .font(AlmanacTypography.font(.screenTitle))
                         .foregroundStyle(AlmanacPalette.textPrimary)
@@ -226,7 +226,7 @@ struct ProgramSessionView: View {
                 slotRow(slot)
             }
         } header: {
-            AlmanacSectionHeader(title: "\(day.label) today", detail: "Pass \(rotationIndex + 1)")
+            AlmanacSectionHeader(title: "\(day.label) today", detail: String(localized: "Pass \(rotationIndex + 1)"))
         } footer: {
             Text("These are the prescribed numbers. What you actually do is recorded separately when you finish, so a session never rewrites your plan.")
         }
@@ -241,7 +241,7 @@ struct ProgramSessionView: View {
                     .accessibilityIdentifier("session-slot-\(slot.slot)")
                 Spacer(minLength: 12)
                 if slot.isSubstitute {
-                    AlmanacStatusMark(text: "Standing in", tone: .neutral)
+                    AlmanacStatusMark(text: String(localized: "Standing in"), tone: .neutral)
                 }
             }
             Text(prescribedText(slot))
@@ -413,7 +413,7 @@ struct ProgramSessionView: View {
             }
             .labelsHidden()
             .accessibilityLabel("Load")
-            .accessibilityValue(slot.log.actualLoadKg.map { "\(AlmanacNumber.compact($0)) kilograms" } ?? "Not set")
+            .accessibilityValue(slot.log.actualLoadKg.map { "\(AlmanacNumber.compact($0)) kilograms" } ?? String(localized: "Not set"))
         }
         .frame(minHeight: AlmanacMetrics.minimumControl / 2)
     }
@@ -431,7 +431,7 @@ struct ProgramSessionView: View {
             }
             .labelsHidden()
             .accessibilityLabel("Duration")
-            .accessibilityValue(slot.log.actualDurationSeconds.map { "\(Int($0)) seconds" } ?? "Not set")
+            .accessibilityValue(slot.log.actualDurationSeconds.map { "\(Int($0)) seconds" } ?? String(localized: "Not set"))
         }
         .frame(minHeight: AlmanacMetrics.minimumControl / 2)
     }
@@ -451,7 +451,7 @@ struct ProgramSessionView: View {
                         unskip(slot)
                     } label: {
                         HStack(alignment: .firstTextBaseline) {
-                            Text(heldItem(for: slot).map(name) ?? "Slot \(slot + 1)")
+                            Text(heldItem(for: slot).map(name) ?? String(localized: "Slot \(slot + 1)"))
                                 .font(AlmanacTypography.font(.body))
                                 .foregroundStyle(AlmanacPalette.textPrimary)
                             Spacer(minLength: 12)
@@ -609,7 +609,7 @@ struct ProgramSessionView: View {
     /// enjoy this?" would route both to the same wrong answer.
     private var skipDialogTitle: String {
         guard let slot = promptingSkipForSlot,
-              let entry = slots.first(where: { $0.slot == slot }) else { return "Not today" }
+              let entry = slots.first(where: { $0.slot == slot }) else { return String(localized: "Not today") }
         return "\(name(entry.entry.item)) — how long?"
     }
 
@@ -641,12 +641,12 @@ struct ProgramSessionView: View {
 
     private func bandName(_ score: Int) -> String {
         switch ReadinessBand.band(for: score) {
-        case .excellent: return "Excellent"
-        case .good: return "Good"
-        case .moderate: return "Moderate"
-        case .belowBaseline: return "Below baseline"
-        case .poor: return "Poor"
-        case .veryLow: return "Very low"
+        case .excellent: return String(localized: "Excellent")
+        case .good: return String(localized: "Good")
+        case .moderate: return String(localized: "Moderate")
+        case .belowBaseline: return String(localized: "Below baseline")
+        case .poor: return String(localized: "Poor")
+        case .veryLow: return String(localized: "Very low")
         }
     }
 }

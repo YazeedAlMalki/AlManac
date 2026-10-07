@@ -205,7 +205,7 @@ struct LogBoutView: View {
         }
         .pickerStyle(.segmented)
         .accessibilityLabel("Sets")
-        .accessibilityValue(repeatSets.map { "\($0)" } ?? "Not repeated")
+        .accessibilityValue(repeatSets.map { "\($0)" } ?? String(localized: "Not repeated"))
     }
 
     private func save() {

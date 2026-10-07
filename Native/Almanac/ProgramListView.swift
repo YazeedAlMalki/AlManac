@@ -211,7 +211,7 @@ private struct ProgramEditor: View {
                 }
             }
             .almanacModuleSurface()
-            .navigationTitle(program == nil ? "New program" : "Rename program")
+            .navigationTitle(program == nil ? String(localized: "New program") : String(localized: "Rename program"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -269,7 +269,7 @@ private struct DayEditor: View {
                 }
             }
             .almanacModuleSurface()
-            .navigationTitle(day == nil ? "New day" : "Rename day")
+            .navigationTitle(day == nil ? String(localized: "New day") : String(localized: "Rename day"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

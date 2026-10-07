@@ -36,10 +36,10 @@ public enum EquipmentVariant: String, Sendable, Hashable, CaseIterable, Codable 
 
     public var displayName: String {
         switch self {
-        case .barbell:   return "Barbell"
-        case .dumbbell:  return "Dumbbell"
-        case .cable:     return "Cable"
-        case .machine:   return "Machine"
+        case .barbell:   return localized("Barbell")
+        case .dumbbell:  return localized("Dumbbell")
+        case .cable:     return localized("Cable")
+        case .machine:   return localized("Machine")
         }
     }
 
@@ -48,8 +48,9 @@ public enum EquipmentVariant: String, Sendable, Hashable, CaseIterable, Codable 
     /// A property rather than a string literal at the call site, because the
     /// note has to appear on *both* graphs (weight and volume) and two hand-typed
     /// copies of a caveat are how one of them ends up wrong.
-    public static let combinedModeFootnote =
-        "Equipment variants may not be directly comparable."
+    public static var combinedModeFootnote: String {
+        localized("Equipment variants may not be directly comparable.")
+    }
 }
 
 /// Whether a progress graph draws one line per equipment variant or one line for
@@ -65,8 +66,8 @@ public enum EquipmentVariantDisplay: String, Sendable, Hashable, CaseIterable, C
 
     public var displayName: String {
         switch self {
-        case .separate: return "Separate"
-        case .combined: return "Combined"
+        case .separate: return localized("Separate")
+        case .combined: return localized("Combined")
         }
     }
 
@@ -99,7 +100,7 @@ public enum ProgressionCondition: String, Sendable, Hashable, CaseIterable, Coda
 
     public var displayName: String {
         switch self {
-        case .allRepsCompleted: return "Every set hit the prescribed reps"
+        case .allRepsCompleted: return localized("Every set hit the prescribed reps")
         }
     }
 }

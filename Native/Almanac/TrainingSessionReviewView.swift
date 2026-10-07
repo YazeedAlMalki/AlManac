@@ -43,9 +43,9 @@ struct TrainingSessionReviewView: View {
         }
         var title: String {
             switch self {
-            case .sevenDays: return "Last 7 days"
-            case .thirtyDays: return "Last 30 days"
-            case .ninetyDays: return "Last 90 days"
+            case .sevenDays: return String(localized: "Last 7 days")
+            case .thirtyDays: return String(localized: "Last 30 days")
+            case .ninetyDays: return String(localized: "Last 90 days")
             }
         }
     }
@@ -179,15 +179,15 @@ struct TrainingSessionReviewView: View {
         .contentShape(Rectangle())
         .onTapGesture { if editable { editing = bout } }
         .accessibilityIdentifier("bout-row-\(bout.id)")
-        .accessibilityHint(editable ? "Opens this bout to correct what was actually done" : "Read only")
+        .accessibilityHint(editable ? String(localized: "Opens this bout to correct what was actually done") : String(localized: "Read only"))
     }
 
     // MARK: - Labelling
 
     private func sessionTitle(_ session: WorkoutSessionEntry) -> String {
         if let type = session.sessionType { return readable(type) }
-        if session.prescribedWorkoutId != nil { return "Templated session" }
-        return "Training"
+        if session.prescribedWorkoutId != nil { return String(localized: "Templated session") }
+        return String(localized: "Training")
     }
 
     private func sessionCountLabel(for day: String) -> String? {
@@ -203,7 +203,7 @@ struct TrainingSessionReviewView: View {
         guard let kind = PrescriptionKind(rawValue: bout.prescriptionType) else {
             // An unrecognised type is a data problem, not an empty result. Says
             // so rather than printing nothing that reads as "did nothing".
-            return "Unrecognised type"
+            return String(localized: "Unrecognised type")
         }
         var parts: [String] = []
         if let sets = bout.actualSets { parts.append("\(sets)×") }
@@ -218,7 +218,7 @@ struct TrainingSessionReviewView: View {
         if kind.recordsDistance, let meters = bout.actualDistanceMeters {
             parts.append("\(AlmanacNumber.compact(meters)) m")
         }
-        if parts.isEmpty { return "Not recorded" }
+        if parts.isEmpty { return String(localized: "Not recorded") }
         return parts.joined(separator: " ")
     }
 
@@ -361,7 +361,7 @@ private struct BoutActualsEditor: View {
                             numberField("Duration (seconds)", text: $durationSeconds)
                         }
                     } header: {
-                        AlmanacSectionHeader(title: "What you did")
+                        AlmanacSectionHeader(title: String(localized: "What you did"))
                     } footer: {
                         // The nil rule stated where it is acted on, so a blank
                         // field reads as "not recorded" rather than as a bug.

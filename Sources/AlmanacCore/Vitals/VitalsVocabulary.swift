@@ -36,8 +36,8 @@ public enum VitalsMetric: String, CaseIterable, Sendable, Hashable, Codable {
 
     public var displayName: String {
         switch self {
-        case .restingHeartRate: return "Resting heart rate"
-        case .heartRateVariability: return "Heart-rate variability"
+        case .restingHeartRate: return localized("Resting heart rate")
+        case .heartRateVariability: return localized("Heart-rate variability")
         }
     }
 
@@ -103,12 +103,12 @@ public enum VitalsEntryError: Error, LocalizedError, Sendable, Hashable {
         switch self {
         case .invalidValue(let metric):
             return metric == .restingHeartRate
-                ? "Enter a resting heart rate in beats per minute."
-                : "Enter a heart-rate variability in milliseconds."
-        case .unusuallySized: return "That looks unusually low or high. Save anyway?"
-        case .notManual: return "This reading came from Apple Health, so it is corrected by correcting it there."
-        case .notFound: return "That reading is no longer there."
-        case .notHandEnterable: return "That reading is not one you can enter by hand."
+                ? localized("Enter a resting heart rate in beats per minute.")
+                : localized("Enter a heart-rate variability in milliseconds.")
+        case .unusuallySized: return localized("That looks unusually low or high. Save anyway?")
+        case .notManual: return localized("This reading came from Apple Health, so it is corrected by correcting it there.")
+        case .notFound: return localized("That reading is no longer there.")
+        case .notHandEnterable: return localized("That reading is not one you can enter by hand.")
         }
     }
 }

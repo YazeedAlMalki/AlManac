@@ -57,11 +57,11 @@ struct ContextTagsView: View {
                 tagGrid
                 TextField("Notes", text: $notes, axis: .vertical)
                     .lineLimit(2...5)
-                Button(hasUnsavedChanges ? "Save for \(displayDay)" : "Saved", action: save)
+                Button(hasUnsavedChanges ? String(localized: "Save for \(displayDay)") : String(localized: "Saved"), action: save)
                     .disabled(!hasUnsavedChanges)
                     .accessibilityIdentifier("context-tags-save")
             } header: {
-                AlmanacSectionHeader(title: "What happened")
+                AlmanacSectionHeader(title: String(localized: "What happened"))
             } footer: {
                 Text("Tags are the confounders a readiness or correlation reading cannot explain on its own.")
             }
@@ -72,7 +72,7 @@ struct ContextTagsView: View {
                         historyRow(event)
                     }
                 } header: {
-                    AlmanacSectionHeader(title: "Earlier", detail: "last \(Self.historyDayCount) days")
+                    AlmanacSectionHeader(title: String(localized: "Earlier"), detail: "last \(Self.historyDayCount) days")
                 }
             }
         }
@@ -236,11 +236,11 @@ struct ContextTagsView: View {
     }
 
     private var relativeLabel: String {
-        if isToday { return "Today" }
+        if isToday { return String(localized: "Today") }
         if let yesterday = timeModel.day(before: timeModel.logicalDay(Date()))?.value, day == yesterday {
-            return "Yesterday"
+            return String(localized: "Yesterday")
         }
-        return "Logical day"
+        return String(localized: "Logical day")
     }
 
     private func load(day newDay: String) {

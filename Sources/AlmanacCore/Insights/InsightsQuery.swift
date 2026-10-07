@@ -303,9 +303,9 @@ public enum AssociationDirection: String, Sendable, Hashable {
     /// Deliberately says "moves", not "causes" or "affects".
     public var displayName: String {
         switch self {
-        case .higherTogether: return "Higher together"
-        case .lowerTogether: return "Lower together"
-        case .noAssociation: return "No clear pattern"
+        case .higherTogether: return localized("Higher together")
+        case .lowerTogether: return localized("Lower together")
+        case .noAssociation: return localized("No clear pattern")
         }
     }
 

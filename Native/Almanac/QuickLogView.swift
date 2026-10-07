@@ -50,7 +50,7 @@ struct QuickLogView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: AlmanacMetrics.sectionGap) {
                     VStack(alignment: .leading, spacing: 8) {
-                        AlmanacEyebrow(text: "Log without sorting first")
+                        AlmanacEyebrow(text: String(localized: "Log without sorting first"))
                         Text("Quick log")
                             .font(AlmanacTypography.font(.screenTitle))
                             .foregroundStyle(AlmanacPalette.textPrimary)
@@ -62,26 +62,26 @@ struct QuickLogView: View {
                     waterCard
                     destinationCard(
                         icon: AlmanacIcon.nutrition,
-                        title: "Food",
-                        detail: "Search the catalogue and record a meal.",
+                        title: String(localized: "Food"),
+                        detail: String(localized: "Search the catalogue and record a meal."),
                         destination: .food
                     )
                     destinationCard(
                         icon: AlmanacIcon.training,
-                        title: "Training",
-                        detail: "Record a bout without leaving Today.",
+                        title: String(localized: "Training"),
+                        detail: String(localized: "Record a bout without leaving Today."),
                         destination: .training
                     )
                     destinationCard(
                         icon: AlmanacIcon.body,
-                        title: "Body",
-                        detail: "Add weight or another body measurement.",
+                        title: String(localized: "Body"),
+                        detail: String(localized: "Add weight or another body measurement."),
                         destination: .body
                     )
                     destinationCard(
                         icon: AlmanacIcon.digestion,
-                        title: "Digestion",
-                        detail: "Record a bowel movement or a urination.",
+                        title: String(localized: "Digestion"),
+                        detail: String(localized: "Record a bowel movement or a urination."),
                         destination: .digestion
                     )
                 }

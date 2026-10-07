@@ -176,7 +176,7 @@ final class NutritionModel: ObservableObject {
 
     func log(foodRef: SourceIdentifier, foodName: String, grams: Double?,
              quantityText: String?, mealType: NutritionMealType?) throws {
-        guard let logStore, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let logStore, let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let eatenAt = Date()
         let draft = NutritionLogDraft(
             foodRef: foodRef, grams: grams,
@@ -190,7 +190,7 @@ final class NutritionModel: ObservableObject {
     }
 
     func delete(id: String) throws {
-        guard let logStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let logStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try logStore.delete(id: id)
         refresh()
     }

@@ -79,7 +79,7 @@ final class TrainingModel: ObservableObject {
     }
 
     func exerciseName(for exerciseCatalogId: Int64) -> String {
-        exercises.first { $0.id == exerciseCatalogId }?.name ?? "Unknown exercise"
+        exercises.first { $0.id == exerciseCatalogId }?.name ?? String(localized: "Unknown exercise")
     }
 
     /// Logs one bout against today's ad-hoc session, creating that session
@@ -91,7 +91,7 @@ final class TrainingModel: ObservableObject {
                  durationSeconds: Double?, distanceMeters: Double?, rounds: Int?,
                  rpe: Int?, notes: String?) throws {
         guard let sessionStore, let boutStore else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         let today = timeModel.logicalDay(Date()).value
         let sessionId: Int64
@@ -117,7 +117,7 @@ final class TrainingModel: ObservableObject {
     }
 
     func deleteBout(id: Int64) throws {
-        guard let boutStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let boutStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try boutStore.delete(id: id)
         refresh()
     }

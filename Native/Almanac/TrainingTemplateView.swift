@@ -47,7 +47,7 @@ struct TrainingTemplateView: View {
                 Button("Add template", systemImage: AlmanacIcon.quickAdd) { adding = true }
                     .disabled(db == nil)
             } header: {
-                AlmanacSectionHeader(title: "Templates")
+                AlmanacSectionHeader(title: String(localized: "Templates"))
             } footer: {
                 Text("Deleting a template keeps it, so a past session can still say which one it came from.")
             }
@@ -159,7 +159,7 @@ private struct TemplateEditor: View {
                 }
             }
             .almanacModuleSurface()
-            .navigationTitle(isEditing ? "Edit template" : "New template")
+            .navigationTitle(isEditing ? String(localized: "Edit template") : String(localized: "New template"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }

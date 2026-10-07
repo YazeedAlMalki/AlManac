@@ -47,7 +47,7 @@ struct EditorialRhythmCalendarView: View {
 
     private var monthHeader: some View {
         HStack(spacing: 8) {
-            monthButton(systemName: AlmanacIcon.previous, label: "Previous month", action: model.previousMonth)
+            monthButton(systemName: AlmanacIcon.previous, label: String(localized: "Previous month"), action: model.previousMonth)
 
             Spacer(minLength: 4)
             Text(model.monthTitle)
@@ -58,7 +58,7 @@ struct EditorialRhythmCalendarView: View {
                 .accessibilityIdentifier("activity-ring-month-title")
             Spacer(minLength: 4)
 
-            monthButton(systemName: AlmanacIcon.next, label: "Next month", action: model.nextMonth)
+            monthButton(systemName: AlmanacIcon.next, label: String(localized: "Next month"), action: model.nextMonth)
         }
     }
 
@@ -152,20 +152,20 @@ struct EditorialRhythmCalendarView: View {
                 .foregroundStyle(AlmanacPalette.textPrimary)
 
             ringRow(
-                title: "Hydration",
-                state: day.hydration == .complete ? "Target met" : "Target not met",
+                title: String(localized: "Hydration"),
+                state: day.hydration == .complete ? String(localized: "Target met") : String(localized: "Target not met"),
                 detail: "\(AlmanacNumber.compact(day.hydrationTotalMilliliters.value)) of \(AlmanacNumber.compact(day.hydrationTargetMilliliters.value)) mL",
                 complete: day.hydration == .complete
             )
             ringRow(
-                title: "Training",
-                state: day.training == .complete ? "Logged" : "Not logged",
+                title: String(localized: "Training"),
+                state: day.training == .complete ? String(localized: "Logged") : String(localized: "Not logged"),
                 detail: nil,
                 complete: day.training == .complete
             )
             let nutrition = nutritionPresentation(day.nutrition)
             ringRow(
-                title: "Nutrition",
+                title: String(localized: "Nutrition"),
                 state: nutrition.state,
                 detail: nutrition.detail,
                 complete: nutrition.complete
@@ -194,8 +194,8 @@ struct EditorialRhythmCalendarView: View {
                 .accessibilityElement(children: .combine)
             }
             ringRow(
-                title: "Digestion",
-                state: day.digestion == .disabled ? "Off" : "Fill rule unavailable",
+                title: String(localized: "Digestion"),
+                state: day.digestion == .disabled ? String(localized: "Off") : String(localized: "Fill rule unavailable"),
                 detail: nil,
                 complete: false
             )
@@ -212,7 +212,7 @@ struct EditorialRhythmCalendarView: View {
             .disabled(model.database == nil)
 
             if day.isGolden {
-                AlmanacStatusMark(text: "Golden day, every visible ring complete", tone: .good)
+                AlmanacStatusMark(text: String(localized: "Golden day, every visible ring complete"), tone: .good)
             }
 
             if model.summary.isEmpty {

@@ -48,20 +48,20 @@ public enum FoodAllergen: String, Sendable, Hashable, CaseIterable, Identifiable
     /// separate rows.
     public var title: String {
         switch self {
-        case .gluten: return "Gluten / cereals"
-        case .crustaceans: return "Crustaceans"
-        case .eggs: return "Eggs"
-        case .fish: return "Fish"
-        case .peanuts: return "Peanuts"
-        case .soy: return "Soy"
-        case .milk: return "Milk"
-        case .nuts: return "Tree nuts"
-        case .celery: return "Celery"
-        case .mustard: return "Mustard"
-        case .sesame: return "Sesame"
-        case .sulphites: return "Sulphites"
-        case .lupin: return "Lupin"
-        case .molluscs: return "Molluscs"
+        case .gluten: return localized("Gluten / cereals")
+        case .crustaceans: return localized("Crustaceans")
+        case .eggs: return localized("Eggs")
+        case .fish: return localized("Fish")
+        case .peanuts: return localized("Peanuts")
+        case .soy: return localized("Soy")
+        case .milk: return localized("Milk")
+        case .nuts: return localized("Tree nuts")
+        case .celery: return localized("Celery")
+        case .mustard: return localized("Mustard")
+        case .sesame: return localized("Sesame")
+        case .sulphites: return localized("Sulphites")
+        case .lupin: return localized("Lupin")
+        case .molluscs: return localized("Molluscs")
         }
     }
 
@@ -72,20 +72,20 @@ public enum FoodAllergen: String, Sendable, Hashable, CaseIterable, Identifiable
     /// has soy and gluten, "cereals" is a third of what gluten is.
     public var guidance: String {
         switch self {
-        case .gluten: return "Wheat, barley, rye, oats, and anything made from them."
-        case .crustaceans: return "Crab, lobster, prawn, shrimp, crayfish."
-        case .eggs: return "Egg and egg products, including mayonnaise and some batters."
-        case .fish: return "Any fish, including fish sauce and anchovy paste."
-        case .peanuts: return "Peanut oil and peanut flour included."
-        case .soy: return "Soy sauce, tofu, tempeh, and most meat substitutes."
-        case .milk: return "Milk, cheese, butter, yoghurt, cream, and casein."
-        case .nuts: return "Almond, cashew, walnut, hazelnut, pistachio, and their oils."
-        case .celery: return "Celery stalk, celery salt, and some soups and stocks."
-        case .mustard: return "Mustard seed, powder, and most mustards."
-        case .sesame: return "Sesame seed, oil, tahini, and hummus."
-        case .sulphites: return "Preservatives above 10 mg/kg. Common in wine and dried fruit."
-        case .lupin: return "Lupin flour, and some bakery and gluten-free products."
-        case .molluscs: return "Squid, octopus, clams, mussels, snails, scallops."
+        case .gluten: return localized("Wheat, barley, rye, oats, and anything made from them.")
+        case .crustaceans: return localized("Crab, lobster, prawn, shrimp, crayfish.")
+        case .eggs: return localized("Egg and egg products, including mayonnaise and some batters.")
+        case .fish: return localized("Any fish, including fish sauce and anchovy paste.")
+        case .peanuts: return localized("Peanut oil and peanut flour included.")
+        case .soy: return localized("Soy sauce, tofu, tempeh, and most meat substitutes.")
+        case .milk: return localized("Milk, cheese, butter, yoghurt, cream, and casein.")
+        case .nuts: return localized("Almond, cashew, walnut, hazelnut, pistachio, and their oils.")
+        case .celery: return localized("Celery stalk, celery salt, and some soups and stocks.")
+        case .mustard: return localized("Mustard seed, powder, and most mustards.")
+        case .sesame: return localized("Sesame seed, oil, tahini, and hummus.")
+        case .sulphites: return localized("Preservatives above 10 mg/kg. Common in wine and dried fruit.")
+        case .lupin: return localized("Lupin flour, and some bakery and gluten-free products.")
+        case .molluscs: return localized("Squid, octopus, clams, mussels, snails, scallops.")
         }
     }
 }
@@ -264,12 +264,9 @@ public struct AllergenVerdict: Sendable, Hashable {
     /// the string the picker shows the user when they recorded it.
     public var reason: String? {
         guard !declared.isEmpty else { return nil }
-        let names = declared.map(\.title).sorted()
-        guard names.count > 1 else { return "Names \(names[0])" }
-        // Oxford-comma style, because with two items "Peanuts and Milk" and with
-        // three "Peanuts, Milk and Soy" is what reads as a list at a glance.
-        let head = names.dropLast().joined(separator: ", ")
-        return "Names \(head) and \(names[names.count - 1])"
+        // "Peanuts and Milk", "Peanuts, Milk and Soy": what reads as a list at a
+        // glance, in either language (`localizedList`).
+        return localized("Names %@", localizedList(declared.map(\.title).sorted()))
     }
 
     /// Whether the food should be withheld from a search a person is looking at.
@@ -327,17 +324,11 @@ public struct AllergenFilterEffect: Sendable, Hashable {
     /// statement and this is not one.
     public var explanation: String? {
         guard isActive else { return nil }
-        let names = triggeredBy.sorted { $0.sortIndex < $1.sortIndex }.map(\.title)
-        // An English list, because this is prose somebody may hear read aloud by
+        // A spoken list, because this is prose somebody may hear read aloud by
         // VoiceOver, and "gluten, milk and, soy" is what a naive join produces.
-        let list: String
-        switch names.count {
-        case 0: list = ""
-        case 1: list = names[0]
-        case 2: list = "\(names[0]) and \(names[1])"
-        default: list = "\(names.dropLast().joined(separator: ", ")) and \(names[names.count - 1])"
-        }
-        let noun = removed == 1 ? "food" : "foods"
-        return "Hidden \(removed) \(noun) naming \(list)."
+        let list = localizedList(triggeredBy.sorted { $0.sortIndex < $1.sortIndex }.map(\.title))
+        return removed == 1
+            ? localized("Hidden 1 food naming %@.", list)
+            : localized("Hidden %@ foods naming %@.", String(removed), list)
     }
 }

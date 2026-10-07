@@ -185,7 +185,7 @@ struct MeasurementsView: View {
                     ForEach(customRecords) { record in
                         let definition = customDefinitions.first { $0.id == record.definitionId }
                         measurementRow(
-                            title: definition?.name ?? "Custom measurement",
+                            title: definition?.name ?? String(localized: "Custom measurement"),
                             value: record.value,
                             unit: definition?.unit ?? "",
                             date: record.timestamp,

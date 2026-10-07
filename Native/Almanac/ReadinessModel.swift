@@ -285,7 +285,7 @@ final class ReadinessModel: ObservableObject {
     func logMoodAndSoreness(moodScore: Int, moodNotes: String?,
                              sorenessScore: Int, bodyAreas: [String], sorenessNotes: String?) throws {
         guard let moodStore, let sorenessStore, let cycleId else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         let now = Date()
         let moodID = try moodStore.log(MoodLogDraft(score: moodScore, timestamp: now, notes: moodNotes),
@@ -303,7 +303,7 @@ final class ReadinessModel: ObservableObject {
     /// `value` is `"thumbs_up"` or `"thumbs_down"` (§5.23).
     func submitFeedback(_ value: String) throws {
         guard let recordStore, let pendingFeedback else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         try recordStore.setFeedback(cycleId: pendingFeedback.readinessCycleId, value: value)
         refresh()

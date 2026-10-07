@@ -75,7 +75,7 @@ struct NutritionQuickEntryView: View {
                 }
             }
             ForEach(mealGroups) { group in
-                Section(group.type?.displayName ?? "Other") {
+                Section(group.type?.displayName ?? String(localized: "Other")) {
                     ForEach(group.foods, id: \.entry.id) { logged in
                         foodRow(logged)
                             .swipeActions {
@@ -186,7 +186,7 @@ struct NutritionQuickEntryView: View {
     private func save() {
         do {
             guard let ref = selectedRef else {
-                throw EditorFailure(message: "Select a food first.")
+                throw EditorFailure(message: String(localized: "Select a food first."))
             }
             let grams: Double?
             if gramsText.isEmpty {
@@ -194,7 +194,7 @@ struct NutritionQuickEntryView: View {
             } else if let value = Double(gramsText), value > 0 {
                 grams = value
             } else {
-                throw EditorFailure(message: "Enter a gram amount greater than zero, or leave it blank.")
+                throw EditorFailure(message: String(localized: "Enter a gram amount greater than zero, or leave it blank."))
             }
             try model.log(foodRef: ref, foodName: selectedName, grams: grams,
                           quantityText: optionalText(quantityText), mealType: mealType)

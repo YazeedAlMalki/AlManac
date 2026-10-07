@@ -26,8 +26,8 @@ final class FastingModel: ObservableObject {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .religious: return "Religious"
-            case .intermittent: return "Intermittent"
+            case .religious: return String(localized: "Religious")
+            case .intermittent: return String(localized: "Intermittent")
             }
         }
     }
@@ -214,7 +214,7 @@ struct FastingView: View {
                     .foregroundStyle(.secondary)
             }
             if let session = model.currentSession(for: todayDay) {
-                LabeledContent("Session", value: session.isInvalidated ? "Invalidated" : session.isActive ? "Active" : "Ended")
+                LabeledContent("Session", value: session.isInvalidated ? "Invalidated" : session.isActive ? String(localized: "Active") : String(localized: "Ended"))
                 LabeledContent("Started", value: session.startTimestamp.formatted(date: .abbreviated, time: .shortened))
                 if let end = session.endTimestamp {
                     LabeledContent("Ended", value: end.formatted(date: .abbreviated, time: .shortened))
@@ -267,7 +267,7 @@ struct FastingView: View {
                         }
                     }
                 } else if session.isActive {
-                    LabeledContent("Status", value: "In progress")
+                    LabeledContent("Status", value: String(localized: "In progress"))
                 }
             } else {
                 Text("No intermittent fast recorded today.")
@@ -295,7 +295,7 @@ struct FastingView: View {
                 .accessibilityIdentifier("start-intermittent")
             }
         } header: {
-            Text(session == nil ? "Start one" : "End it")
+            Text(session == nil ? String(localized: "Start one") : String(localized: "End it"))
         } footer: {
             Text("Starting from a past time records a fast already in progress. The end is whatever you say it is — nothing here watches for your next meal.")
         }

@@ -87,7 +87,7 @@ public struct NutritionFoodSearchResults: Sendable, Hashable {
     /// the case where a quiet screen reads as a clean bill of health.
     public var disclaimer: String? {
         guard isFiltered else { return nil }
-        return "Checked food names only — Almanac has no ingredient lists, so it cannot confirm a food is allergen-free."
+        return localized("Checked food names only — Almanac has no ingredient lists, so it cannot confirm a food is allergen-free.")
     }
 
     /// The one line above or below the results, or `nil` when there is nothing

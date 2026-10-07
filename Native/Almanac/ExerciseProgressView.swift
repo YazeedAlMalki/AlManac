@@ -37,7 +37,7 @@ struct ExerciseProgressView: View {
                 } else {
                     ExerciseProgressGraphsView(db: model.database, exercise: exercise)
                     figures
-                    AlmanacSectionHeader(title: "Logged", detail: "\(history.count) sessions")
+                    AlmanacSectionHeader(title: String(localized: "Logged"), detail: "\(history.count) sessions")
                     AlmanacCard {
                         VStack(alignment: .leading, spacing: 0) {
                             ForEach(Array(history.enumerated()), id: \.element.boutId) { index, point in
@@ -68,7 +68,7 @@ struct ExerciseProgressView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AlmanacEyebrow(text: "What you actually logged")
+            AlmanacEyebrow(text: String(localized: "What you actually logged"))
             Text(exercise.name)
                 .font(AlmanacTypography.font(.screenTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)

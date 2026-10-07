@@ -25,11 +25,11 @@ public enum BodyMetric: String, Sendable, Hashable, CaseIterable, Identifiable, 
     /// The name on a card.
     public var title: String {
         switch self {
-        case .weight: return "Weight"
-        case .bodyFatPercent: return "Body fat"
-        case .leanMassKg: return "Lean mass"
-        case .skeletalMuscleKg: return "Skeletal muscle"
-        case .visceralRating: return "Visceral rating"
+        case .weight: return localized("Weight")
+        case .bodyFatPercent: return localized("Body fat")
+        case .leanMassKg: return localized("Lean mass")
+        case .skeletalMuscleKg: return localized("Skeletal muscle")
+        case .visceralRating: return localized("Visceral rating")
         }
     }
 
@@ -159,8 +159,8 @@ public enum UnitBasis: String, Sendable, Hashable, CaseIterable, Identifiable, C
 
     public var title: String {
         switch self {
-        case .kilograms: return "Kilograms (kg)"
-        case .pounds: return "Pounds (lb)"
+        case .kilograms: return localized("Kilograms (kg)")
+        case .pounds: return localized("Pounds (lb)")
         }
     }
 

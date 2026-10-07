@@ -17,15 +17,15 @@ public enum UrinationColorGrade: Int, Sendable, Codable, CaseIterable {
     /// smaller font.
     public var displayName: String {
         switch self {
-        case .grade1: return "Grade 1 — pale"
-        case .grade8: return "Grade 8 — dark brown"
-        default: return "Grade \(rawValue)"
+        case .grade1: return localized("Grade 1 — pale")
+        case .grade8: return localized("Grade 8 — dark brown")
+        default: return localized("Grade %@", String(rawValue))
         }
     }
 
     /// The grade announced as a whole, per BRD §6.3's "numeric grades + text +
     /// VoiceOver" and its "never rely on colour alone".
-    public var accessibilityLabel: String { "Colour grade \(rawValue) of 8, \(displayName)" }
+    public var accessibilityLabel: String { localized("Colour grade %@ of 8, %@", String(rawValue), displayName) }
 }
 
 /// A urination log entry not yet written to storage.

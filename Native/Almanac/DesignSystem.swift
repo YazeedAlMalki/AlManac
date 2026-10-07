@@ -166,11 +166,11 @@ enum AlmanacTypography {
 enum AlmanacReadinessPresentation {
     static func confidenceLabel(_ confidence: ReadinessConfidence) -> String {
         switch confidence {
-        case .high: return "High confidence"
-        case .medium: return "Medium confidence"
-        case .low: return "Low confidence"
-        case .veryLow: return "Very low confidence"
-        case .insufficient: return "Insufficient data"
+        case .high: return String(localized: "High confidence")
+        case .medium: return String(localized: "Medium confidence")
+        case .low: return String(localized: "Low confidence")
+        case .veryLow: return String(localized: "Very low confidence")
+        case .insufficient: return String(localized: "Insufficient data")
         }
     }
 

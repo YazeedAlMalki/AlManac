@@ -229,7 +229,7 @@ struct ActivityRingDayEditor: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(placed.entry.foodNameText ?? placed.entry.foodRef.description)
-                            Text(placed.entry.grams.map { "\(ringFormat($0)) g" } ?? "Amount not stated")
+                            Text(placed.entry.grams.map { "\(ringFormat($0)) g" } ?? String(localized: "Amount not stated"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
@@ -251,8 +251,8 @@ struct ActivityRingDayEditor: View {
                         }
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(session.sessionType ?? "Training")
-                            Text(session.durationMinutes.map { "\($0) min" } ?? "Session logged")
+                            Text(session.sessionType ?? String(localized: "Training"))
+                            Text(session.durationMinutes.map { "\($0) min" } ?? String(localized: "Session logged"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }

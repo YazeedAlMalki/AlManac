@@ -57,7 +57,7 @@ public struct ProgressGraphSeries: Sendable, Hashable, Identifiable {
 
     /// What to call the line. Null is a name, not a blank — "the graph is
     /// untitled" is not a thing a user should have to interpret.
-    public var displayName: String { variant?.displayName ?? "Not recorded" }
+    public var displayName: String { variant?.displayName ?? localized("Not recorded") }
 }
 
 /// **Decision 1 — the equipment-variant toggle, on the graph rather than in the

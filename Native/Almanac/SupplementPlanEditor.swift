@@ -67,7 +67,7 @@ struct SupplementPlanEditor: View {
                     }
                 }
             }
-            .navigationTitle(isEditing ? "Edit plan" : "New plan")
+            .navigationTitle(isEditing ? String(localized: "Edit plan") : String(localized: "New plan"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -54,7 +54,7 @@ struct DayTimelineView: View {
     }
 
     private var title: String {
-        dayCount == 1 ? "Recorded" : "Last \(dayCount) days"
+        dayCount == 1 ? String(localized: "Recorded") : String(localized: "Last \(dayCount) days")
     }
 
     var body: some View {

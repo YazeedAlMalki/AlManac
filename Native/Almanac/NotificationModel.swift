@@ -111,12 +111,12 @@ final class NotificationModel: ObservableObject {
     /// Reads the per-type switches and writes one back, then reconciles. The
     /// settings screen's whole interaction with this feature.
     func setEnabled(_ enabled: Bool, for type: NotificationType) throws {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try NotificationRuleStore(db: db).setEnabled(enabled, for: type)
     }
 
     func rules() throws -> [NotificationRule] {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         return try NotificationRuleStore(db: db).allRules()
     }
 

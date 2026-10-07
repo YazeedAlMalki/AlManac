@@ -196,7 +196,7 @@ struct ProfileView: View {
         do {
             let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !name.isEmpty else {
-                throw EditorFailure(message: "Enter a display name.")
+                throw EditorFailure(message: String(localized: "Enter a display name."))
             }
 
             let heightValue: Double?
@@ -206,7 +206,7 @@ struct ProfileView: View {
             } else if let value = Double(trimmedHeight), value > 0, value < 300 {
                 heightValue = value
             } else {
-                throw EditorFailure(message: "Height must be a number between 0 and 300 cm.")
+                throw EditorFailure(message: String(localized: "Height must be a number between 0 and 300 cm."))
             }
 
             let store = ProfileStore(db: db)

@@ -91,7 +91,7 @@ struct SettingsView: View {
                     get: { bodyMeasurementTrackSides },
                     set: { enabled in
                         do {
-                            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+                            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
                             try ProfileStore(db: db).updateBodyMeasurementTrackSides(enabled)
                             bodyMeasurementTrackSides = enabled
                         } catch { self.error = error.localizedDescription }
@@ -157,7 +157,7 @@ struct SettingsView: View {
     private func setDigestionRingEnabled(_ enabled: Bool) {
         digestionRingEnabled = enabled
         do {
-            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
             try ActivityRingSettingsStore(db: db).setDigestionEnabled(enabled)
             trackingModel.refresh()
         } catch {

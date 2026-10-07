@@ -109,7 +109,7 @@ private struct CircumferenceEditor: View {
                 TextField("Circumference (cm)", text: $value).keyboardType(.decimalPad)
                 TextField("Note", text: $note, axis: .vertical)
             }
-            .navigationTitle(entry == nil ? "Log circumference" : "Correct circumference")
+            .navigationTitle(entry == nil ? String(localized: "Log circumference") : String(localized: "Correct circumference"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

@@ -120,7 +120,7 @@ struct HydrationLoggingView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(drink.name)
+                    Text(drink.displayName)
                     Text(qualifierLabel(drink))
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -189,17 +189,19 @@ struct HydrationLoggingView: View {
     private var customDrinks: [Drink] { drinks.filter(\.isCustom) }
 
     private func qualifierLabel(_ drink: Drink) -> String {
-        drink.isCustom ? "Your figures" : "Typical value, not measured"
+        drink.isCustom ? String(localized: "Your figures") : String(localized: "Typical value, not measured")
     }
 
     private func scalingFootnote(_ drink: Drink, scale: Double) -> String {
         let base = Int(drink.volumeMilliliters.rounded())
         if abs(scale - 1) < 0.001 {
             return drink.isCustom
-                ? "Your own figures for \(base) mL."
-                : "Typical values for a \(base) mL serving, not measured from a composition table."
+                ? String(localized: "Your own figures for \(base) mL.")
+                : String(localized: "Typical values for a \(base) mL serving, not measured from a composition table.")
         }
-        return "Scaled from a \(base) mL serving to the amount logged. \(drink.isCustom ? "Your own figures." : "Typical values, not measured.")"
+        return drink.isCustom
+            ? String(localized: "Scaled from a \(base) mL serving to the amount logged. Your own figures.")
+            : String(localized: "Scaled from a \(base) mL serving to the amount logged. Typical values, not measured.")
     }
 
     // MARK: - Save

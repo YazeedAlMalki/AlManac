@@ -10,10 +10,10 @@ public enum NutritionMealType: String, Sendable, Hashable, CaseIterable {
 
     public var displayName: String {
         switch self {
-        case .breakfast: return "Breakfast"
-        case .lunch: return "Lunch"
-        case .dinner: return "Dinner"
-        case .snack: return "Snack"
+        case .breakfast: return localized("Breakfast")
+        case .lunch: return localized("Lunch")
+        case .dinner: return localized("Dinner")
+        case .snack: return localized("Snack")
         }
     }
 }

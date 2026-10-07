@@ -30,6 +30,11 @@ public struct Drink: Sendable, Hashable, Identifiable {
     public let sodiumMilligrams: Double
     public let sugarGrams: Double?
     public let isCustom: Bool
+
+    /// The name as shown. A catalog drink's English name is what the log
+    /// stores (`drinkName`), so it is translated only here, at display (#4); a
+    /// drink the person named is shown exactly as they typed it.
+    public var displayName: String { isCustom ? name : localized(name) }
     public let valueQualifier: DrinkValueQualifier
     public let createdAt: Date
 

@@ -61,10 +61,10 @@ public struct AppRouteSection: Sendable, Hashable, Identifiable {
         self.order = order
     }
 
-    public static let track = AppRouteSection(title: "Track", order: 0)
-    public static let dailyContext = AppRouteSection(title: "Daily context", order: 1)
-    public static let records = AppRouteSection(title: "Records", order: 2)
-    public static let app = AppRouteSection(title: "App", order: 3)
+    public static let track = AppRouteSection(title: localized("Track"), order: 0)
+    public static let dailyContext = AppRouteSection(title: localized("Daily context"), order: 1)
+    public static let records = AppRouteSection(title: localized("Records"), order: 2)
+    public static let app = AppRouteSection(title: localized("App"), order: 3)
     /// Not shown. The roots and the pushed-only routes live here so that
     /// `section` is total without inventing a group for them.
     public static let hidden = AppRouteSection(title: "", order: 99)
@@ -145,24 +145,24 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     /// What the menu row says.
     public var title: String {
         switch self {
-        case .todayRoot: return "Today"
-        case .trendsRoot: return "Trends"
-        case .trendsDetail: return "A trend"
-        case .training: return "Training"
-        case .hydration: return "Hydration"
-        case .nutrition: return "Nutrition"
-        case .fasting: return "Fasting"
-        case .supplements: return "Supplements"
-        case .context: return "Context"
-        case .prayer: return "Prayer"
-        case .bodyCircumference: return "Body circumferences"
-        case .vitals: return "Vitals"
-        case .laboratory: return "Laboratory"
-        case .laboratoryImportHistory: return "Import history"
-        case .timeline: return "Timeline"
-        case .bodyComposition: return "Body composition"
-        case .profile: return "Profile"
-        case .settings: return "Settings"
+        case .todayRoot: return localized("Today")
+        case .trendsRoot: return localized("Trends")
+        case .trendsDetail: return localized("A trend")
+        case .training: return localized("Training")
+        case .hydration: return localized("Hydration")
+        case .nutrition: return localized("Nutrition")
+        case .fasting: return localized("Fasting")
+        case .supplements: return localized("Supplements")
+        case .context: return localized("Context")
+        case .prayer: return localized("Prayer")
+        case .bodyCircumference: return localized("Body circumferences")
+        case .vitals: return localized("Vitals")
+        case .laboratory: return localized("Laboratory")
+        case .laboratoryImportHistory: return localized("Import history")
+        case .timeline: return localized("Timeline")
+        case .bodyComposition: return localized("Body composition")
+        case .profile: return localized("Profile")
+        case .settings: return localized("Settings")
         }
     }
 

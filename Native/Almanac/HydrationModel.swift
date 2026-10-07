@@ -49,7 +49,7 @@ final class HydrationModel: ObservableObject {
     /// other fields (calorie tracking, sodium/sugar tracking, daily goal)
     /// untouched.
     func saveReminderSettings(enabled: Bool, intervalMinutes: Int, startHour: Int, endHour: Int) throws {
-        guard let settingsStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let settingsStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let base = hydrationSettings ?? (try? settingsStore.getOrCreate()) ?? HydrationSettings()
         let updated = HydrationSettings(
             isCalorieTrackingEnabled: base.isCalorieTrackingEnabled,
@@ -71,7 +71,7 @@ final class HydrationModel: ObservableObject {
     /// other fields untouched. Mirrors `saveReminderSettings` so the goal
     /// lives in the single source of truth instead of `@AppStorage`.
     func saveDailyGoal(milliliters: Double) throws {
-        guard let settingsStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let settingsStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let base = hydrationSettings ?? (try? settingsStore.getOrCreate()) ?? HydrationSettings()
         guard base.dailyGoalMilliliters != milliliters else { return }
         let updated = HydrationSettings(
@@ -127,7 +127,7 @@ final class HydrationModel: ObservableObject {
     }
 
     func log(amount: Milliliters, note: String?) throws {
-        guard let store, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let store, let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let loggedAt = Date()
         let id = try store.log(HydrationLogDraft(amount: amount, loggedAt: loggedAt, note: note))
         // §7.2: water is the second half of the night window's contents. A dry
@@ -148,7 +148,7 @@ final class HydrationModel: ObservableObject {
     /// are the seam that makes it reachable.
     private func loggingService() throws -> HydrationLoggingService {
         guard let db, let settingsStore else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         return HydrationLoggingService(store: HydrationStore(db: db), settingsStore: settingsStore)
     }
@@ -210,7 +210,7 @@ final class HydrationModel: ObservableObject {
     }
 
     func delete(id: String) throws {
-        guard let store else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let store else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try store.delete(id: id)
         refresh()
         syncAfterChange()
