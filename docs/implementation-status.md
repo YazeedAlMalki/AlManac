@@ -100,6 +100,15 @@ the `prayer` switch), `AttributionsUITests` Fasting and Prayer 2 of 2,
 below the fold of a lazy list; it scrolls to it with `reveal` like the rest of
 the suite. The full UI suite was not run.
 
+**Merged with master's Kitchen (2026-10-07).** Kitchen landed first (owner's
+call) with 051–054 and a reservation holding 050 for this work. Per
+`docs/features/kitchen.md`: `Migration050_PrayerPreferences` sits ahead of
+`Migration051_KitchenPantry`, `reservedUnmergedMigrationVersions` is empty, and
+`BodyMeasurementTests.migrationUpgrade` lists 41–54. Merged result: `swift test`
+**1023 tests in 109 suites, 0 failures**, XCTest 376 (1 skipped), 0 failures;
+app and widget build. Kitchen logs food through `NutritionModel`, so it reaches
+the fasting rules too. UI tests were not re-run on the merged result.
+
 Driven on the iPhone 16e simulator (iOS 26.3), Riyadh chosen from the city list:
 prayer times, countdown, Hijri date, Qibla, an offset moving Maghrib by a minute
 in the cache; Ramadan 1448 and 1449 rows created on launch (1448: 2027-02-08 →

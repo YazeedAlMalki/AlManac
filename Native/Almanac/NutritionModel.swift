@@ -30,7 +30,9 @@ final class NutritionModel: ObservableObject {
     private var catalog: NutritionCatalog?
     private var summary: NutritionSummary?
     private var dishEditor: NutritionDishEditor?
-    private var db: Database?
+    /// Readable outside this file so Kitchen (`NutritionModel+Kitchen.swift`)
+    /// shares this connection instead of being configured with its own.
+    private(set) var db: Database?
     private let timeModel = TimeModel(timeZone: .current)
 
     func configure(db: Database?) {
@@ -60,7 +62,15 @@ final class NutritionModel: ObservableObject {
             do {
                 _ = try await Task.detached(priority: .utility) { () throws -> NutritionImportReport? in
                     let referenceDatabase = try Database(path: path)
-                    return try NutritionReferenceBundle.installIfNeeded(into: referenceDatabase)
+                    let report = try NutritionReferenceBundle.installIfNeeded(into: referenceDatabase)
+                    // Kitchen's ingredient table is derived from the catalog's
+                    // names, so it is rebuilt whenever the catalog changes, and
+                    // built once on a database that predates it (Migration 054).
+                    let ingredients = IngredientTable(db: referenceDatabase)
+                    var needsBuild = report != nil
+                    if !needsBuild { needsBuild = try ingredients.isEmpty() }
+                    if needsBuild { try ingredients.rebuild() }
+                    return report
                 }.value
                 self?.isReferenceAvailable = true
                 self?.refresh()
@@ -122,8 +132,19 @@ final class NutritionModel: ObservableObject {
         return try? catalog.energy(for: ref, basis: .per100g)?.kilocalories
     }
 
-    func savedMeals() throws -> [NativeDish] {
-        try dishEditor?.dishes() ?? []
+    /// Saved meals with the allergen check applied — the same check Kitchen
+    /// uses (`DishAllergenCheck`), because a saved meal and a recipe are the same
+    /// row. Fails closed: a failed allergen read throws (`SavedMeals.list()`),
+    /// and the screen shows the error rather than an unchecked list.
+    /// One serving's weight of a dish — the amount a chosen saved meal
+    /// pre-fills, as a chosen recipe does. Nil when the dish has no weight.
+    func oneServingGrams(_ ref: SourceIdentifier) -> Double? {
+        try? dishEditor?.oneServingGrams(of: ref)
+    }
+
+    func savedMeals() throws -> SavedMealResults {
+        guard let db else { return SavedMealResults() }
+        return try SavedMeals(db: db).list()
     }
 
     /// Household measures imported for a food. Most foods have none, so the

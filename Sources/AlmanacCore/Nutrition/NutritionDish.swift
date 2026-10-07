@@ -26,6 +26,9 @@ public struct NativeDish: Sendable, Hashable {
     /// CoFID `1.2 Factors`: the fraction of an as-purchased weight that is
     /// edible. Nil where nobody stated one — not 1.0.
     public let edibleProportion: Double?
+    /// How many servings the finished dish makes (Migration 052). Nil means
+    /// nobody has said, and the whole dish is then one serving.
+    public var servingCount: Int? = nil
 }
 
 /// What a recipe reduced to, and everything about it that is not known.
@@ -64,11 +67,12 @@ public struct DishEdit: Sendable, Hashable {
     public var nameText: FieldEdit<String> = .leaveUnchanged
     public var yieldGrams: FieldEdit<Double> = .leaveUnchanged
     public var edibleProportion: FieldEdit<Double> = .leaveUnchanged
+    public var servingCount: FieldEdit<Int> = .leaveUnchanged
 
     public init() {}
 
     public var touchesAnything: Bool {
-        nameText.isChange || yieldGrams.isChange || edibleProportion.isChange
+        nameText.isChange || yieldGrams.isChange || edibleProportion.isChange || servingCount.isChange
     }
 }
 
@@ -112,6 +116,17 @@ public struct NutritionDishEditor: Sendable {
                        edibleProportion: Double? = nil) throws -> SourceIdentifier {
         let ref = SourceIdentifier(namespace: .almanac, localID: localID)
         try db.transaction {
+            // `nutrition_food.namespace` references `nutrition_source`, and the
+            // shipped bundle carries no `almanac` row — so without this every
+            // `create` on a device failed its foreign key (2026-10-06). Written
+            // only when absent: a bundle that does ship the row owns its
+            // wording, and the importer never deletes it.
+            try db.run("""
+            INSERT INTO nutrition_source
+                (namespace, dataset_id, name, release, licence, licence_group, attribution, url)
+            VALUES ('almanac', 'almanac', 'Almanac (your own dishes)', '', 'Your own data', ?, '', '')
+            ON CONFLICT(namespace) DO NOTHING;
+            """, [.text(LicenceGroup.native.rawValue)])
             try db.run("""
             INSERT INTO nutrition_food
                 (food_ref, namespace, local_id, licence_group, food_group_code,
@@ -151,11 +166,24 @@ public struct NutritionDishEditor: Sendable {
         try NutritionDishEditor.requireNative(ref)
         guard let food = try catalog.food(ref) else { return nil }
         let row = try db.query("""
-            SELECT yield_grams, edible_proportion FROM nutrition_dish WHERE food_ref = ?;
+            SELECT yield_grams, edible_proportion, serving_count FROM nutrition_dish WHERE food_ref = ?;
             """, [.text(ref.description)]).first
         return NativeDish(ref: ref, nameText: food.primaryName,
                           yieldGrams: row?.double("yield_grams"),
-                          edibleProportion: row?.double("edible_proportion"))
+                          edibleProportion: row?.double("edible_proportion"),
+                          servingCount: row?.int("serving_count").map { Int($0) })
+    }
+
+    /// The weight of one serving: the finished weight (the stated yield, else
+    /// the sum of the components) divided by the serving count — or the whole
+    /// dish when no count has been set, which is the owner's rule for a dish
+    /// nobody has counted (2026-10-06). Nil when the dish has no weight to
+    /// divide: a food typed in from a label, with no recipe and no yield.
+    public func oneServingGrams(of ref: SourceIdentifier) throws -> Double? {
+        guard let held = try dish(ref) else { return nil }
+        let total = try held.yieldGrams ?? components(of: ref).reduce(0) { $0 + $1.grams }
+        guard total > 0 else { return nil }
+        return total / Double(held.servingCount ?? 1)
     }
 
     /// Per-100 g values typed in directly — a package label, or a figure the
@@ -204,12 +232,18 @@ public struct NutritionDishEditor: Sendable {
         let name = edit.nameText.resolve(held.nameText, cleared: held.nameText)
         let yield = edit.yieldGrams.resolve(held.yieldGrams)
         let edible = edit.edibleProportion.resolve(held.edibleProportion)
+        let servings = edit.servingCount.resolve(held.servingCount)
+        if let servings, servings <= 0 { throw NutritionError.invalidServingCount(servings) }
         guard name != held.nameText || yield != held.yieldGrams
-                || edible != held.edibleProportion else { return false }
+                || edible != held.edibleProportion || servings != held.servingCount else { return false }
 
         try db.transaction {
             if name != held.nameText { try writeName(name, for: ref) }
             try writeDishRow(ref, yieldGrams: yield, edibleProportion: edible)
+            if servings != held.servingCount {
+                try db.run("UPDATE nutrition_dish SET serving_count = ? WHERE food_ref = ?;",
+                           [servings.map { SQLValue.integer(Int64($0)) } ?? .null, .text(ref.description)])
+            }
         }
         if yield != held.yieldGrams, try !components(of: ref).isEmpty {
             _ = try reduceAndStore(ref, yieldGrams: yield)

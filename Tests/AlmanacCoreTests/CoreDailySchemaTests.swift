@@ -26,8 +26,17 @@ final class CoreDailySchemaTests: XCTestCase {
         // order — that invariant is what's actually being asserted.
         let expectedVersions = AlmanacMigrations.all.map { $0.version }.sorted()
         XCTAssertEqual(applied, expectedVersions)
-        XCTAssertEqual(applied, Array(1...expectedVersions.count),
-                        "migration versions must be contiguous starting at 1")
+        XCTAssertEqual(applied, contiguousMigrationVersions(1, through: expectedVersions.last ?? 0),
+                        "migration versions must be contiguous starting at 1, apart from reserved ones")
+    }
+
+    /// A reservation exists only until the work holding it merges. Once its
+    /// version is in the list, the reservation is a hole that no longer exists,
+    /// and leaving it would make the contiguity check above skip a real gap.
+    func testNoReservedVersionHasLanded() {
+        let landed = Set(AlmanacMigrations.all.map { $0.version }).intersection(reservedUnmergedMigrationVersions)
+        XCTAssertTrue(landed.isEmpty,
+                      "migration \(landed.sorted()) has merged: remove it from reservedUnmergedMigrationVersions")
     }
 
     func testSliceTwoTablesExist() throws {

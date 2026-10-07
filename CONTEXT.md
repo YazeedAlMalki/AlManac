@@ -206,6 +206,15 @@ because the owner's decision was "food allergies gate food suggestions", and
 saved meals are not suggestions. *Overrule by:* adding a warning at
 `NutritionSavedMealsView`.
 
+**Answered and closed, 2026-10-06 (confirmed by the owner): "same rule
+everywhere."** Saved meals and Kitchen recipes are the same rows and now share
+one check, `DishAllergenCheck`. On both screens a dish naming a recorded allergen
+is hidden by default, listed under a collapsed "Hidden because of your
+allergens" entry, and opens on its own page under a warning naming the allergen.
+The fail-closed error on an unreadable allergen list stays on both. Food search
+is unchanged (it still lists withheld foods by name and reason, not openable);
+aligning it was not trivial, because a food has no page of its own to open.
+
 ### Training program (2026-10-01)
 
 **Readiness→prescription coupling — reconstructed, and overrulable in one place.**
@@ -339,6 +348,57 @@ at the same second. *Overrule by:* the `prayer` row in
 **The Fasting screen opens on Religious every time.** The UI acceptance test pins
 that default, and the religious state is maintained whichever tab is showing.
 *Overrule by:* persisting `FastingModel.mode`.
+
+### Kitchen (2026-10-06)
+
+The owner's six Kitchen calls are logged in `docs/features/kitchen.md` §3. The
+details below were left to the build. **None of these has been confirmed.**
+
+**Logging a hidden dish asks first.** A dish hidden by the allergen check can be
+opened and logged, and "Log anyway…" on its page raises a confirmation naming the
+warning before the dish reaches the logging form. The owner said a hidden recipe
+is reachable and carries a warning; he did not say whether logging it should ask
+again. *Overrule by:* calling `onLogAnyway()` directly in `HiddenDishPage`
+(`Native/Almanac/HiddenDishViews.swift`) instead of setting `confirming`.
+
+**The warning's wording and place.** On the dish's own page, first, as a problem
+note: "Allergen warning: this names Peanuts, which you have recorded as an
+allergen. Found in: Peanut sauce." — the allergen by the title he chose it under,
+and the names it was found in. It says "names", not "contains", because the check
+reads names. The disclaimer follows lower on the page. *Overrule by:* editing
+`DishAllergenJudgement.warning` (one string, shared by both screens).
+
+**Imported recipes get a serving count by asking, not by estimate.** The owner
+chose "one serving" as the default amount; a dish nobody has counted is the
+whole dish. For an imported recipe that default is the whole pot, and an
+estimate ("TheMealDB recipes serve 4") would be a number nobody chose. So when an
+import is built, imported recipes are stored with no count and Kitchen asks "How
+many servings does this make?" the first time one is chosen, storing the answer
+in `serving_count`. Not built: there is no import (the terms gate is shut).
+*Overrule by:* having the importer write an estimate into `serving_count`.
+
+**Pantry suggestions: 3 distinct days in the last 14, recipes excluded.** The
+owner chose "declared, with suggestions" and left the threshold open. A food is
+offered when it was logged on at least 3 distinct logical days among the last 14
+(today included) — days rather than entries, so three eggs at one breakfast are
+one day of eggs — and is not already in the pantry, not dismissed, and not a
+recipe (a recipe is made from a pantry, not kept in one). Only foods logged
+directly count; a logged recipe's ingredients do not. A dismissal is permanent
+for that food. *Overrule by:* changing `PantrySuggestions.minimumDays` /
+`windowDays`, or the filters in `PantrySuggestions.suggestions`.
+
+**The ingredient-merge rule.** The owner chose to build the ingredient table;
+the rule is a build decision. Two catalog foods are one ingredient when their
+names agree once preparation (raw, roasted, grilled, frozen, organic…) and
+cut-and-skin qualifiers (meat only, without skin, lean flesh…) are set aside.
+Form words (dried, canned, smoked, salted, juice, powder) are kept. A name that
+says something was *added* — coated, breaded, battered, sauce, stuffed,
+marinated, glazed, filled, nuggets, ready meal — is never merged with anything,
+because the addition is where an allergen hides. Skin-on and skin-off breast are
+the same ingredient; dried and fresh apricots are not. The allergen check reads
+each food's own names plus the canonical name, never fewer. *Overrule by:*
+editing the word lists in `IngredientNormaliser`, adding aliases to
+`IngredientTable.curatedAliases`, or pinning a food with `IngredientTable.curate`.
 
 ### Weighing
 

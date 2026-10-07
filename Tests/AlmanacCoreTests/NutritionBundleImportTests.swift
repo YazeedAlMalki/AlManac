@@ -47,6 +47,30 @@ final class NutritionBundleImportTests: XCTestCase {
         XCTAssertEqual(try db.query("SELECT COUNT(*) AS n FROM nutrition_reference_import;").first?.int("n"), 1)
     }
 
+    /// A dish can be authored on the database a device actually has.
+    ///
+    /// The shipped bundle carries no `almanac` source row (its namespaces are the
+    /// four above), and `nutrition_food.namespace` references `nutrition_source`.
+    /// `NutritionDishTests` seeds the row by hand, with a comment saying the
+    /// bundle always carries it — which was true of the test fixture and false of
+    /// the shipped file. So every `create` on a device failed its foreign key,
+    /// while every test of `create` passed. Added 2026-10-06, failing before
+    /// `NutritionDishEditor.create` learned to write the row itself.
+    func testADishCanBeCreatedOnTheShippedReference() throws {
+        let db = try migrated()
+        _ = try XCTUnwrap(NutritionReferenceBundle.installIfNeeded(into: db))
+
+        let editor = NutritionDishEditor(db: db)
+        let dish = try editor.create(localID: "shipped-reference-dish", nameText: "Rice bowl")
+        try editor.setRecipe([DishComponent(ref("usda:2346403"), grams: 100)], for: dish)
+        XCTAssertEqual(try editor.dishes().map(\.ref), [dish])
+
+        // And a later install of the same bundle keeps it, which is the reason the
+        // importer never deletes the `almanac` source.
+        XCTAssertNil(try NutritionReferenceBundle.installIfNeeded(into: db))
+        XCTAssertEqual(try editor.components(of: dish).map(\.ref), [ref("usda:2346403")])
+    }
+
     func testEveryBundledFoodIsReadableThroughTheCatalog() throws {
         let db = try migrated()
         let report = try NutritionReferenceImporter(db: db).importBundle(at: bundle())

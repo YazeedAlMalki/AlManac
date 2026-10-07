@@ -386,6 +386,12 @@ final class LaboratoryModel: ObservableObject {
             if let plan = VitalsSeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
                 try plan.apply(into: VitalsRecordStore(db: db))
             }
+            // Same two gates, for the same reason: no screen creates a recipe,
+            // so a Kitchen UI test has nothing to find without one. See
+            // `KitchenSeedPlan`.
+            if let plan = KitchenSeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
+                try plan.apply(into: db)
+            }
             #endif
             startupError = nil
         } catch {
