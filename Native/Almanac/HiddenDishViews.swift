@@ -75,7 +75,7 @@ struct HiddenDishPage: View {
     var body: some View {
         List {
             Section {
-                AlmanacProblemNote(text: row.warning)
+                AllergenWarningHeader(reason: row.reason, warning: row.warning)
                     .accessibilityIdentifier("allergen-warning")
             }
             if !row.ingredients.isEmpty {
@@ -104,5 +104,35 @@ struct HiddenDishPage: View {
         } message: {
             Text(row.warning)
         }
+    }
+}
+
+/// The top of a hidden dish's page. The warning is what the page is *for*, so
+/// it is its headline — what the dish names, at section-title size in the one
+/// colour that means stop — and the full sentence follows in body text, not
+/// the caption-sized note used for a problem beside a list.
+///
+/// One accessibility element carrying the whole sentence, for the reason
+/// `AlmanacProblemNote` gives: VoiceOver reads it once, and a lookup finds it
+/// once.
+private struct AllergenWarningHeader: View {
+    /// `AllergenVerdict.reason` — "Names Peanuts".
+    let reason: String?
+    let warning: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(reason ?? "Allergen warning", systemImage: "exclamationmark.triangle.fill")
+                .font(AlmanacTypography.font(.sectionTitle))
+                .foregroundStyle(AlmanacPalette.critical)
+            Text(warning)
+                .font(AlmanacTypography.font(.body))
+                .foregroundStyle(AlmanacPalette.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(warning)
     }
 }

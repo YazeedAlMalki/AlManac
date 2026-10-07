@@ -125,17 +125,28 @@ struct KitchenRecipesView: View {
     }
 }
 
-/// A recipe's name, and what it still needs.
+/// A recipe's name, what it still needs, and a tally of its ingredients.
+///
+/// The words say *which* ingredients are missing; the tally answers the
+/// question the list is scanned for — which recipe is nearest — without
+/// reading every line. "Everything on hand" is the one judgement here, so it
+/// alone takes a status colour.
 private struct RecipeRow: View {
     let match: RecipeMatch
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(match.name).foregroundStyle(.primary)
-            Text(summary)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(match.name)
+                    .font(AlmanacTypography.font(.body))
+                    .foregroundStyle(AlmanacPalette.textPrimary)
+                Text(summary)
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(match.missing.isEmpty ? AlmanacPalette.good : AlmanacPalette.textSecondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 8)
+            IngredientTally(onHand: match.onHandCount, total: match.ingredients.count)
         }
     }
 
@@ -146,6 +157,36 @@ private struct RecipeRow: View {
         // cannot be named, and it is not dropped from the count.
         let names = missing.map { $0.name ?? "an unnamed ingredient" }
         return "Missing \(names.joined(separator: ", "))"
+    }
+}
+
+/// One mark per ingredient, filled when it is on hand, over the count.
+///
+/// Hidden from VoiceOver: the row's words already say what is missing, and a
+/// row of dots read aloud says nothing. It also keeps the row's button label
+/// starting with the recipe's name, which the UI tests look it up by.
+private struct IngredientTally: View {
+    let onHand: Int
+    let total: Int
+    /// Past this many marks the count alone reads faster than the dots.
+    private static let maximumMarks = 8
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            if total <= Self.maximumMarks {
+                HStack(spacing: 3) {
+                    ForEach(0..<total, id: \.self) { index in
+                        Circle()
+                            .fill(index < onHand ? AlmanacPalette.textPrimary : AlmanacPalette.surfaceMuted)
+                            .frame(width: 6, height: 6)
+                    }
+                }
+            }
+            Text("\(onHand)/\(total)")
+                .font(AlmanacTypography.font(.caption).monospacedDigit())
+                .foregroundStyle(AlmanacPalette.textSecondary)
+        }
+        .accessibilityHidden(true)
     }
 }
 
