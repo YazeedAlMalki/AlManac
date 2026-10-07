@@ -3,94 +3,109 @@ import AlmanacCore
 
 struct HydrationDashboardView: View {
     @ObservedObject var viewModel: HydrationViewModel
+    @State private var autoRefreshTimer: Timer?
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                Text("Today's Progress")
-                    .font(.title2)
-                    .fontWeight(.bold)
+            ZStack {
+                VStack(spacing: 0) {
+                    DashboardHeaderView()
+                        .padding()
 
-                if viewModel.isLoading {
-                    ProgressView()
-                } else if let metrics = viewModel.todayMetrics {
-                    VStack(spacing: 24) {
-                        HydrationCircleProgressView(
-                            current: Double(metrics.totalVolumeMilliliters),
-                            goal: viewModel.recommendedVolume
-                        )
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .frame(maxHeight: .infinity, alignment: .center)
+                    } else if let metrics = viewModel.todayMetrics {
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(spacing: 24) {
+                                HydrationCircleProgressView(
+                                    current: Double(metrics.totalVolumeMilliliters),
+                                    goal: viewModel.recommendedVolume
+                                )
+                                .padding()
 
-                        HStack(spacing: 16) {
-                            StatCard(
-                                title: "Consumed",
-                                value: "\(metrics.totalVolumeMilliliters)ml",
-                                icon: "drop.fill",
-                                color: .blue
-                            )
+                                MetricsGridView(
+                                    consumed: metrics.totalVolumeMilliliters,
+                                    goal: Int(viewModel.recommendedVolume),
+                                    remaining: max(0, Int(viewModel.recommendedVolume) - metrics.totalVolumeMilliliters)
+                                )
 
-                            StatCard(
-                                title: "Goal",
-                                value: "\(Int(viewModel.recommendedVolume))ml",
-                                icon: "target",
-                                color: .green
-                            )
+                                DrinkTimelineView(
+                                    drinkHistory: viewModel.drinkHistory,
+                                    isEmpty: viewModel.drinkHistory.isEmpty
+                                )
 
-                            StatCard(
-                                title: "Remaining",
-                                value: "\(max(0, Int(viewModel.recommendedVolume) - metrics.totalVolumeMilliliters))ml",
-                                icon: "hourglass",
-                                color: .orange
-                            )
-                        }
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Drink Timeline")
-                                .font(.headline)
-
-                            if viewModel.drinkHistory.isEmpty {
-                                Text("No drinks logged yet")
-                                    .foregroundColor(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding()
-                            } else {
-                                ScrollView(.vertical, showsIndicators: false) {
-                                    VStack(spacing: 8) {
-                                        ForEach(Array(viewModel.drinkHistory.reversed().enumerated()), id: \.element.id) { index, sample in
-                                            TimelineEntryView(sample: sample)
-                                        }
-                                    }
+                                if let errorMessage = viewModel.errorMessage {
+                                    ErrorBannerView(message: errorMessage)
                                 }
                             }
-                        }
-
-                        if let errorMessage = viewModel.errorMessage {
-                            HStack {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .foregroundColor(.red)
-                                Text(errorMessage)
-                                    .font(.caption)
-                            }
                             .padding()
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(8)
                         }
+                    } else {
+                        ContentUnavailableView(
+                            "No Data",
+                            systemImage: "drop",
+                            description: Text("Unable to load today's metrics")
+                        )
                     }
-                    .padding()
-                } else {
-                    Text("Unable to load metrics")
-                        .foregroundColor(.secondary)
                 }
 
-                Spacer()
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            Task {
+                                try await viewModel.loadTodayMetrics()
+                                try await viewModel.loadDrinkHistory()
+                            }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.blue)
+                                .padding()
+                        }
+                    }
+                    Spacer()
+                }
+                .padding()
             }
-            .padding()
             .onAppear {
                 Task {
                     try await viewModel.loadTodayMetrics()
                     try await viewModel.loadDrinkHistory()
                 }
+                startAutoRefresh()
+            }
+            .onDisappear {
+                stopAutoRefresh()
             }
         }
+    }
+
+    private func startAutoRefresh() {
+        autoRefreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
+            Task {
+                try await viewModel.loadTodayMetrics()
+            }
+        }
+    }
+
+    private func stopAutoRefresh() {
+        autoRefreshTimer?.invalidate()
+        autoRefreshTimer = nil
+    }
+}
+
+struct DashboardHeaderView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Today's Progress")
+                .font(.title2)
+                .fontWeight(.bold)
+            Text(Date().formatted(date: .abbreviated, time: .omitted))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -100,6 +115,19 @@ struct HydrationCircleProgressView: View {
 
     var progress: Double {
         min(current / goal, 1.0)
+    }
+
+    var statusMessage: String {
+        let percentage = Int(progress * 100)
+        if percentage >= 100 {
+            return "Goal achieved! 🎉"
+        } else if percentage >= 75 {
+            return "Almost there!"
+        } else if percentage >= 50 {
+            return "Halfway there"
+        } else {
+            return "Keep going"
+        }
     }
 
     var body: some View {
@@ -131,13 +159,114 @@ struct HydrationCircleProgressView: View {
             }
             .frame(height: 200)
 
-            Text("\(Int(current))ml of \(Int(goal))ml")
-                .font(.headline)
-                .foregroundColor(.secondary)
+            VStack(spacing: 4) {
+                Text(statusMessage)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Text("\(Int(current))ml of \(Int(goal))ml")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+    }
+}
+
+struct MetricsGridView: View {
+    let consumed: Int
+    let goal: Int
+    let remaining: Int
+
+    var body: some View {
+        HStack(spacing: 12) {
+            StatCard(
+                title: "Consumed",
+                value: "\(consumed)ml",
+                icon: "drop.fill",
+                color: .blue
+            )
+
+            StatCard(
+                title: "Goal",
+                value: "\(goal)ml",
+                icon: "target",
+                color: .green
+            )
+
+            StatCard(
+                title: "Remaining",
+                value: "\(remaining)ml",
+                icon: "hourglass",
+                color: .orange
+            )
+        }
+        .padding(.horizontal)
+    }
+}
+
+struct DrinkTimelineView: View {
+    let drinkHistory: [HydrationSample]
+    let isEmpty: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Drink Timeline")
+                .font(.headline)
+                .padding(.horizontal)
+
+            if isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "drop")
+                        .font(.title)
+                        .foregroundColor(.gray)
+                    Text("No drinks logged yet")
+                        .foregroundColor(.secondary)
+                    Text("Start logging your hydration")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.gray.opacity(0.05))
+                .cornerRadius(8)
+                .padding(.horizontal)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(Array(drinkHistory.reversed().enumerated()), id: \.element.id) { _, sample in
+                        TimelineEntryView(sample: sample)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+}
+
+struct ErrorBannerView: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundColor(.red)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Error")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                Text(message)
+                    .font(.caption)
+                    .lineLimit(2)
+            }
+            Spacer()
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .border(Color.red.opacity(0.3), width: 1)
+        .cornerRadius(8)
+        .padding(.horizontal)
     }
 }
 

@@ -3,169 +3,263 @@ import AlmanacCore
 
 struct HydrationSettingsView: View {
     @ObservedObject var viewModel: HydrationViewModel
-    @State private var showReminderConfig: Bool = false
+    @State private var showDailyGoalEditor: Bool = false
+    @State private var isLoading: Bool = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                Text("Settings")
-                    .font(.title2)
-                    .fontWeight(.bold)
+            ZStack {
+                VStack(spacing: 0) {
+                    SettingsHeaderView()
+                        .padding()
 
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Daily Goal")
-                                .font(.headline)
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .frame(maxHeight: .infinity, alignment: .center)
+                    } else {
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(spacing: 24) {
+                                DailyGoalSectionView(
+                                    currentGoal: viewModel.userSettings?.dailyGoalMilliliters ?? 2500,
+                                    onEdit: { showDailyGoalEditor = true }
+                                )
 
-                            HStack {
-                                Image(systemName: "target")
-                                    .foregroundColor(.blue)
-                                Text("Goal: \(viewModel.userSettings?.dailyGoalMilliliters ?? 2500)ml")
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
+                                TrackingOptionsSectionView(viewModel: viewModel)
 
-                            Button(action: { showReminderConfig = true }) {
-                                Text("Edit Goal")
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
-                            }
-                        }
+                                RemindersSectionView(viewModel: viewModel)
 
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Tracking Options")
-                                .font(.headline)
-
-                            Toggle(isOn: Binding(
-                                get: { viewModel.userSettings?.trackCalories ?? false },
-                                set: { newValue in
-                                    Task {
-                                        await viewModel.updateSettings(trackCalories: newValue)
-                                    }
-                                }
-                            )) {
-                                HStack {
-                                    Image(systemName: "flame.fill")
-                                        .foregroundColor(.orange)
-                                    Text("Track Calories")
+                                if let errorMessage = viewModel.errorMessage {
+                                    ErrorMessageView(message: errorMessage)
                                 }
                             }
                             .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-
-                            Toggle(isOn: Binding(
-                                get: { viewModel.userSettings?.trackSodium ?? false },
-                                set: { newValue in
-                                    Task {
-                                        await viewModel.updateSettings(trackSodium: newValue)
-                                    }
-                                }
-                            )) {
-                                HStack {
-                                    Image(systemName: "salt.fill")
-                                        .foregroundColor(.red)
-                                    Text("Track Sodium")
-                                }
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-
-                            Toggle(isOn: Binding(
-                                get: { viewModel.userSettings?.trackSugar ?? false },
-                                set: { newValue in
-                                    Task {
-                                        await viewModel.updateSettings(trackSugar: newValue)
-                                    }
-                                }
-                            )) {
-                                HStack {
-                                    Image(systemName: "cube.fill")
-                                        .foregroundColor(.pink)
-                                    Text("Track Sugar")
-                                }
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-
-                            Toggle(isOn: Binding(
-                                get: { viewModel.userSettings?.enableDoubleTrackWarnings ?? false },
-                                set: { newValue in
-                                    Task {
-                                        await viewModel.updateSettings(enableDoubleTrackWarnings: newValue)
-                                    }
-                                }
-                            )) {
-                                HStack {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.yellow)
-                                    Text("Double-Track Warnings")
-                                }
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                        }
-
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Reminders")
-                                .font(.headline)
-
-                            if !viewModel.reminders.isEmpty {
-                                ForEach(viewModel.reminders, id: \.id) { reminder in
-                                    ReminderConfigurationView(
-                                        reminder: reminder,
-                                        viewModel: viewModel
-                                    )
-                                }
-                            } else {
-                                Text("No reminders configured")
-                                    .foregroundColor(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding()
-                            }
-
-                            Button(action: {
-                                Task {
-                                    try await viewModel.loadReminders()
-                                }
-                            }) {
-                                Text("Refresh Reminders")
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.gray.opacity(0.2))
-                                    .foregroundColor(.primary)
-                                    .cornerRadius(8)
-                            }
-                        }
-
-                        if let errorMessage = viewModel.errorMessage {
-                            HStack {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .foregroundColor(.red)
-                                Text(errorMessage)
-                                    .font(.caption)
-                            }
-                            .padding()
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(8)
                         }
                     }
                 }
+
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            Task {
+                                isLoading = true
+                                try await viewModel.loadSettings()
+                                try await viewModel.loadReminders()
+                                isLoading = false
+                            }
+                        }) {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.blue)
+                                .padding()
+                        }
+                        .disabled(isLoading)
+                    }
+                    Spacer()
+                }
+                .padding()
+            }
+            .onAppear {
+                Task {
+                    try await viewModel.loadSettings()
+                    try await viewModel.loadReminders()
+                }
+            }
+        }
+    }
+}
+
+struct SettingsHeaderView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Settings")
+                .font(.title2)
+                .fontWeight(.bold)
+            Text("Customize your hydration tracking")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct DailyGoalSectionView: View {
+    let currentGoal: Int
+    let onEdit: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Daily Goal")
+                .font(.headline)
+
+            HStack {
+                Image(systemName: "target")
+                    .foregroundColor(.blue)
+                    .frame(width: 20)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Target Intake")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(currentGoal)ml")
+                        .font(.headline)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.gray)
             }
             .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+
+            Button(action: onEdit) {
+                Text("Edit Goal")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+            }
         }
+    }
+}
+
+struct TrackingOptionsSectionView: View {
+    @ObservedObject var viewModel: HydrationViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Tracking Options")
+                .font(.headline)
+
+            VStack(spacing: 8) {
+                TrackingToggleView(
+                    title: "Track Calories",
+                    icon: "flame.fill",
+                    color: .orange,
+                    isEnabled: viewModel.userSettings?.trackCalories ?? false,
+                    onChange: { newValue in
+                        Task {
+                            await viewModel.updateSettings(trackCalories: newValue)
+                        }
+                    }
+                )
+
+                TrackingToggleView(
+                    title: "Track Sodium",
+                    icon: "salt.fill",
+                    color: .red,
+                    isEnabled: viewModel.userSettings?.trackSodium ?? false,
+                    onChange: { newValue in
+                        Task {
+                            await viewModel.updateSettings(trackSodium: newValue)
+                        }
+                    }
+                )
+
+                TrackingToggleView(
+                    title: "Track Sugar",
+                    icon: "cube.fill",
+                    color: .pink,
+                    isEnabled: viewModel.userSettings?.trackSugar ?? false,
+                    onChange: { newValue in
+                        Task {
+                            await viewModel.updateSettings(trackSugar: newValue)
+                        }
+                    }
+                )
+
+                TrackingToggleView(
+                    title: "Double-Track Warnings",
+                    icon: "exclamationmark.triangle.fill",
+                    color: .yellow,
+                    isEnabled: viewModel.userSettings?.enableDoubleTrackWarnings ?? false,
+                    onChange: { newValue in
+                        Task {
+                            await viewModel.updateSettings(enableDoubleTrackWarnings: newValue)
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+struct TrackingToggleView: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let isEnabled: Bool
+    let onChange: (Bool) -> Void
+
+    var body: some View {
+        Toggle(isOn: .init(get: { isEnabled }, set: onChange)) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .frame(width: 20)
+                Text(title)
+            }
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(8)
+    }
+}
+
+struct RemindersSectionView: View {
+    @ObservedObject var viewModel: HydrationViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Reminders")
+                .font(.headline)
+
+            if viewModel.reminders.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "bell")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                    Text("No reminders configured")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.gray.opacity(0.05))
+                .cornerRadius(8)
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(viewModel.reminders, id: \.id) { reminder in
+                        ReminderConfigurationView(
+                            reminder: reminder,
+                            viewModel: viewModel
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ErrorMessageView: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundColor(.red)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Error")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                Text(message)
+                    .font(.caption)
+                    .lineLimit(2)
+            }
+            Spacer()
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .border(Color.red.opacity(0.3), width: 1)
+        .cornerRadius(8)
     }
 }
 
