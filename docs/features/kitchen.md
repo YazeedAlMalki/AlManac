@@ -67,8 +67,11 @@ See §6, step 2.
 ## 4. Not done, and why
 
 - **No recipe import.** The standalone module ingested 793 TheMealDB recipes.
-  That data is not here, and shipping it is an R-FOOD question first: TheMealDB's
-  terms have not been checked for bundling or redistribution, and
+  That data is not here, and shipping it is an R-FOOD question first. **2026-10-06:**
+  the owner chose to import TheMealDB if its terms permit bundling; they could not
+  be read from that session's network, so the gate stays shut and nothing was
+  imported (`docs/features/themealdb-terms.md`). Before that, TheMealDB's
+  terms had not been checked for bundling or redistribution, and
   `docs/attribution-requirement.md` requires an Attributions entry for any
   bundled source. An import, once licensed, belongs in `tools/` beside the
   nutrition pipeline. It would write `almanac:` dishes whose components are
@@ -225,7 +228,7 @@ The allergen check (`DishAllergenCheck`) reads each food's own names **plus**
 its canonical ingredient's name; it never reads fewer names than before, so it
 cannot get weaker.
 
-Tests: `IngredientTableTests` (9) — raw and roasted chicken breast are one
+Tests: `IngredientTableTests` (8) — raw and roasted chicken breast are one
 ingredient, a breaded or coated variant never merges, form words are kept,
 pantry and log match through the table, an unmapped food matches itself,
 curated rows survive a rebuild, the allergen check still hides a recipe when the

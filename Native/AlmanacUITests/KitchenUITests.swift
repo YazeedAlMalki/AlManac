@@ -13,9 +13,9 @@ import XCTest
 /// of them recipes, and none of them in the pantry. The seed is authoritative,
 /// so the shared, never-reset simulator database starts each test the same way.
 ///
-/// Written 2026-10-06 in a Linux container with no Xcode: **not yet run**.
-/// The first run on a Mac is the check that the queries below match the
-/// screen; a failure there is as likely to be the test as the app.
+/// Written 2026-10-06 in a Linux container with no Xcode. CI's UI run on a
+/// macOS simulator found and fixed the lookups below over five runs, and all
+/// four tests passed there on `cccf311` (run 37548425210).
 final class KitchenUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -49,10 +49,13 @@ final class KitchenUITests: XCTestCase {
     /// A food added to the pantry is listed, and a swiped-away one is gone.
     func testAPantryItemCanBeAddedAndRemoved() throws {
         try openRecipes()
-        app.buttons["Pantry"].tap()
+        // The toolbar's, not the "Pantry" segment of the mode picker: both are
+        // buttons named Pantry (CI, 2026-10-06: "Multiple matching elements").
+        app.navigationBars["Recipes"].buttons["Pantry"].tap()
         XCTAssertTrue(app.navigationBars["Pantry"].waitForExistence(timeout: 10), "the pantry never opened")
-        XCTAssertTrue(app.staticTexts["Your pantry is empty"].waitForExistence(timeout: 5),
-                      "the seed should leave the pantry empty of its own foods")
+        XCTAssertTrue(app.waitUntil(timeout: 5) {
+            app.staticTexts.allElementsBoundByIndex.contains { $0.label.contains("Your pantry is empty") }
+        }, "the seed should leave the pantry empty of its own foods: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
 
         app.navigationBars["Pantry"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["Food search"].waitForExistence(timeout: 10),
@@ -71,7 +74,8 @@ final class KitchenUITests: XCTestCase {
         result.tap()
 
         let row = app.staticTexts[Self.rice]
-        XCTAssertTrue(row.waitForExistence(timeout: 10), "the added food is not listed in the pantry")
+        XCTAssertTrue(row.waitForExistence(timeout: 10),
+                      "the added food is not listed in the pantry: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
 
         row.swipeLeft()
         let delete = app.buttons["Delete"]
@@ -121,36 +125,60 @@ final class KitchenUITests: XCTestCase {
         try openRecipes()
         app.buttons["All"].tap()
 
-        let hidden = app.element("allergen-hidden-toggle")
+        // Any element type: on a `DisclosureGroup` in a `List` the identifier
+        // can land on the cell, which `app.element(_:)` does not search.
+        let hidden = anyElement("allergen-hidden-toggle")
         XCTAssertTrue(hidden.waitForExistence(timeout: 10),
                       "nothing was hidden: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
         XCTAssertTrue(hidden.label.contains("Hidden because of your allergens"),
                       "the hidden entry is not labelled as such: \(hidden.label)")
-        XCTAssertTrue(app.staticTexts.allElementsBoundByIndex.contains { $0.label.hasPrefix("Checked recipe and ingredient names only") },
-                      "the allergen disclaimer is missing")
+        // Any element type, and *contains*: the note is an `AlmanacProblemNote`,
+        // one element (not a static text) whose label starts with what was
+        // hidden and goes on to the disclaimer (CI, 2026-10-06).
+        let disclaimer = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Checked recipe and ingredient names only")).firstMatch
+        XCTAssertTrue(disclaimer.exists, "the allergen disclaimer is missing")
         XCTAssertFalse(app.buttons.allElementsBoundByIndex.contains { $0.label.hasPrefix(Self.satay) },
                        "the hidden recipe is offered as an ordinary one before the entry is opened")
         XCTAssertTrue(app.buttons.allElementsBoundByIndex.contains { $0.label.hasPrefix(Self.bowl) },
                       "the recipe with no declared allergen was hidden too")
 
         // Reachable: open the entry, then the recipe's own page.
-        hidden.tap()
-        let row = app.element("allergen-hidden-row-ui-kitchen-satay")
-        XCTAssertTrue(row.waitForExistence(timeout: 5), "the hidden recipe is not listed once the entry is opened")
-        row.tap()
-        let warning = app.element("allergen-warning")
+        // Tap the disclosure's own button, not whatever carries the identifier:
+        // a tap on the cell's centre left it collapsed (CI, 2026-10-06). Then
+        // find the recipe by identifier or, failing that, by its name.
+        let disclosure = app.buttons
+            .matching(NSPredicate(format: "label CONTAINS %@", "Hidden because of your allergens")).firstMatch
+        (disclosure.exists ? disclosure : hidden).tap()
+        let byID = anyElement("allergen-hidden-row-ui-kitchen-satay")
+        let byName = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", Self.satay)).firstMatch
+        XCTAssertTrue(app.waitUntil(timeout: 5) { byID.exists || byName.exists },
+                      "the hidden recipe is not listed once the entry is opened: "
+                      + "\(app.buttons.allElementsBoundByIndex.map(\.label))")
+        (byID.exists ? byID : byName).tap()
+        let warning = anyElement("allergen-warning")
         XCTAssertTrue(warning.waitForExistence(timeout: 5), "the hidden recipe's page shows no warning")
         XCTAssertTrue(warning.label.contains("Peanuts"), "the warning does not name the allergen: \(warning.label)")
 
         // Logging asks first; cancelling leaves the page where it was.
-        app.element("allergen-log-anyway").tap()
+        anyElement("allergen-log-anyway").tap()
         let confirm = app.buttons["Log anyway"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "logging a hidden recipe did not ask for confirmation")
-        app.buttons["Cancel"].firstMatch.tap()
+        // An alert, so Cancel is always there (the iOS 26 confirmation dialog
+        // had none, and tapping outside it did not close it in CI).
+        let cancel = app.alerts.buttons["Cancel"]
+        XCTAssertTrue(cancel.exists, "the confirmation offers no Cancel")
+        cancel.tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { !confirm.exists }, "the confirmation did not close")
         XCTAssertTrue(warning.exists, "cancelling the confirmation left the recipe's page")
     }
 
     // MARK: - Helpers
+
+    /// The first element of any type carrying `identifier`.
+    private func anyElement(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
 
     /// Modules → Nutrition → Recipes, waiting for the catalogue: the button is
     /// disabled until the reference bundle has installed.
