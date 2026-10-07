@@ -278,9 +278,15 @@ text, rather than the caption-sized problem note.
 - **TheMealDB** — re-checked; conditionally permitted and still unverified
   (`themealdb-terms.md`, "Re-check, 2026-10-07"). v1 recipes are the person's
   own dishes.
-- **The language toggle** — named as a seventh Kitchen decision on 2026-10-07,
-  but not defined anywhere this session could read. Not built. A proposed
-  reading is in the spec issue (#3, D7).
-- **Merge order** — §5 still holds: once a database has applied 051,
-  `MigrationRunner` refuses a pending 050. Merge the fasting work first, or keep
-  every device off master until it lands.
+- **Merge order — decided 2026-10-07 by the owner: Kitchen merges first.**
+  Kitchen went to master ahead of the fasting work. §5's hazard is therefore
+  live until fasting lands: a database that applies 051–054 before 050 exists
+  will refuse 050 as `outOfOrder`. **Until the fasting work is on master, do
+  not install master on a device whose database has to keep its data.** When
+  the fasting work merges: keep both sides of `AlmanacMigrations.all` (050
+  before 051), empty `reservedUnmergedMigrationVersions`, and add 50 to
+  `BodyMeasurementTests.migrationUpgrade`. `testNoReservedVersionHasLanded`
+  fails until the reservation is emptied, and says so.
+- **Arabic — redefined 2026-10-07 by the owner: the whole app gets Arabic**, not
+  Kitchen alone. That is the BRD's deferred "Arabic UI" brought into scope;
+  tracked separately from Kitchen.
