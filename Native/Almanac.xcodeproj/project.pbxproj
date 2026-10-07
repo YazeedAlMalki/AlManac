@@ -106,6 +106,8 @@
 		LC0000000000000000000002 = { isa = PBXBuildFile; fileRef = LC0000000000000000000001; };
 		LC0000000000000000000003 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicUITests.swift; sourceTree = "<group>"; };
 		LC0000000000000000000004 = { isa = PBXBuildFile; fileRef = LC0000000000000000000003; };
+		LC0000000000000000000005 = { isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		LC0000000000000000000006 = { isa = PBXBuildFile; fileRef = LC0000000000000000000005; };
 		BBF621CC123B969B1B882923 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionQuickEntryView.swift; sourceTree = "<group>"; };
 		5FE8C9CE2E3BCC5B750513FA = { isa = PBXBuildFile; fileRef = BBF621CC123B969B1B882923; };
 		3468D7D259DD171845EC0E8F = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NutritionPortionPickerView.swift; sourceTree = "<group>"; };
@@ -235,10 +237,10 @@ DC76E9F0C0006E8F919E0C51 = { isa = PBXGroup; children = (1BDBD24583AAF7F81F76B97
             buildRules = (); dependencies = (FE0000000000000000000002,); name = Almanac;
             packageProductDependencies = (05B4C13CEE8FCA4F3D850987,);
             productName = Almanac; productReference = 38A007151ABE87CC01A5B6E9; productType = "com.apple.product-type.application"; };
-		FC0000000000000000000001 = { isa = PBXGroup; children = (FA0000000000000000000001, FA0000000000000000000002, FA0000000000000000000003, FA0000000000000000000004, FA0000000000000000000005, FA0000000000000000000008,); path = AlmanacWidgets; sourceTree = "<group>"; };
+		FC0000000000000000000001 = { isa = PBXGroup; children = (LC0000000000000000000005, FA0000000000000000000001, FA0000000000000000000002, FA0000000000000000000003, FA0000000000000000000004, FA0000000000000000000005, FA0000000000000000000008,); path = AlmanacWidgets; sourceTree = "<group>"; };
 		FD0000000000000000000001 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (FB0000000000000000000001, FB0000000000000000000002, FB0000000000000000000003, FB0000000000000000000004, FB0000000000000000000005,); runOnlyForDeploymentPostprocessing = 0; };
 		FD0000000000000000000002 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (FB0000000000000000000007,); runOnlyForDeploymentPostprocessing = 0; };
-		FD0000000000000000000003 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		FD0000000000000000000003 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (LC0000000000000000000006, ); runOnlyForDeploymentPostprocessing = 0; };
 		FD0000000000000000000004 = { isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (FB0000000000000000000008,); name = "Embed App Extensions"; runOnlyForDeploymentPostprocessing = 0; };
 		FE0000000000000000000001 = { isa = PBXNativeTarget; buildConfigurationList = FF0000000000000000000003;
             buildPhases = (FD0000000000000000000001, FD0000000000000000000002, FD0000000000000000000003,);

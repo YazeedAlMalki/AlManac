@@ -12,11 +12,14 @@ that silently stays English.
     check_catalog.py DERIVED_DATA [--strict]
 
 Prints one line per untranslated key, `MISSING<TAB>catalog<TAB>key<TAB>file:line`,
-as JSON-escaped strings so a key with a tab or newline stays on its line, then
-a summary. With --strict, exits 1 when anything is missing.
+as JSON-escaped strings so a key with a tab or newline stays on its line, and
+one `SPECIFIERS` line per Arabic value whose format specifiers differ from its
+key's, then a summary. A specifier mismatch always exits 1; with --strict, so
+does anything missing.
 """
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -44,6 +47,32 @@ def translated(catalog_path):
         elif entry.get("localizations", {}).get(LANGUAGE, {}).get("variations"):
             done.add(key)
     return done
+
+
+SPECIFIER = re.compile(r"%(?:\d+\$)?[-+ #0]*\d*(?:\.\d+)?(?:ll|l|h)?[@dDuUxXoOfeEgGcs%]")
+
+
+def specifiers(text):
+    """Format specifiers without positions: a translation may reorder them."""
+    return sorted(re.sub(r"\d+\$", "", s) for s in SPECIFIER.findall(text) if s != "%%")
+
+
+def mismatched(catalog_path):
+    """Arabic values whose specifiers differ from their key's. A %lld turned
+    into %@ is a crash, and a dropped one a wrong sentence, so these fail the
+    build whatever the mode. Plural forms are exempt: "one" may say the
+    number in words."""
+    path = os.path.join(ROOT, catalog_path)
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        strings = json.load(f).get("strings", {})
+    bad = []
+    for key, entry in strings.items():
+        value = entry.get("localizations", {}).get(LANGUAGE, {}).get("stringUnit", {}).get("value")
+        if value is not None and specifiers(value) != specifiers(key):
+            bad.append((catalog_path, key, value))
+    return bad
 
 
 def extracted(derived_data):
@@ -89,8 +118,13 @@ def main():
         print("MISSING\t%s\t%s\t%s" % (catalog, json.dumps(key, ensure_ascii=False), where))
     keys = {(c, k) for c, k, _ in found}
     untranslated = {(c, k) for c, k, _ in missing}
-    print(f"localizable keys: {len(keys)}; without Arabic: {len(untranslated)}")
-    if strict and missing:
+    bad = [b for catalog in sorted(set(CATALOGS.values())) for b in mismatched(catalog)]
+    for catalog, key, value in bad:
+        print("SPECIFIERS\t%s\t%s\t%s" % (catalog, json.dumps(key, ensure_ascii=False),
+                                          json.dumps(value, ensure_ascii=False)))
+    print(f"localizable keys: {len(keys)}; without Arabic: {len(untranslated)}; "
+          f"specifier mismatches: {len(bad)}")
+    if bad or (strict and missing):
         sys.exit(1)
 
 

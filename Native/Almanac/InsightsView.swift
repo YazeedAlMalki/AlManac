@@ -192,7 +192,7 @@ struct InsightsView: View {
             // number computed from 20 of 24 days reads exactly like one computed
             // from 24 unless the screen says which happened.
             if summary.excludedTransitionDays > 0 {
-                Text("\(summary.excludedTransitionDays) day\(summary.excludedTransitionDays == 1 ? "" : "s") in a schedule change left out")
+                Text("\(summary.excludedTransitionDays) days in a schedule change left out")
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }

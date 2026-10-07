@@ -103,7 +103,8 @@ struct RevisionHistoryView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(revisions, id: \.id) { revision in
-                Section("Revision \(revision.revisionNumber)\(revision.isCurrent ? " · Current" : "")") {
+                Section(revision.isCurrent ? "Revision \(revision.revisionNumber) · Current" as LocalizedStringKey
+                                            : "Revision \(revision.revisionNumber)") {
                     ContentDetails(content: revision.content)
                     Text("Recorded: \(revision.recordedAt)")
                     Text("By: \(revision.content.actor)")

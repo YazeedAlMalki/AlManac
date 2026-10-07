@@ -156,7 +156,7 @@ struct ContextTagsView: View {
                     .monospacedDigit()
                 Spacer(minLength: 12)
                 if !event.tags.isEmpty {
-                    Text("\(event.tags.count) tag\(event.tags.count == 1 ? "" : "s")")
+                    Text("\(event.tags.count) tags")
                         .font(AlmanacTypography.font(.caption))
                         .foregroundStyle(AlmanacPalette.textSecondary)
                 }

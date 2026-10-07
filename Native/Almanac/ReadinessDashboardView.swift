@@ -179,7 +179,7 @@ struct ReadinessDashboardView: View {
                                 AlmanacStatusMark(text: "Preliminary · day \(day) of 21", tone: .neutral)
                             }
                             if !outcome.missingInputs.isEmpty {
-                                Text("\(outcome.missingInputs.count) input\(outcome.missingInputs.count == 1 ? "" : "s") missing")
+                                Text("\(outcome.missingInputs.count) inputs missing")
                                     .font(AlmanacTypography.font(.caption))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
                             }
@@ -191,7 +191,7 @@ struct ReadinessDashboardView: View {
                                 AlmanacStatusMark(text: "Day \(day) of 21", tone: .neutral)
                             }
                             if !outcome.missingInputs.isEmpty {
-                                Text("\(outcome.missingInputs.count) input\(outcome.missingInputs.count == 1 ? "" : "s") missing")
+                                Text("\(outcome.missingInputs.count) inputs missing")
                                     .font(AlmanacTypography.font(.caption))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
                             }

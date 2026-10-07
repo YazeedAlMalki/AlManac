@@ -132,12 +132,12 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             SWIFT_EMIT_LOC_STRINGS=YES
 
-      # Every string the compiler extracted from the app and the widget that has
-      # no Arabic in its String Catalog (#4). Report-only while the translation
-      # is being written; it becomes --strict once the catalogs are complete, so
-      # a new English-only string fails the build instead of shipping silently.
+      # Every string the compiler extracted from the app and the widget must
+      # have Arabic in its String Catalog (#4), with the same format specifiers
+      # as its key. Strict: a new English-only string fails here, naming the
+      # file and line, instead of shipping in English to an Arabic phone.
       - name: Untranslated strings
-        run: python3 tools/localization/check_catalog.py "$HOME/Library/Developer/Xcode/DerivedData"
+        run: python3 tools/localization/check_catalog.py "$HOME/Library/Developer/Xcode/DerivedData" --strict
 
       # The widget is not in the scheme's build action; xcodebuild inserts the
       # dependency implicitly because Almanac.app has an "Embed App Extensions"

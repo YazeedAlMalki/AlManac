@@ -53,7 +53,7 @@ struct ProgramDayView: View {
             } header: {
                 AlmanacSectionHeader(title: "Rotation", detail: poolSummary)
             } footer: {
-                Text("A session takes \(slotCount == 1 ? "1 exercise" : "\(slotCount) exercises") from the cycle, moving one place along each time you train this day. The order only changes when you change it here.")
+                Text("A session takes \(slotCount) exercises from the cycle, moving one place along each time you train this day. The order only changes when you change it here.")
             }
         }
         .listStyle(.insetGrouped)
@@ -94,7 +94,7 @@ struct ProgramDayView: View {
                 Text(day.label)
                     .font(AlmanacTypography.font(.screenTitle))
                     .foregroundStyle(AlmanacPalette.textPrimary)
-                Text("This is pass \(passNumber) through \(pool.count) \(pool.count == 1 ? "exercise" : "exercises").")
+                Text("This is pass \(passNumber) through \(pool.count) exercises.")
                     .font(AlmanacTypography.font(.body))
                     .foregroundStyle(AlmanacPalette.textSecondary)
                 Button {

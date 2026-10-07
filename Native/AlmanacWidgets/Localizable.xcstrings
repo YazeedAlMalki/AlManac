@@ -1,0 +1,176 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "+250 ml": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+250 مل"
+          }
+        }
+      }
+    },
+    "Adds one large glass (250 ml) to today's water total.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يضيف كوبًا كبيرًا (250 مل) إلى مجموع ماء اليوم."
+          }
+        }
+      }
+    },
+    "End fast": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إنهاء الصيام"
+          }
+        }
+      }
+    },
+    "Ends the current fasting session.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُنهي جلسة الصيام الحالية."
+          }
+        }
+      }
+    },
+    "Fasting": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصيام"
+          }
+        }
+      }
+    },
+    "Log 250 ml of water": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سجّل 250 مل من الماء"
+          }
+        }
+      }
+    },
+    "No active fast": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا صيام جارٍ"
+          }
+        }
+      }
+    },
+    "Open Almanac to see fasting": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح Almanac لترى الصيام"
+          }
+        }
+      }
+    },
+    "Open Almanac to see water": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح Almanac لترى الماء"
+          }
+        }
+      }
+    },
+    "Start fast": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بدء الصيام"
+          }
+        }
+      }
+    },
+    "Start fasting": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ابدأ الصيام"
+          }
+        }
+      }
+    },
+    "Starts a fasting session now.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبدأ جلسة صيام الآن."
+          }
+        }
+      }
+    },
+    "Today's water total against your goal.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مجموع ماء اليوم مقارنة بهدفك."
+          }
+        }
+      }
+    },
+    "Water": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الماء"
+          }
+        }
+      }
+    },
+    "Your current fasting session.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جلسة صيامك الحالية."
+          }
+        }
+      }
+    },
+    "of %lld ml goal": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "من هدف %lld مل"
+          }
+        }
+      }
+    },
+    "since %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "منذ %@"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
