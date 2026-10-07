@@ -124,6 +124,7 @@ public enum PrayerTimeEngine {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = timeZone
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.string(from: date)
     }
 
