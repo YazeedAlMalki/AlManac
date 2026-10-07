@@ -5,7 +5,8 @@ let package = Package(
     name: "AlmanacCore",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
-        .library(name: "AlmanacCore", targets: ["AlmanacCore"])
+        .library(name: "AlmanacCore", targets: ["AlmanacCore"]),
+        .executable(name: "AlmanacApp", targets: ["AlmanacApp"])
     ],
     targets: [
         // Vendored SQLite amalgamation (public domain).
@@ -27,6 +28,11 @@ let package = Package(
             ]
         ),
         .target(name: "AlmanacCore", dependencies: ["CSQLite"], path: "Sources/AlmanacCore"),
-        .testTarget(name: "AlmanacCoreTests", dependencies: ["AlmanacCore"], path: "Tests/AlmanacCoreTests")
+        .testTarget(name: "AlmanacCoreTests", dependencies: ["AlmanacCore"], path: "Tests/AlmanacCoreTests"),
+        .executableTarget(
+            name: "AlmanacApp",
+            dependencies: ["AlmanacCore"],
+            path: "Sources/AlmanacApp"
+        )
     ]
 )
