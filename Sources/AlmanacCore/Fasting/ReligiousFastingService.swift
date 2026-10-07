@@ -5,10 +5,22 @@ import Foundation
 /// this being read.
 public enum ReligiousFastingOutcome: Sendable, Hashable {
     case notAFastDay
+    /// A fast day with no prayer times for it — nothing can be derived, and
+    /// nothing is invented.
+    case prayerTimesUnavailable
+    /// A fast day whose Fajr has not come yet. No session exists before it:
+    /// everything before Fajr is suhoor.
+    case notStartedYet
     case sessionCreated(sessionId: Int64)
     case alreadyActive(sessionId: Int64)
+    /// Ended at Maghrib — the fast was kept.
     case sessionEnded(sessionId: Int64)
+    /// Ended before Maghrib, at the first intake after Fajr.
+    case sessionBroken(sessionId: Int64, at: Date)
     case alreadyEnded(sessionId: Int64)
+    /// The day stopped being a fast day (the user said so) and the session the
+    /// calendar had created for it was removed.
+    case sessionRemoved(sessionId: Int64)
 }
 
 /// §11.2's auto-creation/auto-end, composing
@@ -18,20 +30,29 @@ public enum ReligiousFastingOutcome: Sendable, Hashable {
 /// sibling `ReadinessCycleLinkingService` and `FastingAwareNutritionLog`
 /// play elsewhere in this repo.
 ///
-/// `ensureDay` is idempotent and pull-based, not scheduled — there is no
-/// background job or notification trigger in this repo yet (§14 is a
-/// separate slice), so a caller (a dashboard refresh, an app-launch check)
-/// calls this whenever it wants the day's religious-fasting state to be
-/// correct, the same pattern `ReadinessCycleStore.ensureCycle` and
-/// `PrayerTimeEngine.ensureCache` already use.
+/// ## A religious session is derived, not accumulated
 ///
-/// **Deliberately not built:** wiring a calorie entry during an active
-/// religious session into `FastingSessionStore.recordNutritionEntry`'s
-/// break/invalidate/shorten logic. §11.1's rules were written for
-/// intermittent fasting; whether/how they apply to a dry religious fast
-/// (arguably any calorie entry, even water, should invalidate a dry fast,
-/// which §11.1 doesn't cover) is a real product question this pass doesn't
-/// answer, not an oversight to fix silently here.
+/// `ensureDay` does not apply events to a session; it computes what the session
+/// *is* from four facts and writes that:
+///
+/// - whether the date is a fast day (schedule + the user's corrections),
+/// - Fajr and Maghrib (the prayer cache),
+/// - the first intake of any kind at or after Fajr (`FastingIntakeLog`),
+/// - the current time.
+///
+/// Before Fajr there is no session (everything then is suhoor). From Fajr it is
+/// open; at the first intake it is broken; at Maghrib, unbroken, it is kept.
+/// Because it is recomputed on every call, it is right however the facts
+/// changed — a drink logged from the widget, a meal moved in an editor, an
+/// entry deleted, water imported from Apple Health, prayer times recalculated
+/// after travel, the day un-marked. The event-driven alternative needs every
+/// write path to remember to call it, which is the failure this repo has
+/// already recorded once ("the seventh path added later will be the one that
+/// forgets"); here a forgotten path costs one refresh of staleness.
+///
+/// The dry-fast break rule is the owner's (2026-09-29): any intake ends it,
+/// water included, as `end` rather than `invalidate` — the hours before the
+/// intake were genuinely fasted.
 public enum ReligiousFastingService {
     @discardableResult
     public static func ensureDay(anchorDate: String, prayerTimes: [PrayerTime],
@@ -41,58 +62,122 @@ public enum ReligiousFastingService {
                                   nextDayFajr: Date?,
                                   timezoneOffset: Int?,
                                   at now: Date) throws -> ReligiousFastingOutcome {
-        guard try scheduleStore.isFastDay(anchorDate) else { return .notAFastDay }
-        guard let fajr = prayerTimes.first(where: { $0.name == "fajr" })?.timestamp,
-              let maghrib = prayerTimes.first(where: { $0.name == "maghrib" })?.timestamp else {
+        let existing = try sessionStore.sessions(for: anchorDate).first { $0.sessionType == .religious }
+
+        guard try scheduleStore.isFastDay(anchorDate) else {
+            // Un-marking a day takes back what marking it created: the session
+            // and the night window, and the window's claim on the entries in it.
+            try removeNightWindow(date: anchorDate, windowStore: windowStore)
+            if let existing {
+                try sessionStore.delete(id: existing.id)
+                return .sessionRemoved(sessionId: existing.id)
+            }
             return .notAFastDay
         }
+        guard let fajr = prayerTimes.first(where: { $0.name == "fajr" })?.timestamp,
+              let maghrib = prayerTimes.first(where: { $0.name == "maghrib" })?.timestamp,
+              maghrib > fajr else {
+            return .prayerTimesUnavailable
+        }
 
-        let id: Int64
-        let outcome: ReligiousFastingOutcome
-        if let existing = try sessionStore.sessions(for: anchorDate).first(where: { $0.sessionType == .religious }) {
-            id = existing.id
-            if !existing.isActive {
-                outcome = .alreadyEnded(sessionId: existing.id)
-            } else if now >= maghrib {
-                try sessionStore.endScheduled(id: existing.id, at: maghrib)
-                outcome = .sessionEnded(sessionId: existing.id)
-            } else {
-                outcome = .alreadyActive(sessionId: existing.id)
+        try ensureNightWindow(date: anchorDate, maghrib: maghrib, nextDayFajr: nextDayFajr, windowStore: windowStore)
+
+        guard now >= fajr else {
+            // An older build created the session at any hour, so a session can
+            // exist before its own Fajr. It has not begun; it goes.
+            if let existing {
+                try sessionStore.delete(id: existing.id)
             }
-        } else {
-            id = try sessionStore.start(
+            return .notStartedYet
+        }
+
+        // Inclusive of `now`: an entry logged this instant has happened. One
+        // stamped in the future (an editor allows it) has not, and does not
+        // break a fast that is still being kept.
+        let breakingIntake = try FastingIntakeLog(db: sessionStore.db)
+            .intakes(from: fajr, to: maghrib)
+            .first { $0.at <= now }
+        let derivedEnd: Date? = breakingIntake?.at ?? (now >= maghrib ? maghrib : nil)
+
+        guard let existing else {
+            if derivedEnd == nil {
+                try yieldActiveIntermittentSession(to: fajr, now: now, sessionStore: sessionStore)
+            }
+            let id = try sessionStore.start(
                 FastingSessionDraft(startTimestamp: fajr, sessionType: .religious, isDryFast: true,
                                      timezoneOffset: timezoneOffset),
                 logicalDay: anchorDate)
-            outcome = .sessionCreated(sessionId: id)
+            if let derivedEnd {
+                try sessionStore.setDerivedEnd(id: id, end: derivedEnd)
+            }
+            return .sessionCreated(sessionId: id)
         }
 
-        // The window is ensured on *every* call, not only when the session is
-        // first created. The first `ensureDay` of a day routinely runs before
-        // tomorrow's Fajr is in the prayer cache, so it creates the session
-        // with no window; every later call then returned at the already-exists
-        // branch above, and the window was lost for the rest of the day — which
-        // left every suhoor and iftar entry in it unassigned. The window needs
-        // an end timestamp, so it genuinely cannot be built without `nextDayFajr`;
-        // what it can do is wait for one instead of giving up on the day.
-        //
-        // Idempotent by lookup, because this runs on every refresh and
-        // `nutrition_window` has no uniqueness constraint on (date, windowType).
-        if let nextDayFajr,
-           try windowStore.window(date: anchorDate, windowType: .nightNutritionWindow) == nil {
-            let windowID = try windowStore.createWindow(date: anchorDate, windowType: .nightNutritionWindow,
-                                                        startTimestamp: maghrib, endTimestamp: nextDayFajr,
-                                                        fajrTimestamp: nextDayFajr, maghribTimestamp: maghrib)
-            // Marking the day as a fast has to claim what is already logged. The
-            // user marks the day at some point during it — often after eating
-            // iftar — so without this the window opens over entries that predate
-            // it and they stay unassigned for good, until the next whole-history
-            // rebuild happens to reach them. Scoped to the one window just
-            // created, because this runs on every refresh.
-            _ = try NightNutritionWindowAssigner(db: windowStore.db)
-                .assignUnassigned(inWindow: windowID)
+        if existing.startTimestamp != fajr {
+            try sessionStore.moveStart(id: existing.id, to: fajr)
         }
+        let unchanged = existing.endTimestamp == derivedEnd && !existing.isInvalidated
+            && existing.isActive == (derivedEnd == nil)
+        if unchanged {
+            return derivedEnd == nil ? .alreadyActive(sessionId: existing.id) : .alreadyEnded(sessionId: existing.id)
+        }
+        if derivedEnd == nil {
+            // Reopening: the intake that had broken it was deleted or moved.
+            try yieldActiveIntermittentSession(to: fajr, now: now, sessionStore: sessionStore,
+                                               keeping: existing.id)
+        }
+        try sessionStore.setDerivedEnd(id: existing.id, end: derivedEnd)
+        if let breakingIntake { return .sessionBroken(sessionId: existing.id, at: breakingIntake.at) }
+        return derivedEnd == nil ? .alreadyActive(sessionId: existing.id) : .sessionEnded(sessionId: existing.id)
+    }
 
-        return outcome
+    // MARK: - Private
+
+    /// Only one session can be active (`idx_fasting_session_one_active`). An
+    /// intermittent fast still running when a religious one begins is
+    /// subsumed by it: it ends at Fajr (or at its own start, if it began after
+    /// Fajr), keeping the hours it really ran, so the religious fast can open.
+    /// Whatever else is active is ended the same way; in practice that is only
+    /// ever an intermittent fast, because `FastingCoordinator` closes
+    /// yesterday's religious fast at its own Maghrib before it opens today's.
+    /// Without this the religious session's insert failed on the index and the
+    /// fasting screen showed a constraint error on every fast day.
+    private static func yieldActiveIntermittentSession(to fajr: Date, now: Date,
+                                                       sessionStore: FastingSessionStore,
+                                                       keeping keptID: Int64? = nil) throws {
+        guard let active = try sessionStore.activeSession(), active.id != keptID else { return }
+        let end = max(min(fajr, now), active.startTimestamp)
+        try sessionStore.endScheduled(id: active.id, at: end)
+    }
+
+    /// The night window `Maghrib(D)→Fajr(D+1)`, upserted on every call so it
+    /// follows recalculated prayer times. It needs tomorrow's Fajr for its end;
+    /// without one it waits for a later call rather than giving up on the day —
+    /// the first call of a day routinely runs before tomorrow is cached, and the
+    /// version that only built the window alongside a new session lost it for
+    /// the whole day.
+    ///
+    /// Entries are re-resolved only when the window is new or its bounds moved:
+    /// marking the day late must claim an iftar already logged, and a moved
+    /// boundary must release entries now outside it, but a refresh that changes
+    /// nothing should not rewrite the night's rows.
+    private static func ensureNightWindow(date: String, maghrib: Date, nextDayFajr: Date?,
+                                          windowStore: NutritionWindowStore) throws {
+        guard let nextDayFajr, nextDayFajr > maghrib else { return }
+        let current = try windowStore.window(date: date, windowType: .nightNutritionWindow)
+        if let current, current.startTimestamp == maghrib, current.endTimestamp == nextDayFajr { return }
+        let windowID = try windowStore.createWindow(date: date, windowType: .nightNutritionWindow,
+                                                    startTimestamp: maghrib, endTimestamp: nextDayFajr,
+                                                    fajrTimestamp: nextDayFajr, maghribTimestamp: maghrib)
+        _ = try NightNutritionWindowAssigner(db: windowStore.db).assignUnassigned(inWindow: windowID)
+    }
+
+    private static func removeNightWindow(date: String, windowStore: NutritionWindowStore) throws {
+        guard let window = try windowStore.window(date: date, windowType: .nightNutritionWindow) else { return }
+        for table in ["nutrition_log", "hydration_log"] {
+            try windowStore.db.run("UPDATE \(table) SET nutrition_window_id = NULL WHERE nutrition_window_id = ?;",
+                                   [.integer(window.id)])
+        }
+        try windowStore.db.run("DELETE FROM nutrition_window WHERE id = ?;", [.integer(window.id)])
     }
 }

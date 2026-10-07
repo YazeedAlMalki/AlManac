@@ -8,6 +8,15 @@ import Foundation
 /// session. Reconciling an arbitrary backdated entry against the full
 /// session history is not attempted — nothing in the spec's examples needs
 /// more than "the session this entry is obviously about."
+///
+/// **§11.1's decision tree is intermittent fasting's, and religious sessions
+/// are outside it.** A religious fast is Fajr→Maghrib by definition, so a meal
+/// before its start is suhoor, not a backdated entry that proves the fast never
+/// happened. Applying the IF tree to one invalidated the day's fast every time
+/// suhoor was logged after the session existed. Religious sessions are kept
+/// right by `ReligiousFastingService.ensureDay`, which derives them from the
+/// prayer times and the intake log; `recordIntake` is the one rule here that
+/// touches them, for the moment between a drink and the next derivation.
 public struct FastingSessionStore: @unchecked Sendable {
     let db: Database
     private let clock: any Clock
@@ -70,10 +79,15 @@ public struct FastingSessionStore: @unchecked Sendable {
     ///
     /// Non-dry and IF sessions are `.noOp` here: water never breaks those, and
     /// `recordNutritionEntry` already owns the calorie-bearing case for them.
+    ///
+    /// An intake before the session's start is suhoor and changes nothing — the
+    /// old version ended the fast "at" a time before it began, with a negative
+    /// duration.
     @discardableResult
     public func recordIntake(at timestamp: Date) throws -> FastingBreakOutcome {
         guard let active = try activeSession(),
-              active.sessionType == .religious, active.isDryFast else { return .noOp }
+              active.sessionType == .religious, active.isDryFast,
+              timestamp >= active.startTimestamp else { return .noOp }
         let minutes = try end(active, at: timestamp)
         return .ended(sessionId: active.id, durationMinutes: minutes)
     }
@@ -85,7 +99,7 @@ public struct FastingSessionStore: @unchecked Sendable {
     public func recordNutritionEntry(calories: Double, at timestamp: Date) throws -> FastingBreakOutcome {
         guard calories > 0 else { return .noOp }
 
-        if let active = try activeSession() {
+        if let active = try activeIntermittentSession() {
             if timestamp < active.startTimestamp {
                 try invalidate(active, entryTimestamp: timestamp)
                 return .invalidated(sessionId: active.id)
@@ -185,9 +199,79 @@ public struct FastingSessionStore: @unchecked Sendable {
             .first.flatMap(rowToSession)
     }
 
+    /// The active session when it is an intermittent one — what §11.1's
+    /// break/backdate rules and the IF controls act on.
+    public func activeIntermittentSession() throws -> FastingSession? {
+        try activeSession().flatMap { $0.sessionType == .religious ? nil : $0 }
+    }
+
     public func sessions(for logicalDay: String) throws -> [FastingSession] {
         try db.query("\(selectColumns) FROM fasting_session WHERE logicalDay = ? ORDER BY startTimestamp;",
                       [.text(logicalDay)]).compactMap(rowToSession)
+    }
+
+    /// The newest sessions first, invalidated ones included so a history can
+    /// say so rather than hide them.
+    public func recentSessions(limit: Int = 10) throws -> [FastingSession] {
+        try db.query("\(selectColumns) FROM fasting_session ORDER BY startTimestamp DESC LIMIT ?;",
+                     [.integer(Int64(limit))]).compactMap(rowToSession)
+    }
+
+    /// The intermittent session a screen should be about: the active one, or
+    /// else the most recently started one — whatever logical day it began on.
+    /// Looking an IF fast up by today's logical day was the bug: a fast started
+    /// at 20:00 belongs to yesterday, so it vanished from the screen at 04:00
+    /// while it was still running, and "Start" was offered over it.
+    public func latestIntermittentSession() throws -> FastingSession? {
+        try db.query("""
+        \(selectColumns) FROM fasting_session
+        WHERE sessionType != 'religious'
+        ORDER BY isActive DESC, startTimestamp DESC LIMIT 1;
+        """).first.flatMap(rowToSession)
+    }
+
+    /// The most recent calorie-free stretch's start for a confirmed suggestion
+    /// (§11.1: "startTimestamp set to the timestamp of the last nutrition log").
+    @discardableResult
+    public func startConfirmedSuggestion(lastNutritionLogAt: Date, logicalDay: String,
+                                         timezoneOffset: Int?) throws -> Int64 {
+        try start(FastingSessionDraft(startTimestamp: lastNutritionLogAt, sessionType: .ifConfirmedSuggestion,
+                                      timezoneOffset: timezoneOffset),
+                  logicalDay: logicalDay)
+    }
+
+    // MARK: - Religious maintenance (ReligiousFastingService only)
+
+    /// Moves a religious session's start, when the day's Fajr was recalculated
+    /// (a new location, method or offset). Duration follows if it has ended.
+    func moveStart(id: Int64, to start: Date) throws {
+        guard let session = try session(id: id) else { throw FastingSessionStoreError.notFound }
+        let duration: SQLValue = session.endTimestamp
+            .map { .integer(Int64(minutesBetween(start, $0))) } ?? .null
+        try db.run("""
+        UPDATE fasting_session SET startTimestamp = ?, finalDurationMinutes = ?, updatedAt = ? WHERE id = ?;
+        """, [.text(iso(start)), duration, .text(nowText), .integer(id)])
+    }
+
+    /// Sets a religious session to exactly the derived state: ended at `end`,
+    /// or open when `end` is nil. Clears any invalidation an older build's IF
+    /// rules wrongly applied to it.
+    func setDerivedEnd(id: Int64, end: Date?) throws {
+        guard let session = try session(id: id) else { throw FastingSessionStoreError.notFound }
+        let endValue: SQLValue = end.map { .text(iso($0)) } ?? .null
+        let duration: SQLValue = end.map { .integer(Int64(minutesBetween(session.startTimestamp, $0))) } ?? .null
+        try db.run("""
+        UPDATE fasting_session
+        SET endTimestamp = ?, isActive = ?, isInvalidated = 0, finalDurationMinutes = ?, updatedAt = ?
+        WHERE id = ?;
+        """, [endValue, .integer(end == nil ? 1 : 0), duration, .text(nowText), .integer(id)])
+    }
+
+    /// Removes a session the calendar created for a day that is no longer a
+    /// fast day — the user said so. It was derived state, and every input it
+    /// was derived from (schedule, correction, prayer times, intake) is kept.
+    func delete(id: Int64) throws {
+        try db.run("DELETE FROM fasting_session WHERE id = ?;", [.integer(id)])
     }
 
     // MARK: - Private mutation
@@ -271,6 +355,7 @@ public struct FastingSessionStore: @unchecked Sendable {
         try db.query("""
         \(selectColumns) FROM fasting_session
         WHERE isActive = 0 AND isInvalidated = 0 AND endTimestamp IS NOT NULL
+          AND sessionType != 'religious'
         ORDER BY startTimestamp DESC LIMIT 1;
         """).first.flatMap(rowToSession)
     }
@@ -278,7 +363,7 @@ public struct FastingSessionStore: @unchecked Sendable {
     private func invalidatedSession(affectedBy timestamp: Date) throws -> FastingSession? {
         try db.query("""
         \(selectColumns) FROM fasting_session
-        WHERE isInvalidated = 1
+        WHERE isInvalidated = 1 AND sessionType != 'religious'
         ORDER BY startTimestamp DESC;
         """).compactMap(rowToSession).first {
             $0.correctionHistory.contains {

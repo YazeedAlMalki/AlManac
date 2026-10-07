@@ -28,7 +28,6 @@ final class NutritionModel: ObservableObject {
     @Published private(set) var readProblem: String?
 
     private var catalog: NutritionCatalog?
-    private var logStore: NutritionLogStore?
     private var summary: NutritionSummary?
     private var dishEditor: NutritionDishEditor?
     private var db: Database?
@@ -40,7 +39,6 @@ final class NutritionModel: ObservableObject {
         let catalog = NutritionCatalog(db: db)
         self.catalog = catalog
         isReferenceAvailable = (try? catalog.hasReferenceFoods()) ?? false
-        logStore = NutritionLogStore(db: db)
         summary = NutritionSummary(db: db)
         dishEditor = NutritionDishEditor(db: db)
         refresh()
@@ -155,22 +153,23 @@ final class NutritionModel: ObservableObject {
 
     func log(foodRef: SourceIdentifier, foodName: String, grams: Double?,
              quantityText: String?, mealType: NutritionMealType?) throws {
-        guard let logStore, let db else { throw EditorFailure(message: "The database is unavailable.") }
-        let eatenAt = Date()
+        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
         let draft = NutritionLogDraft(
             foodRef: foodRef, grams: grams,
-            eatenAt: PartialDateTime(instant: eatenAt, zone: ZoneContext(TimeZone.current)),
+            eatenAt: PartialDateTime(instant: Date(), zone: ZoneContext(TimeZone.current)),
             foodNameText: foodName, quantityText: quantityText, mealType: mealType)
-        let outcome = try logStore.record(draft)
-        // §7.2: a meal eaten between Maghrib and Fajr belongs to the fast's night
-        // window even though its logical day is the next one.
-        try NightNutritionWindowAssigner(db: db).assign(nutritionLogID: outcome.logID, eatenAt: eatenAt)
+        // Through the fasting-aware log, not the store: a meal ends an
+        // intermittent fast (§11.1) or a religious one (any intake), and one
+        // eaten between Maghrib and Fajr belongs to the night window (§7.2).
+        // Writing to the store directly applied none of the fasting rules.
+        try FastingAwareNutritionLog(db: db).record(draft)
         refresh()
     }
 
     func delete(id: String) throws {
-        guard let logStore else { throw EditorFailure(message: "The database is unavailable.") }
-        try logStore.delete(id: id)
+        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        // Deleting the meal that ended a fast gives the fast back.
+        try FastingAwareNutritionLog(db: db).delete(id: id)
         refresh()
     }
 }

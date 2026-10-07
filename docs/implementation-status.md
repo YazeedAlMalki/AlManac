@@ -1,6 +1,9 @@
 # Almanac implementation status
 
-Updated 2026-10-05. The degenerate-baseline defect recorded below is **fixed**
+Updated 2026-10-06. **Fasting and prayer times work end to end in the running
+app** — religious fasting had never run on a phone (no fast day was ever
+detected), and logging food or water never reached a fasting rule; the entry is
+at the top. Updated 2026-10-05: the degenerate-baseline defect recorded below is **fixed**
 and the two checklist rows that were asserting on it are repaired; the entry is
 at the top. The 2026-10-04 second-pass correction still stands: the "a single-
 reading day always scores 66" note lower down was measured without sleep data,
@@ -20,6 +23,93 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-06 — Fasting and prayer times, completed
+
+**What the owner saw:** a Fasting screen that said "No religious fast is
+scheduled for today" every day of the year, prayer times only for someone who
+granted GPS, and no suhoor or iftar reminder ever. Every rule behind those
+screens had been built and unit-tested since 2026-09-17; the defects were in what
+reached them. Details, and what each decision rests on, are in
+`docs/features/fasting.md` §0, `docs/features/notifications.md` and `CONTEXT.md`
+("Fasting and prayer").
+
+**Fasting**
+
+- **No fast day was ever detected** — nothing created a `religious_fast_schedule`
+  row. Ramadan (this Hijri year and next) is now created on every refresh,
+  inheriting the user's on/off choice; Mon/Thu and White Days are toggles; any
+  date can be marked or unmarked; Eid and Tashreeq are never voluntary fast days.
+- **A religious session is derived** from schedule + Fajr/Maghrib + first intake
+  + time (`ReligiousFastingService`, `FastingIntakeLog`, `FastingCoordinator`),
+  for yesterday and today, on launch, foreground, Health sync, prayer-time change
+  and screen load. This removed: suhoor invalidating the day's fast (and suhoor
+  water ending it with a negative duration), a first open after Maghrib leaving
+  the fast open, the logical day being used where Fajr precedes 04:00, and a
+  constraint error whenever an intermittent fast was running at Fajr.
+- **Logging reaches the rules.** `FastingAwareNutritionLog`/`FastingAwareHydrationLog`
+  had no caller; every app write path, both editors, every delete and the
+  widget now go through them. Deleting the entry that ended a fast restores it.
+  A caloric drink ends an intermittent fast.
+- **Intermittent:** an IF started before 04:00 no longer vanishes from the
+  screen; §11.1's suggestion is offered; a live timer with the protocol target.
+- **Read side:** night-window contents, coming fast days, recent fasts, a widget
+  that shows suhoor/iftar and cannot end a religious fast.
+
+**Prayer times**
+
+- City picker over the bundled 230-city list (it had no UI); a chosen city is no
+  longer overwritten by the next GPS fix; a fix is named after the nearest city;
+  one-shot location instead of a stream while foregrounded.
+- Seven more methods and custom angles; Hanafi Asr (Migration050 `asrMethod`);
+  per-prayer offsets on screen; Qibla bearing; Hijri date; next-prayer
+  countdown.
+- **Umm al-Qura's Ramadan Isha** is Maghrib + 120 min. It was 90 — half an hour
+  early every night of Ramadan in the default method.
+- `ensureCache` rebuilds a cache computed for another place or method.
+
+**Notifications**
+
+- **Past reminders fired again on every foreground** (the planner never applied
+  the past/horizon filter its doc promised, and the scheduler maps a past instant
+  to one second): opening the app after Maghrib re-announced iftar. Fixed; two
+  planner tests that asserted the bug were corrected.
+- **The scheduler's ownership check was reversed**: stale reminders were never
+  removed, "Turn all off" cancelled nothing, "Queued now" read 0.
+- **Dry-fast suppression is per fire instant**: a fast running now no longer
+  mutes tomorrow's suhoor or tonight's water.
+- **`prayer` alerts**, off by default (Migration050), per-prayer choice; Maghrib
+  defers to iftar on a fast day.
+
+Also: the Arabic-locale day-key fix (`fix/arabic-digit-day-keys`, b90742b — on an
+Arabic phone the prayer cache keys were written in Arabic-Indic digits and
+matched nothing) is included on this branch; restore now rebuilds night-window
+assignments (spec line 1942 step 6d).
+
+### Verification
+
+`swift test`, full suite: **982 tests in 102 suites, 0 failures** (199.6 s), and the XCTest half 374 (1 skipped), 0 failures. New suites
+`Religious fasting, derived` (28) and `Prayer times, completed` (15); four
+existing tests updated (the two that asserted past reminders, the migration list,
+the rule-seeding test).
+
+UI (iPhone 16e, iOS 26.3): `NotificationSettingsUITests` 5 of 5 (now including
+the `prayer` switch), `AttributionsUITests` Fasting and Prayer 2 of 2,
+`OwnerRequestedFeaturesUITests.testFastingTogglesBetweenReligiousAndIntermittent`
+1 of 1. `testFastingScreenOpensFromMore` first failed because its button is now
+below the fold of a lazy list; it scrolls to it with `reveal` like the rest of
+the suite. The full UI suite was not run.
+
+Driven on the iPhone 16e simulator (iOS 26.3), Riyadh chosen from the city list:
+prayer times, countdown, Hijri date, Qibla, an offset moving Maghrib by a minute
+in the cache; Ramadan 1448 and 1449 rows created on launch (1448: 2027-02-08 →
+2027-03-08); a day marked as a fast showing the live Fajr→Maghrib progress;
+**250 ml logged from Quick Log ending the fast at that minute**; deleting it from
+Hydration **reopening the fast**; an intermittent fast started the previous
+evening still shown after 04:00, and ended with its duration.
+
+Not driven: anything that needs a notification to arrive (device-only, §4.1 of
+the acceptance checklist), the widget on a home screen, and a real GPS fix.
 
 ## 2026-10-05 — the degenerate baseline is fixed, and the tests that asserted on it are repaired
 

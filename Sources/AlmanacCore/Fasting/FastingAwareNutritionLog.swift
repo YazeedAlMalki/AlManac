@@ -14,16 +14,28 @@ import Foundation
 /// `EnergyEstimate`), unlike `IFSuggestionService`'s coarser "stated amount"
 /// approximation — that one only drives a prompt; this one changes stored
 /// fasting state, so it earns the real number.
+///
+/// It also carries the two rules that are not about calories: a religious dry
+/// fast is broken by **any** intake (the owner's rule — a black coffee is zero
+/// calories and still breaks it), and the §7.2 night window claims a meal
+/// between Maghrib and Fajr. Every app write path goes through here so that
+/// none of the three is applied by hand at a call site; before this, no path
+/// applied the fasting rules at all and a logged lunch never ended a fast.
 public struct FastingAwareNutritionLog: Sendable {
     private let log: NutritionLogStore
     private let catalog: NutritionCatalog
     private let sessions: FastingSessionStore
+    private let coordinator: FastingCoordinator
+    private let assigner: NightNutritionWindowAssigner
     private let clock: any Clock
 
     public init(db: Database, clock: any Clock = SystemClock(), zone: ZoneContext = ZoneContext(TimeZone.current)) {
         self.log = NutritionLogStore(db: db, clock: clock, zone: zone)
         self.catalog = NutritionCatalog(db: db)
         self.sessions = FastingSessionStore(db: db, clock: clock)
+        self.coordinator = FastingCoordinator(db: db, clock: clock,
+                                              timeZone: zone.identifier.flatMap(TimeZone.init(identifier:)) ?? .current)
+        self.assigner = NightNutritionWindowAssigner(db: db)
         self.clock = clock
     }
 
@@ -38,8 +50,34 @@ public struct FastingAwareNutritionLog: Sendable {
         let outcome = try log.record(draft)
         let calories = try energyKilocalories(foodRef: draft.foodRef, grams: draft.grams)
         let timestamp = draft.eatenAt.isKnown ? (draft.eatenAt.span?.start ?? clock.now) : clock.now
-        let fastingOutcome = try sessions.recordNutritionEntry(calories: calories, at: timestamp)
+        var fastingOutcome = try sessions.recordNutritionEntry(calories: calories, at: timestamp)
+        if draft.eatenAt.precision == .instant || !draft.eatenAt.isKnown {
+            let religious = try applyDryFastRule(at: timestamp)
+            if religious != .noOp { fastingOutcome = religious }
+            try assigner.assign(nutritionLogID: outcome.logID, eatenAt: timestamp)
+        }
         return (outcome, fastingOutcome)
+    }
+
+    /// Deletes a meal and takes back what it did to fasting state: an
+    /// intermittent fast it ended or shortened is restored (the same path as an
+    /// edit that removes the meal's calories), and a religious fast it broke is
+    /// re-derived without it.
+    @discardableResult
+    public func delete(id logID: String) throws -> Bool {
+        guard let previous = try log.entry(id: logID) else { return try log.delete(id: logID) }
+        let previousCalories = try energyKilocalories(foodRef: previous.foodRef, grams: previous.grams)
+        let previousTimestamp = timestamp(for: previous)
+        let deleted = try log.delete(id: logID)
+        guard deleted else { return false }
+        if previousCalories > 0 {
+            try sessions.reconcileNutritionEdit(previousCalories: previousCalories,
+                                                previousTimestamp: previousTimestamp,
+                                                currentCalories: 0,
+                                                currentTimestamp: previousTimestamp)
+        }
+        try coordinator.reconcile(containing: previousTimestamp)
+        return true
     }
 
     /// Applies a correction and re-runs the same fasting decision against the
@@ -68,13 +106,32 @@ public struct FastingAwareNutritionLog: Sendable {
         }
         let calories = try energyKilocalories(foodRef: entry.foodRef, grams: entry.grams)
         let timestamp = timestamp(for: entry)
-        let fastingOutcome = try sessions.reconcileNutritionEdit(
+        var fastingOutcome = try sessions.reconcileNutritionEdit(
             previousCalories: previousCalories,
             previousTimestamp: previousTimestamp,
             currentCalories: calories,
             currentTimestamp: timestamp
         )
+        // The religious fast of the day the meal left, and of the day it moved
+        // to, are both re-derived; the window follows the meal's new time.
+        try coordinator.reconcile(containing: previousTimestamp)
+        if let religious = try coordinator.reconcile(containing: timestamp) {
+            let derived = try FastingBreakOutcome(religious, sessions: sessions)
+            if derived != .noOp { fastingOutcome = derived }
+        }
+        if entry.eatenAt.precision == .instant {
+            try assigner.assign(nutritionLogID: logID, eatenAt: timestamp)
+        }
         return (outcome, fastingOutcome)
+    }
+
+    /// The religious session derived for the meal's day when its prayer times
+    /// are known; the session-only rule when they are not.
+    private func applyDryFastRule(at instant: Date) throws -> FastingBreakOutcome {
+        guard let derived = try coordinator.reconcile(containing: instant) else {
+            return try sessions.recordIntake(at: instant)
+        }
+        return try FastingBreakOutcome(derived, sessions: sessions)
     }
 
     private func timestamp(for entry: NutritionLogEntry) -> Date {

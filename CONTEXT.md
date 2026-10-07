@@ -129,6 +129,40 @@ The single owner of which tab is selected and how deep each tab's navigation
 stack is. Above the bar, injected downward.
 _Avoid_: router, navigator, coordinator (alone)
 
+### Fasting and prayer
+
+**Fast day**:
+A civil date on which a religious fast is kept — by the calendar (Ramadan,
+Mondays and Thursdays, the White Days) or by the user's own correction, which
+always wins. Eid and the days of Tashreeq are never one by the calendar.
+_Avoid_: fasting day, day type
+
+**Correction**:
+The user's word on one date — a fast, not a fast, or back to the calendar.
+Logged, never overwritten; the newest one wins.
+_Avoid_: override, exception
+
+**Religious session**:
+A fast day's Fajr→Maghrib fast as recorded. *Derived*, not entered: from the
+fast day, its prayer times and the first intake after Fajr. It does not exist
+before Fajr; everything before Fajr is suhoor.
+_Avoid_: dry fast (that is a property of it), Ramadan session
+
+**Intake**:
+Anything logged as eaten or drunk with a precise time. Any intake breaks a
+religious fast; only a calorie-bearing one breaks an intermittent fast.
+_Avoid_: entry, meal (a drink is an intake too)
+
+**Night window**:
+Maghrib of a fast day to the next Fajr — iftar to suhoor, one night even past
+midnight. Its date is the fast day's, not the date suhoor falls on.
+_Avoid_: eating window, evening
+
+**Chosen city**:
+A location the user picked from the bundled list. It stays until they ask for
+their current location; detected travel does not replace it.
+_Avoid_: manual location, fallback
+
 ## Decisions taken without an answer
 
 Four product questions were put to the owner on 2026-09-30 and not answered
@@ -143,6 +177,10 @@ reconstructed a table rather than choosing among options.
 Four more were settled while making a readiness score reachable on a device with
 no watch (2026-10-04), where the BRD's "manual fallback" left the scope, the
 bounds and the read-for-which-day open. None is confirmed either.
+
+Seven more were settled while making fasting and prayer times work end to end
+(2026-10-06), where the spec gave the rule but not the default or the edge. None
+is confirmed.
 
 **Macro targets — left null.** `goal_target_snapshot`'s protein, carbohydrate and
 fat columns are nullable and stay empty. Nothing in the BRD, the spec or the
@@ -258,6 +296,49 @@ metric and having `ReadinessEngine` refuse to score against a depth it can name.
 Measured figures are in `docs/features/readiness.md`; what it cost the two
 checklist rows that were asserting on the defect, and the launch-argument seeding
 hook that repaired them, are in `docs/implementation-status.md`.
+
+### Fasting and prayer (2026-10-06)
+
+**Ramadan is observed by default; Mondays/Thursdays and the White Days are not.**
+§6.13's flow starts from a day "pre-typed Religious Fast by Ramadan schedule", and
+the 2026-09-17 decision was "auto-create, always correctable". The two voluntary
+rules are off until switched on, because a voluntary fast the app assumed is a
+claim about the user's worship. Turning Ramadan off carries forward to next
+year's row. *Overrule by:* `ReligiousFastScheduleStore.isRamadanEnabled`'s
+default.
+
+**An intermittent fast still running at Fajr on a fast day ends at Fajr.** Only
+one session can be active, and the religious fast cannot be the one that waits.
+The IF session keeps the hours it really ran. *Overrule by:*
+`ReligiousFastingService.yieldActiveIntermittentSession`.
+
+**Un-marking a day deletes the session the calendar made for it**, and its night
+window. It was derived state; every input (schedule, correction, prayer times,
+intake) is kept, so re-marking the day rebuilds it exactly. *Overrule by:*
+invalidating instead of deleting in `ReligiousFastingService.ensureDay`.
+
+**A chosen city stops automatic location until the user asks for it again.**
+§12.4 says a detected move clears the override, which would undo a chosen city
+on the next foreground for anyone whose phone is somewhere else. The engine still
+follows §12.4; the app simply does not feed it fixes while a city is chosen.
+*Overrule by:* calling `refreshLocationIfAutomatic` regardless of
+`manualCityOverride` in `PrayerModel`.
+
+**Seven calculation methods beyond §12.1's five, plus custom angles and the Hanafi
+Asr.** All already in the vendored library; without them a user in Kuwait,
+Qatar, the Emirates, Turkey, Iran, Singapore or following the Moonsighting
+Committee had no correct Fajr. Asr needed a column (Migration050). *Overrule by:*
+trimming `PrayerCalculationMethod.storedVocabulary`.
+
+**Prayer-time alerts exist, are off by default, and nothing suppresses them.** The
+owner asked for the adhan to work; the BRD's notification list predates it. On a
+fast day Maghrib's alert is the iftar reminder rather than a second notification
+at the same second. *Overrule by:* the `prayer` row in
+`NotificationSuppressionMatrix`.
+
+**The Fasting screen opens on Religious every time.** The UI acceptance test pins
+that default, and the religious state is maintained whichever tab is showing.
+*Overrule by:* persisting `FastingModel.mode`.
 
 ### Weighing
 
