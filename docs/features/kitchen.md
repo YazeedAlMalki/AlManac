@@ -109,11 +109,13 @@ See §6, step 2.
   `outOfOrder`. So merge the fasting work first, and do not run this branch on
   a device that will later need it. `BodyMeasurementTests.migrationUpgrade`
   lists `[41 … 49, 51]` here and gains the 50 when the fasting work merges.
+  **Resolved 2026-10-07:** the fasting work merged; the list is `[41 … 54]`.
 - The contiguity checks (`CoreDailySchemaTests`, `MigrationFixtureTests`) were
   kept, not loosened: they subtract `reservedUnmergedMigrationVersions` (`[50]`,
   in `Tests/AlmanacCoreTests/MigrationReservation.swift`), and
   `testNoReservedVersionHasLanded` fails as soon as a 050 is in the list. **On
   merging the fasting work, empty that set** — the failing test says so.
+  **Emptied 2026-10-07** when the fasting work merged.
 - `project.pbxproj` gained four `KC…` entries. Its group and sources-phase
   lists are single lines, so a parallel branch adding Native files will conflict
   there; keep both sides' IDs.
@@ -286,7 +288,10 @@ text, rather than the caption-sized problem note.
   the fasting work merges: keep both sides of `AlmanacMigrations.all` (050
   before 051), empty `reservedUnmergedMigrationVersions`, and add 50 to
   `BodyMeasurementTests.migrationUpgrade`. `testNoReservedVersionHasLanded`
-  fails until the reservation is emptied, and says so.
+  fails until the reservation is emptied, and says so. **Done 2026-10-07**, all
+  three steps, in the merge of master into `fix/fasting-prayer-complete`. A
+  database that applied 051–054 before that merge still refuses 050 and has to
+  be reset or restored from a backup.
 - **Arabic — redefined 2026-10-07 by the owner: the whole app gets Arabic**, not
   Kitchen alone. That is the BRD's deferred "Arabic UI" brought into scope;
   tracked separately from Kitchen.
