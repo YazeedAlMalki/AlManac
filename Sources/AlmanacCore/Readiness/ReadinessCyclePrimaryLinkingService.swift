@@ -85,6 +85,35 @@ public struct ReadinessCyclePrimaryLinkingService: @unchecked Sendable {
         return try link(episode)
     }
 
+    /// Detaches `episodeId` from whichever cycle currently claims it as
+    /// primary, for a caller about to delete that episode row outright —
+    /// `sleep_episode` rows are referenced by `readiness_cycle
+    /// .primarySleepEpisodeId` (a real foreign key), so deleting a still-claimed
+    /// row throws and rolls back whatever transaction attempted it.
+    ///
+    /// Unlike `link`'s own orphan-clearing (which runs when a *different*
+    /// episode has just become primary for this anchor date, and immediately
+    /// re-derives the cycle's neighbors), there is no replacement episode
+    /// here — every sample behind this one was withdrawn from HealthKit with
+    /// nothing to take its place. The cycle is cleared back to bare
+    /// (`ensureCycle`'s own shape) and its stale score dropped; its
+    /// predecessor's `cycleEndTimestamp` is left as is rather than reopened,
+    /// since a bare cycle can still receive a primary later and re-close it
+    /// correctly then — reopening it now and finding this call never
+    /// followed up would be the wrong guess in the meantime.
+    ///
+    /// `nil` when no cycle currently references this episode — the ordinary
+    /// case for a non-primary episode being retired.
+    @discardableResult
+    public func detachEpisodeBeforeDeletion(episodeId: Int64) throws -> Int64? {
+        guard let cycle = try cycleStore.allCycles().first(where: { $0.primarySleepEpisodeId == episodeId })
+        else { return nil }
+        try linkingService.unlinkLogsFromCycle(cycleId: cycle.id)
+        try cycleStore.clearToBare(id: cycle.id)
+        try recordStore.deleteRecord(cycleId: cycle.id)
+        return cycle.id
+    }
+
     // MARK: - Private
 
     private func link(_ episode: StoredSleepEpisode) throws -> LinkResult {

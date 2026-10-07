@@ -174,6 +174,12 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
             return id
         }
         for id in stale {
+            // A retired episode can still be a readiness_cycle's primary —
+            // every sample behind a previously-linked night can be withdrawn
+            // with nothing to replace it, and `primarySleepEpisodeId` is a
+            // real foreign key. Detach it first so the delete below doesn't
+            // throw and roll back the whole sync.
+            try primaryLinking.detachEpisodeBeforeDeletion(episodeId: id)
             try db.run("DELETE FROM sleep_episode WHERE id = ?;", [.integer(id)])
         }
     }

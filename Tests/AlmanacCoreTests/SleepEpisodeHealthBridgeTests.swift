@@ -199,4 +199,44 @@ final class SleepEpisodeHealthBridgeTests: XCTestCase {
         XCTAssertEqual(try SorenessLogStore(db: db).logs(for: "2026-02-11").first { $0.id == sorenessID }?.readinessCycleId,
                        cycle.id)
     }
+
+    /// Regression for a bug a reviewer caught before it shipped:
+    /// `primarySleepEpisodeId` is a real foreign key, so once a synced night
+    /// has created its cycle, withdrawing every sample behind that night —
+    /// with other sleep history still live, so `reclassify` doesn't
+    /// short-circuit on an empty `grouped` — must not let `retireSuperseded`
+    /// try to delete a row the cycle still references. Unhandled, that
+    /// delete throws, the whole sync transaction rolls back, and the same
+    /// change set fails identically on every subsequent sync.
+    func testWithdrawingAPrimaryNightsOnlySampleDetachesItsCycleFirst() async throws {
+        let (db, provider, bridge) = try fixture()
+        let service = HealthSyncService(db: db, provider: provider, writer: bridge, healthDomain: .sleep)
+
+        // Unrelated history that survives the whole test, so `grouped` is
+        // never empty — the exact shape Codex's finding named ("while other
+        // sleep history remains").
+        try await sync(bridge, provider, db, added: [
+            stage("a1", .asleepCore, "2026-02-08T23:00:00Z", "2026-02-09T07:00:00Z"),
+            stage("s1", .asleepCore, "2026-02-10T23:00:00Z", "2026-02-11T07:00:00Z"),
+        ])
+
+        let before = try XCTUnwrap(try ReadinessCycleStore(db: db).cycle(anchorDate: "2026-02-11"))
+        let nightB = try XCTUnwrap(try SleepEpisodeStore(db: db).episodes(for: "2026-02-11").first)
+        XCTAssertEqual(before.primarySleepEpisodeId, nightB.id)
+
+        // The watch's only sample for that night is withdrawn entirely —
+        // nothing replaces it as "2026-02-11"'s primary.
+        provider.enqueue(HealthChangeSet(added: [], deletedExternalIDs: ["s1"], nextAnchor: [2]),
+                         for: .sleep)
+        try await service.syncOnce()
+
+        XCTAssertTrue(try SleepEpisodeStore(db: db).episodes(for: "2026-02-11").isEmpty,
+                      "the retired night must actually be deleted, not merely orphaned")
+        let after = try XCTUnwrap(try ReadinessCycleStore(db: db).cycle(anchorDate: "2026-02-11"))
+        XCTAssertNil(after.primarySleepEpisodeId, "cleared back to bare rather than left dangling")
+        XCTAssertNil(after.cycleStartTimestamp)
+
+        // Unrelated history is untouched.
+        XCTAssertEqual(try SleepEpisodeStore(db: db).episodes(for: "2026-02-09").count, 1)
+    }
 }
