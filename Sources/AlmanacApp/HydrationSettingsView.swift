@@ -3,6 +3,7 @@ import AlmanacCore
 
 struct HydrationSettingsView: View {
     @ObservedObject var viewModel: HydrationViewModel
+    @ObservedObject var healthKitManager: HealthKitManager
     @State private var showDailyGoalEditor: Bool = false
     @State private var isLoading: Bool = false
 
@@ -19,6 +20,8 @@ struct HydrationSettingsView: View {
                     } else {
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(spacing: 24) {
+                                HealthKitSectionView(healthKitManager: healthKitManager)
+
                                 DailyGoalSectionView(
                                     currentGoal: viewModel.userSettings?.dailyGoalMilliliters ?? 2500,
                                     onEdit: { showDailyGoalEditor = true }
@@ -263,6 +266,120 @@ struct ErrorMessageView: View {
     }
 }
 
+struct HealthKitSectionView: View {
+    @ObservedObject var healthKitManager: HealthKitManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Health Integration")
+                .font(.headline)
+
+            if healthKitManager.authorizationStatus == .sharingAuthorized {
+                HStack(spacing: 12) {
+                    Image(systemName: "heart.fill")
+                        .foregroundColor(.red)
+                        .frame(width: 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("HealthKit Connected")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Text("Tracking workouts & heart rate")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                }
+                .padding()
+                .background(Color.green.opacity(0.1))
+                .border(Color.green.opacity(0.3), width: 1)
+                .cornerRadius(8)
+
+                Button(action: {
+                    healthKitManager.refreshExerciseData()
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.clockwise")
+                        Text("Refresh Data")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .foregroundColor(.blue)
+                    .cornerRadius(8)
+                }
+            } else if healthKitManager.permissionDenied {
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                            .frame(width: 20)
+                        Text("HealthKit Not Available")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+
+                    Text("HealthKit is not available on this device. You can still track hydration manually.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Button(action: {
+                        Task {
+                            _ = await healthKitManager.requestAuthorization()
+                        }
+                    }) {
+                        Text("Try Again")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.orange.opacity(0.2))
+                            .foregroundColor(.orange)
+                            .cornerRadius(8)
+                    }
+                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .border(Color.orange.opacity(0.3), width: 1)
+                .cornerRadius(8)
+            } else {
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "heart")
+                            .foregroundColor(.gray)
+                            .frame(width: 20)
+                        Text("Enable HealthKit")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+
+                    Text("Allow access to your workouts and heart rate to receive personalized hydration recommendations based on your activity.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Button(action: {
+                        Task {
+                            _ = await healthKitManager.requestAuthorization()
+                        }
+                    }) {
+                        Text("Enable HealthKit")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .border(Color.blue.opacity(0.3), width: 1)
+                .cornerRadius(8)
+            }
+        }
+    }
+}
+
 struct ReminderConfigurationView: View {
     let reminder: HydrationReminder
     let viewModel: HydrationViewModel
@@ -386,6 +503,7 @@ struct ReminderConfigurationView: View {
         loggingService: loggingService,
         reminderService: reminderService
     )
+    let healthKitManager = HealthKitManager()
 
-    HydrationSettingsView(viewModel: viewModel)
+    HydrationSettingsView(viewModel: viewModel, healthKitManager: healthKitManager)
 }

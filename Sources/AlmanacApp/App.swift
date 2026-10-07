@@ -4,6 +4,7 @@ import AlmanacCore
 @main
 struct AlmanacApp: App {
     @StateObject private var viewModel: HydrationViewModel
+    @StateObject private var healthKitManager = HealthKitManager()
 
     init() {
         let store = HydrationStore(databasePath: Self.databasePath)
@@ -24,25 +25,31 @@ struct AlmanacApp: App {
     var body: some Scene {
         WindowGroup {
             TabView(selection: $viewModel.selectedTab) {
-                HydrationLoggingView(viewModel: viewModel)
+                HydrationLoggingView(viewModel: viewModel, healthKitManager: healthKitManager)
                     .tabItem {
                         Label("Log", systemImage: "drop.fill")
                     }
                     .tag(HydrationTab.logging)
 
-                HydrationDashboardView(viewModel: viewModel)
+                HydrationDashboardView(viewModel: viewModel, healthKitManager: healthKitManager)
                     .tabItem {
                         Label("Dashboard", systemImage: "chart.bar.fill")
                     }
                     .tag(HydrationTab.dashboard)
 
-                HydrationSettingsView(viewModel: viewModel)
+                HydrationSettingsView(viewModel: viewModel, healthKitManager: healthKitManager)
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
                     .tag(HydrationTab.settings)
             }
             .environmentObject(viewModel)
+            .environmentObject(healthKitManager)
+            .onAppear {
+                Task {
+                    _ = await healthKitManager.requestAuthorization()
+                }
+            }
         }
     }
 

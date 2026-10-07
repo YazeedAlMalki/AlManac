@@ -3,6 +3,7 @@ import AlmanacCore
 
 struct HydrationLoggingView: View {
     @ObservedObject var viewModel: HydrationViewModel
+    @ObservedObject var healthKitManager: HealthKitManager
     @State private var selectedVolume: Int = 250
     @State private var selectedLiquid: LiquidType = .water
     @State private var isLoggingInProgress: Bool = false
@@ -41,6 +42,17 @@ struct HydrationLoggingView: View {
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(spacing: 20) {
+                            if healthKitManager.isExerciseActive {
+                                ExerciseIndicatorView(
+                                    workoutType: healthKitManager.activeWorkoutType,
+                                    heartRate: healthKitManager.currentHeartRate
+                                )
+                            }
+
+                            if healthKitManager.permissionDenied {
+                                HealthKitPermissionBannerView()
+                            }
+
                             DrinkCategoryGridView(
                                 categories: drinkCategories,
                                 selectedLiquid: $selectedLiquid,
@@ -304,6 +316,74 @@ struct ErrorMessageView: View {
     }
 }
 
+struct ExerciseIndicatorView: View {
+    let workoutType: String?
+    let heartRate: Int?
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Image(systemName: "figure.walk")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Active Exercise")
+                        .font(.headline)
+                    if let workoutType = workoutType {
+                        Text(workoutType)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                if let heartRate = heartRate {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(heartRate)")
+                            .font(.headline)
+                        Text("BPM")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            Text("💡 Your body needs more water during exercise. Consider logging larger drink volumes.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(3)
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .border(Color.orange.opacity(0.3), width: 1)
+        .cornerRadius(8)
+    }
+}
+
+struct HealthKitPermissionBannerView: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "heart.fill")
+                    .foregroundColor(.red)
+                Text("HealthKit Access Required")
+                    .font(.headline)
+                Spacer()
+            }
+
+            Text("Enable HealthKit access to track exercise context and receive personalized hydration recommendations.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .border(Color.red.opacity(0.3), width: 1)
+        .cornerRadius(8)
+    }
+}
+
 #Preview {
     let store = HydrationStore(databasePath: ":memory:")
     let calculator = HydrationCalculator()
@@ -315,6 +395,7 @@ struct ErrorMessageView: View {
         loggingService: loggingService,
         reminderService: reminderService
     )
+    let healthKitManager = HealthKitManager()
 
-    HydrationLoggingView(viewModel: viewModel)
+    HydrationLoggingView(viewModel: viewModel, healthKitManager: healthKitManager)
 }

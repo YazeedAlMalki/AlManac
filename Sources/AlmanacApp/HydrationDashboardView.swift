@@ -3,6 +3,7 @@ import AlmanacCore
 
 struct HydrationDashboardView: View {
     @ObservedObject var viewModel: HydrationViewModel
+    @ObservedObject var healthKitManager: HealthKitManager
     @State private var autoRefreshTimer: Timer?
 
     var body: some View {
@@ -18,6 +19,13 @@ struct HydrationDashboardView: View {
                     } else if let metrics = viewModel.todayMetrics {
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(spacing: 24) {
+                                if healthKitManager.isExerciseActive {
+                                    ExerciseContextCardView(
+                                        workoutType: healthKitManager.activeWorkoutType,
+                                        heartRate: healthKitManager.currentHeartRate
+                                    )
+                                }
+
                                 HydrationCircleProgressView(
                                     current: Double(metrics.totalVolumeMilliliters),
                                     goal: viewModel.recommendedVolume
@@ -270,6 +278,54 @@ struct ErrorBannerView: View {
     }
 }
 
+struct ExerciseContextCardView: View {
+    let workoutType: String?
+    let heartRate: Int?
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Image(systemName: "figure.walk")
+                    .font(.title2)
+                    .foregroundColor(.orange)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Active Exercise")
+                        .font(.headline)
+                    if let workoutType = workoutType {
+                        Text(workoutType)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                if let heartRate = heartRate {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(heartRate)")
+                            .font(.headline)
+                            .foregroundColor(.orange)
+                        Text("BPM")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+
+            Text("You're exercising! Increase your hydration intake to compensate for fluid loss. The app will suggest larger drink volumes.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(3)
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .border(Color.orange.opacity(0.3), width: 1)
+        .cornerRadius(8)
+        .padding(.horizontal)
+    }
+}
+
 struct StatCard: View {
     let title: String
     let value: String
@@ -358,6 +414,7 @@ struct TimelineEntryView: View {
         loggingService: loggingService,
         reminderService: reminderService
     )
+    let healthKitManager = HealthKitManager()
 
-    HydrationDashboardView(viewModel: viewModel)
+    HydrationDashboardView(viewModel: viewModel, healthKitManager: healthKitManager)
 }

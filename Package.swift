@@ -32,7 +32,8 @@ let package = Package(
         .executableTarget(
             name: "AlmanacApp",
             dependencies: ["AlmanacCore"],
-            path: "Sources/AlmanacApp"
+            path: "Sources/AlmanacApp",
+            resources: [.process("Info.plist")]
         )
     ]
 )
