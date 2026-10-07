@@ -117,6 +117,10 @@ jobs:
       # simulator to exist, and there is no device name in this file to go stale.
       # CODE_SIGNING_ALLOWED=NO because a CI runner has no signing identity, and
       # no target here needs one.
+      #
+      # SWIFT_EMIT_LOC_STRINGS=YES makes the compiler write a .stringsdata file
+      # per Swift file listing every localizable literal under the exact key
+      # SwiftUI will look up. The next step reads them.
       - name: Build
         run: |
           set -euo pipefail
@@ -125,7 +129,15 @@ jobs:
             -scheme Almanac \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            SWIFT_EMIT_LOC_STRINGS=YES
+
+      # Every string the compiler extracted from the app and the widget that has
+      # no Arabic in its String Catalog (#4). Report-only while the translation
+      # is being written; it becomes --strict once the catalogs are complete, so
+      # a new English-only string fails the build instead of shipping silently.
+      - name: Untranslated strings
+        run: python3 tools/localization/check_catalog.py "$HOME/Library/Developer/Xcode/DerivedData"
 
       # The widget is not in the scheme's build action; xcodebuild inserts the
       # dependency implicitly because Almanac.app has an "Embed App Extensions"
