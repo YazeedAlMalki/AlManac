@@ -52,13 +52,27 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   Nutrition's first-install reference import is the one temporary exception:
   it uses a second connection on a utility task so its long write transaction
   does not block the main actor from opening the dashboard.
-- HealthKit: read and write for the `.water` domain only, via the one file
-  permitted to `import HealthKit` (`HealthKitProvider.swift`). Inbound sync
-  reuses the core's `HealthSyncService` unmodified; outbound uses
-  `HydrationWriteback`, which pushes manually-logged entries not yet marked
-  synced. The inbound/outbound pair runs when Connect is tapped, after each
+- HealthKit: read and write, via the one file permitted to `import HealthKit`
+  (`HealthKitProvider.swift`). `HydrationModel` keeps owning `.water`'s own
+  inbound sync and outbound write-back (`HydrationWriteback`), so a second
+  reader never races its anchor. `HealthModel` owns every other readable
+  domain — sleep, resting heart rate, HRV, steps, workouts, active/resting
+  energy and the three body-composition metrics — each through
+  `HealthSyncService` against its own bridge (`SleepEpisodeHealthBridge`,
+  `VitalsRecordHealthBridge`, `WorkoutSessionHealthBridge`,
+  `BodyCompositionMeasurementHealthBridge`), committing its rows and anchor
+  together and skipping past a domain that fails rather than blocking the
+  rest. Both inbound/outbound pairs run after Connect in Settings, after each
   local hydration log/delete, and whenever the scene becomes active.
-  Authorization is requested from Settings, not on launch.
+  Authorization for every readable domain is requested together, from
+  Settings, not on launch.
+- Readiness cycle (§8.4): a HealthKit sleep sample that `SleepClassifier`
+  resolves as that night's primary episode makes `SleepEpisodeHealthBridge`
+  call `ReadinessCyclePrimaryLinkingService.linkPrimaryEpisode` itself —
+  creating or updating `readiness_cycle` for the wake time's logical day,
+  closing the prior cycle against it, and re-linking that window's mood and
+  soreness logs. Idempotent per re-classification; see
+  `SleepEpisodeHealthBridgeTests.testPrimaryNightCreatesReadinessCycleAndLinksSameDayLogs`.
 - Local notification reminders (fixed times, configurable in Settings) via
   `NotificationScheduler`. No Info.plist key is required for local
   notifications; only runtime authorization is requested, from Settings.
@@ -150,7 +164,9 @@ manual edit further. It still uses no document picker.
    and progress bar update and the entry appears in today's list. Delete an
    entry and confirm the total drops accordingly.
 10. From Settings, connect HealthKit; confirm the system authorization sheet
-    appears listing only water read/write. Log an entry in Health directly
+    lists every readable domain (sleep, heart rate, HRV, steps, workouts,
+    active/resting energy, body mass, body fat %, lean mass, waist) plus
+    water read/write, in one sheet. Log a water entry in Health directly
     (outside Almanac) and confirm it appears in the dashboard after sync.
     Delete a HealthKit-sourced entry in Almanac and confirm it does not
     reappear after a further sync.
@@ -164,6 +180,21 @@ manual edit further. It still uses no document picker.
 13. Open Quick Log from the shell, log a water preset, then open Trends and
     confirm the empty state or bounded chart; open Modules and verify every
     destination remains reachable.
+14. With HealthKit connected, log a night's sleep in the Health app (Sleep ▸
+    Add Sleep, covering roughly 23:00–07:00) and background/foreground
+    Almanac (or wait for the next scene-active sync). Confirm: the Today
+    screen's sleep duration reflects that night; Settings ▸ Health data
+    lists the resting-heart-rate/HRV domains if also logged in Health; and
+    the readiness score moves off "no score yet" / recomputes with the new
+    sleep input (§9.1 — provisional, since no mood/soreness check-in has
+    happened yet).
+15. Log resting heart rate and HRV samples in the Health app, sync, then
+    confirm Today's readiness score and its missing-inputs list change to
+    reflect them (§9.1's redistribution). Complete the mood/soreness
+    check-in on the same day and confirm the score's state moves from
+    provisional to final (§9.1) and the day's cycle is the one both the
+    sleep sync and the check-in attached to — not two different cycles for
+    the same day.
 
 The HealthKit paths in items 10 and 11 are code-verified and now run from
 three places — Connect in Settings, after each local log/delete, and on scene

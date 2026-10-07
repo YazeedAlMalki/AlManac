@@ -30,6 +30,11 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
     /// "a row whose `unit` is not a stage is not a sleep sample" rule has one
     /// home rather than one per reader.
     private let stageSamples: SleepStageSampleStore
+    /// §8.4 — the other half of a primary episode landing in storage. This
+    /// bridge is the only writer `sleep_episode` has for HealthKit-derived
+    /// rows, so it is also the only place that can trigger that half for a
+    /// HealthKit sleep close; see this type's own doc comment.
+    private let primaryLinking: ReadinessCyclePrimaryLinkingService
 
     public init(db: Database, clock: any Clock = SystemClock(),
                 timeModel: TimeModel = TimeModel(timeZone: .current),
@@ -39,6 +44,7 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
         self.episodes = SleepEpisodeStore(db: db, clock: clock)
         self.timeModel = timeModel
         self.zone = zone
+        self.primaryLinking = ReadinessCyclePrimaryLinkingService(db: db, timeModel: timeModel, clock: clock)
     }
 
     @discardableResult
@@ -101,6 +107,14 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
     /// samples and re-selects a primary for each of ~1,000 days. Pure and fast
     /// enough at that size; if it ever shows up, narrow the load to the primary's
     /// 26-hour window per day.
+    ///
+    /// ponytail: `primaryLinking.linkPrimaryEpisode` below runs once per day
+    /// that resolves a primary, and `ReadinessCyclePrimaryLinkingService.link`
+    /// scans every existing cycle to find chronological neighbours — fine for
+    /// one new night, O(days²) across a ~1,000-day first-time backfill. Narrow
+    /// it (e.g. skip the call when the day's primary episode id is unchanged
+    /// from what is already stored) only if a first HealthKit connect is
+    /// measured to be slow.
     private func reclassify(_ touched: Set<LogicalDay>, in db: Database) throws {
         guard !touched.isEmpty else { return }
         var days = touched
@@ -120,9 +134,16 @@ public struct SleepEpisodeHealthBridge: HealthSampleWriting, @unchecked Sendable
             // belongs to, so a neighbouring day's window cannot retype it.
             let mine = typed.filter { timeModel.logicalDay($0.end) == day }
             for episode in mine {
-                try episodes.upsert(episode,
-                                     timezoneOffset: zone.offsetMinutes ?? 0,
-                                     logicalDay: day.value)
+                let id = try episodes.upsert(episode,
+                                              timezoneOffset: zone.offsetMinutes ?? 0,
+                                              logicalDay: day.value)
+                // §8.4: a HealthKit sleep close that classifies as primary is
+                // exactly this service's trigger condition — create or update
+                // this day's readiness cycle and re-link its wellness logs.
+                // Idempotent, so re-classifying an unchanged night is a no-op.
+                if episode.type == .primary {
+                    try primaryLinking.linkPrimaryEpisode(episodeId: id)
+                }
             }
             try retireSuperseded(on: day,
                                  keeping: Set(mine.compactMap { $0.healthKitUUIDs.first }),

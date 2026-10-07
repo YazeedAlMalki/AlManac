@@ -162,4 +162,41 @@ final class SleepEpisodeHealthBridgeTests: XCTestCase {
         XCTAssertEqual(episodes.count, 2, "the manual marker and the synced night are separate facts")
         XCTAssertNotNil(episodes.first { $0.id == manual && $0.source == .manual })
     }
+
+    /// §8.4, end to end: a HealthKit night that classifies as primary must
+    /// itself create the day's readiness cycle and pull that day's mood and
+    /// soreness logs onto it — the acceptance test for wiring this bridge to
+    /// `ReadinessCyclePrimaryLinkingService`, not just to `sleep_episode`.
+    func testPrimaryNightCreatesReadinessCycleAndLinksSameDayLogs() async throws {
+        let (db, provider, bridge) = try fixture()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+
+        // Logged after the wake time this night produces, same logical day —
+        // exactly what the cycle's own window (wake onward) is meant to catch.
+        let moodID = try MoodLogStore(db: db).log(
+            MoodLogDraft(score: 7, timestamp: formatter.date(from: "2026-02-11T08:00:00Z")!),
+            logicalDay: "2026-02-11")
+        let sorenessID = try SorenessLogStore(db: db).log(
+            SorenessLogDraft(overallScore: 3, timestamp: formatter.date(from: "2026-02-11T08:30:00Z")!),
+            logicalDay: "2026-02-11")
+
+        try await sync(bridge, provider, db, added: [
+            stage("s1", .asleepCore, "2026-02-10T23:00:00Z", "2026-02-11T07:00:00Z"),
+        ])
+
+        let episodes = try SleepEpisodeStore(db: db).episodes(for: "2026-02-11")
+        let episode = try XCTUnwrap(episodes.first)
+        XCTAssertEqual(episode.effectiveType, .primary)
+
+        let maybeCycle = try ReadinessCycleStore(db: db).cycle(anchorDate: "2026-02-11")
+        let cycle = try XCTUnwrap(maybeCycle)
+        XCTAssertEqual(cycle.primarySleepEpisodeId, episode.id)
+        XCTAssertEqual(cycle.primaryWakeTimestamp, formatter.date(from: "2026-02-11T07:00:00Z")!)
+
+        XCTAssertEqual(try MoodLogStore(db: db).logs(for: "2026-02-11").first { $0.id == moodID }?.readinessCycleId,
+                       cycle.id)
+        XCTAssertEqual(try SorenessLogStore(db: db).logs(for: "2026-02-11").first { $0.id == sorenessID }?.readinessCycleId,
+                       cycle.id)
+    }
 }
