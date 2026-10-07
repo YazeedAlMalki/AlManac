@@ -45,9 +45,23 @@ public struct WorkoutLoadSummary: Sendable, Hashable {
 ///   need for one of these appears, rather than guessing now.
 /// - RPE: averaged across whichever bouts recorded one, regardless of type.
 ///
+/// **A plan is not load.** A bout with nothing recorded as done — no actual
+/// value, no elapsed time, no RPE — contributes nothing: a workout template
+/// applied to today, or a program exercise skipped for the session, carries
+/// only planned (`prescribed*`) numbers until he records what he did
+/// (2026-10-07; unconfirmed, `CONTEXT.md` Training templates). A bout with
+/// *some* of its actuals recorded still fills the rest from the plan.
+///
 /// Trusts its input: filtering out soft-deleted bouts is
 /// `WorkoutBoutStore.bouts(sessionId:)`'s job, not this function's.
 public enum WorkloadComputer {
+    /// True when anything about the bout was recorded as done.
+    static func wasPerformed(_ bout: WorkoutBoutEntry) -> Bool {
+        bout.actualSets != nil || bout.actualReps != nil || bout.actualLoadKg != nil
+            || bout.actualDurationSeconds != nil || bout.actualDistanceMeters != nil
+            || bout.actualRounds != nil || bout.elapsedSeconds != nil || bout.rpe != nil
+    }
+
     public static func summary(for bouts: [WorkoutBoutEntry]) -> WorkoutLoadSummary {
         var tonnage: Double?
         var distance: Double?
@@ -57,7 +71,7 @@ public enum WorkloadComputer {
         var rpeSum = 0.0
         var rpeCount = 0
 
-        for bout in bouts {
+        for bout in bouts where wasPerformed(bout) {
             let sets = bout.actualSets ?? bout.prescribedSets
 
             switch bout.prescriptionType {

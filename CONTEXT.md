@@ -364,6 +364,16 @@ program day's session. The first template applied names the session. *Overrule
 by:* adding a "Use today" action to `TrainingTemplateView`'s rows, which the
 proposal had suggested.
 
+**A plan is not load (2026-10-07).** Applying a template writes only planned
+numbers, and `WorkloadComputer` used to count a bout's planned numbers when it
+had no actual ones, so starting a template added its full tonnage to Today's
+load, readiness and Insights before anything was done. Now a bout with nothing
+recorded as done (no actual value, no elapsed time, no RPE) adds nothing. A bout
+with some actuals still fills the rest from its plan. The same rule stops a
+program exercise skipped for the session from counting as done work. Raised by
+the Codex review on PR #6. *Overrule by:* removing the `wasPerformed` filter in
+`WorkloadComputer.summary(for:)`.
+
 ### Weighing
 
 **Meter fraction**:

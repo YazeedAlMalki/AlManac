@@ -322,7 +322,7 @@ private struct TemplateItemEditor: View {
                             field("Sets", text: $sets, id: "template-item-sets")
                             field("Reps", text: $reps, id: "template-item-reps")
                         }
-                        if kind.recordsLoad && kind.recordsReps {
+                        if kind.recordsLoad {
                             field("Load (kg)", text: $loadKg, id: "template-item-load")
                         }
                         if kind.recordsDuration {
