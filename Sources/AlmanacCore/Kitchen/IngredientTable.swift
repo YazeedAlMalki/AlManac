@@ -89,18 +89,7 @@ public enum IngredientNormaliser {
     /// Letters, digits, `&`, `'` and `-` make words; everything else — commas,
     /// slashes, brackets — separates them. "roasted/baked" is two words.
     static func words(in text: String) -> [String] {
-        var result: [String] = []
-        var current = ""
-        for character in text {
-            if character.isLetter || character.isNumber || character == "&" || character == "'" || character == "-" {
-                current.append(character)
-            } else if !current.isEmpty {
-                result.append(current)
-                current = ""
-            }
-        }
-        if !current.isEmpty { result.append(current) }
-        return result
+        text.split { !($0.isLetter || $0.isNumber || "&'-".contains($0)) }.map(String.init)
     }
 
     /// English plurals the catalogs actually use: berries, tomatoes, eggs.
