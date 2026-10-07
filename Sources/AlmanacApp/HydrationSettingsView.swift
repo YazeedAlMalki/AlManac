@@ -4,6 +4,7 @@ import AlmanacCore
 struct HydrationSettingsView: View {
     @ObservedObject var viewModel: HydrationViewModel
     @ObservedObject var healthKitManager: HealthKitManager
+    @ObservedObject var notificationManager: NotificationManager
     @State private var showDailyGoalEditor: Bool = false
     @State private var isLoading: Bool = false
 
@@ -20,6 +21,8 @@ struct HydrationSettingsView: View {
                     } else {
                         ScrollView(.vertical, showsIndicators: false) {
                             VStack(spacing: 24) {
+                                NotificationsSectionView(notificationManager: notificationManager)
+
                                 HealthKitSectionView(healthKitManager: healthKitManager)
 
                                 DailyGoalSectionView(
@@ -266,6 +269,158 @@ struct ErrorMessageView: View {
     }
 }
 
+struct NotificationsSectionView: View {
+    @ObservedObject var notificationManager: NotificationManager
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Notifications")
+                .font(.headline)
+
+            if notificationManager.notificationsEnabled {
+                HStack(spacing: 12) {
+                    Image(systemName: "bell.fill")
+                        .foregroundColor(.blue)
+                        .frame(width: 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Notifications Enabled")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Text("You'll receive hydration reminders")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .border(Color.blue.opacity(0.3), width: 1)
+                .cornerRadius(8)
+
+                VStack(spacing: 8) {
+                    Text("Active Reminders")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if notificationManager.pendingNotifications.isEmpty {
+                        Text("No scheduled reminders yet")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding()
+                    } else {
+                        VStack(spacing: 6) {
+                            ForEach(notificationManager.pendingNotifications.prefix(3), id: \.identifier) { request in
+                                HStack(spacing: 8) {
+                                    Image(systemName: "bell")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                    Text(request.identifier)
+                                        .font(.caption)
+                                        .lineLimit(1)
+                                    Spacer()
+                                }
+                                .padding(6)
+                                .background(Color.gray.opacity(0.05))
+                                .cornerRadius(4)
+                            }
+
+                            if notificationManager.pendingNotifications.count > 3 {
+                                Text("+ \(notificationManager.pendingNotifications.count - 3) more")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+
+                Button(action: {
+                    notificationManager.cancelAllNotifications()
+                    Task {
+                        await notificationManager.getPendingNotifications()
+                    }
+                }) {
+                    Text("Clear All Notifications")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red.opacity(0.1))
+                        .foregroundColor(.red)
+                        .cornerRadius(8)
+                }
+            } else if notificationManager.authorizationStatus == .denied {
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "bell.slash.fill")
+                            .foregroundColor(.red)
+                            .frame(width: 20)
+                        Text("Notifications Disabled")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+
+                    Text("Enable notifications in Settings to receive hydration reminders.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Button(action: {
+                        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(settingsURL)
+                        }
+                    }) {
+                        Text("Open Settings")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red.opacity(0.2))
+                            .foregroundColor(.red)
+                            .cornerRadius(8)
+                    }
+                }
+                .padding()
+                .background(Color.red.opacity(0.1))
+                .border(Color.red.opacity(0.3), width: 1)
+                .cornerRadius(8)
+            } else {
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "bell")
+                            .foregroundColor(.gray)
+                            .frame(width: 20)
+                        Text("Enable Notifications")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+
+                    Text("Get timely reminders to stay hydrated throughout the day.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Button(action: {
+                        Task {
+                            _ = await notificationManager.requestAuthorization()
+                        }
+                    }) {
+                        Text("Enable Notifications")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.1))
+                .border(Color.blue.opacity(0.3), width: 1)
+                .cornerRadius(8)
+            }
+        }
+    }
+}
+
 struct HealthKitSectionView: View {
     @ObservedObject var healthKitManager: HealthKitManager
 
@@ -504,6 +659,11 @@ struct ReminderConfigurationView: View {
         reminderService: reminderService
     )
     let healthKitManager = HealthKitManager()
+    let notificationManager = NotificationManager()
 
-    HydrationSettingsView(viewModel: viewModel, healthKitManager: healthKitManager)
+    HydrationSettingsView(
+        viewModel: viewModel,
+        healthKitManager: healthKitManager,
+        notificationManager: notificationManager
+    )
 }

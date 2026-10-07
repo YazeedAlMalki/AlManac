@@ -5,6 +5,7 @@ import AlmanacCore
 struct AlmanacApp: App {
     @StateObject private var viewModel: HydrationViewModel
     @StateObject private var healthKitManager = HealthKitManager()
+    @StateObject private var notificationManager = NotificationManager()
 
     init() {
         let store = HydrationStore(databasePath: Self.databasePath)
@@ -37,7 +38,7 @@ struct AlmanacApp: App {
                     }
                     .tag(HydrationTab.dashboard)
 
-                HydrationSettingsView(viewModel: viewModel, healthKitManager: healthKitManager)
+                HydrationSettingsView(viewModel: viewModel, healthKitManager: healthKitManager, notificationManager: notificationManager)
                     .tabItem {
                         Label("Settings", systemImage: "gear")
                     }
@@ -45,11 +46,25 @@ struct AlmanacApp: App {
             }
             .environmentObject(viewModel)
             .environmentObject(healthKitManager)
+            .environmentObject(notificationManager)
             .onAppear {
+                viewModel.setNotificationManager(notificationManager)
                 Task {
                     _ = await healthKitManager.requestAuthorization()
+                    _ = await notificationManager.requestAuthorization()
+                    await notificationManager.getPendingNotifications()
                 }
             }
+            .onReceive(
+                NotificationCenter.default.publisher(for: NSNotification.Name("HydrationReminderTapped")),
+                perform: handleReminderNotificationTap
+            )
+        }
+    }
+
+    private func handleReminderNotificationTap(_ notification: Notification) {
+        if let recommendedVolume = notification.userInfo?["recommendedVolume"] as? Double {
+            viewModel.selectedTab = .logging
         }
     }
 

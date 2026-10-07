@@ -23,6 +23,8 @@ final class HydrationViewModel: NSObject, ObservableObject {
     let reminderService: HydrationReminderService
 
     private var userId: String = "default_user"
+    private var notificationManager: NotificationManager?
+    private var reminderCheckTimer: Timer?
 
     init(
         store: HydrationStore,
@@ -39,6 +41,44 @@ final class HydrationViewModel: NSObject, ObservableObject {
         Task {
             await initializeData()
         }
+    }
+
+    func setNotificationManager(_ manager: NotificationManager) {
+        self.notificationManager = manager
+        startReminderChecking()
+    }
+
+    private func startReminderChecking() {
+        reminderCheckTimer?.invalidate()
+        reminderCheckTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                await self?.checkAndScheduleReminders()
+            }
+        }
+    }
+
+    private func checkAndScheduleReminders() async {
+        guard let profile = userProfile else { return }
+        guard let metrics = todayMetrics else { return }
+        guard let reminder = reminders.first(where: { $0.isEnabled }) else { return }
+
+        do {
+            if let recommendation = try reminderService.checkReminder(profile: profile, currentMetrics: metrics) {
+                if let nextTime = reminderService.nextReminderTime(reminder: reminder) {
+                    await notificationManager?.scheduleReminderNotification(
+                        for: reminder,
+                        with: recommendation,
+                        triggerDate: nextTime
+                    )
+                }
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    deinit {
+        reminderCheckTimer?.invalidate()
     }
 
     private func initializeData() async {
