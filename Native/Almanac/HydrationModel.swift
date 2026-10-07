@@ -127,13 +127,10 @@ final class HydrationModel: ObservableObject {
     }
 
     func log(amount: Milliliters, note: String?) throws {
-        guard let store, let db else { throw EditorFailure(message: "The database is unavailable.") }
-        let loggedAt = Date()
-        let id = try store.log(HydrationLogDraft(amount: amount, loggedAt: loggedAt, note: note))
-        // §7.2: water is the second half of the night window's contents. A dry
-        // fast is opened by a drink, so iftar's water is in scope for this even
-        // though no food was.
-        try NightNutritionWindowAssigner(db: db).assign(hydrationLogID: id, loggedAt: loggedAt)
+        guard store != nil, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        // Through the fasting-aware log: water during a dry fast ends it, and
+        // water between Maghrib and Fajr belongs to the night window (§7.2).
+        try FastingAwareHydrationLog(db: db).log(HydrationLogDraft(amount: amount, loggedAt: Date(), note: note))
         refresh()
         syncAfterChange()
     }
@@ -165,13 +162,12 @@ final class HydrationModel: ObservableObject {
     /// and re-deriving it here would let the two drift.
     @discardableResult
     func logDrink(_ drink: Drink, volume: Milliliters?, note: String?) throws -> [DrinkLoggingWarning] {
-        let loggedAt = Date()
-        let result = try loggingService().logDrink(drink, volume: volume, at: loggedAt, note: note)
-        // Same §7.2 window assignment as a plain water entry — a drink logged at
-        // iftar is inside the night window on exactly the same terms.
+        let result = try loggingService().logDrink(drink, volume: volume, at: Date(), note: note)
+        // The same rules as a plain water entry, plus one: a drink with
+        // calories ends an intermittent fast. Applied to the row the service
+        // wrote, so the calories judged are the scaled ones it recorded.
         if let db {
-            try NightNutritionWindowAssigner(db: db)
-                .assign(hydrationLogID: result.hydrationLogID, loggedAt: loggedAt)
+            try FastingAwareHydrationLog(db: db).didLog(hydrationLogID: result.hydrationLogID)
         }
         refresh()
         syncAfterChange()
@@ -210,8 +206,9 @@ final class HydrationModel: ObservableObject {
     }
 
     func delete(id: String) throws {
-        guard let store else { throw EditorFailure(message: "The database is unavailable.") }
-        try store.delete(id: id)
+        guard store != nil, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        // Deleting the drink that broke a dry fast gives the fast back.
+        try FastingAwareHydrationLog(db: db).delete(id: id)
         refresh()
         syncAfterChange()
     }

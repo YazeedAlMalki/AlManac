@@ -17,6 +17,53 @@ public struct PrayerSettings: Sendable, Hashable {
     public let ishaOffsetMin: Int
     public let timezone: String
     public let updatedAt: Date
+    /// `prayer_settings.asrMethod` (Migration050): `"standard"` or `"hanafi"`.
+    public let asrMethod: String
+    /// `prayer_settings.alertPrayers` (Migration050), parsed: which of the five
+    /// prayers raise an alert when the `prayer` notification rule is on.
+    public let alertPrayers: Set<String>
+
+    public init(calculationMethod: String, customFajrAngleDeg: Double?, customIshaAngleDeg: Double?,
+                latitude: Double?, longitude: Double?, city: String?, country: String?,
+                manualCityOverride: Bool, fajrOffsetMin: Int, dhuhrOffsetMin: Int, asrOffsetMin: Int,
+                maghribOffsetMin: Int, ishaOffsetMin: Int, timezone: String, updatedAt: Date,
+                asrMethod: String = AsrMethod.standard.rawValue,
+                alertPrayers: Set<String> = Set(PrayerTime.obligatoryNames)) {
+        self.calculationMethod = calculationMethod
+        self.customFajrAngleDeg = customFajrAngleDeg
+        self.customIshaAngleDeg = customIshaAngleDeg
+        self.latitude = latitude
+        self.longitude = longitude
+        self.city = city
+        self.country = country
+        self.manualCityOverride = manualCityOverride
+        self.fajrOffsetMin = fajrOffsetMin
+        self.dhuhrOffsetMin = dhuhrOffsetMin
+        self.asrOffsetMin = asrOffsetMin
+        self.maghribOffsetMin = maghribOffsetMin
+        self.ishaOffsetMin = ishaOffsetMin
+        self.timezone = timezone
+        self.updatedAt = updatedAt
+        self.asrMethod = asrMethod
+        self.alertPrayers = alertPrayers
+    }
+
+    /// Whether there is anywhere to calculate prayer times for. False is the
+    /// normal state before a user has granted location or picked a city.
+    public var hasLocation: Bool { latitude != nil && longitude != nil }
+
+    /// The per-prayer minute offset §5.22 stores, by `prayer_times_cache`
+    /// column name. Sunrise has no offset column and is never adjusted.
+    public func offsetMinutes(for name: String) -> Int {
+        switch name {
+        case "fajr": return fajrOffsetMin
+        case "dhuhr": return dhuhrOffsetMin
+        case "asr": return asrOffsetMin
+        case "maghrib": return maghribOffsetMin
+        case "isha": return ishaOffsetMin
+        default: return 0
+        }
+    }
 }
 
 /// Reading and updating the `prayer_settings` singleton (§5.22, §12.2).
@@ -44,7 +91,7 @@ public struct PrayerSettingsStore: @unchecked Sendable {
         guard let row = try db.query("""
         SELECT calculationMethod, customFajrAngleDeg, customIshaAngleDeg, latitude, longitude,
                city, country, manualCityOverride, fajrOffsetMin, dhuhrOffsetMin, asrOffsetMin,
-               maghribOffsetMin, ishaOffsetMin, timezone, updatedAt
+               maghribOffsetMin, ishaOffsetMin, timezone, updatedAt, asrMethod, alertPrayers
         FROM prayer_settings WHERE id = 1;
         """).first else {
             // No row yet: the schema's own column defaults (Migration024),
@@ -65,8 +112,12 @@ public struct PrayerSettingsStore: @unchecked Sendable {
         try db.run("INSERT OR IGNORE INTO prayer_settings (id, updatedAt) VALUES (1, ?);", [.text(nowText)])
     }
 
+    /// `timezone`, when given, is the zone the location keeps its clocks in —
+    /// a manual city's own zone, or the device's for a detected fix. Nil leaves
+    /// the stored zone alone.
     public func updateLocation(latitude: Double, longitude: Double,
-                                city: String?, country: String?, manualCityOverride: Bool) throws {
+                                city: String?, country: String?, manualCityOverride: Bool,
+                                timezone: String? = nil) throws {
         try ensureRowExists()
         try db.run("""
         UPDATE prayer_settings SET latitude = ?, longitude = ?, city = ?, country = ?,
@@ -79,6 +130,25 @@ public struct PrayerSettingsStore: @unchecked Sendable {
             .integer(manualCityOverride ? 1 : 0),
             .text(nowText)
         ])
+        if let timezone { try updateTimezone(timezone) }
+    }
+
+    /// `"standard"` or `"hanafi"` (`AsrMethod`'s raw values). Anything else is a
+    /// caller bug and is refused rather than stored, because an unreadable value
+    /// would silently fall back to standard and show a Hanafi user the wrong Asr.
+    public func updateAsrMethod(_ method: AsrMethod) throws {
+        try ensureRowExists()
+        try db.run("UPDATE prayer_settings SET asrMethod = ?, updatedAt = ? WHERE id = 1;",
+                   [.text(method.rawValue), .text(nowText)])
+    }
+
+    /// Which prayers alert. Names outside the five obligatory prayers are
+    /// dropped — sunrise is not a prayer and must not become an alert by a typo.
+    public func updateAlertPrayers(_ names: Set<String>) throws {
+        try ensureRowExists()
+        let kept = PrayerTime.obligatoryNames.filter(names.contains)
+        try db.run("UPDATE prayer_settings SET alertPrayers = ?, updatedAt = ? WHERE id = 1;",
+                   [.text(kept.joined(separator: ",")), .text(nowText)])
     }
 
     public func updateCalculationMethod(_ method: String, customFajrAngleDeg: Double? = nil,
@@ -139,7 +209,9 @@ public struct PrayerSettingsStore: @unchecked Sendable {
             maghribOffsetMin: Int(row.int("maghribOffsetMin") ?? 0),
             ishaOffsetMin: Int(row.int("ishaOffsetMin") ?? 0),
             timezone: row.string("timezone") ?? "Asia/Riyadh",
-            updatedAt: row.string("updatedAt").flatMap(iso8601ToDate) ?? Date()
+            updatedAt: row.string("updatedAt").flatMap(iso8601ToDate) ?? Date(),
+            asrMethod: row.string("asrMethod") ?? AsrMethod.standard.rawValue,
+            alertPrayers: Self.parseAlertPrayers(row.string("alertPrayers"))
         )
     }
 
@@ -147,5 +219,14 @@ public struct PrayerSettingsStore: @unchecked Sendable {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         return f.date(from: text)
+    }
+
+    /// An absent column (a database read before Migration050) means the
+    /// migration's own default: every prayer. An empty string is a real choice
+    /// — the user turned every prayer off — and stays empty.
+    static func parseAlertPrayers(_ text: String?) -> Set<String> {
+        guard let text else { return Set(PrayerTime.obligatoryNames) }
+        return Set(text.split(separator: ",").map(String.init)
+            .filter(PrayerTime.obligatoryNames.contains))
     }
 }

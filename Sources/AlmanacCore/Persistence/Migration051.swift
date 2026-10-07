@@ -21,11 +21,10 @@ import Foundation
 /// Almanac holds one person.
 ///
 /// Numbered 051, not 050, on purpose (2026-10-06). 050 belongs to the fasting
-/// and prayer work (prayer preferences), which lands on master first. Until it
-/// does, this list has a gap at 050, and `MigrationRunner` refuses a pending
-/// migration below the applied head — so a database that has run 051 cannot
-/// later take 050. Do not run this branch on a device that will later need the
-/// fasting work until that work has merged.
+/// and prayer work (prayer preferences). The gap at 050 was filled when that
+/// work merged on 2026-10-07. `MigrationRunner` refuses a pending migration
+/// below the applied head, so a database that ran 051 *before* the merge still
+/// cannot take 050 and has to be reset or restored from a backup.
 public enum Migration051_KitchenPantry: Migration {
     public static let version = 51
     public static let name = "kitchen_pantry"

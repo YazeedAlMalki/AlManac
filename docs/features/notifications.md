@@ -6,9 +6,40 @@ tested in `AlmanacCore`; what was missing was a caller. The ~480 lines of
 notification logic in `Sources/AlmanacCore/Notifications/` had no production
 caller at all, and the app's own scheduler took raw `[DateComponents]`.
 
+## Corrected 2026-10-06 — four defects that reached suhoor and iftar
+
+- **Nothing ever made a day a fast day**, so suhoor and iftar were never planned
+  in the running app. See `docs/features/fasting.md` §0.
+- **Past reminders were planned, and fired again on every foreground.** The
+  planner walks from the start of today's logical day and promised to drop
+  instants in the past or beyond the horizon; it never did, and the scheduler
+  turns a past instant into "fire in one second". Opening the app after Maghrib
+  announced iftar again each time. `plan()` now keeps only `now < fireAt ≤ now +
+  horizon`. Two planner tests had been asserting the bug (a suhoor two hours in
+  the past was expected in the plan) and were corrected.
+- **The scheduler's "is this ours" check was reversed** —
+  `ownedPrefix.hasPrefix(id)` rather than `id.hasPrefix(ownedPrefix)` — so stale
+  requests were never removed, "Turn all reminders off" cancelled nothing, and
+  "Queued now" always read 0.
+- **The dry-fast axis was evaluated "as of now" for 48 hours.** During a fast,
+  that muted every water reminder for two days and *tomorrow's suhoor*. It is now
+  per fire instant (`DryFastSpans`): each scheduled fast day contributes
+  `[Fajr, Maghrib)` — or up to the moment its fast was broken — so tomorrow's
+  suhoor and tonight's water are planned, and tomorrow's daytime water is muted
+  before tomorrow's fast has begun. A dry session with no schedule or prayer
+  times behind it still mutes the whole pass, as before.
+
+**Added: `prayer`**, an alert at each chosen prayer's time (Migration050).
+Seeded **off**; the switch is on the Prayer screen and in Reminders, and
+`prayer_settings.alertPrayers` holds which of the five prayers alert. It is not
+an Appendix B row and nothing suppresses it — a prayer's time is the same fact
+during a fast or a shift, and the user asked to be told it. On a fast day with
+iftar on, Maghrib's alert is left to iftar, which fires at the same instant.
+Identifier `almanac.prayer.<name>.<day>`.
+
 ## What the feature is
 
-Nine notification types, per §14.2, all local (`UNUserNotificationCenter`, no
+Ten notification types — §14.2's nine plus `prayer` — all local (`UNUserNotificationCenter`, no
 push server). For each one: when it fires, what it says, whether the user wants
 it, and whether the user's current state says it should be suppressed.
 
@@ -23,6 +54,7 @@ it, and whether the user's current state says it should be suppressed.
 | `iftar` | Maghrib, on religious fast days | on | `almanac.iftar.<day>` |
 | `contextual_snack` | **Delivered immediately**, not scheduled | off | `almanac.contextual_snack.immediate` |
 | `contextual_hydration` | ~60 min before the usual time for a logged meal type | off | `almanac.contextual_hydration.<mealType>.<day>` |
+| `prayer` | Each chosen prayer's time (not Maghrib on a fast day with iftar on) | off | `almanac.prayer.<name>.<day>` |
 
 The on/off column is §5.25's default table, transcribed in `Migration045`.
 

@@ -103,6 +103,8 @@ looks right" is visibly not the same as "this was checked".
 
 ### 4.1 Notifications
 - [ ] Grant notifications; confirm a water reminder arrives at its scheduled minute.
+- [ ] Turn on prayer alerts; confirm the next prayer's alert arrives at its minute, and that opening the app afterwards does not deliver it again.
+- [ ] On a fast day, confirm suhoor arrives 20 minutes before Fajr and iftar at Maghrib — once each, however often the app is opened.
 - [ ] Start a religious dry fast; confirm the next water reminder is suppressed.
 - [ ] End the fast; confirm reminders resume on the next app open.
 - [ ] Log a mood check-in; confirm today's readiness notification stops.
@@ -270,3 +272,23 @@ The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
 | 7.15 | Combined mode shows the "may not be directly comparable" note; separate mode does not | **PASS** — the same test asserts the "Equipment variants may not be directly comparable" note is absent in separate mode and present in combined mode |
 | 7.16 | An exercise with only pre-migration history still draws a series in separate mode | **PASS** — `testPreMigrationHistoryStillDrawsASeriesInSeparateMode` finishes a bodyweight bout with no variant (the shape pre-Migration049 history has), and asserts the volume graph still draws a series in the default separate mode ("N logged") while the weight graph honestly reports no load |
 | 7.17 | Deleting a session does not consume a rotation step | **PASS** — `testDeletingOrAbandoningASessionDoesNotConsumeARotationStep` drives both legs that skip a rotation step: *abandoning* ("Put down" writes nothing, the day stays pass 1) and *deleting* (Today → Rhythm → day editor → deleting that day's "1 min" training rows leaves the day back at pass 1). No assertions touch other days' sessions |
+
+## 8. Fasting and prayer times (2026-10-06) — **driven on the simulator**
+
+iPhone 16e, iOS 26.3, by hand through the simulator, not by a UI test. Core rules
+are pinned by `Religious fasting, derived` and `Prayer times, completed`.
+
+| # | Step | Result |
+|---|---|---|
+| 8.1 | With no location, Prayer offers both current location and a city list | **PASS** |
+| 8.2 | Choosing Riyadh shows six times, the next prayer's countdown, the Hijri date and the Qibla | **PASS** — 244°, 25 Rabi al-Thani 1448 on 6 Oct 2026 |
+| 8.3 | An offset moves that prayer in the cache from today | **PASS** — Maghrib +1 min, 14:35Z → 14:36Z |
+| 8.4 | Ramadan's schedule exists without anyone setting it up | **PASS** — 1448 and 1449 rows created on launch |
+| 8.5 | Marking today shows the live Fajr→Maghrib progress | **PASS** |
+| 8.6 | Water from Quick Log during the fast ends it at that minute | **PASS** — "Fast broken at 7:06 am", 157 min recorded |
+| 8.7 | Deleting that water from Hydration gives the fast back | **PASS** |
+| 8.8 | "Use the calendar for today" removes the session | **PASS** |
+| 8.9 | An intermittent fast started yesterday evening is still shown after 04:00, and ends with its duration | **PASS** — 12 h 1 min |
+| 8.10 | Suhoor and iftar notifications arrive | **UNRUN** — device-only, §4.1 |
+| 8.11 | The widget shows the iftar countdown on a fast day | **UNRUN** — not placed on a home screen |
+| 8.12 | "Use current location" with a real GPS fix | **UNRUN** — the simulator has no fix set |

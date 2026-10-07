@@ -12,8 +12,9 @@ struct NotificationPlannerTests {
     let timeModel = TimeModel(timeZone: TimeZone(identifier: "Asia/Riyadh")!)
     let day = LogicalDay("2025-09-18")
 
-    /// 2025-09-18 06:00:00 Riyadh. Before the day's Fajr, so a dry fast started
-    /// at Fajr is not yet active at `now` — the suhoor case depends on that.
+    /// 2025-09-18 06:00:00 Riyadh — after the fixtures' 04:30 Fajr. The suhoor
+    /// test plans from 02:00 instead, because a reminder whose time has passed
+    /// is not planned at all.
     let now = Date(timeIntervalSince1970: 1_758_164_400)
 
     init() throws {
@@ -104,11 +105,21 @@ struct NotificationPlannerTests {
         try ReligiousFastScheduleStore(db: db).createSchedule(
             scheduleType: "ramadan", startGregorianDate: day.value, endGregorianDate: day.value)
 
-        let plan = try planner.plan()
+        // 02:00, before suhoor: at `now` (06:00) the suhoor reminder is two
+        // hours gone, and planning it would make it fire on the spot.
+        let plan = try NotificationPlanner(db: db, timeModel: timeModel, clock: FixedClock(riyadh(2))).plan()
         let suhoor = planned(plan, .suhoor)
         #expect(suhoor.count == 1)
         #expect(suhoor.first?.fireAt == fajr.addingTimeInterval(-20 * 60))
-        #expect(suhoor.first?.body.contains("4:30") == true, "the body names Fajr's time")
+        // Rendered the way the planner renders it — in the device's locale, so
+        // "4:30 AM" in English and "٤:٣٠ ص" in Arabic. Only the day key is pinned.
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = timeModel.timeZone
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let fajrText = formatter.string(from: fajr)
+        #expect(suhoor.first?.body.contains(fajrText) == true, "the body names Fajr's time")
 
         let iftar = planned(plan, .iftar)
         #expect(iftar.map(\.fireAt) == [maghrib])
@@ -426,10 +437,13 @@ struct NotificationPlannerTests {
         for offset in 0...4 {
             let future = LogicalDay(String(format: "2025-09-%02d", 17 + offset))
             let scheduleId = try ShiftScheduleStore(db: db).createSchedule(ShiftScheduleDraft(name: "S\(offset)"))
+            // The 20th wakes at 05:00 so its readiness falls inside the horizon,
+            // which ends at 06:00 that day; every other day wakes at 07:00, after
+            // `now` on the 18th.
             try ShiftScheduleStore(db: db).logOccurrence(ShiftOccurrenceDraft(
                 scheduleId: scheduleId, date: future.value, shiftType: .day,
                 expectedSleepWindowStart: riyadh(23, day: future.value),
-                expectedWakeTime: riyadh(7, day: future.value)))
+                expectedWakeTime: riyadh(offset == 3 ? 5 : 7, day: future.value)))
         }
 
         let days = readinessDays(in: try planner.plan())

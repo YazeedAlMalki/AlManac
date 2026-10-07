@@ -131,6 +131,7 @@ struct NotificationSettingsView: View {
         case .iftar: return "Iftar"
         case .contextualSnack: return "Pre-workout snack"
         case .contextualHydration: return "Pre-meal drink"
+        case .prayer: return "Prayer times"
         }
     }
 
@@ -147,6 +148,7 @@ struct NotificationSettingsView: View {
         case .iftar: return "At Maghrib, on religious fast days."
         case .contextualSnack: return "When a long gap opens before a planned workout."
         case .contextualHydration: return "About an hour before a meal you usually eat."
+        case .prayer: return "At each prayer you choose in Prayer. Maghrib on a fast day is the iftar reminder."
         }
     }
 }

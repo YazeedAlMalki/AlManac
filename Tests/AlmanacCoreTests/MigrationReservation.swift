@@ -15,7 +15,9 @@ import Foundation
 /// The contiguity tests subtract this set instead of dropping the invariant, and
 /// `testNoReservedVersionHasLanded` fails the moment a reserved version appears
 /// in `AlmanacMigrations.all`. **When the fasting work merges, empty this set.**
-let reservedUnmergedMigrationVersions: Set<Int> = [50]
+/// **Emptied 2026-10-07:** the fasting work merged, and 050 is
+/// `Migration050_PrayerPreferences`, ahead of Kitchen's 051.
+let reservedUnmergedMigrationVersions: Set<Int> = []
 
 /// `start...end`, less the reserved versions: what a contiguous list would hold
 /// once every reservation has merged.

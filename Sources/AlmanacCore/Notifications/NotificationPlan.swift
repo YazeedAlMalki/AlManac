@@ -88,6 +88,17 @@ public enum NotificationText {
     public static let iftarTitle = "Iftar time"
     public static let iftarBody = "Maghrib has arrived. Your fast has ended."
 
+    /// "Asr" — the prayer's name and nothing else, the way a call to prayer
+    /// announces it.
+    public static func prayerTitle(_ name: String) -> String {
+        PrayerTime.displayName(name)
+    }
+
+    /// "It is time for Asr (15:16)." The time is formatted by the caller.
+    public static func prayerBody(_ name: String, timeText: String) -> String {
+        "It is time for \(PrayerTime.displayName(name)) (\(timeText))."
+    }
+
     public static func mealTitle(_ mealType: NutritionMealType) -> String {
         switch mealType {
         case .breakfast: return "Time for breakfast"
