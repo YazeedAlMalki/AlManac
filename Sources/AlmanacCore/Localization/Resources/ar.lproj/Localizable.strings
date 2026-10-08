@@ -61,7 +61,7 @@
 "Choose a side for arm or thigh when side tracking is on; otherwise leave it unset." = "اختر جانبًا للذراع أو الفخذ عند تفعيل تتبّع الجانبين؛ وإلا فاتركه دون تحديد.";
 "Circuit" = "دائرة";
 "Coconut Water" = "ماء جوز الهند";
-"Colour grade %@ of 8, %@" = "درجة اللون %@ من 8، %@";
+"Colour grade %@ of 8, %@" = "درجة اللون %@ من ٨، %@";
 "Combined" = "مدمج";
 "Consistent training, and comfortable progressing it." = "تدريب منتظم، مع ارتياح في التدرّج فيه.";
 "Context" = "السياق";
@@ -106,8 +106,8 @@
 "Found in: %@." = "ورد في: %@.";
 "Gluten / cereals" = "الغلوتين / الحبوب";
 "Grade %@" = "الدرجة %@";
-"Grade 1 — pale" = "الدرجة 1 — باهت";
-"Grade 8 — dark brown" = "الدرجة 8 — بني داكن";
+"Grade 1 — pale" = "الدرجة ١ — باهت";
+"Grade 8 — dark brown" = "الدرجة ٨ — بني داكن";
 "Green" = "أخضر";
 "Green Tea" = "شاي أخضر";
 "Hard exercise six or seven days a week." = "تمارين شاقة ستة أو سبعة أيام في الأسبوع.";
@@ -133,7 +133,7 @@
 "Kombucha" = "كومبوتشا";
 "Laboratory" = "المختبر";
 "Ladder" = "سُلّم";
-"Latte (2% Milk)" = "لاتيه (حليب 2%)";
+"Latte (2% Milk)" = "لاتيه (حليب ٢٪)";
 "Lean mass" = "الكتلة العضلية الصافية";
 "Leave it blank and nothing depends on it." = "اتركه فارغًا ولن يتوقف عليه شيء.";
 "Light exercise one or two days a week." = "تمارين خفيفة يومًا أو يومين في الأسبوع.";
@@ -195,10 +195,10 @@
 "Pounds (lb)" = "رطل (lb)";
 "Prayer" = "الصلاة";
 "Prefer not to say" = "أفضّل عدم القول";
-"Preservatives above 10 mg/kg. Common in wine and dried fruit." = "مواد حافظة فوق 10 ملغ/كغ. شائعة في النبيذ والفواكه المجففة.";
+"Preservatives above 10 mg/kg. Common in wine and dried fruit." = "مواد حافظة فوق ١٠ ملغ/كغ. شائعة في النبيذ والفواكه المجففة.";
 "Profile" = "الملف الشخصي";
 "Quality reps" = "تكرارات نوعية";
-"RPE %@/10" = "الجهد %@/10";
+"RPE %@/10" = "الجهد %@/١٠";
 "Ramadan context — calibrating. Compared against your general average until enough Ramadan days are logged." = "سياق رمضان — قيد المعايرة. تتم المقارنة بمتوسطك العام حتى تُسجَّل أيام كافية من رمضان.";
 "Readiness" = "الجاهزية";
 "Records" = "السجلات";
@@ -244,7 +244,7 @@
 "Squid, octopus, clams, mussels, snails, scallops." = "الحبار والأخطبوط والمحار وبلح البحر والحلزون والإسكالوب.";
 "Steps" = "الخطوات";
 "Straight sets" = "مجموعات متتالية";
-"Suhoor — 20 minutes remaining" = "السحور — بقيت 20 دقيقة";
+"Suhoor — 20 minutes remaining" = "السحور — بقيت ٢٠ دقيقة";
 "Sulphites" = "الكبريتيت";
 "Superset" = "مجموعة مركّبة";
 "Supplements" = "المكمّلات";
@@ -285,8 +285,8 @@
 "Years of training, including competition or coaching." = "سنوات من التدريب، بما في ذلك المنافسة أو التدريب.";
 "Yellow" = "أصفر";
 "Your sleep window is approaching. Settle in when you can." = "اقترب موعد نومك. استرخِ متى استطعت.";
-"Your usual %@ is about %@ minutes away. Drinking 200 ml now can help with hunger." = "موعد %@ المعتاد بعد نحو %@ دقيقة. شرب 200 مل الآن قد يساعد على تخفيف الجوع.";
-"Your usual %@ is about an hour away. Drinking 200 ml now can help with hunger." = "موعد %@ المعتاد بعد نحو ساعة. شرب 200 مل الآن قد يساعد على تخفيف الجوع.";
+"Your usual %@ is about %@ minutes away. Drinking 200 ml now can help with hunger." = "موعد %@ المعتاد بعد نحو %@ دقيقة. شرب ٢٠٠ مل الآن قد يساعد على تخفيف الجوع.";
+"Your usual %@ is about an hour away. Drinking 200 ml now can help with hunger." = "موعد %@ المعتاد بعد نحو ساعة. شرب ٢٠٠ مل الآن قد يساعد على تخفيف الجوع.";
 "Your workout is in %@ hours. Consider a snack — a banana or similar fast carb." = "تمرينك بعد %@ ساعة. فكّر في وجبة خفيفة — موزة أو كربوهيدرات سريعة مشابهة.";
 "Your workout is in %@ minutes. Consider a snack — a banana or similar fast carb." = "تمرينك بعد %@ دقيقة. فكّر في وجبة خفيفة — موزة أو كربوهيدرات سريعة مشابهة.";
 "breakfast" = "الفطور";

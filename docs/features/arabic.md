@@ -96,6 +96,11 @@ decimal point for the locale's, only when those digits are not ASCII, and
 changes nothing else. `AlmanacNumber.compact` and the core's numbers in
 sentences use it.
 
+Numbers written into a translation itself ("من ١٠", "٠٤:٠٠", "٢٥٠ مل") are in
+Arabic-Indic digits too, so a sentence never mixes the two kinds
+(`%lld من 10` showed as "٧ من 10"). The one exception is "+03:00" in the
+lab-entry hint, which is what a person types.
+
 **Typed numbers are read in either language's digits.** The number pad types
 ٧٢٫٥ in Arabic, which `Double(_:)` refuses. Every numeric field parses through
 `Double(userInput:)` / `Int(userInput:)` (`NumberInput`). They read
@@ -138,7 +143,9 @@ shows which way the charts' time axis runs in Arabic.
   found was in `String`s the app built and showed verbatim: Today's greeting
   and its "Still needed: …" line, the readiness duration labels, the Trends
   and Insights range pickers ("30 days"), and Vitals' history footer. All of
-  these now have Arabic. The rest of the Latin text it reported is meant to
+  these now have Arabic, and the second pass (run 37837350874) confirmed it.
+  That pass also showed "04:00" in ASCII digits among Arabic-Indic ones,
+  which led to the digit rule above. The rest of the Latin text it reported is meant to
   stay: Almanac, HRV, HealthKit, CSV, the stored default name "User" and the
   fixture laboratory's name. Screens with entries in them (charts, logged
   sessions, meals) and the trend arrows' direction still need a run on a
