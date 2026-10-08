@@ -125,7 +125,7 @@ final class ProgramModel: ObservableObject {
             todayReadinessScore = readTodaysReadiness()
             readProblem = nil
         } catch {
-            readProblem = "Could not read your training programs."
+            readProblem = String(localized: "Could not read your training programs.")
         }
     }
 
@@ -157,7 +157,7 @@ final class ProgramModel: ObservableObject {
             itemsByDay[programDayId] = try poolStore.items(programDayId: programDayId)
             readProblem = nil
         } catch {
-            readProblem = "Could not read this day's exercises."
+            readProblem = String(localized: "Could not read this day's exercises.")
         }
     }
 

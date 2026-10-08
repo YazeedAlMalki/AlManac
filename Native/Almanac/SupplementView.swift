@@ -315,7 +315,7 @@ struct SupplementView: View {
             // is merely empty and a screen that could not be read never look the
             // same — the same distinction `AlmanacProblemNote` exists for.
             self.error = String(describing: error)
-            readProblem = "Could not read your supplement plans."
+            readProblem = String(localized: "Could not read your supplement plans.")
         }
     }
 }

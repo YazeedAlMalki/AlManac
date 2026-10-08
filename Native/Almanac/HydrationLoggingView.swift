@@ -155,7 +155,7 @@ struct HydrationLoggingView: View {
     /// rather than zero, so an absent figure never reads as "none".
     @ViewBuilder
     private var nutritionSection: some View {
-        if let drink = selected, let amount = Double(amountText), amount > 0 {
+        if let drink = selected, let amount = Double(userInput: amountText), amount > 0 {
             let scale = drink.volumeMilliliters > 0 ? amount / drink.volumeMilliliters : 1
             Section {
                 if drink.caloriesKcal > 0 {
@@ -208,7 +208,7 @@ struct HydrationLoggingView: View {
 
     private func save() {
         guard let drink = selected else { return }
-        let amount = Double(amountText).map { Milliliters($0) }
+        let amount = Double(userInput: amountText).map { Milliliters($0) }
         do {
             warnings = try model.logDrink(drink, volume: amount, note: optionalText(note))
             if warnings.isEmpty {
@@ -278,8 +278,8 @@ struct CustomDrinkView: View {
     }
 
     private func save() {
-        guard let volume = Double(volumeText), volume > 0 else {
-            error = "Enter a serving size greater than zero."
+        guard let volume = Double(userInput: volumeText), volume > 0 else {
+            error = String(localized: "Enter a serving size greater than zero.")
             return
         }
         do {
@@ -290,9 +290,9 @@ struct CustomDrinkView: View {
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     ? "Custom drink" : name,
                 liquidType: type, volumeMilliliters: volume,
-                caloriesKcal: Double(caloriesText) ?? 0,
-                sodiumMilligrams: Double(sodiumText) ?? 0,
-                sugarGrams: Double(sugarText))
+                caloriesKcal: Double(userInput: caloriesText) ?? 0,
+                sodiumMilligrams: Double(userInput: sodiumText) ?? 0,
+                sugarGrams: Double(userInput: sugarText))
             onSave(drink)
             dismiss()
         } catch {

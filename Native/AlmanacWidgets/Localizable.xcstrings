@@ -41,6 +41,46 @@
         }
       }
     },
+    "Ends the current intermittent fast.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُنهي الصيام المتقطع الحالي."
+          }
+        }
+      }
+    },
+    "Fajr %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الفجر %@"
+          }
+        }
+      }
+    },
+    "Fast broken": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُفطِر"
+          }
+        }
+      }
+    },
+    "Fast complete": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اكتمل الصيام"
+          }
+        }
+      }
+    },
     "Fasting": {
       "localizations": {
         "ar": {
@@ -51,12 +91,42 @@
         }
       }
     },
+    "Iftar in": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإفطار بعد"
+          }
+        }
+      }
+    },
+    "Kept from Fajr to Maghrib": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام من الفجر إلى المغرب"
+          }
+        }
+      }
+    },
     "Log 250 ml of water": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "سجّل 250 مل من الماء"
+          }
+        }
+      }
+    },
+    "Maghrib %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المغرب %@"
           }
         }
       }
@@ -91,6 +161,16 @@
         }
       }
     },
+    "Open Almanac to set your location": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح Almanac لتحديد موقعك"
+          }
+        }
+      }
+    },
     "Start fast": {
       "localizations": {
         "ar": {
@@ -121,6 +201,26 @@
         }
       }
     },
+    "Suhoor": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السحور"
+          }
+        }
+      }
+    },
+    "Today's fast: suhoor, iftar, or your intermittent fast.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام اليوم: السحور أو الإفطار أو صيامك المتقطع."
+          }
+        }
+      }
+    },
     "Today's water total against your goal.": {
       "localizations": {
         "ar": {
@@ -147,6 +247,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "جلسة صيامك الحالية."
+          }
+        }
+      }
+    },
+    "at %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عند %@"
           }
         }
       }

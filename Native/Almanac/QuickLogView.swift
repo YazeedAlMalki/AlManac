@@ -192,7 +192,7 @@ struct QuickLogView: View {
         do {
             try hydrationModel.log(amount: Milliliters(amount), note: nil)
             trackingModel.refresh()
-            waterConfirmation = "\(Int(amount)) mL added"
+            waterConfirmation = String(localized: "\(Int(amount)) mL added")
             feedbackTrigger += 1
         } catch {
             self.error = String(describing: error)
@@ -284,10 +284,10 @@ private struct QuickBodyLogView: View {
 
     private func save() {
         guard let db,
-              let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let number = Double(userInput: value),
               number.isFinite,
               number > 0 else {
-            error = "Enter a positive measurement value."
+            error = String(localized: "Enter a positive measurement value.")
             return
         }
         // Falling back rather than failing: this is the second write path for the

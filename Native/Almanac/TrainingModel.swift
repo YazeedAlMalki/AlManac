@@ -74,7 +74,7 @@ final class TrainingModel: ObservableObject {
             // fails identically, and the user is left reading a normal-looking
             // zero-load day that is really an unreadable one. That is the
             // training equivalent of rendering a missing reading as zero.
-            readProblem = "Could not read today's training log."
+            readProblem = String(localized: "Could not read today's training log.")
         }
     }
 

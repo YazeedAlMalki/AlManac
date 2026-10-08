@@ -207,7 +207,7 @@ final class ReadinessModel: ObservableObject {
             // nothing, so the dashboard shows the empty state that goes with
             // "we don't know yet" — and a read failure and a missing baseline
             // are indistinguishable to the user. Say which one it is.
-            readProblem = "Could not read today's readiness data."
+            readProblem = String(localized: "Could not read today's readiness data.")
         }
 
         // Saving is separate from reading, and deliberately so. The score is
@@ -223,7 +223,7 @@ final class ReadinessModel: ObservableObject {
                 pendingFeedback = try recordStore.latestUnratedRecord(before: today.value)
                 saveProblem = nil
             } catch {
-                saveProblem = "Today's readiness was worked out, but Almanac could not save it."
+                saveProblem = String(localized: "Today's readiness was worked out, but Almanac could not save it.")
             }
         }
     }

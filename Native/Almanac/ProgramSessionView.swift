@@ -496,7 +496,7 @@ struct ProgramSessionView: View {
         if let readinessAdjusted { self.readinessAdjusted = readinessAdjusted }
         model.loadItems(programDayId: day.id)
         guard let plan = model.plan(programDayId: day.id, skipping: skippedSlots) else {
-            planProblem = "Almanac could not work out this session's exercises."
+            planProblem = String(localized: "Almanac could not work out this session's exercises.")
             slots = []
             held = []
             suggestions = [:]

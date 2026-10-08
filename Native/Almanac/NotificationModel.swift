@@ -73,7 +73,7 @@ final class NotificationModel: ObservableObject {
                 ? nil
                 : "Almanac could not schedule \(result.failed.count) reminder\(result.failed.count == 1 ? "" : "s")."
         } catch {
-            schedulingProblem = "Almanac could not work out which reminders to schedule."
+            schedulingProblem = String(localized: "Almanac could not work out which reminders to schedule.")
         }
     }
 
@@ -101,7 +101,7 @@ final class NotificationModel: ObservableObject {
         let granted = try await scheduler.requestAuthorization()
         isAuthorized = granted
         guard granted else {
-            schedulingProblem = "Notifications were not authorized."
+            schedulingProblem = String(localized: "Notifications were not authorized.")
             return false
         }
         await reconcileNotifications()
@@ -134,7 +134,7 @@ final class NotificationModel: ObservableObject {
             lastPlan = .empty(Date())
             pendingCount = 0
         } catch {
-            schedulingProblem = "Almanac could not turn its reminders off."
+            schedulingProblem = String(localized: "Almanac could not turn its reminders off.")
         }
     }
 }

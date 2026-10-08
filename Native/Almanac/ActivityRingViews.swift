@@ -133,7 +133,7 @@ final class TrackingCalendarModel: ObservableObject {
         defer { isLoading = false }
 
         guard model.bounds(of: selectedDay) != nil else {
-            error = "That calendar date is invalid."
+            error = String(localized: "That calendar date is invalid.")
             return
         }
 
@@ -347,10 +347,10 @@ private struct ActivityRingHydrationEditor: View {
 
     private func save() {
         guard let db,
-              let amount = Double(amountText),
+              let amount = Double(userInput: amountText),
               amount.isFinite,
               amount > 0 else {
-            error = "Enter an amount greater than zero."
+            error = String(localized: "Enter an amount greater than zero.")
             return
         }
         do {
@@ -407,16 +407,16 @@ private struct ActivityRingNutritionEditor: View {
 
     private func save() {
         guard let db else {
-            error = "The database is unavailable."
+            error = String(localized: "The database is unavailable.")
             return
         }
         var edit = NutritionLogEdit()
         if gramsText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             edit.grams = .clear
-        } else if let grams = Double(gramsText), grams.isFinite, grams > 0 {
+        } else if let grams = Double(userInput: gramsText), grams.isFinite, grams > 0 {
             edit.grams = .set(grams)
         } else {
-            error = "Enter a positive amount or leave it blank."
+            error = String(localized: "Enter a positive amount or leave it blank.")
             return
         }
         if canEditDate {
@@ -460,7 +460,7 @@ private struct ActivityRingTrainingEditor: View {
 
     private func save() {
         guard let db else {
-            error = "The database is unavailable."
+            error = String(localized: "The database is unavailable.")
             return
         }
         do {

@@ -83,7 +83,7 @@ final class FastingModel: ObservableObject {
             try coordinator.refresh()
             error = nil
         } catch {
-            self.error = "Fasting state could not be brought up to date. \(error.localizedDescription)"
+            self.error = String(localized: "Fasting state could not be brought up to date. \(error.localizedDescription)")
         }
         refresh()
     }
@@ -121,7 +121,7 @@ final class FastingModel: ObservableObject {
             suggestionStart = (declinedUntil ?? .distantPast) > now
                 ? nil : try coordinator.intermittentSuggestionStart(at: now)
         } catch {
-            self.error = "Fasting state could not be read. \(error.localizedDescription)"
+            self.error = String(localized: "Fasting state could not be read. \(error.localizedDescription)")
         }
     }
 

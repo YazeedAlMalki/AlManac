@@ -95,12 +95,12 @@ struct SupplementPlanEditor: View {
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanNotes = optionalText(timingNotes.trimmingCharacters(in: .whitespacesAndNewlines))
         guard !cleanName.isEmpty else {
-            error = "Give the supplement a name."
+            error = String(localized: "Give the supplement a name.")
             return
         }
-        guard let amount = Double(doseAmount.trimmingCharacters(in: .whitespacesAndNewlines)),
+        guard let amount = Double(userInput: doseAmount),
               amount.isFinite, amount > 0 else {
-            error = "Enter a dose greater than zero."
+            error = String(localized: "Enter a dose greater than zero.")
             return
         }
         let draft = SupplementPlanDraft(name: cleanName, doseAmount: amount, doseUnit: doseUnit,

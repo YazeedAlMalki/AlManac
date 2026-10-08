@@ -155,7 +155,7 @@ struct DayTimelineView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read the timeline."
+            readProblem = String(localized: "Could not read the timeline.")
             items = []
         }
     }

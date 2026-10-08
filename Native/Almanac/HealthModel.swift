@@ -44,7 +44,7 @@ final class HealthModel: ObservableObject {
             try vitalsBridge?.reconcileLogicalDays()
             try bodyBridge?.reconcileLogicalDays()
         } catch {
-            problem = "Existing health data could not be re-bucketed: \(error.localizedDescription)"
+            problem = String(localized: "Existing health data could not be re-bucketed: \(error.localizedDescription)")
         }
         refresh()
     }
@@ -75,11 +75,11 @@ final class HealthModel: ObservableObject {
         if let writer = provider as? any HealthWriter {
             do { try await BodyMeasurementWriteback(db: db, writer: writer).drainOnce() }
             catch {
-                problem = "Waist could not be written to Health: \(error.localizedDescription)"
+                problem = String(localized: "Waist could not be written to Health: \(error.localizedDescription)")
             }
             do { try await BodyCompositionWriteback(db: db, writer: writer).drainOnce() }
             catch {
-                problem = "Body measurements could not be written to Health: \(error.localizedDescription)"
+                problem = String(localized: "Body measurements could not be written to Health: \(error.localizedDescription)")
             }
         }
 
@@ -89,7 +89,7 @@ final class HealthModel: ObservableObject {
                                                 writer: writer(for: domain),
                                                 healthDomain: domain).syncOnce()
             } catch {
-                problem = "\(readable(domain.rawValue)) could not be synced: \(error.localizedDescription)"
+                problem = String(localized: "\(readable(domain.rawValue)) could not be synced: \(error.localizedDescription)")
             }
         }
         lastSynced = Date()

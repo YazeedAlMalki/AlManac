@@ -191,7 +191,7 @@ struct NutritionQuickEntryView: View {
             let grams: Double?
             if gramsText.isEmpty {
                 grams = nil
-            } else if let value = Double(gramsText), value > 0 {
+            } else if let value = Double(userInput: gramsText), value > 0 {
                 grams = value
             } else {
                 throw EditorFailure(message: String(localized: "Enter a gram amount greater than zero, or leave it blank."))

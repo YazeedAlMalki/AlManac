@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%+d min": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%+d د"
+          }
+        }
+      }
+    },
     "%@ %@": {
       "localizations": {
         "ar": {
@@ -17,6 +27,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ (%@)"
+          }
+        }
+      }
+    },
+    "%@ AH: %@ to %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ هـ: من %@ إلى %@"
+          }
+        }
+      }
+    },
+    "%@ could not be applied. %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر تطبيق %@. %@"
+          }
+        }
+      }
+    },
+    "%@ could not be synced: %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت مزامنة %@: %@"
           }
         }
       }
@@ -81,6 +121,26 @@
         }
       }
     },
+    "%@ must be a number.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يجب أن يكون %@ رقمًا."
+          }
+        }
+      }
+    },
+    "%@ must be a whole number.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يجب أن يكون %@ عددًا صحيحًا."
+          }
+        }
+      }
+    },
     "%@ · %@": {
       "localizations": {
         "ar": {
@@ -131,12 +191,32 @@
         }
       }
     },
+    "%@, %@ g": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@، %@ غ"
+          }
+        }
+      }
+    },
     "%@, %lld exercises": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "%@، %lld تمرين"
+          }
+        }
+      }
+    },
+    "%@, %lld ml": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@، %lld مل"
           }
         }
       }
@@ -187,6 +267,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ غ بروتين"
+          }
+        }
+      }
+    },
+    "%@°": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@°"
           }
         }
       }
@@ -261,6 +351,26 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld h": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld س"
+          }
+        }
+      }
+    },
+    "%lld h %lld min": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld س %lld د"
           }
         }
       }
@@ -355,6 +465,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld مل"
+          }
+        }
+      }
+    },
+    "%lld mL added": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُضيف %lld مل"
           }
         }
       }
@@ -563,6 +683,16 @@
         }
       }
     },
+    "%lld° from north, %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld° من الشمال، %@"
+          }
+        }
+      }
+    },
     "%lld×": {
       "localizations": {
         "ar": {
@@ -653,12 +783,32 @@
         }
       }
     },
+    "A fast is already running. End it before starting another.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هناك صيام جارٍ بالفعل. أنهِه قبل أن تبدأ صيامًا آخر."
+          }
+        }
+      }
+    },
     "A note from yesterday": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "ملاحظة من أمس"
+          }
+        }
+      }
+    },
+    "A notification at each chosen prayer's time. On a fast day, Maghrib's alert is the iftar reminder.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إشعار عند وقت كل صلاة تختارها. في يوم الصيام، يكون تنبيه المغرب هو تذكير الإفطار."
           }
         }
       }
@@ -841,6 +991,16 @@
         }
       }
     },
+    "Add a tag or a note before saving.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أضف وسمًا أو ملاحظة قبل الحفظ."
+          }
+        }
+      }
+    },
     "Add at least one exercise before starting this day.": {
       "localizations": {
         "ar": {
@@ -961,12 +1121,42 @@
         }
       }
     },
+    "Adjustments": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التعديلات"
+          }
+        }
+      }
+    },
     "After you wake, or at your expected wake time on a shift.": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "بعد استيقاظك، أو عند موعد استيقاظك المتوقع في المناوبة."
+          }
+        }
+      }
+    },
+    "Alert at prayer times": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التنبيه عند أوقات الصلاة"
+          }
+        }
+      }
+    },
+    "Alerts": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التنبيهات"
           }
         }
       }
@@ -1017,6 +1207,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "تعذّر فتح Almanac"
+          }
+        }
+      }
+    },
+    "Almanac could not turn its reminders off.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على Almanac إيقاف تذكيراته."
+          }
+        }
+      }
+    },
+    "Almanac could not work out this session's exercises.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على Almanac تحديد تمارين هذه الجلسة."
+          }
+        }
+      }
+    },
+    "Almanac could not work out which reminders to schedule.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر على Almanac تحديد التذكيرات التي يجب جدولتها."
           }
         }
       }
@@ -1077,6 +1297,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "يُخفي Almanac الأطعمة التي يذكر اسمها أحد هذه. لا قوائم مكوّنات لديه، لذا لا يستطيع أن يؤكد لك أن طعامًا آمن — اقرأ الملصق."
+          }
+        }
+      }
+    },
+    "Almanac is not allowed to send notifications on this device, so nothing will arrive until you allow it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يُسمح لـ Almanac بإرسال الإشعارات على هذا الجهاز، فلن يصل شيء حتى تسمح بذلك."
           }
         }
       }
@@ -1171,12 +1401,42 @@
         }
       }
     },
+    "Apple Health sync is not going through. The figures below may be out of date.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المزامنة مع Apple Health لا تتم. قد تكون الأرقام أدناه قديمة."
+          }
+        }
+      }
+    },
     "Applies to new entries. Existing left/right measurements are kept while their treatment is awaiting a decision.": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "يُطبَّق على الإدخالات الجديدة. تُحفَظ قياسات اليمين واليسار الحالية إلى أن يُتَّخذ قرار بشأن معالجتها."
+          }
+        }
+      }
+    },
+    "As calculated": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كما حُسب"
+          }
+        }
+      }
+    },
+    "Asr": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العصر"
           }
         }
       }
@@ -1211,6 +1471,16 @@
         }
       }
     },
+    "At each prayer you choose in Prayer. Maghrib on a fast day is the iftar reminder.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عند كل صلاة تختارها في شاشة الصلاة. المغرب في يوم الصيام هو تذكير الإفطار."
+          }
+        }
+      }
+    },
     "At the times you set, never during a confirmed fast.": {
       "localizations": {
         "ar": {
@@ -1227,6 +1497,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "حقوق المصادر"
+          }
+        }
+      }
+    },
+    "Average heart rate": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متوسط نبض القلب"
           }
         }
       }
@@ -1381,6 +1661,16 @@
         }
       }
     },
+    "Body measurements could not be written to Health: %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت كتابة قياسات الجسم إلى تطبيق الصحة: %@"
+          }
+        }
+      }
+    },
     "Bounds: %@ – %@": {
       "localizations": {
         "ar": {
@@ -1407,6 +1697,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "حركة الأمعاء"
+          }
+        }
+      }
+    },
+    "Bowel movement logged": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سُجّل التبرّز"
           }
         }
       }
@@ -1581,6 +1881,16 @@
         }
       }
     },
+    "Choose a city": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اختر مدينة"
+          }
+        }
+      }
+    },
     "Choose a location to calculate prayer times.": {
       "localizations": {
         "ar": {
@@ -1611,6 +1921,16 @@
         }
       }
     },
+    "Chosen city": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مدينة مختارة"
+          }
+        }
+      }
+    },
     "Circumference (cm)": {
       "localizations": {
         "ar": {
@@ -1627,6 +1947,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "المدينة"
+          }
+        }
+      }
+    },
+    "City or country": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المدينة أو البلد"
           }
         }
       }
@@ -1697,6 +2027,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الأعمدة (بلا صف عناوين)"
+          }
+        }
+      }
+    },
+    "Coming up": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القادم"
           }
         }
       }
@@ -1861,6 +2201,156 @@
         }
       }
     },
+    "Could not read the timeline.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة الخط الزمني."
+          }
+        }
+      }
+    },
+    "Could not read this day's exercises.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة تمارين هذا اليوم."
+          }
+        }
+      }
+    },
+    "Could not read this exercise's history.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة سجل هذا التمرين."
+          }
+        }
+      }
+    },
+    "Could not read today's entries.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة إدخالات اليوم."
+          }
+        }
+      }
+    },
+    "Could not read today's food log.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة سجل طعام اليوم."
+          }
+        }
+      }
+    },
+    "Could not read today's hydration log.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة سجل شرب اليوم."
+          }
+        }
+      }
+    },
+    "Could not read today's readiness data.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة بيانات جاهزية اليوم."
+          }
+        }
+      }
+    },
+    "Could not read today's training log.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة سجل تدريب اليوم."
+          }
+        }
+      }
+    },
+    "Could not read your context tags.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة وسوم السياق."
+          }
+        }
+      }
+    },
+    "Could not read your insights.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة رؤاك."
+          }
+        }
+      }
+    },
+    "Could not read your supplement plans.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة خطط المكمّلات."
+          }
+        }
+      }
+    },
+    "Could not read your templates.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة قوالبك."
+          }
+        }
+      }
+    },
+    "Could not read your training history.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة سجل تدريبك."
+          }
+        }
+      }
+    },
+    "Could not read your training programs.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة برامج تدريبك."
+          }
+        }
+      }
+    },
+    "Could not read your vitals log. Figures below may be out of date.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة سجل العلامات الحيوية. قد تكون الأرقام أدناه قديمة."
+          }
+        }
+      }
+    },
     "Create a report, then record its results exactly as reported.": {
       "localizations": {
         "ar": {
@@ -1897,6 +2387,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الصيام الحالي"
+          }
+        }
+      }
+    },
+    "Current location": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الموقع الحالي"
           }
         }
       }
@@ -2037,6 +2537,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "التاريخ غير معروف"
+          }
+        }
+      }
+    },
+    "Dates follow the Umm al-Qura calendar. If the moon is announced differently where you are, mark or unmark the day above. Eid and the days of Tashreeq are never fast days.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتبع التواريخ تقويم أم القرى. إن أُعلنت رؤية الهلال على نحو مختلف حيث أنت، فحدّد اليوم أو ألغِ تحديده أعلاه. لا يكون العيد ولا أيام التشريق أيام صيام أبدًا."
           }
         }
       }
@@ -2271,6 +2781,16 @@
         }
       }
     },
+    "Distance": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المسافة"
+          }
+        }
+      }
+    },
     "Distance (m)": {
       "localizations": {
         "ar": {
@@ -2357,6 +2877,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "المدة (ثوانٍ)"
+          }
+        }
+      }
+    },
+    "E": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ق"
           }
         }
       }
@@ -2551,6 +3081,16 @@
         }
       }
     },
+    "Elapsed": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الزمن المنقضي"
+          }
+        }
+      }
+    },
     "End it": {
       "localizations": {
         "ar": {
@@ -2581,6 +3121,16 @@
         }
       }
     },
+    "Enter a dose greater than zero.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل جرعة أكبر من صفر."
+          }
+        }
+      }
+    },
     "Enter a finite number for %@, using a decimal point.": {
       "localizations": {
         "ar": {
@@ -2597,6 +3147,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "أدخل كمية بالغرام أكبر من صفر، أو اتركها فارغة."
+          }
+        }
+      }
+    },
+    "Enter a name, unit and positive value.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل اسمًا ووحدة وقيمة موجبة."
+          }
+        }
+      }
+    },
+    "Enter a number in centimeters.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل رقمًا بالسنتيمتر."
+          }
+        }
+      }
+    },
+    "Enter a positive amount or leave it blank.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل كمية موجبة أو اتركها فارغة."
+          }
+        }
+      }
+    },
+    "Enter a positive measurement value.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل قيمة قياس موجبة."
           }
         }
       }
@@ -2621,12 +3211,32 @@
         }
       }
     },
+    "Enter a serving size greater than zero.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل حجم حصة أكبر من صفر."
+          }
+        }
+      }
+    },
     "Enter a valid date matching the selected precision, or choose Unknown.": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "أدخل تاريخًا صالحًا يطابق الدقة المختارة، أو اختر «غير معروف»."
+          }
+        }
+      }
+    },
+    "Enter an amount greater than zero.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل كمية أكبر من صفر."
           }
         }
       }
@@ -2791,6 +3401,16 @@
         }
       }
     },
+    "Existing health data could not be re-bucketed: %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت إعادة تصنيف بيانات الصحة الموجودة: %@"
+          }
+        }
+      }
+    },
     "Factor in today's readiness": {
       "localizations": {
         "ar": {
@@ -2821,6 +3441,16 @@
         }
       }
     },
+    "Fajr angle": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "زاوية الفجر"
+          }
+        }
+      }
+    },
     "Fajr to Maghrib": {
       "localizations": {
         "ar": {
@@ -2831,12 +3461,62 @@
         }
       }
     },
+    "Fast broken at %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُفطِر عند %@"
+          }
+        }
+      }
+    },
+    "Fast complete": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اكتمل الصيام"
+          }
+        }
+      }
+    },
+    "Fast day — you marked it": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم صيام — حدّدته أنت"
+          }
+        }
+      }
+    },
+    "Fast days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أيام الصيام"
+          }
+        }
+      }
+    },
     "Fasted": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "صائم"
+          }
+        }
+      }
+    },
+    "Fasted %@ of %@. Maghrib is at %@.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صُمتَ %@ من %@. المغرب عند %@."
           }
         }
       }
@@ -2861,12 +3541,42 @@
         }
       }
     },
+    "Fasting state could not be brought up to date. %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر تحديث حالة الصيام. %@"
+          }
+        }
+      }
+    },
+    "Fasting state could not be read. %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة حالة الصيام. %@"
+          }
+        }
+      }
+    },
     "Fasting window": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "نافذة الصيام"
+          }
+        }
+      }
+    },
+    "Fasting — iftar %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صائم — الإفطار %@"
           }
         }
       }
@@ -3087,6 +3797,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "غازات"
+          }
+        }
+      }
+    },
+    "Give the supplement a name.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أعطِ المكمّل اسمًا."
+          }
+        }
+      }
+    },
+    "Give the template a name.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أعطِ القالب اسمًا."
           }
         }
       }
@@ -3331,6 +4061,16 @@
         }
       }
     },
+    "I'm not fasting today": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لستُ صائمًا اليوم"
+          }
+        }
+      }
+    },
     "If a test is not listed, enter its original name below. It can be mapped later.": {
       "localizations": {
         "ar": {
@@ -3347,6 +4087,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الإفطار"
+          }
+        }
+      }
+    },
+    "Iftar to suhoor, %@ to %@. It counts as one night even past midnight.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "من الإفطار إلى السحور، من %@ إلى %@. تُحسب ليلة واحدة حتى بعد منتصف الليل."
           }
         }
       }
@@ -3551,12 +4301,42 @@
         }
       }
     },
+    "Invalidated": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُبطِل"
+          }
+        }
+      }
+    },
+    "Isha angle": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "زاوية العشاء"
+          }
+        }
+      }
+    },
     "Keep them on": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "إبقاؤها مفعّلة"
+          }
+        }
+      }
+    },
+    "Kept from Fajr to Maghrib — %@.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام من الفجر إلى المغرب — %@."
           }
         }
       }
@@ -3681,6 +4461,16 @@
         }
       }
     },
+    "Last night": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الليلة الماضية"
+          }
+        }
+      }
+    },
     "Last synced %@": {
       "localizations": {
         "ar": {
@@ -3777,6 +4567,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "الموقع"
+          }
+        }
+      }
+    },
+    "Location access is off for Almanac. Turn it on in Settings, or choose a city below.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الوصول إلى الموقع متوقف لـ Almanac. شغّله من الإعدادات أو اختر مدينة أدناه."
+          }
+        }
+      }
+    },
+    "Location access was not allowed. Choose a city below instead.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُسمح بالوصول إلى الموقع. اختر مدينة أدناه بدلًا من ذلك."
           }
         }
       }
@@ -4081,6 +4891,26 @@
         }
       }
     },
+    "Mark today as a fast day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حدّد اليوم يوم صيام"
+          }
+        }
+      }
+    },
+    "Marked": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "محدَّد"
+          }
+        }
+      }
+    },
     "Meal": {
       "localizations": {
         "ar": {
@@ -4231,6 +5061,26 @@
         }
       }
     },
+    "Monday fast": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام الاثنين"
+          }
+        }
+      }
+    },
+    "Mondays and Thursdays": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الاثنين والخميس"
+          }
+        }
+      }
+    },
     "Month to date": {
       "localizations": {
         "ar": {
@@ -4291,6 +5141,16 @@
         }
       }
     },
+    "Move a prayer by a few minutes to match your mosque or local announcement. The fast follows Fajr and Maghrib as adjusted.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حرّك وقت الصلاة بضع دقائق ليطابق مسجدك أو الإعلان المحلي. يتبع الصيام الفجرَ والمغربَ بعد التعديل."
+          }
+        }
+      }
+    },
     "Moving earlier": {
       "localizations": {
         "ar": {
@@ -4317,6 +5177,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "المجموعات العضلية"
+          }
+        }
+      }
+    },
+    "N": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ش"
           }
         }
       }
@@ -4481,6 +5351,16 @@
         }
       }
     },
+    "No calories have been logged for %lld hours. Are you currently fasting?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم تُسجَّل سعرات حرارية منذ %lld ساعة. هل أنت صائم الآن؟"
+          }
+        }
+      }
+    },
     "No city selected": {
       "localizations": {
         "ar": {
@@ -4581,6 +5461,16 @@
         }
       }
     },
+    "No intermittent fast is running.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يوجد صيام متقطع جارٍ."
+          }
+        }
+      }
+    },
     "No intermittent fast recorded today.": {
       "localizations": {
         "ar": {
@@ -4647,6 +5537,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا أزواج للمقارنة بعد."
+          }
+        }
+      }
+    },
+    "No prayer times yet": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا أوقات صلاة بعد"
           }
         }
       }
@@ -4921,6 +5821,16 @@
         }
       }
     },
+    "Not a fast day — you marked it": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليس يوم صيام — حدّدته أنت"
+          }
+        }
+      }
+    },
     "Not decided": {
       "localizations": {
         "ar": {
@@ -5111,6 +6021,16 @@
         }
       }
     },
+    "Nothing logged between Maghrib and Fajr yet.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا شيء مسجّل بين المغرب والفجر حتى الآن."
+          }
+        }
+      }
+    },
     "Nothing logged for this exercise yet, so there is no weight to progress from.": {
       "localizations": {
         "ar": {
@@ -5187,6 +6107,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا شيء مطلوب في هذه الجولة من التناوب."
+          }
+        }
+      }
+    },
+    "Notifications were not authorized.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يُسمح بالإشعارات."
           }
         }
       }
@@ -5297,6 +6227,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "نقرة واحدة تسجّل الكمية المعتادة."
+          }
+        }
+      }
+    },
+    "Open Prayer": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "افتح الصلاة"
           }
         }
       }
@@ -5581,12 +6521,82 @@
         }
       }
     },
+    "Prayer settings could not be read.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة إعدادات الصلاة."
+          }
+        }
+      }
+    },
+    "Prayer times": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أوقات الصلاة"
+          }
+        }
+      }
+    },
+    "Prayer times are calculated on this device. A chosen city stays in place until you use your current location again.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُحسب أوقات الصلاة على هذا الجهاز. تبقى المدينة المختارة كما هي حتى تستخدم موقعك الحالي مجددًا."
+          }
+        }
+      }
+    },
+    "Prayer times are not cached yet, so the Fajr to Maghrib window cannot be worked out. Set your location in Prayer first.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم تُحفظ أوقات الصلاة بعد، فلا يمكن تحديد الفترة من الفجر إلى المغرب. حدّد موقعك في شاشة الصلاة أولًا."
+          }
+        }
+      }
+    },
     "Prayer times are not cached yet. Configure location in Prayer first.": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "لم تُحفَظ أوقات الصلاة بعد. اضبط الموقع في قسم الصلاة أولًا."
+          }
+        }
+      }
+    },
+    "Prayer times could not be calculated for this location today.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر حساب أوقات الصلاة لهذا الموقع اليوم."
+          }
+        }
+      }
+    },
+    "Prayer times could not be calculated. %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر حساب أوقات الصلاة. %@"
+          }
+        }
+      }
+    },
+    "Prayer times could not be recalculated. %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت إعادة حساب أوقات الصلاة. %@"
           }
         }
       }
@@ -5861,6 +6871,16 @@
         }
       }
     },
+    "Qibla": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القبلة"
+          }
+        }
+      }
+    },
     "Quantification limit, if stated": {
       "localizations": {
         "ar": {
@@ -5917,6 +6937,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "الجهد %lld/10"
+          }
+        }
+      }
+    },
+    "RPE runs from 1 to 10.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يتراوح الجهد المُدرَك (RPE) من 1 إلى 10."
+          }
+        }
+      }
+    },
+    "Ramadan": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رمضان"
+          }
+        }
+      }
+    },
+    "Ramadan, day %lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رمضان، اليوم %lld"
           }
         }
       }
@@ -6097,6 +7147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الإدخالات الأخيرة"
+          }
+        }
+      }
+    },
+    "Recent fasts": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصيام الأخير"
           }
         }
       }
@@ -6641,6 +7701,16 @@
         }
       }
     },
+    "Rounds": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجولات"
+          }
+        }
+      }
+    },
     "Rounds completed": {
       "localizations": {
         "ar": {
@@ -6657,6 +7727,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الصفوف التي تتشارك source_report_id تشكّل تقريرًا واحدًا. تُحفَظ القيم والوحدات والنطاقات والعلامات حرفيًا؛ وتبقى التواريخ الفارغة غير معروفة؛ وتبقى القيم غير الرقمية نصًّا؛ وتُعلَّق إعادات الاستيراد غير المرتّبة للمراجعة."
+          }
+        }
+      }
+    },
+    "S": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ج"
           }
         }
       }
@@ -7111,6 +8191,16 @@
         }
       }
     },
+    "Something was logged after Fajr. If that entry is wrong, delete or move it and the fast is restored.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سُجّل شيء بعد الفجر. إن كان هذا الإدخال خاطئًا، فاحذفه أو انقله ويُستعاد الصيام."
+          }
+        }
+      }
+    },
     "Something went wrong": {
       "localizations": {
         "ar": {
@@ -7127,6 +8217,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "ألم العضلات"
+          }
+        }
+      }
+    },
+    "Source": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المصدر"
           }
         }
       }
@@ -7261,6 +8361,16 @@
         }
       }
     },
+    "Starting from a past time records a fast already in progress. Logging a meal ends it at the meal's time; so does this button.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "البدء من وقت سابق يسجّل صيامًا جاريًا بالفعل. تسجيل وجبة يُنهيه عند وقت الوجبة، وكذلك هذا الزر."
+          }
+        }
+      }
+    },
     "Starting from a past time records a fast already in progress. The end is whatever you say it is — nothing here watches for your next meal.": {
       "localizations": {
         "ar": {
@@ -7331,12 +8441,42 @@
         }
       }
     },
+    "Suggestion": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اقتراح"
+          }
+        }
+      }
+    },
     "Suhoor": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "السحور"
+          }
+        }
+      }
+    },
+    "Suhoor ends at Fajr": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ينتهي السحور عند الفجر"
+          }
+        }
+      }
+    },
+    "Suhoor time": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "وقت السحور"
           }
         }
       }
@@ -7461,6 +8601,16 @@
         }
       }
     },
+    "Target %lld h · %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الهدف %lld س · %@"
+          }
+        }
+      }
+    },
     "Target met": {
       "localizations": {
         "ar": {
@@ -7541,6 +8691,26 @@
         }
       }
     },
+    "That bout no longer exists — it may have been deleted on another screen.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم تعد هذه الدفعة موجودة — ربما حُذفت من شاشة أخرى."
+          }
+        }
+      }
+    },
+    "That calendar date is invalid.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تاريخ التقويم هذا غير صالح."
+          }
+        }
+      }
+    },
     "That day no longer exists — it may have been deleted on another screen.": {
       "localizations": {
         "ar": {
@@ -7577,6 +8747,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "لم يعد هذا البرنامج موجودًا — ربما حُذف من شاشة أخرى."
+          }
+        }
+      }
+    },
+    "That template no longer exists — it may have been deleted on another screen.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يعد هذا القالب موجودًا — ربما حُذف من شاشة أخرى."
+          }
+        }
+      }
+    },
+    "The alert choice could not be saved.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر حفظ اختيار التنبيه."
           }
         }
       }
@@ -7641,6 +8831,26 @@
         }
       }
     },
+    "The fast begins at Fajr, %@ — %@.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبدأ الصيام عند الفجر، %@ — %@."
+          }
+        }
+      }
+    },
+    "The fast runs from Fajr to Maghrib. Times come from your cached prayer times, and anything you eat or drink after Fajr ends it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يمتد الصيام من الفجر إلى المغرب. تأتي الأوقات من أوقات الصلاة المحفوظة، وأي طعام أو شراب بعد الفجر يُنهيه."
+          }
+        }
+      }
+    },
     "The fast runs from Fajr to Maghrib. Times come from your cached prayer times.": {
       "localizations": {
         "ar": {
@@ -7697,6 +8907,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لم يكتمل الاستيراد"
+          }
+        }
+      }
+    },
+    "The new location could not be applied. %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر تطبيق الموقع الجديد. %@"
           }
         }
       }
@@ -7869,6 +9089,16 @@
         }
       }
     },
+    "Thursday fast": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام الخميس"
+          }
+        }
+      }
+    },
     "Time": {
       "localizations": {
         "ar": {
@@ -7929,12 +9159,52 @@
         }
       }
     },
+    "Today · %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم · %@"
+          }
+        }
+      }
+    },
+    "Today · %@ · %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم · %@ · %@"
+          }
+        }
+      }
+    },
     "Today's Load": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "حمل اليوم"
+          }
+        }
+      }
+    },
+    "Today's readiness was worked out, but Almanac could not save it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حُسبت جاهزية اليوم، لكن تعذّر على Almanac حفظها."
+          }
+        }
+      }
+    },
+    "Today's religious fast is running. An intermittent fast can start after Maghrib.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صيام اليوم التعبّدي جارٍ. يمكن أن يبدأ صيام متقطع بعد المغرب."
           }
         }
       }
@@ -7955,6 +9225,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "سجل اليوم"
+          }
+        }
+      }
+    },
+    "Tomorrow": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "غدًا"
+          }
+        }
+      }
+    },
+    "Tomorrow's Fajr": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فجر الغد"
+          }
+        }
+      }
+    },
+    "Tonight, since Maghrib": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الليلة، منذ المغرب"
           }
         }
       }
@@ -8069,6 +9369,16 @@
         }
       }
     },
+    "Trends are temporarily unavailable. Pull to try again.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الاتجاهات غير متاحة مؤقتًا. اسحب للمحاولة مجددًا."
+          }
+        }
+      }
+    },
     "Trends, associations and badges across everything you record.": {
       "localizations": {
         "ar": {
@@ -8165,6 +9475,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "قيم نموذجية لحصة %lld مل، غير مقيسة من جدول تركيب."
+          }
+        }
+      }
+    },
+    "Umm al-Qura adds 30 minutes to Isha in Ramadan, as Saudi timetables do. Standard Asr is the Shafi'i, Maliki and Hanbali time; Hanafi is later, at two shadow-lengths.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تضيف أم القرى 30 دقيقة إلى العشاء في رمضان، كما في التقاويم السعودية. عصر الجمهور هو وقت الشافعية والمالكية والحنابلة، وعصر الحنفية أبعد، عند بلوغ الظل مثليه."
           }
         }
       }
@@ -8319,12 +9639,42 @@
         }
       }
     },
+    "Urination logged": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سُجّل التبوّل"
+          }
+        }
+      }
+    },
     "Use current location": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "استخدام الموقع الحالي"
+          }
+        }
+      }
+    },
+    "Use the calendar for today": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اتبع التقويم لهذا اليوم"
+          }
+        }
+      }
+    },
+    "Use your current location or choose a city to calculate prayer times.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدم موقعك الحالي أو اختر مدينة لحساب أوقات الصلاة."
           }
         }
       }
@@ -8415,6 +9765,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "الحجم"
+          }
+        }
+      }
+    },
+    "W": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "غ"
+          }
+        }
+      }
+    },
+    "Waist could not be written to Health: %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت كتابة محيط الخصر إلى تطبيق الصحة: %@"
           }
         }
       }
@@ -8579,6 +9949,26 @@
         }
       }
     },
+    "White Day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأيام البيض"
+          }
+        }
+      }
+    },
+    "White Days (13th–15th)": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأيام البيض (13–15)"
+          }
+        }
+      }
+    },
     "Window": {
       "localizations": {
         "ar": {
@@ -8619,6 +10009,16 @@
         }
       }
     },
+    "Yes, I'm fasting": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نعم، أنا صائم"
+          }
+        }
+      }
+    },
     "Yesterday": {
       "localizations": {
         "ar": {
@@ -8635,6 +10035,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "أنت تحدد متى أكلت آخر مرة ومتى أفطرت. لا يُستنتَج شيء من أوقات الصلاة."
+          }
+        }
+      }
+    },
+    "You say when you last ate. A logged meal or a drink with calories ends the fast; water and black coffee do not.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحدّد أنت متى أكلت آخر مرة. وجبة مسجّلة أو مشروب فيه سعرات حرارية يُنهي الصيام، أما الماء والقهوة السوداء فلا."
           }
         }
       }
@@ -8675,6 +10085,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تقاريرك المخبرية"
+          }
+        }
+      }
+    },
+    "Your location could not be found just now. Try again, or choose a city below.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّر تحديد موقعك الآن. حاول مجددًا أو اختر مدينة أدناه."
           }
         }
       }
@@ -8749,12 +10169,92 @@
         }
       }
     },
+    "east": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الشرق"
+          }
+        }
+      }
+    },
+    "in %lld h": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بعد %lld س"
+          }
+        }
+      }
+    },
+    "in %lld h %lld min": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بعد %lld س %lld د"
+          }
+        }
+      }
+    },
+    "in %lld min": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بعد %lld د"
+          }
+        }
+      }
+    },
+    "north": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الشمال"
+          }
+        }
+      }
+    },
+    "north-east": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الشمال الشرقي"
+          }
+        }
+      }
+    },
+    "north-west": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الشمال الغربي"
+          }
+        }
+      }
+    },
     "not scaled": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "غير مُخفَّض"
+          }
+        }
+      }
+    },
+    "now": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الآن"
           }
         }
       }
@@ -8805,6 +10305,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "source_report_id, report_date, laboratory_name, header_text, test_name, value, unit, range, flag, comment, source_observation_id"
+          }
+        }
+      }
+    },
+    "south": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجنوب"
+          }
+        }
+      }
+    },
+    "south-east": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجنوب الشرقي"
+          }
+        }
+      }
+    },
+    "south-west": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجنوب الغربي"
+          }
+        }
+      }
+    },
+    "west": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الغرب"
           }
         }
       }

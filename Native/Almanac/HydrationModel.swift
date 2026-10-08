@@ -116,7 +116,7 @@ final class HydrationModel: ObservableObject {
             // indistinguishable from one that genuinely has nothing logged.
             // Read the failure, say it, and let the note clear itself the moment
             // a read does succeed.
-            readProblem = "Could not read today's hydration log."
+            readProblem = String(localized: "Could not read today's hydration log.")
         }
     }
 
@@ -264,7 +264,7 @@ final class HydrationModel: ObservableObject {
             // updating, which is the same silence as an unreadable log even
             // though the cause and the fix differ. Said out loud, and cleared
             // by the first sync that works.
-            syncProblem = "Apple Health sync is not going through. The figures below may be out of date."
+            syncProblem = String(localized: "Apple Health sync is not going through. The figures below may be out of date.")
         }
     }
 

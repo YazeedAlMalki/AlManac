@@ -333,9 +333,9 @@ private struct BodyMeasurementEditor: View {
 
     private func save() {
         guard let db,
-              let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let number = Double(userInput: value),
               number.isFinite, number > 0 else {
-            error = "Enter a positive measurement value."
+            error = String(localized: "Enter a positive measurement value.")
             return
         }
         do {
@@ -413,9 +413,9 @@ private struct CustomMeasurementEditor: View {
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanUnit = unit.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanName.isEmpty, !cleanUnit.isEmpty,
-              let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let number = Double(userInput: value),
               number.isFinite, number > 0 else {
-            error = "Enter a name, unit and positive value."
+            error = String(localized: "Enter a name, unit and positive value.")
             return
         }
         do {

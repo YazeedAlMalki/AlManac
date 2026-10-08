@@ -137,9 +137,10 @@ private struct CircumferenceEditor: View {
     }
 
     private func save(allowUnusual: Bool = false) {
-        guard let number = try? Double(value.trimmingCharacters(in: .whitespacesAndNewlines),
-                                       format: .number, lenient: false) else {
-            error = "Enter a number in centimeters."
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let number = Double(userInput: trimmed)
+                ?? (try? Double(trimmed, format: .number, lenient: false)) else {
+            error = String(localized: "Enter a number in centimeters.")
             return
         }
         do {

@@ -299,7 +299,7 @@ struct InsightsView: View {
             loaded = true
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read your insights."
+            readProblem = String(localized: "Could not read your insights.")
             trends = []
             correlations = []
             loaded = true

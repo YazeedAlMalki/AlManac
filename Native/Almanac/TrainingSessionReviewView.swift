@@ -283,7 +283,7 @@ struct TrainingSessionReviewView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read your training history."
+            readProblem = String(localized: "Could not read your training history.")
             days = []
             sessionsByDay = [:]
             boutsBySession = [:]
@@ -416,21 +416,23 @@ private struct BoutActualsEditor: View {
         // would erase a number that was there, and the only trace would be a
         // figure that quietly became "not recorded".
         let numbers: [(String, String, Bool)] = [
-            ("Sets", sets, false), ("Reps", reps, false), ("Rounds", rounds, false),
-            ("Load", loadKg, true), ("Duration", durationSeconds, true),
-            ("Distance", distanceMeters, true), ("Elapsed", elapsedSeconds, true),
-            ("Average heart rate", avgHeartRate, false), ("RPE", rpe, false)
+            (String(localized: "Sets"), sets, false), (String(localized: "Reps"), reps, false),
+            (String(localized: "Rounds"), rounds, false), (String(localized: "Load"), loadKg, true),
+            (String(localized: "Duration"), durationSeconds, true),
+            (String(localized: "Distance"), distanceMeters, true), (String(localized: "Elapsed"), elapsedSeconds, true),
+            (String(localized: "Average heart rate"), avgHeartRate, false), (String(localized: "RPE"), rpe, false)
         ]
         for (name, text, isDecimal) in numbers where !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            let parses = isDecimal ? Double(trimmed) != nil : Int(trimmed) != nil
+            let parses = isDecimal ? Double(userInput: trimmed) != nil : Int(userInput: trimmed) != nil
             guard parses else {
-                error = "\(name) must be a \(isDecimal ? "number" : "whole number")."
+                error = isDecimal ? String(localized: "\(name) must be a number.")
+                    : String(localized: "\(name) must be a whole number.")
                 return
             }
         }
         if let rpeValue = int(rpe), !(1...10).contains(rpeValue) {
-            error = "RPE runs from 1 to 10."
+            error = String(localized: "RPE runs from 1 to 10.")
             return
         }
         // A draft carrying only the actuals, with the prescribed group left nil —
@@ -457,7 +459,7 @@ private struct BoutActualsEditor: View {
         do {
             let changed = try WorkoutBoutStore(db: db).updateActuals(draft, id: bout.id)
             guard changed else {
-                error = "That bout no longer exists — it may have been deleted on another screen."
+                error = String(localized: "That bout no longer exists — it may have been deleted on another screen.")
                 return
             }
             onSaved()
@@ -471,11 +473,11 @@ private struct BoutActualsEditor: View {
     /// `save()`, so a nil here can only be a genuinely empty field.
     private func int(_ text: String) -> Int? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : Int(trimmed)
+        return trimmed.isEmpty ? nil : Int(userInput: trimmed)
     }
 
     private func double(_ text: String) -> Double? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : Double(trimmed)
+        return trimmed.isEmpty ? nil : Double(userInput: trimmed)
     }
 }

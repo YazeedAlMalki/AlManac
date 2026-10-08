@@ -94,7 +94,7 @@ final class NutritionModel: ObservableObject {
             // until the next refresh() succeeds", and the next `refresh()` fails
             // the same way — so there was no recovery here, only a screen that
             // looked the same whether it had no data or could not load it.
-            readProblem = "Could not read today's food log."
+            readProblem = String(localized: "Could not read today's food log.")
         }
     }
 

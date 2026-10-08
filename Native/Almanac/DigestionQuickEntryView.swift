@@ -296,12 +296,12 @@ struct DigestionQuickEntryView: View {
                                        // in docs/features/digestion.md.
                                        notes: cleanNotes),
                     logicalDay: day)
-                confirmation = "Bowel movement logged"
+                confirmation = String(localized: "Bowel movement logged")
             case .urination:
                 _ = try UrinationStore(db: db).log(
                     UrinationDraft(timestamp: time, colorGrade: grade, notes: cleanNotes),
                     logicalDay: day)
-                confirmation = "Urination logged"
+                confirmation = String(localized: "Urination logged")
             }
             notes = ""
             reload()
@@ -343,7 +343,7 @@ struct DigestionQuickEntryView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read today's entries."
+            readProblem = String(localized: "Could not read today's entries.")
             entries = []
         }
     }

@@ -220,8 +220,8 @@ struct LogBoutView: View {
                 sets: isRepsType ? sets : repeatSets,
                 reps: isRepsType ? reps : nil,
                 loadKg: selectedExercise.prescriptionType == "reps_load" && load > 0 ? load : nil,
-                durationSeconds: Double(durationText), distanceMeters: Double(distanceText),
-                rounds: Int(roundsText), rpe: rpe, notes: optionalText(notes))
+                durationSeconds: Double(userInput: durationText), distanceMeters: Double(userInput: distanceText),
+                rounds: Int(userInput: roundsText), rpe: rpe, notes: optionalText(notes))
             onSaved()
             dismiss()
         } catch { self.error = String(describing: error) }

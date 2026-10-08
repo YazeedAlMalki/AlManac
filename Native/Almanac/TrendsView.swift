@@ -300,7 +300,7 @@ struct TrendsView: View {
         selectedDate = nil
         guard let db else {
             records = []
-            error = "Trends are temporarily unavailable. Pull to try again."
+            error = String(localized: "Trends are temporarily unavailable. Pull to try again.")
             return
         }
         do {
@@ -311,7 +311,7 @@ struct TrendsView: View {
             #if DEBUG
             print("Almanac Trends load failed: \(error)")
             #endif
-            self.error = "Trends are temporarily unavailable. Pull to try again."
+            self.error = String(localized: "Trends are temporarily unavailable. Pull to try again.")
         }
     }
 

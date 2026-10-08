@@ -157,7 +157,7 @@ struct ExerciseProgressGraphsView: View {
             volume = try store.points(for: exercise.id, mode: mode, graph: .volume)
             readProblem = nil
         } catch {
-            readProblem = "Could not read this exercise's history."
+            readProblem = String(localized: "Could not read this exercise's history.")
         }
         loaded = true
     }

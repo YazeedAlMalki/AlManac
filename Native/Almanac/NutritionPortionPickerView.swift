@@ -28,7 +28,7 @@ struct NutritionPortionPickerView: View {
             TextField("Amount, in grams", text: $gramsText)
                 .keyboardType(.decimalPad)
             TextField("Quantity as you'd say it (e.g. \"2 cups\")", text: $quantityText)
-            if let grams = Double(gramsText), grams > 0,
+            if let grams = Double(userInput: gramsText), grams > 0,
                let preview = model.macroPreview(for: foodRef, grams: grams) {
                 previewRow(preview)
             }

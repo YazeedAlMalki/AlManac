@@ -63,7 +63,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             error = nil
             if rebuilt { onPrayerTimesChanged?() }
         } catch {
-            self.error = "Prayer times could not be calculated. \(error.localizedDescription)"
+            self.error = String(localized: "Prayer times could not be calculated. \(error.localizedDescription)")
         }
     }
 
@@ -80,7 +80,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             today = try cache.cachedDay(Self.dayKey(now))
             tomorrow = try cache.cachedDay(Self.dayKey(now.addingTimeInterval(86_400)))
         } catch {
-            self.error = "Prayer settings could not be read."
+            self.error = String(localized: "Prayer settings could not be read.")
         }
     }
 
@@ -128,7 +128,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             refresh()
             onPrayerTimesChanged?()
         } catch {
-            self.error = "The alert choice could not be saved."
+            self.error = String(localized: "The alert choice could not be saved.")
         }
     }
 
@@ -145,7 +145,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             error = nil
             onPrayerTimesChanged?()
         } catch {
-            self.error = "Prayer times could not be recalculated. \(error.localizedDescription)"
+            self.error = String(localized: "Prayer times could not be recalculated. \(error.localizedDescription)")
         }
     }
 
@@ -163,7 +163,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             error = nil
             onPrayerTimesChanged?()
         } catch {
-            self.error = "\(city.name) could not be applied. \(error.localizedDescription)"
+            self.error = String(localized: "\(city.name) could not be applied. \(error.localizedDescription)")
         }
     }
 
@@ -180,7 +180,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             locationManager.requestLocation()
         default:
             awaitingRequestedFix = false
-            error = "Location access is off for Almanac. Turn it on in Settings, or choose a city below."
+            error = String(localized: "Location access is off for Almanac. Turn it on in Settings, or choose a city below.")
         }
     }
 
@@ -218,7 +218,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 if self.awaitingRequestedFix {
                     self.awaitingRequestedFix = false
                     self.isLocating = false
-                    self.error = "Location access was not allowed. Choose a city below instead."
+                    self.error = String(localized: "Location access was not allowed. Choose a city below instead.")
                 }
             default:
                 break

@@ -205,7 +205,7 @@ struct ContextTagsView: View {
                 // Nothing stored for this day, so this is a create. It needs
                 // something to record — an empty row is not a fact about the day.
                 guard canSave else {
-                    error = "Add a tag or a note before saving."
+                    error = String(localized: "Add a tag or a note before saving.")
                     return
                 }
                 _ = try store.log(ContextEventDraft(date: day, tags: selected.map(\.rawValue).sorted(),
@@ -261,7 +261,7 @@ struct ContextTagsView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read your context tags."
+            readProblem = String(localized: "Could not read your context tags.")
         }
     }
 }
