@@ -126,7 +126,8 @@ struct TrainingDashboardView: View {
             BoutActualsEditor(db: model.database, bout: bout) { model.refresh() }
         }
         .confirmationDialog(
-            pendingTemplate.map { "Add \($0.template.name)'s exercises after the \($0.loggedCount) already logged today?" } ?? "",
+            pendingTemplate.map { Text("Add \($0.template.name)'s exercises after the \($0.loggedCount) already logged today?") }
+                ?? Text(verbatim: ""),
             isPresented: Binding(get: { pendingTemplate != nil }, set: { if !$0 { pendingTemplate = nil } }),
             titleVisibility: .visible,
             presenting: pendingTemplate
