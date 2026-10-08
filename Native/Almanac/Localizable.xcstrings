@@ -519,6 +519,70 @@
         }
       }
     },
+    "%lld exercises": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld exercise"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld exercises"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا تمارين"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "تمرين واحد"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "تمرينان"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld تمارين"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld تمرينًا"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld تمرين"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld h": {
       "localizations": {
         "ar": {
@@ -1159,6 +1223,16 @@
         }
       }
     },
+    "1 exercise": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تمرين واحد"
+          }
+        }
+      }
+    },
     "1 reading, last 30 days": {
       "localizations": {
         "ar": {
@@ -1437,6 +1511,16 @@
         }
       }
     },
+    "Add %@'s exercises after the %lld already logged today?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هل تضيف تمارين %@ بعد التمارين المسجّلة اليوم وعددها %lld؟"
+          }
+        }
+      }
+    },
     "Add a Diet Profile to set nutrition targets": {
       "localizations": {
         "ar": {
@@ -1453,6 +1537,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "أضف وسمًا أو ملاحظة قبل الحفظ."
+          }
+        }
+      }
+    },
+    "Add after them": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أضفها بعدها"
           }
         }
       }
@@ -1623,6 +1717,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تُنووِلت كلها (%lld)"
+          }
+        }
+      }
+    },
+    "All optional. Leave a field blank and the session starts without that number.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كلها اختيارية. اترك أي حقل فارغًا وتبدأ الجلسة دون ذلك الرقم."
           }
         }
       }
@@ -3913,6 +4017,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "التمرين"
+          }
+        }
+      }
+    },
+    "Exercises": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التمارين"
           }
         }
       }
@@ -6337,12 +6451,32 @@
         }
       }
     },
+    "No templates yet. A template is a reusable session: its exercises, with sets and reps where you give them, and a shape — straight sets, a circuit, a ladder.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا توجد قوالب بعد. القالب جلسة قابلة لإعادة الاستخدام: تمارينها، مع المجموعات والتكرارات حيث تحددها، وشكلها — مجموعات متتالية أو دائرة أو سُلّم."
+          }
+        }
+      }
+    },
     "No templates yet. A template is a reusable shape for a session — straight sets, a circuit, a ladder.": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "لا قوالب بعد. القالب شكل قابل لإعادة الاستخدام للجلسة — مجموعات متتالية، أو دائرة، أو سُلّم."
+          }
+        }
+      }
+    },
+    "No templates yet. Make one under Templates: its exercises, with sets and reps where you want them.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا توجد قوالب بعد. أنشئ قالبًا من «القوالب»: تمارينه، مع المجموعات والتكرارات حيث تريدها."
           }
         }
       }
@@ -6613,6 +6747,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "ملاحظات: %@"
+          }
+        }
+      }
+    },
+    "Nothing already logged is changed or removed.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لن يتغيّر أو يُحذف شيء مما سُجّل سابقًا."
           }
         }
       }
@@ -9027,6 +9171,16 @@
         }
       }
     },
+    "Start from a template": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ابدأ من قالب"
+          }
+        }
+      }
+    },
     "Start one": {
       "localizations": {
         "ar": {
@@ -9053,6 +9207,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "بدأ"
+          }
+        }
+      }
+    },
+    "Starting a session from this template copies these into it. The session is yours to change afterwards, and editing the template later does not change a session already started from it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بدء جلسة من هذا القالب ينسخ هذه التمارين إليها. يمكنك تعديل الجلسة بعد ذلك، وتعديل القالب لاحقًا لا يغيّر جلسة بدأت منه."
           }
         }
       }
