@@ -108,9 +108,9 @@ final class NutritionBundleImportTests: XCTestCase {
         let fruit = try XCTUnwrap(try catalog.energy(for: ref("cofid:900-001"), basis: .per100g))
         XCTAssertEqual(fruit.method, .publisherReported)
         XCTAssertEqual(fruit.kilocalories, 151)
-        // Wine is published per 100 mL: 4 × (0.2 + 0) + 7 × 10.7 = 75.7, and there is no per 100 g figure
+        // Wine is published per 100 mL: 4 × (0.2 × 0.9375 + 0) + 7 × 10.7 = 75.65, and there is no per 100 g figure
         XCTAssertEqual(try catalog.energy(for: ref("cofid:900-002"), basis: .per100ml)?.kilocalories ?? 0,
-                       75.7, accuracy: 1e-9)
+                       75.65, accuracy: 1e-9)
         XCTAssertNil(try catalog.energy(for: ref("cofid:900-002"), basis: .per100g))
         XCTAssertEqual(try catalog.bases(for: ref("afcd:F900001")), [.per100g, .per100ml])
     }

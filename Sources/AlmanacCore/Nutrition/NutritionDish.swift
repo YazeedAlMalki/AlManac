@@ -473,8 +473,74 @@ public struct NutritionDishEditor: Sendable {
                 licenceGroup: ref.namespace.licenceGroup, basis: .per100g))
         }
 
+        // A unit conflict is an upstream bug; nothing is derived across one.
+        if conflicting.isEmpty {
+            let derived = crossSourceValues(loaded, reduced: values, totalGrams: totalGrams, as: ref)
+            let derivedIDs = Set(derived.map(\.nutrientID))
+            values = (values.filter { !derivedIDs.contains($0.nutrientID) } + derived)
+                .sorted { $0.nutrientID < $1.nutrientID }
+            unmeasured.removeAll { derivedIDs.contains($0) }
+        }
+
         return RecipeReduction(values: values, totalGrams: totalGrams,
                                componentGrams: componentGrams, missingComponents: [],
                                unmeasuredNutrients: unmeasured, conflictingUnits: conflicting)
+    }
+
+    /// The values a same-id sum cannot reach when the ingredients come from
+    /// different publishers, read per ingredient the way `GeneralAtwater` reads
+    /// a single food and then summed.
+    ///
+    /// Each publisher states carbohydrate as a different quantity — USDA by
+    /// difference, CIQUAL and AFCD as available plus a separate fibre, CoFID in
+    /// monosaccharide equivalents — so "every ingredient reports this id" is
+    /// never true of USDA chicken with CIQUAL rice, and the dish lost its
+    /// carbohydrate, and with it Almanac's own calorie figure, falling back to a
+    /// sum of four publishers' differently-factored energies. The invariant this
+    /// restores: logging the dish counts what logging its ingredients would.
+    ///
+    /// - total carbohydrate, stored as `carbohydrate_by_difference` (general
+    ///   Atwater's own term), only when the same-id sums left no total to read;
+    /// - alcohol, absent taken as zero exactly as each ingredient's estimate takes
+    ///   it, only when some ingredient has any;
+    /// - `energy_kcal`, the sum of each ingredient's `EnergyEstimate.preferred`,
+    ///   which is what the dish's energy falls back to when its macros cannot be
+    ///   read. A dish is not published by anyone; "as published" here means as
+    ///   Almanac counts its ingredients.
+    ///
+    /// Each is all-or-nothing: one ingredient that cannot say leaves it unknown.
+    private func crossSourceValues(_ loaded: [(component: DishComponent, values: [NutrientValue])],
+                                   reduced: [NutrientValue], totalGrams: Double,
+                                   as ref: SourceIdentifier) -> [NutrientValue] {
+        func sum(_ perHundredGrams: ([NutrientValue]) -> Double?) -> Double? {
+            var total = 0.0
+            for entry in loaded {
+                guard let amount = perHundredGrams(entry.values) else { return nil }
+                total += amount * entry.component.grams / 100
+            }
+            return total
+        }
+        func value(_ nutrientID: String, _ total: Double, unit: String, _ what: String) -> NutrientValue {
+            NutrientValue(foodRef: ref, nutrientID: nutrientID, amount: total / totalGrams * 100,
+                          qualifier: .calculatedRecipe,
+                          sourceValue: "\(what) of \(loaded.count) components over \(totalGrams) g",
+                          sourceNutrientID: nutrientID, sourceUnit: unit,
+                          licenceGroup: ref.namespace.licenceGroup, basis: .per100g)
+        }
+
+        var derived: [NutrientValue] = []
+        if GeneralAtwater.totalCarbohydrateGrams(from: reduced, basis: .per100g) == nil,
+           let carbohydrate = sum({ GeneralAtwater.totalCarbohydrateGrams(from: $0, basis: .per100g) }) {
+            derived.append(value("carbohydrate_by_difference", carbohydrate, unit: "g",
+                                 "total carbohydrate (by difference, or available plus fibre)"))
+        }
+        if !reduced.contains(where: { $0.nutrientID == "alcohol" }),
+           let alcohol = sum({ GeneralAtwater.alcoholGrams(from: $0, basis: .per100g) }), alcohol > 0 {
+            derived.append(value("alcohol", alcohol, unit: "g", "alcohol, absent taken as zero,"))
+        }
+        if let energy = sum({ EnergyEstimate.preferred(from: $0, basis: .per100g)?.kilocalories }) {
+            derived.append(value("energy_kcal", energy, unit: "kcal", "Almanac energy"))
+        }
+        return derived
     }
 }
