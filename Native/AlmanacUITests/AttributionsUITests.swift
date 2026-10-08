@@ -324,7 +324,9 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(fasting.waitForExistence(timeout: 5))
         fasting.tap()
         XCTAssertTrue(app.navigationBars["Fasting"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Refresh fasting state"].exists)
+        // Below the fold since the screen gained the fast-day switches and the
+        // history; the list is lazy, so the row exists only once scrolled to.
+        XCTAssertTrue(app.reveal(app.buttons["Refresh fasting state"]))
     }
 
     func testPrayerScreenOpensFromMore() {

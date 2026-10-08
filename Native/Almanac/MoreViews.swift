@@ -100,7 +100,7 @@ struct ModulesView: View {
         case .context:
             ContextTagsView(db: db, trackingModel: trackingModel)
         case .prayer:
-            PrayerView(model: prayerModel)
+            PrayerView(model: prayerModel, notificationModel: notificationModel)
         case .bodyCircumference:
             BodyCircumferenceView(db: db, healthModel: healthModel)
         case .vitals:

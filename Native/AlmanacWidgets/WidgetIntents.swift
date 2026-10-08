@@ -19,12 +19,10 @@ struct LogWaterIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         let db = try AppGroupDatabase.open()
-        let store = HydrationStore(db: db)
-        let loggedAt = Date()
-        let id = try store.log(HydrationLogDraft(amount: Milliliters(250), loggedAt: loggedAt))
-        // §7.2: a glass logged at iftar is inside the fast's night window, and
-        // this is a write path the app never sees, so it resolves its own.
-        try NightNutritionWindowAssigner(db: db).assign(hydrationLogID: id, loggedAt: loggedAt)
+        // This is a write path the app never sees, so it goes through the same
+        // fasting-aware log the app does: a glass during a dry fast ends it, and
+        // one at iftar belongs to the night window (§7.2).
+        try FastingAwareHydrationLog(db: db).log(HydrationLogDraft(amount: Milliliters(250), loggedAt: Date()))
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -38,10 +36,16 @@ struct StartFastIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let db = try AppGroupDatabase.open()
         let store = FastingSessionStore(db: db)
-        let logicalDay = TimeModel(timeZone: .current).logicalDay(Date()).value
-        try store.start(
-            FastingSessionDraft(startTimestamp: Date(), sessionType: .ifPlanned),
-            logicalDay: logicalDay)
+        // One fast at a time (`idx_fasting_session_one_active`). A second tap,
+        // or a tap while today's religious fast runs, starts nothing rather than
+        // failing on the index.
+        if try store.activeSession() == nil {
+            let logicalDay = TimeModel(timeZone: .current).logicalDay(Date()).value
+            try store.start(
+                FastingSessionDraft(startTimestamp: Date(), sessionType: .ifPlanned,
+                                    timezoneOffset: TimeZone.current.secondsFromGMT() / 60),
+                logicalDay: logicalDay)
+        }
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -49,13 +53,15 @@ struct StartFastIntent: AppIntent {
 
 struct EndFastIntent: AppIntent {
     static let title: LocalizedStringResource = "End fast"
-    static let description = IntentDescription("Ends the current fasting session.")
+    static let description = IntentDescription("Ends the current intermittent fast.")
     static let openAppWhenRun = false
 
     func perform() async throws -> some IntentResult {
         let db = try AppGroupDatabase.open()
         let store = FastingSessionStore(db: db)
-        if let session = try store.activeSession() {
+        // Intermittent only. A religious fast ends at Maghrib or at the first
+        // thing logged after Fajr; a widget tap must not end it some other way.
+        if let session = try store.activeIntermittentSession() {
             try store.endScheduled(id: session.id, at: Date())
         }
         WidgetCenter.shared.reloadAllTimelines()

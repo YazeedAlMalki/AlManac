@@ -103,6 +103,7 @@ public enum AlmanacMigrations {
         Migration047_GoalTargetSnapshot.self,
         Migration048_ProfileFields.self,
         Migration049_TrainingProgram.self,
+        Migration050_PrayerPreferences.self,
         Migration051_KitchenPantry.self,
         Migration052_DishServingCount.self,
         Migration053_PantrySuggestionDismissal.self,

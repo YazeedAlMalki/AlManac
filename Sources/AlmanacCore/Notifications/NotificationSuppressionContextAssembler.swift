@@ -52,9 +52,33 @@ public struct NowOnlySuppressionAxes: Sendable, Hashable {
     }
 }
 
+/// The instants a religious dry fast covers across a scheduling pass — the
+/// one Appendix B axis that *can* be known in advance, because a fast is
+/// Fajr→Maghrib of a known day.
+///
+/// Evaluating it "as of now" for every candidate was a real bug, not just an
+/// approximation: during a fast, the pass suppressed every water reminder for
+/// the next 48 hours *and tomorrow's suhoor* (Appendix B suppresses suhoor
+/// during a dry fast), so a user who only opened the app in the daytime in
+/// Ramadan was never told when suhoor ended. Per-instant spans fix both, and
+/// also mute tomorrow's daytime water reminders before tomorrow's fast begins.
+public struct DryFastSpans: Sendable, Hashable {
+    public let spans: [DateInterval]
+    /// A dry fast is running now that no span accounts for — a session with no
+    /// schedule or no prayer times behind it. With nothing to say when it ends,
+    /// it is treated as covering the whole pass, the old behaviour.
+    public let unboundedNow: Bool
+
+    public func contains(_ instant: Date) -> Bool {
+        unboundedNow || spans.contains { instant >= $0.start && instant < $0.end }
+    }
+}
+
 public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
     private let timeModel: TimeModel
     private let fastingSessions: FastingSessionStore
+    private let religiousFasts: ReligiousFastScheduleStore
+    private let prayerTimes: PrayerTimeCacheStore
     private let shifts: ShiftScheduleStore
     private let sleepEpisodes: SleepEpisodeStore
     private let readinessCycles: ReadinessCycleStore
@@ -63,6 +87,8 @@ public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
     public init(db: Database, timeModel: TimeModel) {
         self.timeModel = timeModel
         self.fastingSessions = FastingSessionStore(db: db)
+        self.religiousFasts = ReligiousFastScheduleStore(db: db)
+        self.prayerTimes = PrayerTimeCacheStore(db: db)
         self.shifts = ShiftScheduleStore(db: db)
         self.sleepEpisodes = SleepEpisodeStore(db: db)
         self.readinessCycles = ReadinessCycleStore(db: db)
@@ -106,6 +132,33 @@ public struct NotificationSuppressionContextAssembler: @unchecked Sendable {
             isDryFastActive: fasting?.isDryFast ?? false,
             isConfirmedIFActive: isConfirmedIF,
             isReadinessAlreadyFinal: try isOpenReadinessCycleFinal())
+    }
+
+    /// The dry-fast spans from a day before `instant` to the end of `horizon`:
+    /// each scheduled fast day with cached prayer times contributes
+    /// `[Fajr, end)`, where `end` is Maghrib — or the moment its session was
+    /// broken, since a fast that is over no longer mutes anything.
+    public func dryFastSpans(around instant: Date, horizon: TimeInterval,
+                             nowOnly: NowOnlySuppressionAxes) throws -> DryFastSpans {
+        var spans: [DateInterval] = []
+        var cursor = instant.addingTimeInterval(-86_400)
+        let last = calendarDateString(instant.addingTimeInterval(horizon))
+        var seen = Set<String>()
+        while true {
+            let date = calendarDateString(cursor)
+            if seen.insert(date).inserted, try religiousFasts.isFastDay(date),
+               let times = try prayerTimes.cachedDay(date)?.times,
+               let fajr = times.first(where: { $0.name == "fajr" })?.timestamp,
+               let maghrib = times.first(where: { $0.name == "maghrib" })?.timestamp {
+                let session = try fastingSessions.sessions(for: date).first { $0.sessionType == .religious }
+                let end = min(session?.endTimestamp ?? maghrib, maghrib)
+                if end > fajr { spans.append(DateInterval(start: fajr, end: end)) }
+            }
+            if date >= last { break }
+            cursor = cursor.addingTimeInterval(86_400)
+        }
+        let coveredNow = spans.contains { instant >= $0.start && instant < $0.end }
+        return DryFastSpans(spans: spans, unboundedNow: nowOnly.isDryFastActive && !coveredNow)
     }
 
     // MARK: - Private

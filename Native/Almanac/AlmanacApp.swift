@@ -57,7 +57,7 @@ struct AlmanacApp: App {
                 if phase == .active {
                     prayerModel.ensureCache()
                     fastingModel.ensureToday()
-                    prayerModel.resumeLocationIfAuthorized()
+                    prayerModel.refreshLocationIfAutomatic()
                     // §2.5's import outcomes. Synchronous and one query when
                     // there is nothing stale, so it belongs with the other
                     // `ensure…` passes rather than in the async block below —
@@ -71,6 +71,10 @@ struct AlmanacApp: App {
                     Task {
                         await hydrationModel.syncOnForeground()
                         await healthModel.syncNow()
+                        // Water imported from Apple Health is intake like any
+                        // other: a dry fast it broke is re-derived now, before
+                        // the reminders that depend on the fast are planned.
+                        fastingModel.ensureToday()
                         readinessModel.refresh()
                         trackingModel.refresh()
                         // §14.1's scheduling pass, after prayer times and today's
@@ -97,7 +101,12 @@ struct AlmanacApp: App {
             AlmanacNavigationBar(selection: tabs.selectionBinding, quickLog: { quickLogging = true })
         }
             .environment(\.tabCoordinator, tabs)
-            .sheet(isPresented: $quickLogging) {
+            .sheet(isPresented: $quickLogging, onDismiss: {
+                // Anything logged there can have broken a fast or changed what
+                // the reminders should mute.
+                fastingModel.refresh()
+                Task { await notificationModel.reconcileNotifications() }
+            }) {
                 QuickLogView(
                     db: model.db,
                     hydrationModel: hydrationModel,
@@ -121,6 +130,16 @@ struct AlmanacApp: App {
                 programModel.configure(db: model.db)
                 healthModel.configure(db: model.db)
                 trackingModel.configure(db: model.db)
+                // The fast and the reminders are derived from prayer times, so
+                // a change there (a new city, a method, an offset, travel)
+                // re-derives both at once rather than at the next foreground.
+                prayerModel.onPrayerTimesChanged = { [fastingModel, notificationModel] in
+                    fastingModel.ensureToday()
+                    Task { await notificationModel.reconcileNotifications() }
+                }
+                fastingModel.onStateChanged = { [notificationModel] in
+                    Task { await notificationModel.reconcileNotifications() }
+                }
                 prayerModel.configure(db: model.db)
                 fastingModel.configure(db: model.db)
                 notificationModel.configure(db: model.db)

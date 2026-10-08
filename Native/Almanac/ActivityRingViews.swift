@@ -296,12 +296,12 @@ struct ActivityRingDayEditor: View {
 
     private func deleteHydration(_ id: String) {
         guard let db else { return }
-        performDelete { try HydrationStore(db: db).delete(id: id) }
+        performDelete { try FastingAwareHydrationLog(db: db).delete(id: id) }
     }
 
     private func deleteNutrition(_ id: String) {
         guard let db else { return }
-        performDelete { try NutritionLogStore(db: db).delete(id: id) }
+        performDelete { _ = try FastingAwareNutritionLog(db: db).delete(id: id) }
     }
 
     private func deleteTraining(_ id: Int64) {
@@ -357,9 +357,11 @@ private struct ActivityRingHydrationEditor: View {
             let store = HydrationStore(db: db)
             try store.editAmount(id: entry.id, to: Milliliters(amount))
             try store.editLoggedAt(id: entry.id, to: date)
-            // Moving an entry can move it into or out of a fast's night window,
-            // and the window column records the *current* time, not the first one.
-            try NightNutritionWindowAssigner(db: db).assign(hydrationLogID: entry.id, loggedAt: date)
+            // Moving a drink can move it into or out of a fast and its night
+            // window; both days it touched are re-derived, and the window column
+            // records the *current* time, not the first one.
+            try FastingAwareHydrationLog(db: db).didEdit(hydrationLogID: entry.id,
+                                                         previousLoggedAt: entry.loggedAt.span?.start)
             onSaved()
         } catch { self.error = String(describing: error) }
     }
@@ -422,13 +424,10 @@ private struct ActivityRingNutritionEditor: View {
         }
         edit.reasonText = "Corrected from Activity Rings day detail"
         do {
-            try NutritionLogStore(db: db).update(id: entry.id, edit)
-            // Re-resolve against the night window when the entry's time changed —
-            // §7.2's assignment follows the timestamp, and a correction can take
-            // an entry either side of Maghrib or Fajr.
-            if case .set(let newEatenAt) = edit.eatenAt, let instant = newEatenAt.span?.start {
-                try NightNutritionWindowAssigner(db: db).assign(nutritionLogID: entry.id, eatenAt: instant)
-            }
+            // The fasting-aware update re-runs §11.1 against the corrected meal,
+            // re-derives the religious fast of the day it left and the day it
+            // moved to, and re-resolves the night window (§7.2) for its new time.
+            try FastingAwareNutritionLog(db: db).update(id: entry.id, edit)
             onSaved()
         } catch { self.error = String(describing: error) }
     }

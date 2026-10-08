@@ -131,6 +131,7 @@ struct NotificationSettingsView: View {
         case .iftar: return String(localized: "Iftar")
         case .contextualSnack: return String(localized: "Pre-workout snack")
         case .contextualHydration: return String(localized: "Pre-meal drink")
+        case .prayer: return String(localized: "Prayer times")
         }
     }
 
@@ -147,6 +148,7 @@ struct NotificationSettingsView: View {
         case .iftar: return String(localized: "At Maghrib, on religious fast days.")
         case .contextualSnack: return String(localized: "When a long gap opens before a planned workout.")
         case .contextualHydration: return String(localized: "About an hour before a meal you usually eat.")
+        case .prayer: return String(localized: "At each prayer you choose in Prayer. Maghrib on a fast day is the iftar reminder.")
         }
     }
 }

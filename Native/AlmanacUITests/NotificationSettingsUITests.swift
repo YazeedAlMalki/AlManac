@@ -30,7 +30,7 @@ final class NotificationSettingsUITests: XCTestCase {
     func testEveryNotificationTypeHasASwitch() {
         openReminders()
         for type in ["readiness", "water", "meal", "bedtime", "supplement",
-                     "suhoor", "iftar", "contextual_snack", "contextual_hydration"] {
+                     "suhoor", "iftar", "contextual_snack", "contextual_hydration", "prayer"] {
             let toggle = app.switches["notification-rule-\(type)"]
             XCTAssertTrue(app.reveal(toggle), "no switch for \(type)")
         }
