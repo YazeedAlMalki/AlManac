@@ -51,7 +51,7 @@ public enum BristolType: Int, Sendable, Codable, CaseIterable {
     /// BRD §6.3's accessibility rule is "never rely on colour alone; numeric
     /// grades + text + VoiceOver" — and the two halves of that have to travel
     /// together, or a grade travels without its meaning.
-    public var accessibilityLabel: String { localized("Type %@, %@", String(rawValue), displayName) }
+    public var accessibilityLabel: String { localized("Type %@, %@", NumberDisplay.localized(String(rawValue)), displayName) }
 }
 
 /// Stool colour, BRD §6.3's own six: "brown range, pale, yellow, green, black,

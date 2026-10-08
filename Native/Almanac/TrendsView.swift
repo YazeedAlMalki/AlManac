@@ -154,11 +154,11 @@ struct TrendsView: View {
         let snapshot = snapshot
         return AlmanacCard(padding: 0) {
             HStack(spacing: 0) {
-                summaryCell("Average", snapshot.map { AlmanacNumber.compact($0.average) } ?? "—")
+                summaryCell(String(localized: "Average"), snapshot.map { AlmanacNumber.compact($0.average) } ?? "—")
                 AlmanacRule(axis: .vertical).frame(height: 52)
-                summaryCell("Low", snapshot.map { AlmanacNumber.compact($0.minimum) } ?? "—")
+                summaryCell(String(localized: "Low"), snapshot.map { AlmanacNumber.compact($0.minimum) } ?? "—")
                 AlmanacRule(axis: .vertical).frame(height: 52)
-                summaryCell("Direction", snapshot.map { directionLabel($0.direction) } ?? "—")
+                summaryCell(String(localized: "Direction"), snapshot.map { directionLabel($0.direction) } ?? "—")
             }
             .padding(.vertical, 18)
         }

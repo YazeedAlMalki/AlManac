@@ -72,7 +72,7 @@ struct ContextTagsView: View {
                         historyRow(event)
                     }
                 } header: {
-                    AlmanacSectionHeader(title: String(localized: "Earlier"), detail: "last \(Self.historyDayCount) days")
+                    AlmanacSectionHeader(title: String(localized: "Earlier"), detail: String(localized: "last \(Self.historyDayCount) days"))
                 }
             }
         }

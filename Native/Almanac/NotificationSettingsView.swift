@@ -20,7 +20,7 @@ struct NotificationSettingsView: View {
         Form {
             Section {
                 if model.isAuthorized {
-                    LabeledContent("Queued now", value: "\(model.pendingCount)")
+                    LabeledContent("Queued now", value: NumberDisplay.localized(String(model.pendingCount)))
                         .font(AlmanacTypography.font(.body))
                 } else {
                     Text("Almanac has not been allowed to send notifications on this device, so nothing is queued. Turn reminders on to be asked.")

@@ -73,7 +73,8 @@ public enum ReadinessText {
             if english.hasPrefix(calibrating), english.hasSuffix(")") {
                 let days = english.dropFirst(calibrating.count).dropLast().split(separator: "/")
                 if days.count == 2 {
-                    return localized("Score is preliminary (calibrating: %@/%@)", String(days[0]), String(days[1]))
+                    return localized("Score is preliminary (calibrating: %@/%@)",
+                                     NumberDisplay.localized(String(days[0])), NumberDisplay.localized(String(days[1])))
                 }
             }
             return english

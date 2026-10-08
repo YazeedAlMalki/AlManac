@@ -304,7 +304,7 @@ public extension BodyMetric {
     /// disagree about the same number — which they could before this existed,
     /// as `%.1f` in one place and `%.2f` in another.
     static func format(_ value: Double, metric: BodyMetric) -> String {
-        String(format: "%.\(metric.decimalPlaces)f", value)
+        NumberDisplay.localized(String(format: "%.\(metric.decimalPlaces)f", value))
     }
 
     /// A value with its unit, in kilograms, for prose. `visceralRating` has no

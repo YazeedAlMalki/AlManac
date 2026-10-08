@@ -127,7 +127,7 @@ struct NutritionQuickEntryView: View {
     private var totalsSection: some View {
         Section("Today") {
             if let totals = model.todaysTotals, totals.mealsCounted > 0 {
-                LabeledContent("Total", value: "\(Int(totals.kcal.rounded())) kcal")
+                LabeledContent("Total", value: String(localized: "\(Int(totals.kcal.rounded())) kcal"))
                 if !totals.isComplete {
                     Text("Some logged foods are missing an amount or a reference match, so this total is a floor, not the full picture.")
                         .font(.caption).foregroundStyle(.secondary)

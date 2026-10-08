@@ -41,6 +41,16 @@
         }
       }
     },
+    "%@ bpm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ نبضة/د"
+          }
+        }
+      }
+    },
     "%@ could not be applied. %@": {
       "localizations": {
         "ar": {
@@ -111,12 +121,42 @@
         }
       }
     },
+    "%@ m": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ م"
+          }
+        }
+      }
+    },
     "%@ mL": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "%@ مل"
+          }
+        }
+      }
+    },
+    "%@ mg": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ملغ"
+          }
+        }
+      }
+    },
+    "%@ ms": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ملّي ث"
           }
         }
       }
@@ -137,6 +177,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "يجب أن يكون %@ عددًا صحيحًا."
+          }
+        }
+      }
+    },
+    "%@ of %@ mL": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ من %@ مل"
+          }
+        }
+      }
+    },
+    "%@ x %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ × %@"
+          }
+        }
+      }
+    },
+    "%@ x %@ @ %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ × %@ @ %@"
           }
         }
       }
@@ -291,6 +361,26 @@
         }
       }
     },
+    "%lld added · %lld unchanged": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُضيف %lld · دون تغيير %lld"
+          }
+        }
+      }
+    },
+    "%lld created · %lld unchanged · %lld held": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُنشئ %lld · دون تغيير %lld · مُعلّق %lld"
+          }
+        }
+      }
+    },
     "%lld days in a schedule change left out": {
       "localizations": {
         "en": {
@@ -348,6 +438,80 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "استُبعد %lld يوم ضمن تغيير في الجدول"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld did not match": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld لم تتطابق"
+          }
+        }
+      }
+    },
+    "%lld documents": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld document"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld documents"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا مستندات"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "مستند واحد"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "مستندان"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مستندات"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مستندًا"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مستند"
                 }
               }
             }
@@ -459,6 +623,26 @@
         }
       }
     },
+    "%lld kg": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld كغ"
+          }
+        }
+      }
+    },
+    "%lld m": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld م"
+          }
+        }
+      }
+    },
     "%lld mL": {
       "localizations": {
         "ar": {
@@ -485,6 +669,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld دقيقة"
+          }
+        }
+      }
+    },
+    "%lld need a choice from candidates": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld تحتاج إلى اختيار من المرشحين"
+          }
+        }
+      }
+    },
+    "%lld of %lld rows matched the catalog": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طابق %lld من %lld سطرًا الكتالوج"
           }
         }
       }
@@ -549,6 +753,70 @@
         }
       }
     },
+    "%lld rounds": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld round"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld rounds"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا جولات"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "جولة واحدة"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "جولتان"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld جولات"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld جولة"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld جولة"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld rows skipped — see the source file": {
       "localizations": {
         "ar": {
@@ -585,6 +853,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld ثانية"
+          }
+        }
+      }
+    },
+    "%lld sessions": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld session"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sessions"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا جلسات"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "جلسة واحدة"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "جلستان"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld جلسات"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld جلسة"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld جلسة"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld sets": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld set"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld sets"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا مجموعات"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "مجموعة واحدة"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "مجموعتان"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مجموعات"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مجموعة"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مجموعة"
+                }
+              }
+            }
           }
         }
       }
@@ -653,6 +1049,26 @@
         }
       }
     },
+    "%lld were not laboratory lines": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld لم تكن أسطرًا مخبرية"
+          }
+        }
+      }
+    },
+    "%lld × %lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld × %lld"
+          }
+        }
+      }
+    },
     "%lld — %@": {
       "localizations": {
         "ar": {
@@ -679,6 +1095,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld/10"
+          }
+        }
+      }
+    },
+    "%lldm %llds": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld د %lld ث"
+          }
+        }
+      }
+    },
+    "%llds": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ث"
           }
         }
       }
@@ -749,6 +1185,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "18:6"
+          }
+        }
+      }
+    },
+    "@ %@ kg": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "@ %@ كغ"
           }
         }
       }
@@ -987,6 +1433,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "إضافة"
+          }
+        }
+      }
+    },
+    "Add a Diet Profile to set nutrition targets": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أضف ملفًا غذائيًا لتحديد أهداف التغذية"
           }
         }
       }
@@ -1501,6 +1957,26 @@
         }
       }
     },
+    "Average": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المتوسط"
+          }
+        }
+      }
+    },
+    "Average RPE": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متوسط الجهد المُدرَك"
+          }
+        }
+      }
+    },
     "Average heart rate": {
       "localizations": {
         "ar": {
@@ -1777,6 +2253,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "طريقة الحساب"
+          }
+        }
+      }
+    },
+    "Calories": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السعرات"
           }
         }
       }
@@ -2471,6 +2957,16 @@
         }
       }
     },
+    "Cycle position": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الموضع في الدورة"
+          }
+        }
+      }
+    },
     "Daily": {
       "localizations": {
         "ar": {
@@ -2707,6 +3203,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "الهضم"
+          }
+        }
+      }
+    },
+    "Digestion %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الهضم: %@"
+          }
+        }
+      }
+    },
+    "Direction": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الاتجاه"
           }
         }
       }
@@ -3087,6 +3603,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الزمن المنقضي"
+          }
+        }
+      }
+    },
+    "Elapsed (seconds)": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الزمن المنقضي (ثوانٍ)"
           }
         }
       }
@@ -3901,6 +4427,16 @@
         }
       }
     },
+    "Heaviest load": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أثقل حمل"
+          }
+        }
+      }
+    },
     "Heavy training day": {
       "localizations": {
         "ar": {
@@ -4037,6 +4573,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الترطيب"
+          }
+        }
+      }
+    },
+    "Hydration %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الترطيب: %@"
           }
         }
       }
@@ -4247,6 +4793,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "النسخة الواردة"
+          }
+        }
+      }
+    },
+    "Increase by": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الزيادة بمقدار"
           }
         }
       }
@@ -4781,6 +5337,16 @@
         }
       }
     },
+    "Logged as not taken": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سُجّل أنه لم يُؤخذ"
+          }
+        }
+      }
+    },
     "Logged as notes and RPE only — %@ has no numeric fields yet.": {
       "localizations": {
         "ar": {
@@ -4837,6 +5403,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "اليوم المنطقي %@ — يبدأ اليوم عند 04:00."
+          }
+        }
+      }
+    },
+    "Low": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأدنى"
           }
         }
       }
@@ -5137,6 +5713,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تسجيل الحالة الصباحي"
+          }
+        }
+      }
+    },
+    "Most work in a session": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أكبر حجم عمل في جلسة"
           }
         }
       }
@@ -5511,12 +6097,32 @@
         }
       }
     },
+    "No nutrition logged": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا تغذية مسجّلة"
+          }
+        }
+      }
+    },
     "No nutrition logged yet": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "لا تغذية مسجّلة بعد"
+          }
+        }
+      }
+    },
+    "No nutrition ring": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا حلقة تغذية"
           }
         }
       }
@@ -5721,6 +6327,16 @@
         }
       }
     },
+    "No targets yet": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا أهداف بعد"
+          }
+        }
+      }
+    },
     "No templates yet. A template is a reusable shape for a session — straight sets, a circuit, a ladder.": {
       "localizations": {
         "ar": {
@@ -5827,6 +6443,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "ليس يوم صيام — حدّدته أنت"
+          }
+        }
+      }
+    },
+    "Not available": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "غير متاح"
           }
         }
       }
@@ -6141,6 +6767,16 @@
         }
       }
     },
+    "Nutrition %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التغذية: %@"
+          }
+        }
+      }
+    },
     "Nutrition targets met": {
       "localizations": {
         "ar": {
@@ -6407,6 +7043,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "أخرى"
+          }
+        }
+      }
+    },
+    "Outside target": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خارج الهدف"
           }
         }
       }
@@ -6937,6 +7583,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الجهد %lld/10"
+          }
+        }
+      }
+    },
+    "RPE (1–10)": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الجهد المُدرَك (1–10)"
           }
         }
       }
@@ -7541,12 +8197,32 @@
         }
       }
     },
+    "Rest": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الراحة"
+          }
+        }
+      }
+    },
     "Rest day": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "يوم راحة"
+          }
+        }
+      }
+    },
+    "Resting heart rate": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نبض القلب أثناء الراحة"
           }
         }
       }
@@ -8151,12 +8827,32 @@
         }
       }
     },
+    "Slot in session": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الخانة في الجلسة"
+          }
+        }
+      }
+    },
     "Small amount": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "كمية صغيرة"
+          }
+        }
+      }
+    },
+    "Sodium": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الصوديوم"
           }
         }
       }
@@ -8431,6 +9127,16 @@
         }
       }
     },
+    "Sugar": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السكر"
+          }
+        }
+      }
+    },
     "Sugar (g, optional)": {
       "localizations": {
         "ar": {
@@ -8627,6 +9333,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لم يتحقق الهدف"
+          }
+        }
+      }
+    },
+    "Targets hit": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحققت الأهداف"
           }
         }
       }
@@ -9109,6 +9825,16 @@
         }
       }
     },
+    "Time under load": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الزمن تحت الحمل"
+          }
+        }
+      }
+    },
     "Timeline": {
       "localizations": {
         "ar": {
@@ -9259,6 +9985,16 @@
         }
       }
     },
+    "Tonnage": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الحمولة الكلية"
+          }
+        }
+      }
+    },
     "Total": {
       "localizations": {
         "ar": {
@@ -9305,6 +10041,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "التدريب"
+          }
+        }
+      }
+    },
+    "Training %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التدريب: %@"
           }
         }
       }
@@ -9829,6 +10575,16 @@
         }
       }
     },
+    "Well outside target": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بعيد عن الهدف"
+          }
+        }
+      }
+    },
     "What did you drink?": {
       "localizations": {
         "ar": {
@@ -10159,6 +10915,16 @@
         }
       }
     },
+    "complete": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مكتمل"
+          }
+        }
+      }
+    },
     "cycle %lld · slot %lld": {
       "localizations": {
         "ar": {
@@ -10175,6 +10941,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "الشرق"
+          }
+        }
+      }
+    },
+    "fill rule unavailable": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قاعدة الامتلاء غير متاحة"
+          }
+        }
+      }
+    },
+    "golden day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم ذهبي"
           }
         }
       }
@@ -10205,6 +10991,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "بعد %lld د"
+          }
+        }
+      }
+    },
+    "incomplete": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "غير مكتمل"
+          }
+        }
+      }
+    },
+    "last %lld days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "آخر %lld يومًا"
           }
         }
       }
@@ -10259,12 +11065,32 @@
         }
       }
     },
+    "of %@ mL": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "من %@ مل"
+          }
+        }
+      }
+    },
     "of %lld mL goal": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "من هدف %lld مل"
+          }
+        }
+      }
+    },
+    "off": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متوقف"
           }
         }
       }
@@ -10289,12 +11115,32 @@
         }
       }
     },
+    "rest %lld s": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "راحة %lld ث"
+          }
+        }
+      }
+    },
     "scaled from %lld": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "مُخفَّض من %lld"
+          }
+        }
+      }
+    },
+    "selected": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "محدَّد"
           }
         }
       }
@@ -10335,6 +11181,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الجنوب الغربي"
+          }
+        }
+      }
+    },
+    "today": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم"
           }
         }
       }

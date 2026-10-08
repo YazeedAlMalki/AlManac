@@ -154,7 +154,7 @@ struct EditorialRhythmCalendarView: View {
             ringRow(
                 title: String(localized: "Hydration"),
                 state: day.hydration == .complete ? String(localized: "Target met") : String(localized: "Target not met"),
-                detail: "\(AlmanacNumber.compact(day.hydrationTotalMilliliters.value)) of \(AlmanacNumber.compact(day.hydrationTargetMilliliters.value)) mL",
+                detail: String(localized: "\(AlmanacNumber.compact(day.hydrationTotalMilliliters.value)) of \(AlmanacNumber.compact(day.hydrationTargetMilliliters.value)) mL"),
                 complete: day.hydration == .complete
             )
             ringRow(
@@ -277,25 +277,29 @@ struct EditorialRhythmCalendarView: View {
 
     private func nutritionPresentation(_ state: ActivityRingNutritionState) -> (state: String, detail: String?, complete: Bool) {
         switch state {
-        case .hit: return ("Targets hit", nil, true)
-        case .off: return ("Outside target", nil, false)
-        case .mess: return ("Well outside target", nil, false)
-        case .notLogged: return ("No nutrition logged", "No nutrition ring", false)
+        case .hit: return (String(localized: "Targets hit"), nil, true)
+        case .off: return (String(localized: "Outside target"), nil, false)
+        case .mess: return (String(localized: "Well outside target"), nil, false)
+        case .notLogged: return (String(localized: "No nutrition logged"), String(localized: "No nutrition ring"), false)
         case .dietProfileRequired:
-            return ("No targets yet", "Add a Diet Profile to set nutrition targets", false)
+            return (String(localized: "No targets yet"),
+                    String(localized: "Add a Diet Profile to set nutrition targets"), false)
         }
     }
 
     private func accessibilityLabel(for day: ActivityRingDay) -> String {
-        let hydration = day.hydration == .complete ? "complete" : "incomplete"
-        let training = day.training == .complete ? "complete" : "incomplete"
+        let complete = String(localized: "complete")
+        let incomplete = String(localized: "incomplete")
+        let hydration = day.hydration == .complete ? complete : incomplete
+        let training = day.training == .complete ? complete : incomplete
         let nutrition = nutritionPresentation(day.nutrition).state
-        let digestion = day.digestion == .disabled ? "off" : "fill rule unavailable"
-        var parts = [displayDay(day.day), "Hydration \(hydration)", "Training \(training)", "Nutrition \(nutrition)", "Digestion \(digestion)"]
-        if day.isGolden { parts.append("golden day") }
-        if day.day == model.todayDay { parts.append("today") }
-        if day.day == model.selectedDay { parts.append("selected") }
-        return parts.joined(separator: ", ")
+        let digestion = day.digestion == .disabled ? String(localized: "off") : String(localized: "fill rule unavailable")
+        var parts = [displayDay(day.day), String(localized: "Hydration \(hydration)"), String(localized: "Training \(training)"),
+                     String(localized: "Nutrition \(nutrition)"), String(localized: "Digestion \(digestion)")]
+        if day.isGolden { parts.append(String(localized: "golden day")) }
+        if day.day == model.todayDay { parts.append(String(localized: "today")) }
+        if day.day == model.selectedDay { parts.append(String(localized: "selected")) }
+        return parts.joined(separator: String(localized: ", "))
     }
 
     private func displayDay(_ day: LogicalDay) -> String {

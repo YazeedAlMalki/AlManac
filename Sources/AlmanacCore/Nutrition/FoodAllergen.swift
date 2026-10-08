@@ -329,6 +329,6 @@ public struct AllergenFilterEffect: Sendable, Hashable {
         let list = localizedList(triggeredBy.sorted { $0.sortIndex < $1.sortIndex }.map(\.title))
         return removed == 1
             ? localized("Hidden 1 food naming %@.", list)
-            : localized("Hidden %@ foods naming %@.", String(removed), list)
+            : localized("Hidden %@ foods naming %@.", NumberDisplay.localized(String(removed)), list)
     }
 }

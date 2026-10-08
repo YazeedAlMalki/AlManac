@@ -482,5 +482,5 @@ private struct ActivityRingTrainingEditor: View {
 }
 
 private func ringFormat(_ value: Double) -> String {
-    value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+    AlmanacNumber.compact(value)
 }

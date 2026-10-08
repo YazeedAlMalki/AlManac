@@ -66,7 +66,8 @@ public struct HijriDate: Sendable, Hashable {
     }
 
     /// "17 Ramadan 1448 AH"; in Arabic, "17 رمضان 1448 هـ".
-    public var text: String { localized("%@ %@ %@ AH", "\(day)", monthName, "\(year)") }
+    public var text: String { localized("%@ %@ %@ AH", NumberDisplay.localized(String(day)), monthName,
+                                        NumberDisplay.localized(String(year))) }
 
     /// The Umm al-Qura date of a `"YYYY-MM-DD"` civil date.
     public init?(gregorian date: String) {

@@ -193,8 +193,11 @@ enum AlmanacReadinessPresentation {
 }
 
 enum AlmanacNumber {
+    /// A whole number as itself, anything else to one decimal, in the app's
+    /// digits (`NumberDisplay`). An editor prefilled with this reads it back
+    /// through `Double(userInput:)`, which takes either language's digits.
     static func compact(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+        NumberDisplay.localized(value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value))
     }
 }
 

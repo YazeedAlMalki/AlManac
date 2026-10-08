@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld ml": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld مل"
+          }
+        }
+      }
+    },
     "+250 ml": {
       "localizations": {
         "ar": {

@@ -474,5 +474,5 @@ private func recentLogicalDayRange() -> (from: String, to: String) {
 }
 
 private func format(_ value: Double) -> String {
-    value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+    AlmanacNumber.compact(value)
 }

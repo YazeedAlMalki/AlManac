@@ -45,10 +45,10 @@ public struct HydrationLoggingService: Sendable {
            let secondsAgo = try possibleDoubleTrack(excluding: id, drinkID: drink.id, at: date) {
             warnings.append(DrinkLoggingWarning(
                 type: .possibleDoubleTrack,
-                message: localized("Similar drink logged %@s ago. Did you mean to log this drink?", String(secondsAgo))))
+                message: localized("Similar drink logged %@s ago. Did you mean to log this drink?", NumberDisplay.localized(String(secondsAgo)))))
         }
         if settings.trackSugar, let sugar = scaledSugar, sugar > 35 {
-            warnings.append(DrinkLoggingWarning(type: .highSugar, message: localized("This drink has %@g sugar (high)", String(Int(sugar)))))
+            warnings.append(DrinkLoggingWarning(type: .highSugar, message: localized("This drink has %@g sugar (high)", NumberDisplay.localized(String(Int(sugar))))))
         }
         if settings.trackSodium && scaledSodium > 300 {
             warnings.append(DrinkLoggingWarning(type: .highSodium,

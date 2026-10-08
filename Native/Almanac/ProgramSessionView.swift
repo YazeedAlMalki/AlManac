@@ -352,10 +352,10 @@ struct ProgramSessionView: View {
             .frame(minHeight: AlmanacMetrics.minimumControl / 2)
 
             if slot.log.prescription.sets != nil {
-                countStepper("Sets", slot: slot, keyPath: \.actualSets, range: 1...20)
+                countStepper(String(localized: "Sets"), slot: slot, keyPath: \.actualSets, range: 1...20)
             }
             if slot.log.prescription.reps != nil {
-                countStepper("Reps", slot: slot, keyPath: \.actualReps, range: 1...999)
+                countStepper(String(localized: "Reps"), slot: slot, keyPath: \.actualReps, range: 1...999)
             }
             if slot.log.prescription.loadKg != nil {
                 loadStepper(slot)
@@ -426,7 +426,7 @@ struct ProgramSessionView: View {
                 get: { slot.log.actualDurationSeconds ?? 0 },
                 set: { value in update(slot.slot) { $0.actualDurationSeconds = value } }),
                 in: 0...1800, step: 5) {
-                Text(slot.log.actualDurationSeconds.map { "\(Int($0)) s" } ?? "—")
+                Text(slot.log.actualDurationSeconds.map { String(localized: "\(Int($0)) s") } ?? "—")
                     .font(AlmanacTypography.font(.data).monospacedDigit())
             }
             .labelsHidden()
@@ -625,18 +625,18 @@ struct ProgramSessionView: View {
     private func actualsText(_ log: ProgramSessionLog) -> String {
         var parts: [String] = []
         if let sets = log.actualSets, let reps = log.actualReps {
-            parts.append("\(sets) × \(reps)")
+            parts.append(String(localized: "\(sets) × \(reps)"))
         } else if let sets = log.actualSets {
-            parts.append("\(sets) sets")
+            parts.append(String(localized: "\(sets) sets"))
         }
-        if let load = log.actualLoadKg, load > 0 { parts.append("@ \(AlmanacNumber.compact(load)) kg") }
-        if let duration = log.actualDurationSeconds, duration > 0 { parts.append("\(Int(duration)) s") }
-        return parts.isEmpty ? "Not recorded" : parts.joined(separator: " ")
+        if let load = log.actualLoadKg, load > 0 { parts.append(String(localized: "@ \(AlmanacNumber.compact(load)) kg")) }
+        if let duration = log.actualDurationSeconds, duration > 0 { parts.append(String(localized: "\(Int(duration)) s")) }
+        return parts.isEmpty ? String(localized: "Not recorded") : parts.joined(separator: " ")
     }
 
     private func loadText(_ value: Double?) -> String {
         guard let value, value > 0 else { return "—" }
-        return "\(AlmanacNumber.compact(value)) kg"
+        return String(localized: "\(AlmanacNumber.compact(value)) kg")
     }
 
     private func bandName(_ score: Int) -> String {

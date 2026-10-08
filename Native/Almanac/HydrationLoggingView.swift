@@ -159,13 +159,13 @@ struct HydrationLoggingView: View {
             let scale = drink.volumeMilliliters > 0 ? amount / drink.volumeMilliliters : 1
             Section {
                 if drink.caloriesKcal > 0 {
-                    figure("Calories", "\(AlmanacNumber.compact(drink.caloriesKcal * scale)) kcal")
+                    figure(String(localized: "Calories"), String(localized: "\(AlmanacNumber.compact(drink.caloriesKcal * scale)) kcal"))
                 }
                 if drink.sodiumMilligrams > 0 {
-                    figure("Sodium", "\(AlmanacNumber.compact(drink.sodiumMilligrams * scale)) mg")
+                    figure(String(localized: "Sodium"), String(localized: "\(AlmanacNumber.compact(drink.sodiumMilligrams * scale)) mg"))
                 }
                 if let sugar = drink.sugarGrams, sugar > 0 {
-                    figure("Sugar", "\(AlmanacNumber.compact(sugar * scale)) g")
+                    figure(String(localized: "Sugar"), String(localized: "\(AlmanacNumber.compact(sugar * scale)) g"))
                 }
             } header: {
                 Text("This amount")

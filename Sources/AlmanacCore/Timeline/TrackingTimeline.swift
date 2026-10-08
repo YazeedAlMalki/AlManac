@@ -157,7 +157,7 @@ private struct TrackingSupplementProvider: TimelineProviding {
         for session in try WorkoutSessionStore(db: db).sessions(date: day) {
             let details = [
                 session.durationMinutes.map { "\($0) min" },
-                session.rpe.map { localized("RPE %@/10", String($0)) },
+                session.rpe.map { localized("RPE %@/10", NumberDisplay.localized(String($0))) },
                 session.notes
             ].compactMap { $0 }
             result.append(makeEntry(
@@ -217,7 +217,7 @@ private struct TrackingSupplementProvider: TimelineProviding {
                 kind: "episode", table: "sleep_episode", id: String(record.id),
                 occurrence: occurrence(record.start, fallback: day),
                 title: localized("Sleep · %@", "\(record.effectiveType)"),
-                detail: localized("%@ min", String(record.durationMinutes)),
+                detail: localized("%@ min", NumberDisplay.localized(String(record.durationMinutes))),
                 value: .quantity(text: String(record.durationMinutes), unit: localized("min"))
             ))
         }
@@ -261,7 +261,7 @@ private struct TrackingSupplementProvider: TimelineProviding {
     }
 
     private func numberText(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+        NumberDisplay.localized(value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value))
     }
 
     private func bodyTitle(_ metric: String) -> String {

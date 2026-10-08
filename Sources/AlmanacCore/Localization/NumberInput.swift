@@ -44,3 +44,37 @@ extension Int {
         self.init(NumberInput.ascii(text))
     }
 }
+
+/// Numbers on screen, in the digits of the language the app runs in (#4,
+/// decision 3): ٧٢٫٥ in Arabic, 72.5 in English.
+///
+/// Takes text a number has already been written into with ASCII digits and
+/// ".", by `String(_:)` or `String(format:)`, and changes only the glyphs. So
+/// rounding, padding and the number of decimals stay exactly what the caller
+/// chose, and an English run, Linux tests included, gets back the same text.
+/// Only for a number on its own: a sentence or a name can hold digits that are
+/// not a quantity.
+///
+/// Only a locale whose digits are not ASCII changes anything, so what this
+/// writes is always what `NumberInput` reads back. An English run in Germany
+/// keeps "72.5" rather than getting a "72,5" its own fields would refuse.
+public enum NumberDisplay {
+    public static func localized(_ ascii: String) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = .current
+        guard let zero = formatter.string(from: 0)?.unicodeScalars.first, zero != "0" else { return ascii }
+        let separator = formatter.decimalSeparator ?? "."
+        var result = ""
+        for scalar in ascii.unicodeScalars {
+            if ("0"..."9").contains(scalar),
+               let digit = Unicode.Scalar(zero.value + scalar.value - 0x30) {
+                result.unicodeScalars.append(digit)
+            } else if scalar == "." {
+                result += separator
+            } else {
+                result.unicodeScalars.append(scalar)
+            }
+        }
+        return result
+    }
+}

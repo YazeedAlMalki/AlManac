@@ -36,3 +36,20 @@ struct NumberInputTests {
         #expect(Double(userInput: "سبعون") == nil)
     }
 }
+
+@Suite("Numbers on screen")
+struct NumberDisplayTests {
+    @Test("An English run gets the text back unchanged")
+    func english() {
+        // The tests run in the development language, as every English assertion
+        // in the suite assumes.
+        #expect(NumberDisplay.localized("72.5") == "72.5")
+        #expect(NumberDisplay.localized("-3") == "-3")
+    }
+
+    @Test("Whatever the locale, the number reads back as itself")
+    func roundTrip() {
+        #expect(Double(userInput: NumberDisplay.localized("72.5")) == 72.5)
+        #expect(Int(userInput: NumberDisplay.localized("1448")) == 1448)
+    }
+}

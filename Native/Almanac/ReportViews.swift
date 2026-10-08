@@ -227,9 +227,9 @@ struct CSVImportView: View {
                 if let outcome {
                     Section("Import result") {
                         LabeledContent("Reports",
-                            value: "\(outcome.reportsCreated) created · \(outcome.reportsUnchanged) unchanged · \(outcome.reportConflicts) held")
+                            value: String(localized: "\(outcome.reportsCreated) created · \(outcome.reportsUnchanged) unchanged · \(outcome.reportConflicts) held"))
                         LabeledContent("Observations",
-                            value: "\(outcome.observationsCreated) added · \(outcome.observationsUnchanged) unchanged")
+                            value: String(localized: "\(outcome.observationsCreated) added · \(outcome.observationsUnchanged) unchanged"))
                         if outcome.invalidRowCount > 0 {
                             Text("\(outcome.invalidRowCount) rows skipped — see the source file").foregroundStyle(.secondary)
                         }
@@ -386,10 +386,10 @@ extension LabImportJob {
         guard rowsUsable > 0 else {
             return String(localized: "Import on \(when): \(status.displayText).")
         }
-        var parts = ["\(rowsMatched) of \(rowsUsable) rows matched the catalog"]
-        if rowsAmbiguous > 0 { parts.append("\(rowsAmbiguous) need a choice from candidates") }
-        if rowsUnmatched > 0 { parts.append("\(rowsUnmatched) did not match") }
-        if invalidRows > 0 { parts.append("\(invalidRows) were not laboratory lines") }
+        var parts = [String(localized: "\(rowsMatched) of \(rowsUsable) rows matched the catalog")]
+        if rowsAmbiguous > 0 { parts.append(String(localized: "\(rowsAmbiguous) need a choice from candidates")) }
+        if rowsUnmatched > 0 { parts.append(String(localized: "\(rowsUnmatched) did not match")) }
+        if invalidRows > 0 { parts.append(String(localized: "\(invalidRows) were not laboratory lines")) }
         return String(localized: "Import on \(when). ") + parts.joined(separator: ". ") + "."
     }
 }

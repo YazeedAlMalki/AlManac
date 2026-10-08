@@ -472,7 +472,8 @@ struct PrayerView: View {
         let south = String(localized: "S", comment: "South, after a latitude")
         let east = String(localized: "E", comment: "East, after a longitude")
         let west = String(localized: "W", comment: "West, after a longitude")
-        return String(format: "%.2f°%@, %.2f°%@", abs(lat), lat >= 0 ? north : south, abs(lon), lon >= 0 ? east : west)
+        return NumberDisplay.localized(String(format: "%.2f°%@, %.2f°%@", abs(lat), lat >= 0 ? north : south,
+                                                abs(lon), lon >= 0 ? east : west))
     }
 
     private func compassPoint(_ bearing: Double) -> String {
@@ -538,7 +539,7 @@ struct PrayerView: View {
                 Stepper(value: Binding(get: { minutes }, set: { model.setOffset(name, minutes: $0) }),
                         in: -30...30) {
                     LabeledContent(PrayerTime.displayName(name)) {
-                        Text(minutes == 0 ? String(localized: "As calculated") : String(format: String(localized: "%+d min"), minutes))
+                        Text(minutes == 0 ? String(localized: "As calculated") : NumberDisplay.localized(String(format: String(localized: "%+d min"), minutes)))
                             .font(AlmanacTypography.font(.data).monospacedDigit())
                             .foregroundStyle(minutes == 0 ? AlmanacPalette.textSecondary : AlmanacPalette.textPrimary)
                     }

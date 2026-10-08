@@ -168,7 +168,7 @@ struct InsightsView: View {
                     .foregroundStyle(AlmanacPalette.textPrimary)
                 Spacer(minLength: 12)
                 if let r = summary.rValue {
-                    Text(String(format: "r %.2f", r))
+                    Text(NumberDisplay.localized(String(format: "r %.2f", r)))
                         .font(AlmanacTypography.font(.data).monospacedDigit())
                         .foregroundStyle(AlmanacPalette.textPrimary)
                 }
@@ -239,7 +239,7 @@ struct InsightsView: View {
     }
 
     private func format(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+        AlmanacNumber.compact(value)
     }
 
     private func directionSymbol(_ direction: TrendDirection) -> String {

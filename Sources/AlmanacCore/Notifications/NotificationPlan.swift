@@ -143,7 +143,7 @@ public enum NotificationText {
             ? localized("Your usual %@ is about an hour away. Drinking 200 ml now can help with hunger.",
                         mealNoun(mealType))
             : localized("Your usual %@ is about %@ minutes away. Drinking 200 ml now can help with hunger.",
-                        mealNoun(mealType), String(Int(leadMinutes.rounded())))
+                        mealNoun(mealType), NumberDisplay.localized(String(Int(leadMinutes.rounded()))))
     }
 
     public static var contextualHydrationTitle: String { localized("Before your usual meal") }
@@ -156,9 +156,9 @@ public enum NotificationText {
     public static func contextualSnackBody(hoursUntilWorkout: Double) -> String {
         hoursUntilWorkout < 1
             ? localized("Your workout is in %@ minutes. Consider a snack — a banana or similar fast carb.",
-                        String(Int((hoursUntilWorkout * 60).rounded())))
+                        NumberDisplay.localized(String(Int((hoursUntilWorkout * 60).rounded()))))
             : localized("Your workout is in %@ hours. Consider a snack — a banana or similar fast carb.",
-                        String(format: "%.1f", hoursUntilWorkout))
+                        NumberDisplay.localized(String(format: "%.1f", hoursUntilWorkout)))
     }
 
     public static var contextualSnackTitle: String { localized("Before your workout") }

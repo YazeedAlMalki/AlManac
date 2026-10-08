@@ -318,28 +318,28 @@ private struct PoolItemEditor: View {
                     .accessibilityIdentifier("pool-kind")
 
                     if showsReps {
-                        Stepper(value: $sets, in: 1...20) { label("Sets", "\(sets)") }
-                        Stepper(value: $reps, in: 1...999) { label("Reps", "\(reps)") }
+                        Stepper(value: $sets, in: 1...20) { label(String(localized: "Sets"), NumberDisplay.localized(String(sets))) }
+                        Stepper(value: $reps, in: 1...999) { label(String(localized: "Reps"), NumberDisplay.localized(String(reps))) }
                     }
                     if kind.recordsLoad {
                         Stepper(value: $loadKg, in: 0...500, step: 1) {
-                            label("Load", loadKg > 0 ? "\(AlmanacNumber.compact(loadKg)) kg" : "—")
+                            label(String(localized: "Load"), loadKg > 0 ? String(localized: "\(AlmanacNumber.compact(loadKg)) kg") : "—")
                         }
                     }
                     if showsDuration {
                         Stepper(value: $durationSeconds, in: 5...600, step: 5) {
-                            label("Duration", "\(Int(durationSeconds)) s")
+                            label(String(localized: "Duration"), String(localized: "\(Int(durationSeconds)) s"))
                         }
                     }
                     Stepper(value: $restSeconds, in: 0...600, step: 5) {
-                        label("Rest", restSeconds > 0 ? "\(Int(restSeconds)) s" : "—")
+                        label(String(localized: "Rest"), restSeconds > 0 ? String(localized: "\(Int(restSeconds)) s") : "—")
                     }
                 }
 
                 Section {
-                    Stepper(value: $rotationPosition, in: 0...99) { label("Cycle position", "\(rotationPosition)") }
+                    Stepper(value: $rotationPosition, in: 0...99) { label(String(localized: "Cycle position"), NumberDisplay.localized(String(rotationPosition))) }
                     Stepper(value: $positionWithinSession, in: 0...9) {
-                        label("Slot in session", "\(positionWithinSession + 1)")
+                        label(String(localized: "Slot in session"), NumberDisplay.localized(String(positionWithinSession + 1)))
                     }
                 } header: {
                     Text("Where it sits")
@@ -352,7 +352,7 @@ private struct PoolItemEditor: View {
                         .accessibilityIdentifier("progression-toggle")
                     if progressionOn {
                         Stepper(value: $incrementKg, in: 0.5...50, step: 0.5) {
-                            label("Increase by", "\(AlmanacNumber.compact(incrementKg)) kg")
+                            label(String(localized: "Increase by"), String(localized: "\(AlmanacNumber.compact(incrementKg)) kg"))
                         }
                         Picker("When", selection: $condition) {
                             ForEach(ProgressionCondition.allCases, id: \.self) { option in
@@ -477,14 +477,14 @@ enum ProgramPrescriptionText {
         guard let kind else { return String(localized: "No prescription set") }
         var parts: [String] = []
         if let sets, let reps {
-            parts.append("\(sets) × \(reps)")
+            parts.append(String(localized: "\(sets) × \(reps)"))
         } else if let sets {
-            parts.append("\(sets) \(sets == 1 ? "set" : "sets")")
+            parts.append(String(localized: "\(sets) sets"))
         }
-        if let loadKg, loadKg > 0 { parts.append("@ \(AlmanacNumber.compact(loadKg)) kg") }
-        if let durationSeconds, durationSeconds > 0 { parts.append("\(Int(durationSeconds)) s") }
+        if let loadKg, loadKg > 0 { parts.append(String(localized: "@ \(AlmanacNumber.compact(loadKg)) kg")) }
+        if let durationSeconds, durationSeconds > 0 { parts.append(String(localized: "\(Int(durationSeconds)) s")) }
         if parts.isEmpty { parts.append(kind.displayName) }
-        if let restSeconds, restSeconds > 0 { parts.append("rest \(Int(restSeconds)) s") }
+        if let restSeconds, restSeconds > 0 { parts.append(String(localized: "rest \(Int(restSeconds)) s")) }
         return parts.joined(separator: " · ")
     }
 

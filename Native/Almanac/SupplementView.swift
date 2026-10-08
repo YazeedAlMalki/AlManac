@@ -161,7 +161,7 @@ struct SupplementView: View {
     private func state(for plan: SupplementPlan) -> (symbol: String, label: String, tone: AlmanacStatusTone) {
         let entries = todayEntries.filter { $0.planId == plan.id }
         if entries.contains(where: { !$0.taken }) {
-            return ("xmark.circle.fill", "Logged as not taken", .warning)
+            return ("xmark.circle.fill", String(localized: "Logged as not taken"), .warning)
         }
         if !entries.isEmpty {
             let count = entries.filter(\.taken).count
@@ -169,7 +169,7 @@ struct SupplementView: View {
                     count == 1 ? String(localized: "Taken") : String(localized: "Taken \(count)×"),
                     .good)
         }
-        return ("circle", "Not logged", .neutral)
+        return ("circle", String(localized: "Not logged"), .neutral)
     }
 
     private func dueCountToday(_ active: [SupplementPlan]) -> Int? {
@@ -254,7 +254,7 @@ struct SupplementView: View {
 
     private func reminderTime(_ plan: SupplementPlan) -> String {
         guard let minute = plan.reminderMinuteOfDay else { return "—" }
-        return String(format: "%02d:%02d", minute / 60, minute % 60)
+        return NumberDisplay.localized(String(format: "%02d:%02d", minute / 60, minute % 60))
     }
 
     // MARK: - History

@@ -104,11 +104,12 @@ public struct DayEnergy: Hashable, Sendable {
     public var summary: String {
         guard isFoodComplete else { return localized("Partial total — some values are unavailable") }
         switch (foodCount, drinkCount) {
-        case (_, 0): return localized("%@ foods counted", String(foodCount))
+        case (_, 0): return localized("%@ foods counted", NumberDisplay.localized(String(foodCount)))
         case (0, 1): return localized("1 drink counted")
-        case (0, _): return localized("%@ drinks counted", String(drinkCount))
-        case (_, 1): return localized("%@ foods and 1 drink counted", String(foodCount))
-        default: return localized("%@ foods and %@ drinks counted", String(foodCount), String(drinkCount))
+        case (0, _): return localized("%@ drinks counted", NumberDisplay.localized(String(drinkCount)))
+        case (_, 1): return localized("%@ foods and 1 drink counted", NumberDisplay.localized(String(foodCount)))
+        default: return localized("%@ foods and %@ drinks counted", NumberDisplay.localized(String(foodCount)),
+                                  NumberDisplay.localized(String(drinkCount)))
         }
     }
 }

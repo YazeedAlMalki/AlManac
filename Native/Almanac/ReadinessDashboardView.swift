@@ -234,8 +234,8 @@ struct ReadinessDashboardView: View {
                     AlmanacMetricRow(
                         icon: AlmanacIcon.hydration,
                         title: String(localized: "Hydration"),
-                        value: "\(AlmanacNumber.compact(hydrationModel.todayTotal.value)) mL",
-                        detail: "of \(AlmanacNumber.compact(hydrationGoal)) mL",
+                        value: String(localized: "\(AlmanacNumber.compact(hydrationModel.todayTotal.value)) mL"),
+                        detail: String(localized: "of \(AlmanacNumber.compact(hydrationGoal)) mL"),
                         tone: hydrationTone,
                         // A reading is a door. Each of these rows is the name of
                         // a feature, and Today is where someone first wonders
@@ -301,7 +301,7 @@ struct ReadinessDashboardView: View {
 
     private var inputRows: some View {
         VStack(spacing: 0) {
-            inputRow("Sleep", value: model.sleepDurationMinutes.map(durationLabel), missingValue: "Not available")
+            inputRow(String(localized: "Sleep"), value: model.sleepDurationMinutes.map(durationLabel), missingValue: String(localized: "Not available"))
             AlmanacRule()
             // The two rows that were dead ends until §6.7's manual fallback
             // existed. They are doors now, and only because they became doors
@@ -311,15 +311,15 @@ struct ReadinessDashboardView: View {
             // person reading "Not available" here is someone with nothing
             // syncing them — asking them to go and fix a permission is a
             // different conversation from asking for the number they measured.
-            metricDoor("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.compact($0)) bpm" },
-                       missingValue: "Not available", identifier: "readiness-input-rhr")
+            metricDoor(String(localized: "Resting heart rate"), value: model.latestRHR.map { String(localized: "\(AlmanacNumber.compact($0)) bpm") },
+                       missingValue: String(localized: "Not available"), identifier: "readiness-input-rhr")
             AlmanacRule()
-            metricDoor("HRV", value: model.latestHRV.map { "\(AlmanacNumber.compact($0)) ms" },
-                       missingValue: "Not available", identifier: "readiness-input-hrv")
+            metricDoor(String(localized: "HRV"), value: model.latestHRV.map { String(localized: "\(AlmanacNumber.compact($0)) ms") },
+                       missingValue: String(localized: "Not available"), identifier: "readiness-input-hrv")
             AlmanacRule()
-            inputRow("Mood", value: model.todayMood.map { "\($0.score)/10" }, missingValue: "Not logged")
+            inputRow(String(localized: "Mood"), value: model.todayMood.map { String(localized: "\($0.score)/\(10)") }, missingValue: String(localized: "Not logged"))
             AlmanacRule()
-            inputRow("Soreness", value: model.todaySoreness.map { "\($0.overallScore)/10" }, missingValue: "Not logged")
+            inputRow(String(localized: "Soreness"), value: model.todaySoreness.map { String(localized: "\($0.overallScore)/\(10)") }, missingValue: String(localized: "Not logged"))
         }
     }
 
@@ -330,27 +330,27 @@ struct ReadinessDashboardView: View {
                 VStack(spacing: 0) {
                     if let summary = trainingModel.todaysSummary {
                         if let tonnage = summary.totalTonnageKg {
-                            inputRow("Tonnage", value: "\(AlmanacNumber.compact(tonnage)) kg", missingValue: nil)
+                            inputRow(String(localized: "Tonnage"), value: String(localized: "\(AlmanacNumber.compact(tonnage)) kg"), missingValue: nil)
                         }
                         if let distance = summary.totalDistanceMeters {
                             AlmanacRule()
-                            inputRow("Distance", value: "\(AlmanacNumber.compact(distance)) m", missingValue: nil)
+                            inputRow(String(localized: "Distance"), value: String(localized: "\(AlmanacNumber.compact(distance)) m"), missingValue: nil)
                         }
                         if let duration = summary.totalDurationSeconds {
                             AlmanacRule()
-                            inputRow("Time", value: durationLabel(Int(duration.rounded())), missingValue: nil)
+                            inputRow(String(localized: "Time"), value: durationLabel(Int(duration.rounded())), missingValue: nil)
                         }
                         if let reps = summary.totalReps {
                             AlmanacRule()
-                            inputRow("Reps", value: "\(reps)", missingValue: nil)
+                            inputRow(String(localized: "Reps"), value: NumberDisplay.localized(String(reps)), missingValue: nil)
                         }
                         if let rounds = summary.totalRounds {
                             AlmanacRule()
-                            inputRow("Rounds", value: "\(rounds)", missingValue: nil)
+                            inputRow(String(localized: "Rounds"), value: NumberDisplay.localized(String(rounds)), missingValue: nil)
                         }
                         if let rpe = summary.averageRPE {
                             AlmanacRule()
-                            inputRow("Average RPE", value: String(format: "%.1f/10", rpe), missingValue: nil)
+                            inputRow(String(localized: "Average RPE"), value: NumberDisplay.localized(String(format: "%.1f/10", rpe)), missingValue: nil)
                         }
                     }
                 }

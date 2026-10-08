@@ -199,7 +199,7 @@ struct BackupView: View {
     private func summary(for bundle: BackupBundleInfo) -> String {
         var parts = [dateText(bundle.createdAt)]
         if bundle.documentCount > 0 {
-            parts.append("\(bundle.documentCount) document\(bundle.documentCount == 1 ? "" : "s")")
+            parts.append(String(localized: "\(bundle.documentCount) documents"))
         }
         parts.append(ByteCountFormatter.string(fromByteCount: bundle.byteCount, countStyle: .file))
         if let note = bundle.note { parts.append(note) }
