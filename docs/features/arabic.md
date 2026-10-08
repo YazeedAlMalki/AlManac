@@ -1,10 +1,11 @@
 # Almanac — Arabic
 
-**Status (2026-10-07):** the whole app has Arabic, switched by iOS's own
-per-app Language setting. Slices 0–3 of #4 are built on
-`claude/arabic-2026-10-07`. Slice 4 (formatting and right-to-left review) and
-the owner's read-through are open. The owner's call, 2026-10-07: "the whole
-app gets Arabic". That brings BRD v1.6's deferred "Arabic UI" into scope.
+**Status (2026-10-08):** the whole app has Arabic, switched by iOS's own
+per-app Language setting. Slices 0–4 of #4 are built on
+`claude/arabic-2026-10-07`, which also carries the fasting and prayer work
+merged from master (#5), in Arabic. The screenshot pass and the owner's
+read-through are open. The owner's call, 2026-10-07: "the whole app gets
+Arabic". That brings BRD v1.6's deferred "Arabic UI" into scope.
 
 ## How text reaches the screen
 
@@ -49,7 +50,10 @@ Arabic must read the same in English, and the reverse (#4, decision 2). So:
 - **Day keys** are pinned to `en_US_POSIX` (PR #2, merged into this branch
   first).
 - Default names written to the database ("My Schedule", "User"), grouping
-  keys a view compares ("Unassigned"), and lab audit reasons stay English.
+  keys a view compares ("Unassigned"), and audit reasons (lab corrections,
+  "Set on the Fasting screen") stay English. So do stored vocabularies: prayer
+  keys (`fajr`), calculation methods (`umm_al_qura`) and fast-schedule types,
+  whose labels are translated where they are shown.
 
 **Data has no Arabic source.** Food names (USDA, CIQUAL, CoFID, AFCD),
 exercise and muscle names, and lab analyte names are shown as stored.
@@ -72,6 +76,38 @@ agrees with the number. "This is pass %lld through %lld exercises."
 pluralises on its second count through a substitution. Other counts use
 phrasings that do not need agreement ("الأطعمة المحتسبة: %@").
 
+## Dates and numbers (slice 4)
+
+**Dates are Gregorian on screen, whatever the device's calendar** (#4,
+decision 3). An Arabic phone set to Saudi Arabia defaults to Umm al-Qura, and
+everything Almanac stores is Gregorian, so a date in the device's calendar
+would name a different month from the one its data is filed under. Every
+formatting call that includes a date goes through `almanacFormatted(date:time:)`
+or `.almanacDateTime` (`DesignSystem.swift`), which use
+`Calendar.almanacDisplay`: Gregorian, in the app's locale, so month names and
+digits are still Arabic. The root view sets `\.calendar` for date pickers and
+chart axes. Time-only formatting does not depend on the calendar and is left
+alone. The fasting screens' Hijri dates are deliberate and come from
+`HijriDate`.
+
+**Digits follow the locale.** SwiftUI's own interpolations already write
+Arabic-Indic digits. Text built with `String(_:)` or `String(format:)` goes
+through `NumberDisplay.localized` (AlmanacCore). It swaps the digits and the
+decimal point for the locale's, only when those digits are not ASCII, and
+changes nothing else. `AlmanacNumber.compact` and the core's numbers in
+sentences use it.
+
+**Typed numbers are read in either language's digits.** The number pad types
+٧٢٫٥ in Arabic, which `Double(_:)` refuses. Every numeric field parses through
+`Double(userInput:)` / `Int(userInput:)` (`NumberInput`). They read
+Arabic-Indic and Persian digits, the Arabic decimal separator and direction
+marks, so whatever `NumberDisplay` writes reads back. The date of birth is
+stored in ASCII digits whichever keyboard typed it.
+
+**Direction.** Chevrons are `chevron.forward`, which mirrors. Insights' trend
+arrows (`arrow.up.right`) are left as they are until the screenshot pass shows
+which way the charts' time axis runs in Arabic.
+
 ## Tests
 
 - `ArabicUITests.testTheAppRunsInArabicRightToLeft` launches in Arabic. It
@@ -83,16 +119,17 @@ phrasings that do not need agreement ("الأطعمة المحتسبة: %@").
   every source key with the same specifiers. It also checks argument
   substitution.
 - `ReadinessTextTests`: every engine sentence comes back unchanged.
+- `NumberInputTests`: Arabic-Indic and Persian digits, the separators and
+  direction marks parse; letters do not; an English run displays numbers
+  unchanged, and whatever is displayed reads back.
 
 ## Open
 
-- **Slice 4: formatting and RTL review.** This covers dates (an `ar_SA`
-  device may default to the Umm al-Qura calendar, and `ContextTagsView`
-  formats with the device calendar), digits (they follow the locale), units
-  inside sentences, charts' direction, and a screenshot pass of every
-  screen. A few strings are still built in English outside the gates:
-  lowercase-first fragments ("last %lld days" as a header detail),
-  `.map { "…" }` closures, and the import summary's joined parts.
+- **The screenshot pass.** Every screen in Arabic, on a simulator, for
+  layout, truncation and the charts' direction. Neither gate can see a
+  `String` the app builds and shows verbatim. Slice 4 found 150 of them:
+  assignments, helper labels, tuple returns and unit fragments. The pass is
+  where any that are left would show.
 - **The owner's read-through.** All translations are Modern Standard Arabic
   written in the build, with one glossary throughout (سجّل for log, قراءة for
   reading, مخزن المطبخ for pantry, المقرَّر for prescription). They count as done
