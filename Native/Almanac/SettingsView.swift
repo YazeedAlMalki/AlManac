@@ -48,15 +48,12 @@ struct SettingsView: View {
                 .accessibilityIdentifier("sync-source-preference-link")
             }
             Section("Reminders") {
-                Toggle("Remind me to drink water", isOn: $remindersEnabled)
-                    .onChange(of: remindersEnabled) { _, _ in Task { await applyReminderSchedule() } }
+                Toggle("Remind me to drink water", isOn: applyingSchedule($remindersEnabled))
                 if remindersEnabled {
-                    Stepper("Every \(reminderIntervalMinutes) min", value: $reminderIntervalMinutes, in: 15...240, step: 15)
-                        .onChange(of: reminderIntervalMinutes) { _, _ in Task { await applyReminderSchedule() } }
-                    Stepper("From \(reminderStartHour):00", value: $reminderStartHour, in: 0...23)
-                        .onChange(of: reminderStartHour) { _, _ in Task { await applyReminderSchedule() } }
-                    Stepper("Until \(reminderEndHour):00", value: $reminderEndHour, in: 0...23)
-                        .onChange(of: reminderEndHour) { _, _ in Task { await applyReminderSchedule() } }
+                    Stepper("Every \(reminderIntervalMinutes) min",
+                            value: applyingSchedule($reminderIntervalMinutes), in: 15...240, step: 15)
+                    Stepper("From \(reminderStartHour):00", value: applyingSchedule($reminderStartHour), in: 0...23)
+                    Stepper("Until \(reminderEndHour):00", value: applyingSchedule($reminderEndHour), in: 0...23)
                 }
                 NavigationLink {
                     NotificationSettingsView(model: notificationModel)
@@ -201,14 +198,34 @@ struct SettingsView: View {
         do {
             try notificationModel.setEnabled(true, for: .water)
             guard try await notificationModel.requestAuthorizationAndSchedule() else {
+                // Refused: run the off path, which saves the setting, turns the
+                // water rule off and reschedules. This used to happen as a side
+                // effect of `.onChange` re-firing on the assignment below.
                 remindersEnabled = false
-                try? model.saveReminderSettings(enabled: false, intervalMinutes: reminderIntervalMinutes,
-                                                 startHour: reminderStartHour, endHour: reminderEndHour)
+                await applyReminderSchedule()
                 return
             }
         } catch {
             remindersEnabled = false
             self.error = String(describing: error)
+            await applyReminderSchedule()
         }
+    }
+
+    /// A binding that writes the value and then applies the reminder schedule.
+    ///
+    /// Not `.onChange`: `.task` loads these four values from the database, and
+    /// `.onChange` fires for that load as well as for a tap. With water reminders
+    /// saved as on, merely opening Settings re-saved them and asked for
+    /// notification permission, with nobody touching a control. A binding's
+    /// setter runs only when the control itself changes the value.
+    private func applyingSchedule<Value>(_ binding: Binding<Value>) -> Binding<Value> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { newValue in
+                binding.wrappedValue = newValue
+                Task { await applyReminderSchedule() }
+            }
+        )
     }
 }
