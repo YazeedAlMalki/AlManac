@@ -25,21 +25,21 @@ public enum TrainingExperience: String, Sendable, Hashable, CaseIterable, Identi
 
     public var title: String {
         switch self {
-        case .notSet: return "Prefer not to say"
-        case .novice: return "Novice"
-        case .beginner: return "Beginner"
-        case .intermediate: return "Intermediate"
-        case .advanced: return "Advanced"
+        case .notSet: return localized("Prefer not to say")
+        case .novice: return localized("Novice")
+        case .beginner: return localized("Beginner")
+        case .intermediate: return localized("Intermediate")
+        case .advanced: return localized("Advanced")
         }
     }
 
     public var explanation: String {
         switch self {
-        case .notSet: return "The app will not tailor advice to your level."
-        case .novice: return "New to structured training."
-        case .beginner: return "A few months of regular training."
-        case .intermediate: return "Consistent training, and comfortable progressing it."
-        case .advanced: return "Years of training, including competition or coaching."
+        case .notSet: return localized("The app will not tailor advice to your level.")
+        case .novice: return localized("New to structured training.")
+        case .beginner: return localized("A few months of regular training.")
+        case .intermediate: return localized("Consistent training, and comfortable progressing it.")
+        case .advanced: return localized("Years of training, including competition or coaching.")
         }
     }
 
@@ -96,14 +96,14 @@ public enum BloodType: String, Sendable, Hashable, CaseIterable, Identifiable, C
         case .abNegative: return "AB-"
         case .oPositive: return "O+"
         case .oNegative: return "O-"
-        case .unknown: return "I don't know"
+        case .unknown: return localized("I don't know")
         }
     }
 
     public var explanation: String {
         switch self {
-        case .unknown: return "Leave it blank and nothing depends on it."
-        default: return "Not used anywhere in the app yet. Recorded for when it is."
+        case .unknown: return localized("Leave it blank and nothing depends on it.")
+        default: return localized("Not used anywhere in the app yet. Recorded for when it is.")
         }
     }
 

@@ -21,7 +21,7 @@ public struct SavedMealResults: Sendable, Hashable {
     /// Present whenever allergens are recorded, hidden or not, for the reason
     /// `RecipeResults.disclaimer` gives.
     public var disclaimer: String? {
-        DishAllergenCheck.disclaimer(noun: "meal", allergens: allergens)
+        DishAllergenCheck.disclaimer(noun: .meal, allergens: allergens)
     }
 }
 

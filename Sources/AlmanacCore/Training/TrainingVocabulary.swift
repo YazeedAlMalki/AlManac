@@ -22,16 +22,16 @@ public enum TrainingContainer: String, Sendable, Hashable, CaseIterable {
 
     public var displayName: String {
         switch self {
-        case .straightSets: return "Straight sets"
-        case .superset: return "Superset"
-        case .circuit: return "Circuit"
-        case .emom: return "Every minute on the minute"
-        case .amrap: return "As many rounds as possible"
-        case .forTime: return "For time"
-        case .intervalBlock: return "Interval block"
-        case .ladder: return "Ladder"
-        case .skillBlock: return "Skill block"
-        case .flow: return "Flow"
+        case .straightSets: return localized("Straight sets")
+        case .superset: return localized("Superset")
+        case .circuit: return localized("Circuit")
+        case .emom: return localized("Every minute on the minute")
+        case .amrap: return localized("As many rounds as possible")
+        case .forTime: return localized("For time")
+        case .intervalBlock: return localized("Interval block")
+        case .ladder: return localized("Ladder")
+        case .skillBlock: return localized("Skill block")
+        case .flow: return localized("Flow")
         }
     }
 }
@@ -59,18 +59,18 @@ public enum PrescriptionKind: String, Sendable, Hashable, CaseIterable {
 
     public var displayName: String {
         switch self {
-        case .repsLoad: return "Reps and load"
-        case .repsBodyweight: return "Reps, bodyweight"
-        case .timeUnderLoad: return "Time under load"
-        case .distance: return "Distance"
-        case .duration: return "Duration"
-        case .roundsForTime: return "Rounds for time"
-        case .workInTime: return "Work in time"
-        case .interval: return "Intervals"
-        case .qualityReps: return "Quality reps"
-        case .holdStretch: return "Hold or stretch"
-        case .release: return "Release"
-        case .sessionOnly: return "Session only"
+        case .repsLoad: return localized("Reps and load")
+        case .repsBodyweight: return localized("Reps, bodyweight")
+        case .timeUnderLoad: return localized("Time under load")
+        case .distance: return localized("Distance")
+        case .duration: return localized("Duration")
+        case .roundsForTime: return localized("Rounds for time")
+        case .workInTime: return localized("Work in time")
+        case .interval: return localized("Intervals")
+        case .qualityReps: return localized("Quality reps")
+        case .holdStretch: return localized("Hold or stretch")
+        case .release: return localized("Release")
+        case .sessionOnly: return localized("Session only")
         }
     }
 

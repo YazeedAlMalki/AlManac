@@ -43,9 +43,9 @@ struct TrainingSessionReviewView: View {
         }
         var title: String {
             switch self {
-            case .sevenDays: return "Last 7 days"
-            case .thirtyDays: return "Last 30 days"
-            case .ninetyDays: return "Last 90 days"
+            case .sevenDays: return String(localized: "Last 7 days")
+            case .thirtyDays: return String(localized: "Last 30 days")
+            case .ninetyDays: return String(localized: "Last 90 days")
             }
         }
     }
@@ -179,15 +179,15 @@ struct TrainingSessionReviewView: View {
         .contentShape(Rectangle())
         .onTapGesture { if editable { editing = bout } }
         .accessibilityIdentifier("bout-row-\(bout.id)")
-        .accessibilityHint(editable ? "Opens this bout to correct what was actually done" : "Read only")
+        .accessibilityHint(editable ? String(localized: "Opens this bout to correct what was actually done") : String(localized: "Read only"))
     }
 
     // MARK: - Labelling
 
     private func sessionTitle(_ session: WorkoutSessionEntry) -> String {
         if let type = session.sessionType { return readable(type) }
-        if session.prescribedWorkoutId != nil { return "Templated session" }
-        return "Training"
+        if session.prescribedWorkoutId != nil { return String(localized: "Templated session") }
+        return String(localized: "Training")
     }
 
     private func sessionCountLabel(for day: String) -> String? {
@@ -203,49 +203,49 @@ struct TrainingSessionReviewView: View {
         guard let kind = PrescriptionKind(rawValue: bout.prescriptionType) else {
             // An unrecognised type is a data problem, not an empty result. Says
             // so rather than printing nothing that reads as "did nothing".
-            return "Unrecognised type"
+            return String(localized: "Unrecognised type")
         }
         var parts: [String] = []
-        if let sets = bout.actualSets { parts.append("\(sets)×") }
-        if kind.recordsReps, let reps = bout.actualReps { parts.append("\(reps)") }
-        if kind.recordsRounds, let rounds = bout.actualRounds { parts.append("\(rounds) rounds") }
+        if let sets = bout.actualSets { parts.append(String(localized: "\(sets)×")) }
+        if kind.recordsReps, let reps = bout.actualReps { parts.append(NumberDisplay.localized(String(reps))) }
+        if kind.recordsRounds, let rounds = bout.actualRounds { parts.append(String(localized: "\(rounds) rounds")) }
         if kind.recordsLoad, let load = bout.actualLoadKg {
-            parts.append("\(AlmanacNumber.compact(load)) kg")
+            parts.append(String(localized: "\(AlmanacNumber.compact(load)) kg"))
         }
         if kind.recordsDuration, let seconds = bout.actualDurationSeconds {
             parts.append(durationLabel(seconds))
         }
         if kind.recordsDistance, let meters = bout.actualDistanceMeters {
-            parts.append("\(AlmanacNumber.compact(meters)) m")
+            parts.append(String(localized: "\(AlmanacNumber.compact(meters)) m"))
         }
-        if parts.isEmpty { return "Not recorded" }
+        if parts.isEmpty { return String(localized: "Not recorded") }
         return parts.joined(separator: " ")
     }
 
     private func prescribedLabel(_ bout: WorkoutBoutEntry) -> String? {
         guard let kind = PrescriptionKind(rawValue: bout.prescriptionType) else { return nil }
         var parts: [String] = []
-        if let sets = bout.prescribedSets { parts.append("\(sets)×") }
-        if kind.recordsReps, let reps = bout.prescribedReps { parts.append("\(reps)") }
-        if kind.recordsRounds, let rounds = bout.prescribedRounds { parts.append("\(rounds) rounds") }
+        if let sets = bout.prescribedSets { parts.append(String(localized: "\(sets)×")) }
+        if kind.recordsReps, let reps = bout.prescribedReps { parts.append(NumberDisplay.localized(String(reps))) }
+        if kind.recordsRounds, let rounds = bout.prescribedRounds { parts.append(String(localized: "\(rounds) rounds")) }
         if kind.recordsLoad, let load = bout.prescribedLoadKg {
-            parts.append("\(AlmanacNumber.compact(load)) kg")
+            parts.append(String(localized: "\(AlmanacNumber.compact(load)) kg"))
         }
         if kind.recordsDuration, let seconds = bout.prescribedDurationSeconds {
             parts.append(durationLabel(seconds))
         }
         if kind.recordsDistance, let meters = bout.prescribedDistanceMeters {
-            parts.append("\(AlmanacNumber.compact(meters)) m")
+            parts.append(String(localized: "\(AlmanacNumber.compact(meters)) m"))
         }
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 
     private func durationLabel(_ seconds: Double) -> String {
         let total = Int(seconds.rounded())
-        if total < 60 { return "\(total)s" }
+        if total < 60 { return String(localized: "\(total)s") }
         let minutes = total / 60
         let rest = total % 60
-        return rest == 0 ? "\(minutes) min" : "\(minutes)m \(rest)s"
+        return rest == 0 ? String(localized: "\(minutes) min") : String(localized: "\(minutes)m \(rest)s")
     }
 
     // MARK: - Load
@@ -283,7 +283,7 @@ struct TrainingSessionReviewView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read your training history."
+            readProblem = String(localized: "Could not read your training history.")
             days = []
             sessionsByDay = [:]
             boutsBySession = [:]
@@ -342,26 +342,26 @@ private struct BoutActualsEditor: View {
                 if let kind {
                     Section {
                         if kind.recordsReps || bout.prescribedSets != nil {
-                            numberField("Sets", text: $sets)
+                            numberField(String(localized: "Sets"), text: $sets)
                         }
                         if kind.recordsReps {
-                            numberField("Reps", text: $reps)
+                            numberField(String(localized: "Reps"), text: $reps)
                         }
                         if kind.recordsRounds {
-                            numberField("Rounds", text: $rounds)
+                            numberField(String(localized: "Rounds"), text: $rounds)
                         }
                         if kind.recordsLoad {
-                            numberField("Load (kg)", text: $loadKg)
-                            numberField("Duration (seconds)", text: $durationSeconds)
+                            numberField(String(localized: "Load (kg)"), text: $loadKg)
+                            numberField(String(localized: "Duration (seconds)"), text: $durationSeconds)
                         }
                         if kind.recordsDistance {
-                            numberField("Distance (m)", text: $distanceMeters)
+                            numberField(String(localized: "Distance (m)"), text: $distanceMeters)
                         }
                         if kind.recordsDuration && !kind.recordsLoad {
-                            numberField("Duration (seconds)", text: $durationSeconds)
+                            numberField(String(localized: "Duration (seconds)"), text: $durationSeconds)
                         }
                     } header: {
-                        AlmanacSectionHeader(title: "What you did")
+                        AlmanacSectionHeader(title: String(localized: "What you did"))
                     } footer: {
                         // The nil rule stated where it is acted on, so a blank
                         // field reads as "not recorded" rather than as a bug.
@@ -370,9 +370,9 @@ private struct BoutActualsEditor: View {
                 }
 
                 Section("How it went") {
-                    numberField("Elapsed (seconds)", text: $elapsedSeconds)
-                    numberField("Average heart rate", text: $avgHeartRate)
-                    numberField("RPE (1–10)", text: $rpe)
+                    numberField(String(localized: "Elapsed (seconds)"), text: $elapsedSeconds)
+                    numberField(String(localized: "Average heart rate"), text: $avgHeartRate)
+                    numberField(String(localized: "RPE (1–10)"), text: $rpe)
                     TextField("Notes", text: $notes, axis: .vertical)
                         .lineLimit(1...4)
                 }
@@ -416,21 +416,23 @@ private struct BoutActualsEditor: View {
         // would erase a number that was there, and the only trace would be a
         // figure that quietly became "not recorded".
         let numbers: [(String, String, Bool)] = [
-            ("Sets", sets, false), ("Reps", reps, false), ("Rounds", rounds, false),
-            ("Load", loadKg, true), ("Duration", durationSeconds, true),
-            ("Distance", distanceMeters, true), ("Elapsed", elapsedSeconds, true),
-            ("Average heart rate", avgHeartRate, false), ("RPE", rpe, false)
+            (String(localized: "Sets"), sets, false), (String(localized: "Reps"), reps, false),
+            (String(localized: "Rounds"), rounds, false), (String(localized: "Load"), loadKg, true),
+            (String(localized: "Duration"), durationSeconds, true),
+            (String(localized: "Distance"), distanceMeters, true), (String(localized: "Elapsed"), elapsedSeconds, true),
+            (String(localized: "Average heart rate"), avgHeartRate, false), (String(localized: "RPE"), rpe, false)
         ]
         for (name, text, isDecimal) in numbers where !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            let parses = isDecimal ? Double(trimmed) != nil : Int(trimmed) != nil
+            let parses = isDecimal ? Double(userInput: trimmed) != nil : Int(userInput: trimmed) != nil
             guard parses else {
-                error = "\(name) must be a \(isDecimal ? "number" : "whole number")."
+                error = isDecimal ? String(localized: "\(name) must be a number.")
+                    : String(localized: "\(name) must be a whole number.")
                 return
             }
         }
         if let rpeValue = int(rpe), !(1...10).contains(rpeValue) {
-            error = "RPE runs from 1 to 10."
+            error = String(localized: "RPE runs from 1 to 10.")
             return
         }
         // A draft carrying only the actuals, with the prescribed group left nil —
@@ -457,7 +459,7 @@ private struct BoutActualsEditor: View {
         do {
             let changed = try WorkoutBoutStore(db: db).updateActuals(draft, id: bout.id)
             guard changed else {
-                error = "That bout no longer exists — it may have been deleted on another screen."
+                error = String(localized: "That bout no longer exists — it may have been deleted on another screen.")
                 return
             }
             onSaved()
@@ -471,11 +473,11 @@ private struct BoutActualsEditor: View {
     /// `save()`, so a nil here can only be a genuinely empty field.
     private func int(_ text: String) -> Int? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : Int(trimmed)
+        return trimmed.isEmpty ? nil : Int(userInput: trimmed)
     }
 
     private func double(_ text: String) -> Double? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : Double(trimmed)
+        return trimmed.isEmpty ? nil : Double(userInput: trimmed)
     }
 }

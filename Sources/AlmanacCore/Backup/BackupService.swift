@@ -28,16 +28,17 @@ public struct BackupService: Sendable {
 
         public var description: String {
             switch self {
-            case .cannotOpenDestination(let p): return "Could not open backup destination at \(p)"
-            case .backupFailed(let c): return "SQLite backup failed with code \(c)"
-            case .notABackupFile(let p): return "\(p) is not an Almanac backup"
+            case .cannotOpenDestination(let p): return localized("Could not open backup destination at %@", p)
+            case .backupFailed(let c): return localized("SQLite backup failed with code %@", String(c))
+            case .notABackupFile(let p): return localized("%@ is not an Almanac backup", p)
             case .incompatibleSchemaVersion(let found, let expected):
-                return "This backup was made by a different app version (its schema is \(found), this app is \(expected)). Restore was not attempted."
-            case .corruptBundle(let reason): return "Backup is damaged: \(reason)"
-            case .missingPayload(let kind): return "Backup is missing its \(kind) payload"
-            case .cannotWriteDocument(let path, let underlying): return "Could not restore document \(path): \(underlying)"
-            case .rollbackFailed(let detail): return "Restore rollback was incomplete: \(detail)"
-            case .cannotReadDirectory(let d): return "Could not read the folder at \(d)"
+                return localized("This backup was made by a different app version (its schema is %@, this app is %@). Restore was not attempted.",
+                                 String(found), String(expected))
+            case .corruptBundle(let reason): return localized("Backup is damaged: %@", reason)
+            case .missingPayload(let kind): return localized("Backup is missing its %@ payload", kind)
+            case .cannotWriteDocument(let path, let underlying): return localized("Could not restore document %@: %@", path, underlying)
+            case .rollbackFailed(let detail): return localized("Restore rollback was incomplete: %@", detail)
+            case .cannotReadDirectory(let d): return localized("Could not read the folder at %@", d)
             }
         }
     }

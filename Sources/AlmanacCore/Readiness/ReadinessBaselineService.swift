@@ -38,9 +38,9 @@ public enum ReadinessBaselineNotice: String, Sendable, Hashable, Codable {
     public var text: String {
         switch self {
         case .limitedComparableShiftData:
-            return "Not enough comparable days on this shift yet — compared against your general average."
+            return localized("Not enough comparable days on this shift yet — compared against your general average.")
         case .ramadanContextCalibrating:
-            return "Ramadan context — calibrating. Compared against your general average until enough Ramadan days are logged."
+            return localized("Ramadan context — calibrating. Compared against your general average until enough Ramadan days are logged.")
         }
     }
 }

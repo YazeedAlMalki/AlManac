@@ -45,7 +45,7 @@ struct AlmanacApp: App {
                     ContentUnavailableView {
                         Label("Almanac could not open", systemImage: "externaldrive.badge.exclamationmark")
                     } description: {
-                        Text(model.startupError ?? "Opening your records…")
+                        Text(model.startupError ?? String(localized: "Opening your records…"))
                     } actions: {
                         Button("Try again") { model.open() }
                     }
@@ -53,6 +53,9 @@ struct AlmanacApp: App {
                 }
             }
             .preferredColorScheme(appearance.colorScheme)
+            // Date pickers and chart axes read the calendar from here; text
+            // goes through `almanacFormatted` (#4, decision 3).
+            .environment(\.calendar, .almanacDisplay)
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     prayerModel.ensureCache()
@@ -458,7 +461,7 @@ extension View {
     }
 
     private func errorTitle(_ message: String?) -> String {
-        guard let message, !message.isEmpty else { return "Something went wrong" }
+        guard let message, !message.isEmpty else { return String(localized: "Something went wrong") }
         // A message that already begins with what went wrong is its own title.
         let sentence = message.split(separator: "\n").first.map(String.init) ?? message
         if let first = sentence.split(separator: ".").first, first.count > 12 {
@@ -488,7 +491,7 @@ struct PartialDateFields: View {
     }
     private var example: String {
         switch precision {
-        case .unknown: return "Unknown"
+        case .unknown: return String(localized: "Unknown")
         case .year: return "2026"
         case .month: return "2026-09"
         case .day: return "2026-09-08"
@@ -503,7 +506,7 @@ func editedDate(text: String, precision: TimePrecision, original: PartialDateTim
     if precision == .unknown { return .unknown }
     if text == original.text && precision == original.precision { return original }
     guard let date = PartialDateTime(storedText: text, precision: precision, zone: original.zone), date.span != nil else {
-        throw EditorFailure(message: "Enter a valid date matching the selected precision, or choose Unknown.")
+        throw EditorFailure(message: String(localized: "Enter a valid date matching the selected precision, or choose Unknown."))
     }
     return date
 }

@@ -199,7 +199,7 @@ struct BackupView: View {
     private func summary(for bundle: BackupBundleInfo) -> String {
         var parts = [dateText(bundle.createdAt)]
         if bundle.documentCount > 0 {
-            parts.append("\(bundle.documentCount) document\(bundle.documentCount == 1 ? "" : "s")")
+            parts.append(String(localized: "\(bundle.documentCount) documents"))
         }
         parts.append(ByteCountFormatter.string(fromByteCount: bundle.byteCount, countStyle: .file))
         if let note = bundle.note { parts.append(note) }
@@ -208,6 +208,6 @@ struct BackupView: View {
 
     private func dateText(_ iso: String) -> String {
         guard let date = ISO8601DateFormatter().date(from: iso) else { return iso }
-        return date.formatted(date: .abbreviated, time: .shortened)
+        return date.almanacFormatted(date: .abbreviated, time: .shortened)
     }
 }

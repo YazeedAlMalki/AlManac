@@ -78,7 +78,7 @@ public struct RecipeResults: Sendable, Hashable {
     /// recipe *is* its ingredient list. What is still true is that every check
     /// is a check of a name.
     public var disclaimer: String? {
-        DishAllergenCheck.disclaimer(noun: "recipe", allergens: allergens)
+        DishAllergenCheck.disclaimer(noun: .recipe, allergens: allergens)
     }
 
     public var note: String? {

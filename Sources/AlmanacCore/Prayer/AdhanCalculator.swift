@@ -22,17 +22,18 @@ public struct PrayerTime: Sendable, Hashable {
     /// one.
     public static let obligatoryNames = ["fajr", "dhuhr", "asr", "maghrib", "isha"]
 
-    /// The English name a screen shows. One table, so the prayer screen, the
-    /// fasting screen and the notification copy cannot spell a prayer three
-    /// different ways.
+    /// The name a screen shows, in the language the app runs in. One table, so
+    /// the prayer screen, the fasting screen and the notification copy cannot
+    /// spell a prayer three different ways. `name` is the stored key and stays
+    /// English.
     public static func displayName(_ name: String) -> String {
         switch name {
-        case "fajr": return "Fajr"
-        case "sunrise": return "Sunrise"
-        case "dhuhr": return "Dhuhr"
-        case "asr": return "Asr"
-        case "maghrib": return "Maghrib"
-        case "isha": return "Isha"
+        case "fajr": return localized("Fajr")
+        case "sunrise": return localized("Sunrise")
+        case "dhuhr": return localized("Dhuhr")
+        case "asr": return localized("Asr")
+        case "maghrib": return localized("Maghrib")
+        case "isha": return localized("Isha")
         default: return name.capitalized
         }
     }
@@ -69,21 +70,22 @@ public enum PrayerCalculationMethod: Sendable, Hashable {
 
     /// Every stored value the settings screen offers, with its label, in the
     /// order it offers them. `custom` is last because it is the one that needs
-    /// further input.
+    /// further input. Labels are in the language the app runs in; the stored
+    /// values are not.
     public static let storedVocabulary: [(value: String, label: String)] = [
-        ("umm_al_qura", "Umm al-Qura, Makkah"),
-        ("mwl", "Muslim World League"),
-        ("egypt", "Egyptian General Authority"),
-        ("karachi", "University of Islamic Sciences, Karachi"),
-        ("isna", "ISNA (North America)"),
-        ("dubai", "Dubai"),
-        ("kuwait", "Kuwait"),
-        ("qatar", "Qatar"),
-        ("singapore", "Singapore"),
-        ("turkey", "Diyanet, Turkey"),
-        ("tehran", "Institute of Geophysics, Tehran"),
-        ("moonsighting_committee", "Moonsighting Committee"),
-        ("custom", "Custom angles")
+        ("umm_al_qura", localized("Umm al-Qura, Makkah")),
+        ("mwl", localized("Muslim World League")),
+        ("egypt", localized("Egyptian General Authority")),
+        ("karachi", localized("University of Islamic Sciences, Karachi")),
+        ("isna", localized("ISNA (North America)")),
+        ("dubai", localized("Dubai")),
+        ("kuwait", localized("Kuwait")),
+        ("qatar", localized("Qatar")),
+        ("singapore", localized("Singapore")),
+        ("turkey", localized("Diyanet, Turkey")),
+        ("tehran", localized("Institute of Geophysics, Tehran")),
+        ("moonsighting_committee", localized("Moonsighting Committee")),
+        ("custom", localized("Custom angles"))
     ]
 
     var adhanParameters: Adhan.CalculationParameters {
@@ -121,8 +123,8 @@ public enum AsrMethod: String, Sendable, Hashable, CaseIterable {
 
     public var label: String {
         switch self {
-        case .standard: return "Standard"
-        case .hanafi: return "Hanafi"
+        case .standard: return localized("Standard")
+        case .hanafi: return localized("Hanafi")
         }
     }
 

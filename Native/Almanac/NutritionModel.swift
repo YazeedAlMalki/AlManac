@@ -94,7 +94,7 @@ final class NutritionModel: ObservableObject {
             // until the next refresh() succeeds", and the next `refresh()` fails
             // the same way — so there was no recovery here, only a screen that
             // looked the same whether it had no data or could not load it.
-            readProblem = "Could not read today's food log."
+            readProblem = String(localized: "Could not read today's food log.")
         }
     }
 
@@ -174,7 +174,7 @@ final class NutritionModel: ObservableObject {
 
     func log(foodRef: SourceIdentifier, foodName: String, grams: Double?,
              quantityText: String?, mealType: NutritionMealType?) throws {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let draft = NutritionLogDraft(
             foodRef: foodRef, grams: grams,
             eatenAt: PartialDateTime(instant: Date(), zone: ZoneContext(TimeZone.current)),
@@ -188,7 +188,7 @@ final class NutritionModel: ObservableObject {
     }
 
     func delete(id: String) throws {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         // Deleting the meal that ended a fast gives the fast back.
         try FastingAwareNutritionLog(db: db).delete(id: id)
         refresh()

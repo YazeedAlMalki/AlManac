@@ -10,10 +10,10 @@ public enum BodyMetricDirectionOfTravel: String, Sendable, Hashable {
 
     public var title: String {
         switch self {
-        case .improving: return "Improving"
-        case .declining: return "Declining"
-        case .unchanged: return "Unchanged"
-        case .unknown: return "Not enough data"
+        case .improving: return localized("Improving")
+        case .declining: return localized("Declining")
+        case .unchanged: return localized("Unchanged")
+        case .unknown: return localized("Not enough data")
         }
     }
 }
@@ -207,11 +207,11 @@ public struct BodyCompositionProgress: Sendable, Hashable, Identifiable {
     /// wrong: the meter looks broken, and the natural conclusion is that the
     /// app lost the reading.
     public var statusText: String {
-        guard let current, let currentText else { return "Nothing recorded yet" }
-        guard let target else { return "No target set" }
-        if isTargetMet { return "Target met" }
-        guard let remainingText else { return "No target set" }
-        return "\(remainingText) to go"
+        guard let current, let currentText else { return localized("Nothing recorded yet") }
+        guard let target else { return localized("No target set") }
+        if isTargetMet { return localized("Target met") }
+        guard let remainingText else { return localized("No target set") }
+        return localized("%@ to go", remainingText)
     }
 
     /// The same summary as one sentence, for VoiceOver.
@@ -220,18 +220,21 @@ public struct BodyCompositionProgress: Sendable, Hashable, Identifiable {
     /// that; a sighted person gets all three by looking at three places on the
     /// card, and a screen-reader user has to be handed all three or has nothing.
     public var accessibilityDescription: String {
-        guard let currentWithUnit else { return "\(metric.title): nothing recorded yet." }
+        guard let currentWithUnit else { return localized("%@: nothing recorded yet.", metric.title) }
         guard let target, let targetWithUnit else {
-            return "\(metric.title): \(currentWithUnit). No target set."
+            return localized("%@: %@. No target set.", metric.title, currentWithUnit)
         }
         // "Your target", capitalised because it starts a sentence. Nothing
         // generates a body-composition target, so every one was chosen by a person,
         // and saying so is more useful than a bare article — it is also why a
         // wrong target is fixed by editing it rather than by re-deriving it.
-        let kind = "Your target"
-        if isTargetMet { return "\(metric.title): \(currentWithUnit). \(kind) of \(targetWithUnit) reached." }
-        guard let remainingText else { return "\(metric.title): \(currentWithUnit). \(kind) of \(targetWithUnit)." }
-        return "\(metric.title): \(currentWithUnit). \(kind) of \(targetWithUnit), \(remainingText) to go."
+        if isTargetMet {
+            return localized("%@: %@. Your target of %@ reached.", metric.title, currentWithUnit, targetWithUnit)
+        }
+        guard let remainingText else {
+            return localized("%@: %@. Your target of %@.", metric.title, currentWithUnit, targetWithUnit)
+        }
+        return localized("%@: %@. Your target of %@, %@ to go.", metric.title, currentWithUnit, targetWithUnit, remainingText)
     }
 
     // MARK: - Building
@@ -301,7 +304,7 @@ public extension BodyMetric {
     /// disagree about the same number — which they could before this existed,
     /// as `%.1f` in one place and `%.2f` in another.
     static func format(_ value: Double, metric: BodyMetric) -> String {
-        String(format: "%.\(metric.decimalPlaces)f", value)
+        NumberDisplay.localized(String(format: "%.\(metric.decimalPlaces)f", value))
     }
 
     /// A value with its unit, in kilograms, for prose. `visceralRating` has no

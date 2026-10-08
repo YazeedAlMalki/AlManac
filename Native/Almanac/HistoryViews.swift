@@ -23,10 +23,10 @@ struct ContentDetails: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(value).font(.title3.monospacedDigit()).foregroundStyle(.primary)
-            Text("Original unit: \(content.unitText ?? "Not stated")")
-            Text("Reference: \(content.rangeText ?? "Not stated")")
+            Text("Original unit: \(content.unitText ?? String(localized: "Not stated"))")
+            Text("Reference: \(content.rangeText ?? String(localized: "Not stated"))")
             if content.rangeLow != nil || content.rangeHigh != nil {
-                Text("Bounds: \(content.rangeLow.map { String($0) } ?? "Not stated") – \(content.rangeHigh.map { String($0) } ?? "Not stated")")
+                Text("Bounds: \(content.rangeLow.map { String($0) } ?? String(localized: "Not stated")) – \(content.rangeHigh.map { String($0) } ?? String(localized: "Not stated"))")
             }
             if let unit = content.rangeUnitText { Text("Reference unit: \(unit)") }
             if let name = content.sourceAnalyteText { Text("Original test: \(name)") }
@@ -39,9 +39,9 @@ struct ContentDetails: View {
         let raw: String
         switch content.valueType {
         case .quantitative, .semiQuantitative:
-            raw = content.numericValue.map { String($0) } ?? "No structured value"
-        case .qualitativeCoded, .ordinal: raw = content.codedValue ?? "No structured value"
-        case .text: raw = content.textValue ?? "No structured value"
+            raw = content.numericValue.map { String($0) } ?? String(localized: "No structured value")
+        case .qualitativeCoded, .ordinal: raw = content.codedValue ?? String(localized: "No structured value")
+        case .text: raw = content.textValue ?? String(localized: "No structured value")
         case .ratio:
             raw = "\(content.ratioNumerator.map { String($0) } ?? "?"):\(content.ratioDenominator.map { String($0) } ?? "?")"
         case .titer:
@@ -103,24 +103,25 @@ struct RevisionHistoryView: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(revisions, id: \.id) { revision in
-                Section("Revision \(revision.revisionNumber)\(revision.isCurrent ? " · Current" : "")") {
+                Section(revision.isCurrent ? "Revision \(revision.revisionNumber) · Current" as LocalizedStringKey
+                                            : "Revision \(revision.revisionNumber)") {
                     ContentDetails(content: revision.content)
                     Text("Recorded: \(revision.recordedAt)")
                     Text("By: \(revision.content.actor)")
                     Text("Origin: \(readable(revision.content.contentOrigin.rawValue))")
-                    Text("Reason: \(revision.content.reasonText ?? "Not stated")")
+                    Text("Reason: \(revision.content.reasonText ?? String(localized: "Not stated"))")
                     if let note = revision.content.commentText { Text("Notes: \(note)") }
                 }
             }
             ForEach(metadata, id: \.id) { edit in
                 Section("Metadata correction \(edit.revisionNumber)") {
                     Text("Changed: \(edit.changedFields.map(readable).joined(separator: ", "))")
-                    Text("Previous collection date: \(edit.collectedAtText ?? "Unknown")")
+                    Text("Previous collection date: \(edit.collectedAtText ?? String(localized: "Unknown"))")
                     Text("Previous specimen: \(edit.specimenText ?? readable(edit.specimenKind.rawValue))")
-                    Text("Previous test: \(edit.catalogAnalyteID ?? "Unmatched")")
-                    Text("Previous report: \(edit.reportID ?? "None")")
+                    Text("Previous test: \(edit.catalogAnalyteID ?? String(localized: "Unmatched"))")
+                    Text("Previous report: \(edit.reportID ?? String(localized: "None"))")
                     Text("By: \(edit.actor) · \(edit.recordedAt)")
-                    Text("Reason: \(edit.reasonText ?? "Not stated")")
+                    Text("Reason: \(edit.reasonText ?? String(localized: "Not stated"))")
                 }
             }
         }
@@ -147,7 +148,7 @@ struct ReportConflictView: View {
     var body: some View {
         List {
             Section("Current report") {
-                Text(current?.laboratoryNameText ?? "Laboratory unknown")
+                Text(current?.laboratoryNameText ?? String(localized: "Laboratory unknown"))
                 Text(dateLabel(current?.reportedAt ?? .unknown))
             }
             Section("Resolution") {
@@ -157,8 +158,8 @@ struct ReportConflictView: View {
             }
             ForEach(proposals, id: \.id) { proposal in
                 Section("Incoming version") {
-                    Text(proposal.laboratoryNameText ?? "Laboratory unknown")
-                    Text(proposal.reportedAtText ?? "Date unknown")
+                    Text(proposal.laboratoryNameText ?? String(localized: "Laboratory unknown"))
+                    Text(proposal.reportedAtText ?? String(localized: "Date unknown"))
                     if let header = proposal.headerText { Text(header) }
                     Text("Source ordering: \(ordering(proposal.sourceOrdering))")
                     Text("Received: \(proposal.supersededAt)")
@@ -173,8 +174,8 @@ struct ReportConflictView: View {
     }
     private func ordering(_ value: SourceOrdering) -> String {
         switch value {
-        case .unavailable: return "Not stated"
-        case .sequence(let n): return "Version \(n)"
+        case .unavailable: return String(localized: "Not stated")
+        case .sequence(let n): return String(localized: "Version \(n)")
         case .issuedAt(let text): return text
         }
     }
@@ -186,7 +187,7 @@ struct ReportConflictView: View {
     }
     private func resolve(_ proposal: LabReportRevision, accept: Bool) {
         do {
-            guard let store = model.store else { throw EditorFailure(message: "The database is unavailable.") }
+            guard let store = model.store else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
             try store.resolveReportConflict(id: proposal.id, accept: accept, actor: "user", reason: reason)
             reason = ""; model.changed(); reload()
         } catch { self.error = String(describing: error) }

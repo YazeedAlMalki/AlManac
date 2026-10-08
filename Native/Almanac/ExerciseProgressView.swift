@@ -37,7 +37,7 @@ struct ExerciseProgressView: View {
                 } else {
                     ExerciseProgressGraphsView(db: model.database, exercise: exercise)
                     figures
-                    AlmanacSectionHeader(title: "Logged", detail: "\(history.count) sessions")
+                    AlmanacSectionHeader(title: String(localized: "Logged"), detail: String(localized: "\(history.count) sessions"))
                     AlmanacCard {
                         VStack(alignment: .leading, spacing: 0) {
                             ForEach(Array(history.enumerated()), id: \.element.boutId) { index, point in
@@ -68,7 +68,7 @@ struct ExerciseProgressView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AlmanacEyebrow(text: "What you actually logged")
+            AlmanacEyebrow(text: String(localized: "What you actually logged"))
             Text(exercise.name)
                 .font(AlmanacTypography.font(.screenTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)
@@ -126,10 +126,10 @@ struct ExerciseProgressView: View {
             AlmanacCard {
                 VStack(alignment: .leading, spacing: 0) {
                     if let heaviest {
-                        figure("Heaviest load", "\(AlmanacNumber.compact(heaviest)) kg")
+                        figure(String(localized: "Heaviest load"), String(localized: "\(AlmanacNumber.compact(heaviest)) kg"))
                     }
                     if let best = bestTonnage {
-                        figure("Most work in a session", "\(AlmanacNumber.compact(best.value)) kg")
+                        figure(String(localized: "Most work in a session"), String(localized: "\(AlmanacNumber.compact(best.value)) kg"))
                         if let session = best.session {
                             Text("on \(session)").font(AlmanacTypography.font(.caption))
                                 .foregroundStyle(AlmanacPalette.textSecondary)
@@ -179,7 +179,7 @@ struct ExerciseProgressView: View {
     private func detail(_ point: ExerciseProgressPoint) -> String {
         let sets = point.actualSets.map(String.init) ?? "—"
         let reps = point.actualReps.map(String.init) ?? "—"
-        let load = point.actualLoadKg.map { "\(AlmanacNumber.compact($0)) kg" } ?? "—"
+        let load = point.actualLoadKg.map { String(localized: "\(AlmanacNumber.compact($0)) kg") } ?? "—"
         return "\(sets) × \(reps) @ \(load)"
     }
 }

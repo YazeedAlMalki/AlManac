@@ -43,12 +43,12 @@ extension NutritionModel {
     }
 
     func addToPantry(_ food: NutritionFood) throws {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try KitchenPantry(db: db).add(food.ref, nameText: food.primaryName)
     }
 
     func removeFromPantry(_ ref: SourceIdentifier) throws {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try KitchenPantry(db: db).remove(ref)
     }
 
@@ -61,12 +61,12 @@ extension NutritionModel {
     }
 
     func acceptPantrySuggestion(_ suggestion: PantrySuggestion) throws {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try PantrySuggestions(db: db).accept(suggestion)
     }
 
     func dismissPantrySuggestion(_ suggestion: PantrySuggestion) throws {
-        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try PantrySuggestions(db: db).dismiss(suggestion.ref)
     }
 

@@ -54,7 +54,7 @@ struct DayTimelineView: View {
     }
 
     private var title: String {
-        dayCount == 1 ? "Recorded" : "Last \(dayCount) days"
+        dayCount == 1 ? String(localized: "Recorded") : String(localized: "Last \(dayCount) days")
     }
 
     var body: some View {
@@ -155,7 +155,7 @@ struct DayTimelineView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read the timeline."
+            readProblem = String(localized: "Could not read the timeline.")
             items = []
         }
     }

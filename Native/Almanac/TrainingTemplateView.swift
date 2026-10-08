@@ -47,7 +47,7 @@ struct TrainingTemplateView: View {
                 Button("Add template", systemImage: AlmanacIcon.quickAdd) { adding = true }
                     .disabled(db == nil)
             } header: {
-                AlmanacSectionHeader(title: "Templates")
+                AlmanacSectionHeader(title: String(localized: "Templates"))
             } footer: {
                 Text("Deleting a template keeps it, so a past session can still say which one it came from.")
             }
@@ -115,7 +115,7 @@ struct TrainingTemplateView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read your templates."
+            readProblem = String(localized: "Could not read your templates.")
             templates = []
         }
     }
@@ -159,7 +159,7 @@ private struct TemplateEditor: View {
                 }
             }
             .almanacModuleSurface()
-            .navigationTitle(isEditing ? "Edit template" : "New template")
+            .navigationTitle(isEditing ? String(localized: "Edit template") : String(localized: "New template"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -183,7 +183,7 @@ private struct TemplateEditor: View {
         guard let db else { return }
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanName.isEmpty else {
-            error = "Give the template a name."
+            error = String(localized: "Give the template a name.")
             return
         }
         let cleanNotes = optionalText(notes.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -195,7 +195,7 @@ private struct TemplateEditor: View {
                 // to have worked.
                 guard try store.update(id: template.id, name: cleanName,
                                        containerType: container.rawValue, notes: cleanNotes) else {
-                    error = "That template no longer exists — it may have been deleted on another screen."
+                    error = String(localized: "That template no longer exists — it may have been deleted on another screen.")
                     return
                 }
             } else {

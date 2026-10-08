@@ -51,9 +51,9 @@ struct ProgramDayView: View {
                     .disabled(model.database == nil)
                     .accessibilityIdentifier("add-pool-exercise")
             } header: {
-                AlmanacSectionHeader(title: "Rotation", detail: poolSummary)
+                AlmanacSectionHeader(title: String(localized: "Rotation"), detail: poolSummary)
             } footer: {
-                Text("A session takes \(slotCount == 1 ? "1 exercise" : "\(slotCount) exercises") from the cycle, moving one place along each time you train this day. The order only changes when you change it here.")
+                Text("A session takes \(slotCount) exercises from the cycle, moving one place along each time you train this day. The order only changes when you change it here.")
             }
         }
         .listStyle(.insetGrouped)
@@ -94,7 +94,7 @@ struct ProgramDayView: View {
                 Text(day.label)
                     .font(AlmanacTypography.font(.screenTitle))
                     .foregroundStyle(AlmanacPalette.textPrimary)
-                Text("This is pass \(passNumber) through \(pool.count) \(pool.count == 1 ? "exercise" : "exercises").")
+                Text("This is pass \(passNumber) through \(pool.count) exercises.")
                     .font(AlmanacTypography.font(.body))
                     .foregroundStyle(AlmanacPalette.textSecondary)
                 Button {
@@ -137,7 +137,7 @@ struct ProgramDayView: View {
                 // rotation exactly as it was — which is why this is a button and
                 // not an "undo".
                 HStack(spacing: 10) {
-                    AlmanacStatusMark(text: "Removed from rotation", tone: .neutral)
+                    AlmanacStatusMark(text: String(localized: "Removed from rotation"), tone: .neutral)
                     Spacer(minLength: 8)
                     Button("Put back") { restore(item: item) }
                         .buttonStyle(.borderless)
@@ -157,7 +157,7 @@ struct ProgramDayView: View {
                 do { try model.deletePoolItem(id: item.id, programDayId: day.id) }
                 catch { self.error = String(describing: error) }
             }
-            Button(item.isActive ? "Remove" : "Put back") {
+            Button(item.isActive ? String(localized: "Remove") : String(localized: "Put back")) {
                 if item.isActive {
                     setAvailability(.permanent, item: item)
                 } else {
@@ -230,19 +230,19 @@ struct ProgramDayView: View {
     /// and lack of equipment both resolve to permanent removal, and a prompt
     /// asking "do you enjoy this?" would send both to the same wrong button.
     private var yesLabel: String {
-        guard let score = model.todayReadinessScore else { return "Yes — though there is no score today" }
-        return "Yes — today's score is \(score)"
+        guard let score = model.todayReadinessScore else { return String(localized: "Yes — though there is no score today") }
+        return String(localized: "Yes — today's score is \(score)")
     }
 
     private var readinessMessage: String {
         guard let score = model.todayReadinessScore else {
-            return "There is no readiness score for today yet, so there is nothing to scale by. The day runs as written either way."
+            return String(localized: "There is no readiness score for today yet, so there is nothing to scale by. The day runs as written either way.")
         }
         let band = ReadinessBand.band(for: score)
         if band == .veryLow {
-            return "Today scores \(score), which presents as a rest day rather than a lighter one. Your plan is kept exactly as written — a bad day never edits it."
+            return String(localized: "Today scores \(score), which presents as a rest day rather than a lighter one. Your plan is kept exactly as written — a bad day never edits it.")
         }
-        return "Today scores \(score). The prescription will be scaled for that reading; your plan itself is not changed."
+        return String(localized: "Today scores \(score). The prescription will be scaled for that reading; your plan itself is not changed.")
     }
 }
 
@@ -318,28 +318,28 @@ private struct PoolItemEditor: View {
                     .accessibilityIdentifier("pool-kind")
 
                     if showsReps {
-                        Stepper(value: $sets, in: 1...20) { label("Sets", "\(sets)") }
-                        Stepper(value: $reps, in: 1...999) { label("Reps", "\(reps)") }
+                        Stepper(value: $sets, in: 1...20) { label(String(localized: "Sets"), NumberDisplay.localized(String(sets))) }
+                        Stepper(value: $reps, in: 1...999) { label(String(localized: "Reps"), NumberDisplay.localized(String(reps))) }
                     }
                     if kind.recordsLoad {
                         Stepper(value: $loadKg, in: 0...500, step: 1) {
-                            label("Load", loadKg > 0 ? "\(AlmanacNumber.compact(loadKg)) kg" : "—")
+                            label(String(localized: "Load"), loadKg > 0 ? String(localized: "\(AlmanacNumber.compact(loadKg)) kg") : "—")
                         }
                     }
                     if showsDuration {
                         Stepper(value: $durationSeconds, in: 5...600, step: 5) {
-                            label("Duration", "\(Int(durationSeconds)) s")
+                            label(String(localized: "Duration"), String(localized: "\(Int(durationSeconds)) s"))
                         }
                     }
                     Stepper(value: $restSeconds, in: 0...600, step: 5) {
-                        label("Rest", restSeconds > 0 ? "\(Int(restSeconds)) s" : "—")
+                        label(String(localized: "Rest"), restSeconds > 0 ? String(localized: "\(Int(restSeconds)) s") : "—")
                     }
                 }
 
                 Section {
-                    Stepper(value: $rotationPosition, in: 0...99) { label("Cycle position", "\(rotationPosition)") }
+                    Stepper(value: $rotationPosition, in: 0...99) { label(String(localized: "Cycle position"), NumberDisplay.localized(String(rotationPosition))) }
                     Stepper(value: $positionWithinSession, in: 0...9) {
-                        label("Slot in session", "\(positionWithinSession + 1)")
+                        label(String(localized: "Slot in session"), NumberDisplay.localized(String(positionWithinSession + 1)))
                     }
                 } header: {
                     Text("Where it sits")
@@ -352,7 +352,7 @@ private struct PoolItemEditor: View {
                         .accessibilityIdentifier("progression-toggle")
                     if progressionOn {
                         Stepper(value: $incrementKg, in: 0.5...50, step: 0.5) {
-                            label("Increase by", "\(AlmanacNumber.compact(incrementKg)) kg")
+                            label(String(localized: "Increase by"), String(localized: "\(AlmanacNumber.compact(incrementKg)) kg"))
                         }
                         Picker("When", selection: $condition) {
                             ForEach(ProgressionCondition.allCases, id: \.self) { option in
@@ -371,7 +371,7 @@ private struct PoolItemEditor: View {
                 }
             }
             .almanacModuleSurface()
-            .navigationTitle(isNew ? "Add exercise" : "Edit exercise")
+            .navigationTitle(isNew ? String(localized: "Add exercise") : String(localized: "Edit exercise"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -474,17 +474,17 @@ enum ProgramPrescriptionText {
     static func summary(_ kind: PrescriptionKind?,
                         sets: Int?, reps: Int?, loadKg: Double?,
                         durationSeconds: Double?, restSeconds: Double?) -> String {
-        guard let kind else { return "No prescription set" }
+        guard let kind else { return String(localized: "No prescription set") }
         var parts: [String] = []
         if let sets, let reps {
-            parts.append("\(sets) × \(reps)")
+            parts.append(String(localized: "\(sets) × \(reps)"))
         } else if let sets {
-            parts.append("\(sets) \(sets == 1 ? "set" : "sets")")
+            parts.append(String(localized: "\(sets) sets"))
         }
-        if let loadKg, loadKg > 0 { parts.append("@ \(AlmanacNumber.compact(loadKg)) kg") }
-        if let durationSeconds, durationSeconds > 0 { parts.append("\(Int(durationSeconds)) s") }
+        if let loadKg, loadKg > 0 { parts.append(String(localized: "@ \(AlmanacNumber.compact(loadKg)) kg")) }
+        if let durationSeconds, durationSeconds > 0 { parts.append(String(localized: "\(Int(durationSeconds)) s")) }
         if parts.isEmpty { parts.append(kind.displayName) }
-        if let restSeconds, restSeconds > 0 { parts.append("rest \(Int(restSeconds)) s") }
+        if let restSeconds, restSeconds > 0 { parts.append(String(localized: "rest \(Int(restSeconds)) s")) }
         return parts.joined(separator: " · ")
     }
 

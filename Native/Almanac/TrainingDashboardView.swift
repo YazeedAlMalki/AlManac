@@ -29,7 +29,7 @@ struct TrainingDashboardView: View {
             }
             Section("Today") {
                 if let problem = model.readProblem {
-                    AlmanacProblemNote(text: problem, action: "Figures below may be out of date.")
+                    AlmanacProblemNote(text: problem, action: String(localized: "Figures below may be out of date."))
                 }
                 if model.todaysBouts.isEmpty {
                     Text("Nothing logged yet today.").foregroundStyle(.secondary)
@@ -96,22 +96,22 @@ struct TrainingDashboardView: View {
     @ViewBuilder
     private func summaryRows(_ summary: WorkoutLoadSummary) -> some View {
         if let tonnage = summary.totalTonnageKg {
-            summaryRow("Tonnage", value: "\(Int(tonnage.rounded())) kg")
+            summaryRow(String(localized: "Tonnage"), value: String(localized: "\(Int(tonnage.rounded())) kg"))
         }
         if let distance = summary.totalDistanceMeters {
-            summaryRow("Distance", value: "\(Int(distance.rounded())) m")
+            summaryRow(String(localized: "Distance"), value: String(localized: "\(Int(distance.rounded())) m"))
         }
         if let duration = summary.totalDurationSeconds {
-            summaryRow("Time under load", value: durationLabel(duration))
+            summaryRow(String(localized: "Time under load"), value: durationLabel(duration))
         }
         if let reps = summary.totalReps {
-            summaryRow("Reps", value: "\(reps)")
+            summaryRow(String(localized: "Reps"), value: NumberDisplay.localized(String(reps)))
         }
         if let rounds = summary.totalRounds {
-            summaryRow("Rounds", value: "\(rounds)")
+            summaryRow(String(localized: "Rounds"), value: NumberDisplay.localized(String(rounds)))
         }
         if let rpe = summary.averageRPE {
-            summaryRow("Average RPE", value: String(format: "%.1f/10", rpe))
+            summaryRow(String(localized: "Average RPE"), value: NumberDisplay.localized(String(format: "%.1f/10", rpe)))
         }
     }
 
@@ -136,30 +136,36 @@ struct TrainingDashboardView: View {
             let sets = bout.actualSets ?? bout.prescribedSets
             let reps = bout.actualReps ?? bout.prescribedReps
             let load = bout.actualLoadKg ?? bout.prescribedLoadKg
-            return "\(sets.map(String.init) ?? "?") x \(reps.map(String.init) ?? "?") @ \(load.map { "\(Int($0)) kg" } ?? "?")"
+            let loadText = load.map { String(localized: "\(Int($0)) kg") } ?? "?"
+            return String(localized: "\(count(sets)) x \(count(reps)) @ \(loadText)")
         case "reps_bodyweight":
             let sets = bout.actualSets ?? bout.prescribedSets
             let reps = bout.actualReps ?? bout.prescribedReps
-            return "\(sets.map(String.init) ?? "?") x \(reps.map(String.init) ?? "?")"
+            return String(localized: "\(count(sets)) x \(count(reps))")
         case "distance":
             let distance = bout.actualDistanceMeters ?? bout.prescribedDistanceMeters
-            return distance.map { "\(Int($0)) m" } ?? readable(bout.prescriptionType)
+            return distance.map { String(localized: "\(Int($0)) m") } ?? readable(bout.prescriptionType)
         case "duration", "time_under_load", "hold_stretch":
             let duration = bout.actualDurationSeconds ?? bout.prescribedDurationSeconds
             return duration.map(durationLabel) ?? readable(bout.prescriptionType)
         case "work_in_time", "rounds_for_time":
             let rounds = bout.actualRounds ?? bout.prescribedRounds
-            return rounds.map { "\($0) rounds" } ?? readable(bout.prescriptionType)
+            return rounds.map { String(localized: "\($0) rounds") } ?? readable(bout.prescriptionType)
         default:
             return readable(bout.prescriptionType)
         }
+    }
+
+    /// A set or rep count in the app's digits, or "?" when it was not recorded.
+    private func count(_ value: Int?) -> String {
+        value.map { NumberDisplay.localized(String($0)) } ?? "?"
     }
 
     private func durationLabel(_ seconds: Double) -> String {
         let total = Int(seconds.rounded())
         let minutes = total / 60
         let secs = total % 60
-        return minutes > 0 ? "\(minutes)m \(secs)s" : "\(secs)s"
+        return minutes > 0 ? String(localized: "\(minutes)m \(secs)s") : String(localized: "\(secs)s")
     }
 
     private func delete(at offsets: IndexSet) {

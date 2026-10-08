@@ -125,7 +125,7 @@ final class ProgramModel: ObservableObject {
             todayReadinessScore = readTodaysReadiness()
             readProblem = nil
         } catch {
-            readProblem = "Could not read your training programs."
+            readProblem = String(localized: "Could not read your training programs.")
         }
     }
 
@@ -157,80 +157,80 @@ final class ProgramModel: ObservableObject {
             itemsByDay[programDayId] = try poolStore.items(programDayId: programDayId)
             readProblem = nil
         } catch {
-            readProblem = "Could not read this day's exercises."
+            readProblem = String(localized: "Could not read this day's exercises.")
         }
     }
 
     func items(programDayId: Int64) -> [PoolItemEntry] { itemsByDay[programDayId] ?? [] }
 
     func exerciseName(for exerciseCatalogId: Int64, in catalog: [ExerciseCatalogEntry]) -> String {
-        catalog.first { $0.id == exerciseCatalogId }?.name ?? "Unknown exercise"
+        catalog.first { $0.id == exerciseCatalogId }?.name ?? String(localized: "Unknown exercise")
     }
 
     // MARK: - Authoring
 
     @discardableResult
     func createProgram(name: String, notes: String?) throws -> Int64 {
-        guard let programStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let programStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let id = try programStore.create(name: name, notes: notes)
         refresh()
         return id
     }
 
     func updateProgram(id: Int64, name: String, notes: String?) throws {
-        guard let programStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let programStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         guard try programStore.update(id: id, name: name, notes: notes) else {
-            throw EditorFailure(message: "That program no longer exists — it may have been deleted on another screen.")
+            throw EditorFailure(message: String(localized: "That program no longer exists — it may have been deleted on another screen."))
         }
         refresh()
     }
 
     /// Soft delete, so a past session can still name the program it came from.
     func deleteProgram(id: Int64) throws {
-        guard let programStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let programStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try programStore.delete(id: id)
         refresh()
     }
 
     @discardableResult
     func createDay(programId: Int64, label: String) throws -> Int64 {
-        guard let dayStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let dayStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let id = try dayStore.create(programId: programId, label: label)
         refresh()
         return id
     }
 
     func updateDay(id: Int64, label: String) throws {
-        guard let dayStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let dayStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         guard try dayStore.update(id: id, label: label) else {
-            throw EditorFailure(message: "That day no longer exists — it may have been deleted on another screen.")
+            throw EditorFailure(message: String(localized: "That day no longer exists — it may have been deleted on another screen."))
         }
         refresh()
     }
 
     func deleteDay(id: Int64) throws {
-        guard let dayStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let dayStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try dayStore.delete(id: id)
         refresh()
     }
 
     @discardableResult
     func addPoolItem(_ draft: PoolItemDraft) throws -> Int64 {
-        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let poolStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let id = try poolStore.add(draft)
         loadItems(programDayId: draft.programDayId)
         return id
     }
 
     func updatePrescription(id: Int64, _ draft: PoolItemDraft) throws {
-        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let poolStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         guard try poolStore.updatePrescription(
             id: id, prescriptionType: draft.prescriptionType, containerType: draft.containerType,
             prescribedSets: draft.prescribedSets, prescribedReps: draft.prescribedReps,
             prescribedLoadKg: draft.prescribedLoadKg,
             prescribedDurationSeconds: draft.prescribedDurationSeconds,
             prescribedRestSeconds: draft.prescribedRestSeconds, notes: draft.notes) else {
-            throw EditorFailure(message: "That exercise no longer exists in this day.")
+            throw EditorFailure(message: String(localized: "That exercise no longer exists in this day."))
         }
         loadItems(programDayId: draft.programDayId)
     }
@@ -238,7 +238,7 @@ final class ProgramModel: ObservableObject {
     /// Moves an item within the cycle and/or to another slot — the only way
     /// `rotationPosition` ever changes, and only at an explicit authoring act.
     func setPositions(id: Int64, programDayId: Int64, rotationPosition: Int, positionWithinSession: Int) throws {
-        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let poolStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try poolStore.setPositions(id: id, rotationPosition: rotationPosition,
                                    positionWithinSession: positionWithinSession)
         loadItems(programDayId: programDayId)
@@ -248,7 +248,7 @@ final class ProgramModel: ObservableObject {
     /// skip writes nothing at all — holding its rotation position *is* the absence
     /// of a write — so only `.permanent` re-reads the day behind it.
     func setAvailability(_ availability: ExerciseAvailability, item id: Int64, programDayId: Int64) throws {
-        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let poolStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try poolStore.skipForSessionOnly(availability, item: id)
         if availability.mutatesPool { loadItems(programDayId: programDayId) }
     }
@@ -257,19 +257,19 @@ final class ProgramModel: ObservableObject {
     /// rotation, keeping its cycle position, prescription and progression rule
     /// (the store's `setActive` is reversible by design — deletion is not).
     func restore(item id: Int64, programDayId: Int64) throws {
-        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let poolStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try poolStore.setActive(id: id, to: true)
         loadItems(programDayId: programDayId)
     }
 
     func setProgression(id: Int64, programDayId: Int64, incrementKg: Double?, condition: ProgressionCondition?) throws {
-        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let poolStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try poolStore.setProgression(id: id, incrementKg: incrementKg, condition: condition?.rawValue)
         loadItems(programDayId: programDayId)
     }
 
     func deletePoolItem(id: Int64, programDayId: Int64) throws {
-        guard let poolStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let poolStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         try poolStore.delete(id: id)
         loadItems(programDayId: programDayId)
     }
@@ -325,7 +325,7 @@ final class ProgramModel: ObservableObject {
                        rpe: Int?,
                        notes: String?) throws {
         guard let sessionStore, let boutStore, let rotation else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         let now = Date()
         let today = timeModel.logicalDay(now).value

@@ -60,10 +60,10 @@ public enum BodyMeasurementError: Error, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidValue: return "Enter a finite, positive circumference in cm."
-        case .invalidSide: return "Choose a side for arm or thigh when side tracking is on; otherwise leave it unset."
-        case .unusuallySized: return "That looks unusually low or high. Save anyway?"
-        case .notManual: return "Only manual measurements can be corrected here."
+        case .invalidValue: return localized("Enter a finite, positive circumference in cm.")
+        case .invalidSide: return localized("Choose a side for arm or thigh when side tracking is on; otherwise leave it unset.")
+        case .unusuallySized: return localized("That looks unusually low or high. Save anyway?")
+        case .notManual: return localized("Only manual measurements can be corrected here.")
         }
     }
 }

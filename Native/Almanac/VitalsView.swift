@@ -79,7 +79,7 @@ struct VitalsView: View {
                     }
                 }
             } header: {
-                AlmanacSectionHeader(title: "Recent readings")
+                AlmanacSectionHeader(title: String(localized: "Recent readings"))
             } footer: {
                 Text(historyFooter)
             }
@@ -132,7 +132,7 @@ struct VitalsView: View {
     }
 
     private func detail(for metric: VitalsMetric) -> String {
-        guard let record = today[metric] else { return "Not entered" }
+        guard let record = today[metric] else { return String(localized: "Not entered") }
         let time = record.timestamp.formatted(date: .omitted, time: .shortened)
         return record.source == VitalsRecordStore.manualSource
             ? "Entered at \(time)"
@@ -236,7 +236,7 @@ struct VitalsView: View {
             // Distinct from an empty list, and left beside it rather than
             // replacing it: "nothing recorded" and "could not read" are different
             // claims (see `AlmanacProblemNote`).
-            self.readProblem = "Could not read your vitals log. Figures below may be out of date."
+            self.readProblem = String(localized: "Could not read your vitals log. Figures below may be out of date.")
         }
     }
 
@@ -310,7 +310,7 @@ private struct VitalsEntryEditor: View {
                     .keyboardType(.decimalPad)
                     .accessibilityIdentifier("vitals-value")
             }
-            .navigationTitle(isCorrection ? "Correct reading" : "Log a reading")
+            .navigationTitle(isCorrection ? String(localized: "Correct reading") : String(localized: "Log a reading"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -340,7 +340,8 @@ private struct VitalsEntryEditor: View {
 
     private func save(allowUnusual: Bool = false) {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let number = try? Double(trimmed, format: .number, lenient: false) else {
+        guard let number = Double(userInput: trimmed)
+                ?? (try? Double(trimmed, format: .number, lenient: false)) else {
             error = VitalsEntryError.invalidValue(metricBeingEdited).localizedDescription
             return
         }

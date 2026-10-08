@@ -75,7 +75,7 @@ struct NutritionQuickEntryView: View {
                 }
             }
             ForEach(mealGroups) { group in
-                Section(group.type?.displayName ?? "Other") {
+                Section(group.type?.displayName ?? String(localized: "Other")) {
                     ForEach(group.foods, id: \.entry.id) { logged in
                         foodRow(logged)
                             .swipeActions {
@@ -127,7 +127,7 @@ struct NutritionQuickEntryView: View {
     private var totalsSection: some View {
         Section("Today") {
             if let totals = model.todaysTotals, totals.mealsCounted > 0 {
-                LabeledContent("Total", value: "\(Int(totals.kcal.rounded())) kcal")
+                LabeledContent("Total", value: String(localized: "\(Int(totals.kcal.rounded())) kcal"))
                 if !totals.isComplete {
                     Text("Some logged foods are missing an amount or a reference match, so this total is a floor, not the full picture.")
                         .font(.caption).foregroundStyle(.secondary)
@@ -186,15 +186,15 @@ struct NutritionQuickEntryView: View {
     private func save() {
         do {
             guard let ref = selectedRef else {
-                throw EditorFailure(message: "Select a food first.")
+                throw EditorFailure(message: String(localized: "Select a food first."))
             }
             let grams: Double?
             if gramsText.isEmpty {
                 grams = nil
-            } else if let value = Double(gramsText), value > 0 {
+            } else if let value = Double(userInput: gramsText), value > 0 {
                 grams = value
             } else {
-                throw EditorFailure(message: "Enter a gram amount greater than zero, or leave it blank.")
+                throw EditorFailure(message: String(localized: "Enter a gram amount greater than zero, or leave it blank."))
             }
             try model.log(foodRef: ref, foodName: selectedName, grams: grams,
                           quantityText: optionalText(quantityText), mealType: mealType)

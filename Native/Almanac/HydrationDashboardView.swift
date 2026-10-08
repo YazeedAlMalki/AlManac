@@ -40,7 +40,7 @@ struct HydrationDashboardView: View {
                 // be out of date, so it carries no separate action line — the
                 // advice is only appended where it is not already spoken.
                 if let problem = model.readProblem {
-                    AlmanacProblemNote(text: problem, action: "Figures below may be out of date.")
+                    AlmanacProblemNote(text: problem, action: String(localized: "Figures below may be out of date."))
                 } else if let problem = model.syncProblem {
                     AlmanacProblemNote(text: problem)
                 }

@@ -196,22 +196,24 @@ struct ProfileView: View {
         do {
             let name = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !name.isEmpty else {
-                throw EditorFailure(message: "Enter a display name.")
+                throw EditorFailure(message: String(localized: "Enter a display name."))
             }
 
             let heightValue: Double?
             let trimmedHeight = height.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedHeight.isEmpty {
                 heightValue = nil
-            } else if let value = Double(trimmedHeight), value > 0, value < 300 {
+            } else if let value = Double(userInput: trimmedHeight), value > 0, value < 300 {
                 heightValue = value
             } else {
-                throw EditorFailure(message: "Height must be a number between 0 and 300 cm.")
+                throw EditorFailure(message: String(localized: "Height must be a number between 0 and 300 cm."))
             }
 
             let store = ProfileStore(db: db)
             try store.updateDisplayName(name)
-            try store.updateDateOfBirth(optionalText(dateOfBirth.trimmingCharacters(in: .whitespacesAndNewlines)))
+            // ASCII digits whatever keyboard typed them, so the stored date reads
+            // the same in either language (#4, decision 2).
+            try store.updateDateOfBirth(optionalText(NumberInput.ascii(dateOfBirth)))
             // Written through `parse`, never the raw text. `.notSet` round-trips
             // to `nil` — the column stores an absence as NULL, and writing the
             // literal string "not_set" would be a value the parser and the column

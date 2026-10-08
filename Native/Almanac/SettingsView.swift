@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import AlmanacCore
 
 @MainActor
@@ -19,6 +20,7 @@ struct SettingsView: View {
     @State private var healthKitStatus: String?
     @State private var error: String?
     @AppStorage("almanac.appearance") private var appearanceRaw = AlmanacAppearance.system.rawValue
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         Form {
@@ -29,6 +31,20 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+            // iOS's own per-app Language page (#4): Almanac keeps no language
+            // setting of its own, so this row only opens that page.
+            Section {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                } label: {
+                    LabeledContent("Language", value: currentLanguageName)
+                }
+                .accessibilityIdentifier("settings-language")
+            } header: {
+                Text("Language")
+            } footer: {
+                Text("Almanac follows the language chosen for it in iOS Settings. Changing it restarts the app.")
             }
             Section("Daily goal") {
                 Stepper("\(Int(dailyGoal)) mL", value: $dailyGoal, in: 500...5000, step: 250)
@@ -75,7 +91,7 @@ struct SettingsView: View {
                     get: { bodyMeasurementTrackSides },
                     set: { enabled in
                         do {
-                            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+                            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
                             try ProfileStore(db: db).updateBodyMeasurementTrackSides(enabled)
                             bodyMeasurementTrackSides = enabled
                         } catch { self.error = error.localizedDescription }
@@ -132,10 +148,16 @@ struct SettingsView: View {
         }
     }
 
+    /// The language the app is actually running in, named in that language.
+    private var currentLanguageName: String {
+        let code = Bundle.main.preferredLocalizations.first ?? "en"
+        return Locale.current.localizedString(forLanguageCode: code) ?? code
+    }
+
     private func setDigestionRingEnabled(_ enabled: Bool) {
         digestionRingEnabled = enabled
         do {
-            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
             try ActivityRingSettingsStore(db: db).setDigestionEnabled(enabled)
             trackingModel.refresh()
         } catch {
@@ -158,7 +180,7 @@ struct SettingsView: View {
                 await model.syncInbound()
                 await model.drainOutbound()
                 await healthModel.syncNow()
-                healthKitStatus = "Connected."
+                healthKitStatus = String(localized: "Connected.")
             } catch {
                 self.error = String(describing: error)
             }

@@ -75,7 +75,7 @@ struct NutritionFoodSearchView: View {
                     // "coconut" returns six of forty milks, this heading is the
                     // only thing on screen that admits the list is a sample — and
                     // without it, a short list reads as complete.
-                    Text(foods.isEmpty ? "Foods" : "Foods (\(foods.count))")
+                    Text(foods.isEmpty ? String(localized: "Foods") : String(localized: "Foods (\(foods.count))"))
                 } footer: {
                     if results.hitTheLimit {
                         // The SQL `LIMIT`, reached before the filter ran. Distinct

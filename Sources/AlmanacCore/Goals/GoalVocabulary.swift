@@ -15,10 +15,10 @@ public enum GoalKind: String, Sendable, Hashable, CaseIterable, Identifiable, Co
 
     public var title: String {
         switch self {
-        case .bulk: return "Bulk"
-        case .cut: return "Cut"
-        case .maintain: return "Maintain"
-        case .performance: return "Performance"
+        case .bulk: return localized("Bulk")
+        case .cut: return localized("Cut")
+        case .maintain: return localized("Maintain")
+        case .performance: return localized("Performance")
         }
     }
 
@@ -29,10 +29,10 @@ public enum GoalKind: String, Sendable, Hashable, CaseIterable, Identifiable, Co
     /// direction and the labels alone do not say it.
     public var explanation: String {
         switch self {
-        case .bulk: return "Eat more than you burn, to add mass."
-        case .cut: return "Eat less than you burn, to lose mass."
-        case .maintain: return "Balance what you eat against what you burn."
-        case .performance: return "Hold steady, and train for output."
+        case .bulk: return localized("Eat more than you burn, to add mass.")
+        case .cut: return localized("Eat less than you burn, to lose mass.")
+        case .maintain: return localized("Balance what you eat against what you burn.")
+        case .performance: return localized("Hold steady, and train for output.")
         }
     }
 
@@ -111,10 +111,10 @@ public enum BiologicalSex: String, Sendable, Hashable, CaseIterable, Identifiabl
 
     public var title: String {
         switch self {
-        case .male: return "Male"
-        case .female: return "Female"
-        case .other: return "Other"
-        case .notSet: return "Prefer not to say"
+        case .male: return localized("Male")
+        case .female: return localized("Female")
+        case .other: return localized("Other")
+        case .notSet: return localized("Prefer not to say")
         }
     }
 

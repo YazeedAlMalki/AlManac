@@ -63,30 +63,33 @@ public enum NotificationText {
     /// which is the ordinary case and reads as a conventional day.
     public static func readinessTitle(shiftType: ShiftType?) -> String {
         switch shiftType {
-        case .night, .onCall: return "Post-sleep check-in"
-        case .evening, .split: return "Check-in"
-        case .rest, .custom, .day, .none: return "Morning check-in"
+        case .night, .onCall: return localized("Post-sleep check-in")
+        case .evening, .split: return localized("Check-in")
+        case .rest, .custom, .day, .none: return localized("Morning check-in")
         }
     }
 
-    public static let readinessBody =
-        "How are you feeling? Log your mood and soreness to finalise today's readiness."
+    // Computed rather than stored, so a notification is worded in the language
+    // the app runs in when it is scheduled (#4).
+    public static var readinessBody: String {
+        localized("How are you feeling? Log your mood and soreness to finalise today's readiness.")
+    }
 
-    public static let waterTitle = "Time to hydrate"
-    public static let waterBody = "Log a drink to stay on track."
+    public static var waterTitle: String { localized("Time to hydrate") }
+    public static var waterBody: String { localized("Log a drink to stay on track.") }
 
     /// §14.2 — "Fajr is at [time]." The time is formatted by the caller and
     /// interpolated here, so the only formatting rule lives in one place.
     public static func suhoorTitle(fajrText: String) -> String {
-        "Suhoor — 20 minutes remaining"
+        localized("Suhoor — 20 minutes remaining")
     }
 
     public static func suhoorBody(fajrText: String) -> String {
-        "Fajr is at \(fajrText). The fast begins soon."
+        localized("Fajr is at %@. The fast begins soon.", fajrText)
     }
 
-    public static let iftarTitle = "Iftar time"
-    public static let iftarBody = "Maghrib has arrived. Your fast has ended."
+    public static var iftarTitle: String { localized("Iftar time") }
+    public static var iftarBody: String { localized("Maghrib has arrived. Your fast has ended.") }
 
     /// "Asr" — the prayer's name and nothing else, the way a call to prayer
     /// announces it.
@@ -96,43 +99,54 @@ public enum NotificationText {
 
     /// "It is time for Asr (15:16)." The time is formatted by the caller.
     public static func prayerBody(_ name: String, timeText: String) -> String {
-        "It is time for \(PrayerTime.displayName(name)) (\(timeText))."
+        localized("It is time for %@ (%@).", PrayerTime.displayName(name), timeText)
     }
 
     public static func mealTitle(_ mealType: NutritionMealType) -> String {
         switch mealType {
-        case .breakfast: return "Time for breakfast"
-        case .lunch: return "Time for lunch"
-        case .dinner: return "Time for dinner"
-        case .snack: return "Snack time"
+        case .breakfast: return localized("Time for breakfast")
+        case .lunch: return localized("Time for lunch")
+        case .dinner: return localized("Time for dinner")
+        case .snack: return localized("Snack time")
         }
     }
 
     public static func mealBody(_ mealType: NutritionMealType) -> String {
-        "Log your \(mealType.rawValue) to keep today's totals honest."
+        localized("Log your %@ to keep today's totals honest.", mealNoun(mealType))
     }
 
-    public static let bedtimeTitle = "Wind down soon"
-    public static let bedtimeBody = "Your sleep window is approaching. Settle in when you can."
+    /// The meal as it reads inside a sentence: "your breakfast", "your snack".
+    private static func mealNoun(_ mealType: NutritionMealType) -> String {
+        switch mealType {
+        case .breakfast: return localized("breakfast")
+        case .lunch: return localized("lunch")
+        case .dinner: return localized("dinner")
+        case .snack: return localized("snack")
+        }
+    }
+
+    public static var bedtimeTitle: String { localized("Wind down soon") }
+    public static var bedtimeBody: String { localized("Your sleep window is approaching. Settle in when you can.") }
 
     public static func supplementTitle(_ name: String) -> String {
-        "Time for \(name)"
+        localized("Time for %@", name)
     }
 
-    public static let supplementBody = "Log your dose to keep today's adherence accurate."
+    public static var supplementBody: String { localized("Log your dose to keep today's adherence accurate.") }
 
     /// §14.2 — "~60 min before usual meal time". `leadMinutes` is the caller's
     /// resolved lead (60 by default); the copy says "about an hour" only when
     /// that is actually the lead, rather than always claiming an hour it did
     /// not use.
     public static func contextualHydrationBody(mealType: NutritionMealType, leadMinutes: Double) -> String {
-        let lead = leadMinutes >= 55 && leadMinutes <= 65
-            ? "about an hour"
-            : "about \(Int(leadMinutes.rounded())) minutes"
-        return "Your usual \(mealType.rawValue) is \(lead) away. Drinking 200 ml now can help with hunger."
+        leadMinutes >= 55 && leadMinutes <= 65
+            ? localized("Your usual %@ is about an hour away. Drinking 200 ml now can help with hunger.",
+                        mealNoun(mealType))
+            : localized("Your usual %@ is about %@ minutes away. Drinking 200 ml now can help with hunger.",
+                        mealNoun(mealType), NumberDisplay.localized(String(Int(leadMinutes.rounded()))))
     }
 
-    public static let contextualHydrationTitle = "Before your usual meal"
+    public static var contextualHydrationTitle: String { localized("Before your usual meal") }
 
     /// §14.2 — "Your workout is in [X] hours." This type is never scheduled:
     /// §14.2 computes it "at log time and at app launch" and it has no lead
@@ -140,11 +154,12 @@ public enum NotificationText {
     /// than planned ahead. The planner still routes it through here so the one
     /// place that words a notification is still the one place.
     public static func contextualSnackBody(hoursUntilWorkout: Double) -> String {
-        let hours = hoursUntilWorkout < 1
-            ? "\(Int((hoursUntilWorkout * 60).rounded())) minutes"
-            : String(format: "%.1f hours", hoursUntilWorkout)
-        return "Your workout is in \(hours). Consider a snack — a banana or similar fast carb."
+        hoursUntilWorkout < 1
+            ? localized("Your workout is in %@ minutes. Consider a snack — a banana or similar fast carb.",
+                        NumberDisplay.localized(String(Int((hoursUntilWorkout * 60).rounded()))))
+            : localized("Your workout is in %@ hours. Consider a snack — a banana or similar fast carb.",
+                        NumberDisplay.localized(String(format: "%.1f", hoursUntilWorkout)))
     }
 
-    public static let contextualSnackTitle = "Before your workout"
+    public static var contextualSnackTitle: String { localized("Before your workout") }
 }

@@ -25,16 +25,16 @@ enum ContextTag: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .illness: return "Illness"
-        case .medicationChange: return "Medication change"
-        case .travelJetLag: return "Travel or jet lag"
-        case .unusualStress: return "Unusual stress"
-        case .heatExposure: return "Heat exposure"
-        case .sauna: return "Sauna"
-        case .poorWatchWear: return "Poor watch wear"
-        case .lateNightEvent: return "Late night event"
-        case .sleepInterruption: return "Sleep interruption"
-        case .competitionDay: return "Competition day"
+        case .illness: return String(localized: "Illness")
+        case .medicationChange: return String(localized: "Medication change")
+        case .travelJetLag: return String(localized: "Travel or jet lag")
+        case .unusualStress: return String(localized: "Unusual stress")
+        case .heatExposure: return String(localized: "Heat exposure")
+        case .sauna: return String(localized: "Sauna")
+        case .poorWatchWear: return String(localized: "Poor watch wear")
+        case .lateNightEvent: return String(localized: "Late night event")
+        case .sleepInterruption: return String(localized: "Sleep interruption")
+        case .competitionDay: return String(localized: "Competition day")
         }
     }
 }
@@ -66,10 +66,10 @@ enum SupplementFrequency: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .daily: return "Daily"
-        case .twiceDaily: return "Twice daily"
-        case .preWorkout: return "Pre-workout"
-        case .custom: return "Custom"
+        case .daily: return String(localized: "Daily")
+        case .twiceDaily: return String(localized: "Twice daily")
+        case .preWorkout: return String(localized: "Pre-workout")
+        case .custom: return String(localized: "Custom")
         }
     }
 }

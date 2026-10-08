@@ -43,13 +43,13 @@ public enum SyncDomain: String, Sendable, Hashable, CaseIterable, Codable {
 
     public var title: String {
         switch self {
-        case .sleep: return "Sleep"
-        case .heartRate: return "Heart rate"
-        case .hrv: return "Heart rate variability"
-        case .steps: return "Steps"
-        case .energy: return "Energy"
-        case .bodyComposition: return "Body composition"
-        case .workouts: return "Workouts"
+        case .sleep: return localized("Sleep")
+        case .heartRate: return localized("Heart rate")
+        case .hrv: return localized("Heart rate variability")
+        case .steps: return localized("Steps")
+        case .energy: return localized("Energy")
+        case .bodyComposition: return localized("Body composition")
+        case .workouts: return localized("Workouts")
         }
     }
 }
