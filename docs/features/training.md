@@ -222,6 +222,8 @@ this repo has no way to verify whether that has since changed — it's
 out-of-band, personal correspondence). `WorkloadComputer` deliberately
 reports tonnage/distance/duration, never an energy estimate.
 
+**2026-10-06 — on hold, owner's decision:** he will try to build his own data first. If that fails, the licensed sources are the fallback — SFDA, the Compendium (MET values) and yuhonas/wrkout (exercise library) — and the three emails above are how that fallback starts. They are not to be drafted or sent meanwhile, and nothing is to be built that assumes those datasets.
+
 **`program`/multi-week structure** — **built 2026-10-02**, see
 `docs/features/training-program.md`. This section listed it as an absence in
 the design itself, which was true until the 2026-10-01 handoff designed it.
@@ -295,7 +297,9 @@ windows, which one wins," not where the candidates come from.
    `ReadinessDashboardView`. **The three things left open in this item are
    now built (2026-09-28)** — see "Training history and templates" below.
 3. Calorie burn — blocked on the Compendium/MET licensing question; not
-   scheduled.
+   scheduled. **2026-10-06:** on hold — the owner is building his own data
+   first; the Compendium email is the fallback (see "Calorie burn from
+   training load" above).
 
 ### Training history and templates (2026-09-28)
 
@@ -353,4 +357,71 @@ error naming it rather than a raw SQLite CHECK failure.
 container shape and the bouts come from logging, so there is nothing in the
 store to apply yet; `TrainingModel.logBout` still creates ad-hoc sessions with
 `prescribedWorkoutId: nil`. That needs a product decision about whether a
-template prescribes exercises or only the shape of a session.
+template prescribes exercises or only the shape of a session. **Decided by the
+owner 2026-10-06: exercises, but editable** — built the same day; see "Applying
+a template to a session" below.
+
+### Applying a template to a session — built (2026-10-06)
+
+**The owner's decision: a template is exercises, but editable.** Applying one
+fills the session with its exercises (with sets and reps where the template has
+them) as a starting point, and the session then stays his to change. He moved
+this from "blocked" to task 6 on 2026-10-06, which also approved the change
+below. Until then a template stored only a name, a `containerType` and notes.
+
+**What was added, all additive:**
+
+- **Migration 055, `prescribedWorkoutItem`:** one row per exercise, in order,
+  holding the exercise, its `prescriptionType` (copied from the catalog when
+  added, as a bout copies it) and the eight nullable `prescribed*` columns
+  `workoutBout` already has. No `deletedAt`: items are replaced as a whole.
+- **`PrescribedWorkoutStore.items(of:)` / `setItems(_:for:)`.** These refuse a
+  discontinued template, a prescription type outside the twelve, and a zero or
+  negative number. A blank is nil.
+- **`TemplateApplier`** (`Sources/AlmanacCore/Training/`):
+  - It copies each item onto a new `workoutBout`: exercise, type, the
+    template's container, and the planned values. Every `actual*` column is
+    left empty.
+  - It records the template on `workoutSession.prescribedWorkoutId`, which
+    `TrainingSessionReviewView` already shows as "From template: …".
+  - **Copied, not referenced:** editing or discontinuing the template later
+    changes no session.
+  - `applyToDay` uses his own ad-hoc session for the day, the one
+    `TrainingModel.logBout` uses, or creates one. It never fills a watch
+    workout or a program day's session; the Training Program layer is not
+    touched.
+- **Screens:**
+  - Templates: the template editor has an **Exercises** list. **Add exercise**
+    opens the catalog, then optional sets, reps, load, duration, distance or
+    rounds, by type. Rows can be edited, reordered and swiped away.
+  - Training: **Start from a template** offers the live templates.
+  - Today's rows: a planned row reads "Planned · …". Tapping a row opens
+    `BoutActualsEditor`, the history screen's own editor, now shared, to record
+    what was done. Swiping deletes it, as before.
+
+**Two calls, unconfirmed (`CONTEXT.md`):**
+
+- **A session with logged bouts is not filled silently.** The applier refuses
+  with the count, and the screen asks "Add *template*'s exercises after the N
+  already logged today?" (**Add after them** / Cancel). Replacing is not
+  offered, because it would delete logged work.
+- **Applying records nothing as done.** The plan goes in `prescribed*`, and
+  `actual*` stays empty until he fills it in.
+
+**Tests:**
+
+- Core: `TemplateApplierTests` (8).
+  - Items read back in order, and blanks stay nil.
+  - A zero, an unknown type and a discontinued template are refused.
+  - Applying copies the plan with nothing done.
+  - A non-empty session is refused with its count, and appending goes after
+    the existing bouts without touching them.
+  - A later template edit leaves the session unchanged.
+  - Discontinued and empty templates are refused, and a refused apply leaves
+    no empty session.
+  - `applyToDay` reuses or creates the day's session.
+  - An applied bout can be completed and deleted, and its plan survives.
+- UI: `TrainingHistoryUITests.testApplyingATemplateFillsTodayAndStaysEditable`
+  builds a template through the screens, applies it, records 3 × 6 on Bench
+  Press, deletes the Ab Wheel Rollout, and checks both changes hold. Written
+  without Xcode; its first run is CI.

@@ -1,9 +1,11 @@
 # Almanac implementation status
 
-Updated 2026-10-06. **Fasting and prayer times work end to end in the running
+Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
+work (workout templates, the readiness withhold, the Vitals log), merging
+through PR #6; the fasting entry is second. Updated 2026-10-06. **Fasting and prayer times work end to end in the running
 app** — religious fasting had never run on a phone (no fast day was ever
-detected), and logging food or water never reached a fasting rule; the entry is
-at the top. Updated 2026-10-05: the degenerate-baseline defect recorded below is **fixed**
+detected), and logging food or water never reached a fasting rule; its entry is
+second. Updated 2026-10-05: the degenerate-baseline defect recorded below is **fixed**
 and the two checklist rows that were asserting on it are repaired; the entry is
 at the top. The 2026-10-04 second-pass correction still stands: the "a single-
 reading day always scores 66" note lower down was measured without sleep data,
@@ -23,6 +25,169 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-06 — handoff work from a cloud session: Kitchen merge-ready and built out, readiness withhold, Vitals log
+
+**Update 2026-10-07.** Both pieces this branch was waiting on are now on
+master. Kitchen landed first, through the Kitchen-only branch. Fasting landed
+through PR #5 and kept migration 050, as planned. This branch merged master in
+both times, and the reservation set in `MigrationReservation.swift` is now
+empty. What this branch still adds (templates with migration 055, the readiness
+withhold, the Vitals log) merges through PR #6. The paragraphs below are as
+written on 2026-10-06.
+
+**Where this is.** Branch `claude/handoff-2026-10-06`, pushed, **not merged to
+master**. `claude/kitchen-merge-ready` points at `ebdb51d`, Kitchen as built
+plus what it needed to merge. Done in a Linux cloud container: Swift 6.3.3 ran
+the core suite; there was **no Xcode**, so no Swift in `Native/` was compiled
+and no UI test was run.
+
+**Not done: the fasting and prayer work (handoff task 1).** It exists only as an
+uncommitted working tree on the owner's iMac, and is not on GitHub under any
+branch, so it could not be backed up, verified, committed or merged from here.
+The two notification bugs it fixes are confirmed present on master by reading
+the code: `NotificationScheduler.swift:62,111,122` test
+`Self.ownedPrefix.hasPrefix($0)`, which is backwards, and
+`NotificationPlanner.plan` never filters candidates to `(now, now + horizon]`.
+They were left for that work to fix, to avoid a conflicting second fix.
+
+**Merge order.** The fasting work lands first, as the handoff recommended, and
+keeps its migration 050. This branch numbers its migrations 051–055 and reserves
+050 in the tests (`Tests/AlmanacCoreTests/MigrationReservation.swift`). The
+contiguity checks subtract the reservation rather than being loosened, and
+`testNoReservedVersionHasLanded` fails the moment 050 merges, which is the
+prompt to empty the set. Merging this branch first would force the larger work
+to renumber, and would break any database that already applied its 050, since
+`MigrationRunner` refuses a renamed migration.
+
+### What changed
+
+- **Kitchen, merge-ready (task 4).** Rebased onto `efb1c0b`; it already sat on
+  it, so the original commits are kept. Migration 050 → **051**. Found and fixed
+  a real defect: the shipped `almanac.sqlite` has no `almanac` row in
+  `nutrition_source`, so `NutritionDishEditor.create` failed its foreign key on
+  every device. Nothing in the app had created a dish, so it never showed.
+  `create` now writes the row, and a test on the shipped bundle fails without
+  that change. Added `KitchenSeedPlan` (`-AlmanacSeedKitchen`, DEBUG- and
+  argument-gated, like `VitalsSeedPlan`) and `KitchenUITests` (4).
+- **Readiness (task 2).** With vitals present and no personal baseline for any
+  of them, the band sentence is withheld from `textDescription` and
+  `recommendation`. Score, colour and confidence stay. See
+  `docs/features/readiness.md`.
+- **Vitals (task 3).** `VitalsRecordStore.log` includes today, and `VitalsView`
+  uses it. `clearHandEnteredReadings` now reaches today's readings, and the
+  readiness UI tests no longer clear today through the seeding spec.
+- **Kitchen build-out (task 5), one commit per step.** 0: TheMealDB's terms
+  could not be read from this network (403 on every route), so the gate is shut
+  and nothing is imported (`docs/features/themealdb-terms.md`). 1:
+  `DishAllergenCheck` is one check for Kitchen and Saved meals: hidden by
+  default, collapsed and reachable, a warning page, and confirm before logging.
+  2: migration **052** `serving_count`; one serving is the default amount. 3:
+  migration **053**; pantry suggestions the owner adds or dismisses. 4:
+  migration **054**, the ingredient table. Pantry, log and allergen check all go
+  through it, and the allergen check reads more names, never fewer. 5:
+  skipped.
+- **Workout templates (task 6).** A template stored only a name, a container
+  shape and notes, so the first pass stopped at a proposal. The owner then
+  unblocked it ("exercises, but editable"), and it is built:
+  - Migration **055**, `prescribedWorkoutItem`;
+  - `PrescribedWorkoutStore.setItems` and `TemplateApplier`, which copies the
+    exercises onto today's own session as planned bouts with nothing marked
+    done;
+  - screens: an exercise list in the template editor, **Start from a template**
+    on Training, and today's rows open the shared `BoutActualsEditor`;
+  - tests: `TemplateApplierTests` (8), and one UI test.
+  See `docs/features/training.md`.
+- **Housekeeping (task 7).** The checklist summary now carries real counts.
+  Slice 8 and Slice 4's MET and exercise-library data are marked "owner building
+  his own data first", with the licence emails kept as the fallback.
+
+### Verification
+
+`swift test` (Swift 6.3.3, x86_64 Linux):
+
+| Tree | Swift Testing | XCTest |
+|---|---|---|
+| master `efb1c0b` | 938 tests, 99 suites, 0 failures | 373, 1 skipped, 0 failures |
+| branch head | **987 tests, 107 suites, 0 failures** | **379, 1 skipped, 0 failures** |
+
+The skipped test is the opt-in `NutritionRealBundleTests`. The handoff's 374
+XCTest for master is one more than this run counted.
+
+Revert-and-run checks, each fails without its fix and passes with it:
+
+| Fix | Test | Without the fix |
+|---|---|---|
+| Dish foreign key | `testADishCanBeCreatedOnTheShippedReference` | "FOREIGN KEY constraint failed" |
+| Readiness withhold | withhold, context and end-to-end tests | 6 XCTest + 3 Swift Testing assertions |
+| Vitals log | `logIncludesToday`, with the old exclusive bound | 4 issues |
+
+CI (`.github/workflows/ci.yml`), run on every push to this branch:
+
+- the Linux job (Swift **6.0.3**) caught one test line that 6.3.3 accepts and
+  6.0.3 does not, fixed in `62248d6`, and was green from then on;
+- `xcodebuild` of the app and widget was **green**, so the `Native/` changes
+  compile;
+- the full UI suite (`test-ios`, about 2.5 hours on a fresh simulator) ran on
+  `3653be0`: **83 run, 7 failed**.
+  - Four of the failures are master's own.
+  - Three are this branch's new tests failing on their first run: two Kitchen
+    tests and the template test.
+  - Three of master's failures passed here.
+  - `TrainingProgramUITests` passed 13 of 13, including 7.10 and 7.11 on the
+    new way of clearing today's readings.
+  - The new failures' messages were not readable from the session (only the
+    log tail is reachable). The definite cause in the template test and a
+    likely one in the Kitchen allergen test are fixed, and a CI step now prints
+    every failure message at the end of the log, so the next run says exactly
+    what failed.
+
+  The second run, `0e6fd55`, with every failure message printed: **83 run,
+  5 failed**.
+  - The template test and all of NotificationSettings passed.
+  - Two failures are master's own.
+  - One is a navigation flake in a test that runs before Kitchen.
+  - Two are the Kitchen tests' own lookups: a "Pantry" name shared by two
+    buttons, and the disclaimer searched for as plain text. Both are fixed.
+
+  The third run, `12ffa44`: **83 run, 6 failed**.
+  - The Kitchen pantry test and the template test pass.
+  - The Kitchen allergen test reached its last stage and failed on a tap that
+    left the hidden entry collapsed. The tap is fixed.
+  - The other five are tests this branch does not touch, failing on some runs
+    and passing on others.
+
+  The fourth run, `83578ea`: **83 run, 6 failed**.
+  - The Kitchen allergen test passed every check of the app, through the
+    warning and the confirmation. It failed on its very last step, closing the
+    confirmation: on iOS 26 that dialog has no Cancel button and is closed by
+    tapping outside it. The test now does that. Not yet re-run.
+  - The other five are the same tests as before, which this branch does not
+    touch.
+
+  The fifth run, `8e7b555`: **83 run, 3 failed**.
+  - Two are master's own (BodyCircumference, ProblemChannel).
+  - The Kitchen allergen test failed on its last check: the iOS 26
+    confirmation popover did not close on a tap outside it, and it has no
+    Cancel button. The page now asks with an alert, which always shows Cancel.
+    This is the one app change the UI runs led to. Not yet re-run.
+
+  The sixth run, `cccf311`: **83 run, 4 failed, none of them this branch's**.
+  - Every new test passes: the four Kitchen tests and the template test.
+  - The four failures (BodyCircumference, BodyCompositionWellness,
+    ProblemChannel, one NotificationSettings) are all on master's own failing
+    list and are not diagnosed.
+  - `xcodebuild` and the Linux core suite are green.
+
+  Details are in `docs/acceptance-checklist.md`.
+
+**Not run:**
+
+- any UI test locally;
+- notification delivery and HealthKit, which need a device.
+
+The four known UI failures (`BodyCircumferenceUITests` 1,
+`BodyCompositionWellnessUITests` 2, `AttributionsUITests` 1) were not diagnosed.
 
 ## 2026-10-06 — Fasting and prayer times, completed
 

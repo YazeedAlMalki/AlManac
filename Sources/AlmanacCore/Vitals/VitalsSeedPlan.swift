@@ -6,17 +6,13 @@ public struct VitalsSeedReading: Sendable, Hashable {
     /// Nil means **clear** every manual reading of `metric` on that day, rather
     /// than plant one.
     ///
-    /// This exists because today's readings cannot be cleared from the screen.
-    /// `VitalsView.reload` reads its log with `records(metric:from:to:)`, whose
-    /// `to:` is exclusive, so `logicalDay == today` never reaches the list — a
-    /// reading taken today appears on the "today" card and nowhere else, and that
-    /// card offers no delete. So a harness that must leave today holding exactly
-    /// what it typed has to ask the app to do it, and the only actor that can is
-    /// the same code that writes the rows.
-    ///
-    /// It is not a workaround for a missing feature: the exclusion is deliberate
-    /// (the log is a logbook of *past* days) and the today card is deliberately
-    /// read-only. This is the seam, and it exists for tests only.
+    /// This was added because today's readings could not be cleared from the
+    /// screen: until 2026-10-06 `VitalsView.reload` read its log with today as
+    /// the exclusive `to:` of `records(metric:from:to:)`, so a reading taken
+    /// today appeared on the "today" card (no delete) and nowhere else. That
+    /// was a defect, not a design — the log is where a hand-entered reading is
+    /// corrected — and `VitalsRecordStore.log` now ends with today. The clear
+    /// form stays as a harness capability; no UI test depends on it any more.
     public let value: Double?
     /// Logical days before today. `0` is today's logical day, `-1` the day
     /// before, `-2` the day before that.
@@ -164,12 +160,10 @@ public struct VitalsSeedPlan: Sendable, Hashable {
     /// fill the 40-row log window, and give any delete helper more to remove
     /// than it is willing to.
     ///
-    /// The clearing half is not tidiness. `VitalsView` keeps today's readings off
-    /// its log (the window's `to:` is exclusive) and offers no delete on the
-    /// today card, so **nothing in the UI can remove a reading taken today** — and
-    /// on a database that is never reset, that is how sixteen of them piled up
-    /// across runs and quietly moved the baseline. A test that means to assert
-    /// about today's readings has to name today in the spec.
+    /// The clearing half was not tidiness when it was written: until 2026-10-06
+    /// nothing in the UI could remove a reading taken today, and on a database
+    /// that is never reset sixteen of them piled up across runs and quietly
+    /// moved the baseline. The Vitals log now includes today, so the UI can.
     ///
     /// Goes through `recordManual` rather than writing SQL, so a seeded reading
     /// carries the same source, unit, zone and logical-day resolution a typed one

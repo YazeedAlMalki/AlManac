@@ -307,8 +307,12 @@ struct TrainingSessionReviewView: View {
 /// planned, and an editor that offered them would make "I had meant to do four
 /// reps" indistinguishable from "I did four reps" — which is the distinction the
 /// prescribed/actual split exists to keep.
+///
+/// Internal rather than private since 2026-10-06: the Training screen opens it
+/// for today's bouts too, which is where a session started from a template is
+/// filled in.
 @MainActor
-private struct BoutActualsEditor: View {
+struct BoutActualsEditor: View {
     let db: Database?
     let bout: WorkoutBoutEntry
     let onSaved: () -> Void

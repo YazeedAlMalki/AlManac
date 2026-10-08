@@ -113,14 +113,19 @@ public enum ReadinessEngine {
 
         if state == .provisional { raw *= ReadinessFormula.provisionalCeiling }
         let score = Int(raw.rounded())
-        let band = ReadinessFormula.bandText(for: score)
-        let rec = recommendation(bandText: band, context: context)
+        // Owner, 2026-10-06: a missing personal baseline withholds the band
+        // sentence rather than marking it preliminary. The score, its colour
+        // and its confidence stand; only the advice drawn from them goes.
+        let withheld = lacksPersonalBaseline(inputs: inputs, baseline: baseline)
+        let band = withheld ? nil : ReadinessFormula.bandText(for: score)
+        let rec = recommendation(bandText: band, context: context,
+                                 withheldText: withheld ? noPersonalBaselineText : nil)
 
         return ReadinessOutcome(
             state: state,
             score: score,
             color: ReadinessFormula.color(for: score),
-            textDescription: describe(band: band, context: context),
+            textDescription: describe(band: band ?? noPersonalBaselineText, context: context),
             confidence: ReadinessFormula.confidence(missingCount: missing.count),
             missingInputs: missing,
             formulaVersion: ReadinessFormula.version,
@@ -129,6 +134,34 @@ public enum ReadinessEngine {
             precedenceApplied: rec.applied,
             baselineContext: baselineContext
         )
+    }
+
+    // MARK: - No personal baseline
+
+    /// What is said in place of the band sentence when it is withheld.
+    public static let noPersonalBaselineText =
+        "No personal baseline yet to compare today's readings against"
+
+    /// True when the day carries at least one resting-HR or HRV reading and
+    /// **none** of the readings it carries has a personal baseline to be
+    /// compared with.
+    ///
+    /// Then the score rests on sleep alone while the person has handed over
+    /// vitals expecting them to count, and the band sentence — written for a
+    /// comparison against their own history — would be advice about a
+    /// comparison that never happened. A day with no vitals at all is a
+    /// different case ("inputs missing") and is unchanged; so is a day where
+    /// one reading has a baseline and the other does not, since one real
+    /// comparison was made. Recorded as unconfirmed in `CONTEXT.md`, with the
+    /// stricter "any reading lacks a baseline" as the overrule.
+    public static func lacksPersonalBaseline(inputs: ReadinessInputs,
+                                             baseline: ReadinessBaseline) -> Bool {
+        let rhrPresent = inputs.restingHeartRate != nil
+        let hrvPresent = inputs.hrv != nil
+        guard rhrPresent || hrvPresent else { return false }
+        let rhrCompared = rhrPresent && baseline.restingHeartRate != nil
+        let hrvCompared = hrvPresent && baseline.hrv != nil
+        return !rhrCompared && !hrvCompared
     }
 
     // MARK: - §9.4 text
@@ -153,7 +186,14 @@ public enum ReadinessEngine {
     /// Applies the precedence order. First match decides the wording; every
     /// rule that held is still recorded, so "why did it say that" is
     /// answerable later without recomputing the day.
-    static func recommendation(bandText: String?, context: ReadinessContext)
+    ///
+    /// `withheldText` is set when the band sentence was withheld for want of a
+    /// personal baseline. The context-derived rules still decide and still
+    /// speak; where one would have quoted the band sentence it quotes this
+    /// instead, and with no rule holding there is no recommendation at all —
+    /// `readiness_record.recommendation` stores nil.
+    static func recommendation(bandText: String?, context: ReadinessContext,
+                               withheldText: String? = nil)
         -> (text: String?, applied: [ReadinessPrecedence]) {
 
         var applied: [ReadinessPrecedence] = []
@@ -167,7 +207,7 @@ public enum ReadinessEngine {
             applied.append(.religiousFastContext)
         }
 
-        let fallback = bandText ?? "Not enough data to score readiness."
+        let fallback = bandText ?? withheldText ?? "Not enough data to score readiness."
 
         switch applied.first {
         case .injuryRestriction:

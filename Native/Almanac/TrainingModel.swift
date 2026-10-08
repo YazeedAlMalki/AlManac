@@ -5,13 +5,12 @@ import AlmanacCore
 /// `HydrationModel`/`ReadinessModel` — one shared `Database`, configured
 /// once from `AlmanacApp`.
 ///
-/// `logBout` deliberately does not expose `PrescribedWorkout` templates,
-/// containers, or multi-bout structure — those are real, already-built
-/// pieces of `AlmanacCore` (`PrescribedWorkoutStore`, `containerType`) this
-/// screen just doesn't reach for. A quick-add flow needs one ad-hoc
-/// "today's session" to log bouts against, not a templated workout; each
-/// bout's `prescriptionType`/fields come straight from the exercise picked,
-/// per `docs/features/training.md` §2.
+/// `logBout` deliberately does not expose containers or multi-bout structure:
+/// a quick-add flow needs one ad-hoc "today's session" to log bouts against;
+/// each bout's `prescriptionType`/fields come straight from the exercise
+/// picked, per `docs/features/training.md` §2. A template reaches the same
+/// session through `applyTemplate` (2026-10-06), which fills it with the
+/// template's exercises as planned bouts for the person to complete.
 @MainActor
 final class TrainingModel: ObservableObject {
     @Published private(set) var exercises: [ExerciseCatalogEntry] = []
@@ -113,6 +112,37 @@ final class TrainingModel: ObservableObject {
             actualSets: sets, actualReps: reps, actualLoadKg: loadKg,
             actualDurationSeconds: durationSeconds, actualDistanceMeters: distanceMeters,
             actualRounds: rounds, rpe: rpe, notes: notes))
+        refresh()
+    }
+
+    // MARK: - Templates
+
+    /// Live templates, for "Start from a template".
+    func templates() throws -> [PrescribedWorkoutEntry] {
+        guard let db else { return [] }
+        return try PrescribedWorkoutStore(db: db).templates()
+    }
+
+    /// How many exercises each template prescribes, by template id.
+    func exerciseCounts(of templates: [PrescribedWorkoutEntry]) -> [Int64: Int] {
+        guard let db else { return [:] }
+        let store = PrescribedWorkoutStore(db: db)
+        var counts: [Int64: Int] = [:]
+        for template in templates {
+            counts[template.id] = (try? store.items(of: template.id).count) ?? 0
+        }
+        return counts
+    }
+
+    /// Fills today's own session with `template`'s exercises (`TemplateApplier`),
+    /// creating the session if there is none. Throws
+    /// `TemplateApplyError.sessionHasBouts` when today already holds logged bouts
+    /// and `appendingAfterExisting` is false, so the screen can ask first.
+    func applyTemplate(_ template: PrescribedWorkoutEntry, appendingAfterExisting: Bool) throws {
+        guard let db else { throw EditorFailure(message: "The database is unavailable.") }
+        try TemplateApplier(db: db).applyToDay(template: template.id,
+                                               date: timeModel.logicalDay(Date()).value,
+                                               appendingAfterExisting: appendingAfterExisting)
         refresh()
     }
 

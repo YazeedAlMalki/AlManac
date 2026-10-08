@@ -170,6 +170,16 @@ public struct WorkoutSessionStore: @unchecked Sendable {
         return changes > 0
     }
 
+    /// Records which template a session was filled from. Only sets it where
+    /// none is recorded, so the first template applied names the session.
+    @discardableResult
+    public func setTemplateIfUnset(id: Int64, prescribedWorkoutId: Int64) throws -> Bool {
+        try db.run("""
+            UPDATE workoutSession SET prescribedWorkoutId = ?, updatedAt = ?
+            WHERE id = ? AND deletedAt IS NULL AND prescribedWorkoutId IS NULL;
+            """, [.integer(prescribedWorkoutId), .text(nowText), .integer(id)]) > 0
+    }
+
     public func updateDate(id: Int64, to date: String) throws -> Bool {
         try db.run("""
             UPDATE workoutSession SET date = ?, updatedAt = ?
