@@ -167,13 +167,25 @@ extension XCUIApplication {
         /// and the fallback never fires. `cells` is no better: this app's
         /// `List`s expose no cells at all, so that query is always empty and the
         /// check is silently off.
+        ///
+        /// Read from one snapshot, not element by element. The list is still
+        /// settling after a swipe, and `allElementsBoundByIndex` resolves each
+        /// index again when its frame is read: when the set has shrunk in
+        /// between, XCTest fails the test ("No matches found for Element at
+        /// index 12", CI 2026-10-07, in BodyCircumference and ProblemChannel)
+        /// rather than answering. A snapshot is immutable, so it cannot lose an
+        /// element halfway through being read.
         func anchor() -> CGFloat? {
-            collectionViews.firstMatch
-                .descendants(matching: .staticText)
-                .allElementsBoundByIndex
-                .filter { $0.frame.height > 1 }
-                .map(\.frame.minY)
-                .min()
+            guard let root = try? collectionViews.firstMatch.snapshot() else { return nil }
+            var top: CGFloat?
+            func walk(_ node: XCUIElementSnapshot) {
+                if node.elementType == .staticText, node.frame.height > 1 {
+                    top = min(top ?? node.frame.minY, node.frame.minY)
+                }
+                node.children.forEach(walk)
+            }
+            walk(root)
+            return top
         }
 
         var lastSeen = anchor()
