@@ -584,6 +584,18 @@ final class TrainingProgramUITests: XCTestCase {
         // "no matches found" rather than as the harness losing a race. It only
         // appears once the earlier tests in this file have left more sessions
         // behind, because a longer list re-renders more of itself per delete.
+        //
+        // The editor loads its rows in a task, and Hydration and Nutrition come
+        // before Training. A List only builds the rows on screen, so on a day
+        // the suite has filled with entries the Training rows do not exist
+        // until the section is scrolled to; a count of zero then holds still at
+        // once and the drain ends before it starts. Wait for the section to
+        // answer one way or the other, and bring it on screen if it has not.
+        let noTraining = app.staticTexts["No training sessions on this day."]
+        if !app.waitUntil(timeout: 5, { firstTrainingRow() != nil || noTraining.exists }) {
+            let footer = app.staticText(beginningWith: "Corrections are versioned")
+            XCTAssertTrue(app.reveal(footer), "the editor's Training section is not reachable")
+        }
         var deleted = 0
         for _ in 0..<40 {
             var previous = -1
