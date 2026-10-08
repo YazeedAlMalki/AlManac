@@ -51,8 +51,8 @@ final class FastingModel: ObservableObject {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .religious: return "Religious"
-            case .intermittent: return "Intermittent"
+            case .religious: return String(localized: "Religious")
+            case .intermittent: return String(localized: "Intermittent")
             }
         }
     }
@@ -155,8 +155,8 @@ final class FastingModel: ObservableObject {
         guard let db else { return nil }
         if let active = try? FastingSessionStore(db: db).activeSession() {
             error = active.sessionType == .religious
-                ? "Today's religious fast is running. An intermittent fast can start after Maghrib."
-                : "A fast is already running. End it before starting another."
+                ? String(localized: "Today's religious fast is running. An intermittent fast can start after Maghrib.")
+                : String(localized: "A fast is already running. End it before starting another.")
             return nil
         }
         var id: Int64?
@@ -322,16 +322,16 @@ struct FastingView: View {
     }
 
     private func fastReason(_ status: ReligiousFastDayStatus) -> String {
-        if status.isCorrected { return "Fast day — you marked it" }
+        if status.isCorrected { return String(localized: "Fast day — you marked it") }
         let reasons = status.kinds.map { kind -> String in
             switch kind {
-            case .ramadan: return status.hijri.map { "Ramadan, day \($0.day)" } ?? "Ramadan"
-            case .monday: return "Monday fast"
-            case .thursday: return "Thursday fast"
-            case .whiteDay: return "White Day"
+            case .ramadan: return status.hijri.map { String(localized: "Ramadan, day \($0.day)") } ?? String(localized: "Ramadan")
+            case .monday: return String(localized: "Monday fast")
+            case .thursday: return String(localized: "Thursday fast")
+            case .whiteDay: return String(localized: "White Day")
             }
         }
-        return reasons.isEmpty ? "Religious fast day" : reasons.joined(separator: " · ")
+        return reasons.isEmpty ? String(localized: "Religious fast day") : reasons.joined(separator: " · ")
     }
 
     @ViewBuilder
@@ -348,24 +348,24 @@ struct FastingView: View {
                 }
             }
         case .beforeFajr(let fajr, _):
-            phaseCard(title: "Suhoor time",
-                      detail: "The fast begins at Fajr, \(fajr.formatted(date: .omitted, time: .shortened)) — \(almanacCountdown(to: fajr, from: now)).",
+            phaseCard(title: String(localized: "Suhoor time"),
+                      detail: String(localized: "The fast begins at Fajr, \(fajr.formatted(date: .omitted, time: .shortened)) — \(almanacCountdown(to: fajr, from: now))."),
                       fraction: nil, tone: .neutral)
         case .fasting(let fajr, let maghrib):
             let total = maghrib.timeIntervalSince(fajr)
             let done = now.timeIntervalSince(fajr)
-            phaseCard(title: "Fasting — iftar \(almanacCountdown(to: maghrib, from: now))",
-                      detail: "Fasted \(almanacDuration(minutes: Int(done / 60))) of \(almanacDuration(minutes: Int(total / 60))). Maghrib is at \(maghrib.formatted(date: .omitted, time: .shortened)).",
+            phaseCard(title: String(localized: "Fasting — iftar \(almanacCountdown(to: maghrib, from: now))"),
+                      detail: String(localized: "Fasted \(almanacDuration(minutes: Int(done / 60))) of \(almanacDuration(minutes: Int(total / 60))). Maghrib is at \(maghrib.formatted(date: .omitted, time: .shortened))."),
                       fraction: total > 0 ? done / total : nil, tone: .good)
         case .broken(let at, _):
-            phaseCard(title: "Fast broken at \(at.formatted(date: .omitted, time: .shortened))",
-                      detail: "Something was logged after Fajr. If that entry is wrong, delete or move it and the fast is restored.",
+            phaseCard(title: String(localized: "Fast broken at \(at.formatted(date: .omitted, time: .shortened))"),
+                      detail: String(localized: "Something was logged after Fajr. If that entry is wrong, delete or move it and the fast is restored."),
                       fraction: nil, tone: .warning)
         case .kept(let maghrib):
             let minutes = today.session?.finalDurationMinutes
                 ?? today.fajr.map { Int(maghrib.timeIntervalSince($0) / 60) } ?? 0
-            phaseCard(title: "Fast complete",
-                      detail: "Kept from Fajr to Maghrib — \(almanacDuration(minutes: minutes)).",
+            phaseCard(title: String(localized: "Fast complete"),
+                      detail: String(localized: "Kept from Fajr to Maghrib — \(almanacDuration(minutes: minutes))."),
                       fraction: 1, tone: .good)
         }
     }
@@ -401,7 +401,8 @@ struct FastingView: View {
 
     private func dayHeader(_ status: ReligiousFastDayStatus) -> String {
         let gregorian = Date().formatted(date: .abbreviated, time: .omitted)
-        return status.hijri.map { "Today · \(gregorian) · \($0.text)" } ?? "Today · \(gregorian)"
+        return status.hijri.map { String(localized: "Today · \(gregorian) · \($0.text)") }
+            ?? String(localized: "Today · \(gregorian)")
     }
 
     @ViewBuilder
@@ -435,11 +436,11 @@ struct FastingView: View {
     private func intakeLabel(_ intake: FastingIntakeLog.Intake) -> String {
         switch intake.kind {
         case .drink:
-            let name = intake.label ?? "Water"
-            return intake.amount.map { "\(name), \(Int($0)) ml" } ?? name
+            let name = intake.label ?? String(localized: "Water")
+            return intake.amount.map { String(localized: "\(name), \(Int($0)) ml") } ?? name
         case .food:
-            let name = intake.label ?? "Food"
-            return intake.amount.map { "\(name), \(AlmanacNumber.compact($0)) g" } ?? name
+            let name = intake.label ?? String(localized: "Food")
+            return intake.amount.map { String(localized: "\(name), \(AlmanacNumber.compact($0)) g") } ?? name
         }
     }
 
@@ -450,8 +451,9 @@ struct FastingView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Ramadan")
                     if let next = model.nextRamadan {
-                        // Verbatim: a localized interpolation groups the year as "1,448".
-                        Text(verbatim: "\(next.hijriYear) AH: \(displayDate(next.start, withYear: true)) to \(displayDate(next.end, withYear: true))")
+                        // The year goes in as a string: a localized integer
+                        // interpolation groups it as "1,448".
+                        Text(String(localized: "\(String(next.hijriYear)) AH: \(displayDate(next.start, withYear: true)) to \(displayDate(next.end, withYear: true))"))
                             .font(AlmanacTypography.font(.caption))
                             .foregroundStyle(AlmanacPalette.textSecondary)
                     }
@@ -488,7 +490,8 @@ struct FastingView: View {
                             }
                         }
                         Spacer()
-                        Text(status.isCorrected ? "Marked" : status.kinds.map(\.label).joined(separator: ", "))
+                        Text(status.isCorrected ? String(localized: "Marked")
+                             : status.kinds.map(\.label).joined(separator: String(localized: ", ")))
                             .font(AlmanacTypography.font(.caption))
                             .foregroundStyle(AlmanacPalette.textSecondary)
                     }
@@ -609,7 +612,7 @@ struct FastingView: View {
         case "16_8": return "16:8"
         case "18_6": return "18:6"
         case "omad": return "OMAD"
-        default: return "Custom"
+        default: return String(localized: "Custom")
         }
     }
 
@@ -629,7 +632,7 @@ struct FastingView: View {
                                 .foregroundStyle(AlmanacPalette.textSecondary)
                         }
                         Spacer()
-                        Text(session.isInvalidated ? "Invalidated"
+                        Text(session.isInvalidated ? String(localized: "Invalidated")
                              : session.finalDurationMinutes.map { almanacDuration(minutes: $0) } ?? "—")
                             .font(AlmanacTypography.font(.data).monospacedDigit())
                             .foregroundStyle(AlmanacPalette.textSecondary)

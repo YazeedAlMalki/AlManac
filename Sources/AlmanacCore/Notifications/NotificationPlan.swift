@@ -99,7 +99,7 @@ public enum NotificationText {
 
     /// "It is time for Asr (15:16)." The time is formatted by the caller.
     public static func prayerBody(_ name: String, timeText: String) -> String {
-        "It is time for \(PrayerTime.displayName(name)) (\(timeText))."
+        localized("It is time for %@ (%@).", PrayerTime.displayName(name), timeText)
     }
 
     public static func mealTitle(_ mealType: NutritionMealType) -> String {

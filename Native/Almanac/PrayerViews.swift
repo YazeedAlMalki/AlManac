@@ -246,8 +246,8 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             // coordinates stay in force (§12.2's third source).
             guard wasRequested else { return }
             self.error = code == .denied
-                ? "Location access was not allowed. Choose a city below instead."
-                : "Your location could not be found just now. Try again, or choose a city below."
+                ? String(localized: "Location access was not allowed. Choose a city below instead.")
+                : String(localized: "Your location could not be found just now. Try again, or choose a city below.")
         }
     }
 
@@ -274,7 +274,7 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             error = nil
             onPrayerTimesChanged?()
         } catch {
-            self.error = "The new location could not be applied. \(error.localizedDescription)"
+            self.error = String(localized: "The new location could not be applied. \(error.localizedDescription)")
         }
     }
 
@@ -304,19 +304,19 @@ final class PrayerModel: NSObject, ObservableObject, CLLocationManagerDelegate {
 /// "in 1 h 12 min", "in 4 min", "now".
 func almanacCountdown(to target: Date, from now: Date) -> String {
     let minutes = Int((target.timeIntervalSince(now) / 60).rounded(.up))
-    guard minutes > 0 else { return "now" }
+    guard minutes > 0 else { return String(localized: "now") }
     let hours = minutes / 60
     let rest = minutes % 60
-    if hours == 0 { return "in \(rest) min" }
-    return rest == 0 ? "in \(hours) h" : "in \(hours) h \(rest) min"
+    if hours == 0 { return String(localized: "in \(rest) min") }
+    return rest == 0 ? String(localized: "in \(hours) h") : String(localized: "in \(hours) h \(rest) min")
 }
 
 /// "13 h 30 min".
 func almanacDuration(minutes: Int) -> String {
     let hours = minutes / 60
     let rest = minutes % 60
-    if hours == 0 { return "\(rest) min" }
-    return rest == 0 ? "\(hours) h" : "\(hours) h \(rest) min"
+    if hours == 0 { return String(localized: "\(rest) min") }
+    return rest == 0 ? String(localized: "\(hours) h") : String(localized: "\(hours) h \(rest) min")
 }
 
 struct PrayerView: View {
@@ -379,7 +379,7 @@ struct PrayerView: View {
                         prayerRow(time, isNext: next?.name == time.name && next?.timestamp == time.timestamp)
                     }
                     if let next, next.timestamp > endOfToday {
-                        prayerRow(next, isNext: true, label: "Tomorrow's Fajr")
+                        prayerRow(next, isNext: true, label: String(localized: "Tomorrow's Fajr"))
                     }
                 }
             } else {
@@ -428,7 +428,8 @@ struct PrayerView: View {
             if let settings = model.settings, settings.hasLocation {
                 LabeledContent("Location", value: locationName(settings))
                     .accessibilityIdentifier("prayer-location")
-                LabeledContent("Source", value: settings.manualCityOverride ? "Chosen city" : "Current location")
+                LabeledContent("Source", value: settings.manualCityOverride
+                               ? String(localized: "Chosen city") : String(localized: "Current location"))
                 if let bearing = model.qiblaBearing {
                     LabeledContent("Qibla") {
                         Text("\(Int(bearing.rounded()))° from north, \(compassPoint(bearing))")
@@ -466,12 +467,18 @@ struct PrayerView: View {
         if let city = settings.city {
             return [city, settings.country].compactMap { $0 }.joined(separator: ", ")
         }
-        guard let lat = settings.latitude, let lon = settings.longitude else { return "Not set" }
-        return String(format: "%.2f°%@, %.2f°%@", abs(lat), lat >= 0 ? "N" : "S", abs(lon), lon >= 0 ? "E" : "W")
+        guard let lat = settings.latitude, let lon = settings.longitude else { return String(localized: "Not set") }
+        let north = String(localized: "N", comment: "North, after a latitude")
+        let south = String(localized: "S", comment: "South, after a latitude")
+        let east = String(localized: "E", comment: "East, after a longitude")
+        let west = String(localized: "W", comment: "West, after a longitude")
+        return String(format: "%.2f°%@, %.2f°%@", abs(lat), lat >= 0 ? north : south, abs(lon), lon >= 0 ? east : west)
     }
 
     private func compassPoint(_ bearing: Double) -> String {
-        let points = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]
+        let points = [String(localized: "north"), String(localized: "north-east"), String(localized: "east"),
+                      String(localized: "south-east"), String(localized: "south"), String(localized: "south-west"),
+                      String(localized: "west"), String(localized: "north-west")]
         return points[Int(((bearing.truncatingRemainder(dividingBy: 360) + 360 + 22.5) / 45)) % 8]
     }
 
@@ -490,10 +497,10 @@ struct PrayerView: View {
             }
             .accessibilityIdentifier("prayer-method")
             if model.settings?.calculationMethod == "custom", let settings = model.settings {
-                angleStepper("Fajr angle", value: settings.customFajrAngleDeg ?? 18) {
+                angleStepper(String(localized: "Fajr angle"), value: settings.customFajrAngleDeg ?? 18) {
                     model.setCustomAngles(fajr: $0, isha: settings.customIshaAngleDeg ?? 17)
                 }
-                angleStepper("Isha angle", value: settings.customIshaAngleDeg ?? 17) {
+                angleStepper(String(localized: "Isha angle"), value: settings.customIshaAngleDeg ?? 17) {
                     model.setCustomAngles(fajr: settings.customFajrAngleDeg ?? 18, isha: $0)
                 }
             }
@@ -531,7 +538,7 @@ struct PrayerView: View {
                 Stepper(value: Binding(get: { minutes }, set: { model.setOffset(name, minutes: $0) }),
                         in: -30...30) {
                     LabeledContent(PrayerTime.displayName(name)) {
-                        Text(minutes == 0 ? "As calculated" : String(format: "%+d min", minutes))
+                        Text(minutes == 0 ? String(localized: "As calculated") : String(format: String(localized: "%+d min"), minutes))
                             .font(AlmanacTypography.font(.data).monospacedDigit())
                             .foregroundStyle(minutes == 0 ? AlmanacPalette.textSecondary : AlmanacPalette.textPrimary)
                     }

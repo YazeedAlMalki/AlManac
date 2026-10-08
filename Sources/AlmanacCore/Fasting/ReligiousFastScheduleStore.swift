@@ -38,10 +38,10 @@ public enum ReligiousFastKind: String, Sendable, Hashable, CaseIterable {
 
     public var label: String {
         switch self {
-        case .ramadan: return "Ramadan"
-        case .monday: return "Monday"
-        case .thursday: return "Thursday"
-        case .whiteDay: return "White Day"
+        case .ramadan: return localized("Ramadan")
+        case .monday: return localized("Monday")
+        case .thursday: return localized("Thursday")
+        case .whiteDay: return localized("White Day")
         }
     }
 }
@@ -59,12 +59,14 @@ public struct HijriDate: Sendable, Hashable {
         "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhu al-Qa'dah", "Dhu al-Hijjah"
     ]
 
+    /// The month's name in the language the app runs in. `monthNames` stays
+    /// English: it is the key, and the order is the calendar's.
     public var monthName: String {
-        (1...12).contains(month) ? Self.monthNames[month - 1] : "\(month)"
+        (1...12).contains(month) ? localized(Self.monthNames[month - 1]) : "\(month)"
     }
 
-    /// "17 Ramadan 1448 AH".
-    public var text: String { "\(day) \(monthName) \(year) AH" }
+    /// "17 Ramadan 1448 AH"; in Arabic, "17 رمضان 1448 هـ".
+    public var text: String { localized("%@ %@ %@ AH", "\(day)", monthName, "\(year)") }
 
     /// The Umm al-Qura date of a `"YYYY-MM-DD"` civil date.
     public init?(gregorian date: String) {
