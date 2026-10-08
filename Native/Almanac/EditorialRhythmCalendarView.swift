@@ -305,7 +305,7 @@ struct EditorialRhythmCalendarView: View {
         calendar.timeZone = .current
         let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: 12))
         guard let date else { return day.value }
-        return date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated))
+        return date.formatted(.almanacDateTime.weekday(.abbreviated).day().month(.abbreviated))
     }
 }
 

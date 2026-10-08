@@ -78,7 +78,7 @@ struct ReadinessDashboardView: View {
 
     private var masthead: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AlmanacEyebrow(text: Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+            AlmanacEyebrow(text: Date.now.formatted(.almanacDateTime.weekday(.wide).day().month(.wide)))
             Text("Today")
                 .font(AlmanacTypography.font(.screenTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)

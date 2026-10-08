@@ -311,7 +311,7 @@ private struct LabImportJobRow: View {
                 Text(job.sourceName ?? String(localized: "Pasted import"))
                     .font(.headline)
                 Spacer()
-                Text(job.startedAt.formatted(date: .abbreviated, time: .shortened))
+                Text(job.startedAt.almanacFormatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -379,7 +379,7 @@ extension LabImportJob {
     /// mark plus three counts is four separate announcements otherwise, and a
     /// screen reader user has to hold all four to learn that nothing was lost.
     var accessibilityDescription: String {
-        let when = startedAt.formatted(date: .abbreviated, time: .shortened)
+        let when = startedAt.almanacFormatted(date: .abbreviated, time: .shortened)
         if let reason = failureReason {
             return String(localized: "Import on \(when) did not finish. \(reason)")
         }

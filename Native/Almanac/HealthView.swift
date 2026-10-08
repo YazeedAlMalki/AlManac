@@ -25,7 +25,7 @@ struct HealthView: View {
                 .disabled(model.isSyncing)
 
                 if let lastSynced = model.lastSynced {
-                    Text("Last synced \(lastSynced.formatted(date: .abbreviated, time: .shortened))")
+                    Text("Last synced \(lastSynced.almanacFormatted(date: .abbreviated, time: .shortened))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

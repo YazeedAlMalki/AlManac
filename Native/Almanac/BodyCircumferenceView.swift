@@ -19,7 +19,7 @@ struct BodyCircumferenceView: View {
                 ForEach(entries) { entry in
                     VStack(alignment: .leading) {
                         Text("\(entry.measurementType.rawValue.capitalized)\(entry.side.map { " · " + $0.rawValue } ?? ""): \(entry.valueCm.formatted()) cm")
-                        Text(entry.measuredAt.formatted(date: .abbreviated, time: .shortened))
+                        Text(entry.measuredAt.almanacFormatted(date: .abbreviated, time: .shortened))
                         if entry.source == .healthkit { Text("Synced from Health") }
                         if let note = entry.note { Text(note) }
                     }

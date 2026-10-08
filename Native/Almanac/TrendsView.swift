@@ -84,7 +84,7 @@ struct TrendsView: View {
                                         .multilineTextAlignment(.leading)
                                 }
                                 Spacer(minLength: 10)
-                                Image(systemName: "chevron.right")
+                                Image(systemName: "chevron.forward")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
                             }
@@ -227,7 +227,7 @@ struct TrendsView: View {
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                         AxisGridLine().foregroundStyle(AlmanacPalette.divider)
-                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                        AxisValueLabel(format: .almanacDateTime.day().month(.abbreviated))
                             .foregroundStyle(AlmanacPalette.textSecondary)
                     }
                 }
@@ -264,7 +264,7 @@ struct TrendsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(point.date.formatted(date: .complete, time: .omitted))
+                            Text(point.date.almanacFormatted(date: .complete, time: .omitted))
                                 .font(AlmanacTypography.font(.sectionTitle))
                                 .foregroundStyle(AlmanacPalette.textPrimary)
                             Text(point.record.state == .final ? String(localized: "Final check-in") : String(localized: "Provisional estimate"))

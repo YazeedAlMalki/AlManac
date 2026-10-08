@@ -265,7 +265,7 @@ struct SupplementView: View {
                 Text(planName(entry.planId))
                     .font(AlmanacTypography.font(.body))
                     .foregroundStyle(AlmanacPalette.textPrimary)
-                Text(entry.timestamp.formatted(date: .abbreviated, time: .shortened))
+                Text(entry.timestamp.almanacFormatted(date: .abbreviated, time: .shortened))
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }

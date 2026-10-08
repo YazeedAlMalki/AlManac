@@ -53,6 +53,9 @@ struct AlmanacApp: App {
                 }
             }
             .preferredColorScheme(appearance.colorScheme)
+            // Date pickers and chart axes read the calendar from here; text
+            // goes through `almanacFormatted` (#4, decision 3).
+            .environment(\.calendar, .almanacDisplay)
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     prayerModel.ensureCache()

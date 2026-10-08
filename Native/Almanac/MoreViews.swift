@@ -269,7 +269,7 @@ struct MeasurementsView: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                Text(date.formatted(date: .abbreviated, time: .omitted))
+                Text(date.almanacFormatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let detail, !detail.isEmpty {

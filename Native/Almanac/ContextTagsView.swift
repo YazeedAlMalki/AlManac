@@ -230,9 +230,7 @@ struct ContextTagsView: View {
     /// fallback so an unreadable day is shown as itself rather than as nothing.
     private var displayDay: String {
         guard let date = LogicalDay(day).dayStart else { return day }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM yyyy"
-        return formatter.string(from: date)
+        return date.almanacFormatted(date: .abbreviated, time: .omitted)
     }
 
     private var relativeLabel: String {

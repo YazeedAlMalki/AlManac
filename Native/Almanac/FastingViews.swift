@@ -400,7 +400,7 @@ struct FastingView: View {
     }
 
     private func dayHeader(_ status: ReligiousFastDayStatus) -> String {
-        let gregorian = Date().formatted(date: .abbreviated, time: .omitted)
+        let gregorian = Date().almanacFormatted(date: .abbreviated, time: .omitted)
         return status.hijri.map { String(localized: "Today · \(gregorian) · \($0.text)") }
             ?? String(localized: "Today · \(gregorian)")
     }
@@ -508,8 +508,8 @@ struct FastingView: View {
         formatter.dateFormat = "yyyy-MM-dd"
         guard let date = formatter.date(from: key) else { return key }
         return withYear
-            ? date.formatted(.dateTime.day().month(.abbreviated).year())
-            : date.formatted(.dateTime.weekday(.wide).day().month(.abbreviated))
+            ? date.formatted(.almanacDateTime.day().month(.abbreviated).year())
+            : date.formatted(.almanacDateTime.weekday(.wide).day().month(.abbreviated))
     }
 
     // MARK: - Intermittent
@@ -551,12 +551,12 @@ struct FastingView: View {
                     .padding(.vertical, 4)
                     .accessibilityIdentifier("fasting-if-elapsed")
                 }
-                LabeledContent("Started", value: session.startTimestamp.formatted(date: .abbreviated, time: .shortened))
+                LabeledContent("Started", value: session.startTimestamp.almanacFormatted(date: .abbreviated, time: .shortened))
             } else if let session, let end = session.endTimestamp,
                       Date().timeIntervalSince(end) < 24 * 3600 {
-                LabeledContent("Started", value: session.startTimestamp.formatted(date: .abbreviated, time: .shortened))
+                LabeledContent("Started", value: session.startTimestamp.almanacFormatted(date: .abbreviated, time: .shortened))
                 LabeledContent(session.isInvalidated ? "Invalidated" : "Broken",
-                               value: end.formatted(date: .abbreviated, time: .shortened))
+                               value: end.almanacFormatted(date: .abbreviated, time: .shortened))
                 if let minutes = session.finalDurationMinutes, !session.isInvalidated {
                     LabeledContent("Duration") {
                         Text(almanacDuration(minutes: minutes))
@@ -627,7 +627,7 @@ struct FastingView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(session.sessionType == .religious ? "Religious" : "Intermittent")
-                            Text(session.startTimestamp.formatted(date: .abbreviated, time: .shortened))
+                            Text(session.startTimestamp.almanacFormatted(date: .abbreviated, time: .shortened))
                                 .font(AlmanacTypography.font(.caption))
                                 .foregroundStyle(AlmanacPalette.textSecondary)
                         }

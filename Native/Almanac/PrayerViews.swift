@@ -367,7 +367,7 @@ struct PrayerView: View {
                                 .font(AlmanacTypography.font(.sectionTitle))
                                 .foregroundStyle(AlmanacPalette.accent)
                                 .accessibilityIdentifier("prayer-next")
-                            Text(next.timestamp.formatted(date: next.timestamp > endOfToday ? .abbreviated : .omitted,
+                            Text(next.timestamp.almanacFormatted(date: next.timestamp > endOfToday ? .abbreviated : .omitted,
                                                           time: .shortened))
                                 .font(AlmanacTypography.font(.data).monospacedDigit())
                                 .foregroundStyle(AlmanacPalette.textSecondary)
@@ -415,7 +415,7 @@ struct PrayerView: View {
     }
 
     private var todayHeader: String {
-        let gregorian = Date().formatted(date: .complete, time: .omitted)
+        let gregorian = Date().almanacFormatted(date: .complete, time: .omitted)
         guard let hijri = HijriDate(gregorian: PrayerModel.dayKey(Date())) else { return gregorian }
         return "\(gregorian) · \(hijri.text)"
     }

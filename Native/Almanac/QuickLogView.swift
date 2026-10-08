@@ -177,7 +177,7 @@ struct QuickLogView: View {
                             .multilineTextAlignment(.leading)
                     }
                     Spacer(minLength: 10)
-                    Image(systemName: "chevron.right")
+                    Image(systemName: "chevron.forward")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(AlmanacPalette.textSecondary)
                 }

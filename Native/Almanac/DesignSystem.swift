@@ -198,6 +198,34 @@ enum AlmanacNumber {
     }
 }
 
+extension Calendar {
+    /// The calendar every date on screen is shown in: Gregorian, whatever the
+    /// device's own (#4, decision 3). An Arabic phone set to Saudi Arabia
+    /// defaults to Umm al-Qura, and every date Almanac stores is Gregorian, so
+    /// a screen in the device's calendar would name a different month from the
+    /// one the data is filed under. Month and weekday names, and digits, still
+    /// follow the language. Hijri dates the fasting work shows on purpose come
+    /// from `HijriDate`, not from this.
+    static var almanacDisplay: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = .autoupdatingCurrent
+        calendar.timeZone = .autoupdatingCurrent
+        return calendar
+    }
+}
+
+extension Date {
+    /// `formatted(date:time:)`, in `Calendar.almanacDisplay`.
+    func almanacFormatted(date: Date.FormatStyle.DateStyle, time: Date.FormatStyle.TimeStyle) -> String {
+        formatted(Date.FormatStyle(date: date, time: time, calendar: .almanacDisplay))
+    }
+}
+
+extension FormatStyle where Self == Date.FormatStyle {
+    /// `.dateTime`, in `Calendar.almanacDisplay`.
+    static var almanacDateTime: Date.FormatStyle { Date.FormatStyle(calendar: .almanacDisplay) }
+}
+
 enum AlmanacMetrics {
     static let screenInset: CGFloat = 20
     static let cardPadding: CGFloat = 24

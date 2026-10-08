@@ -208,6 +208,6 @@ struct BackupView: View {
 
     private func dateText(_ iso: String) -> String {
         guard let date = ISO8601DateFormatter().date(from: iso) else { return iso }
-        return date.formatted(date: .abbreviated, time: .shortened)
+        return date.almanacFormatted(date: .abbreviated, time: .shortened)
     }
 }
