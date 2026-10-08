@@ -74,7 +74,7 @@ struct ProgramSessionView: View {
             List {
                 if let planProblem {
                     Section {
-                        AlmanacProblemNote(text: planProblem, action: "Nothing has been recorded for this session.")
+                        AlmanacProblemNote(text: planProblem, action: String(localized: "Nothing has been recorded for this session."))
                     }
                 } else if isRestDay {
                     restDaySection
@@ -182,7 +182,7 @@ struct ProgramSessionView: View {
         Section {
             AlmanacCard(prominent: true) {
                 VStack(alignment: .leading, spacing: 10) {
-                    AlmanacEyebrow(text: "Readiness \(model.todayReadinessScore ?? 0) · \(bandName(model.todayReadinessScore ?? 0))")
+                    AlmanacEyebrow(text: String(localized: "Readiness \(model.todayReadinessScore ?? 0) · \(bandName(model.todayReadinessScore ?? 0))"))
                     Text("Today is a rest day")
                         .font(AlmanacTypography.font(.screenTitle))
                         .foregroundStyle(AlmanacPalette.textPrimary)
@@ -226,7 +226,7 @@ struct ProgramSessionView: View {
                 slotRow(slot)
             }
         } header: {
-            AlmanacSectionHeader(title: "\(day.label) today", detail: "Pass \(rotationIndex + 1)")
+            AlmanacSectionHeader(title: "\(day.label) today", detail: String(localized: "Pass \(rotationIndex + 1)"))
         } footer: {
             Text("These are the prescribed numbers. What you actually do is recorded separately when you finish, so a session never rewrites your plan.")
         }
@@ -241,7 +241,7 @@ struct ProgramSessionView: View {
                     .accessibilityIdentifier("session-slot-\(slot.slot)")
                 Spacer(minLength: 12)
                 if slot.isSubstitute {
-                    AlmanacStatusMark(text: "Standing in", tone: .neutral)
+                    AlmanacStatusMark(text: String(localized: "Standing in"), tone: .neutral)
                 }
             }
             Text(prescribedText(slot))
@@ -352,10 +352,10 @@ struct ProgramSessionView: View {
             .frame(minHeight: AlmanacMetrics.minimumControl / 2)
 
             if slot.log.prescription.sets != nil {
-                countStepper("Sets", slot: slot, keyPath: \.actualSets, range: 1...20)
+                countStepper(String(localized: "Sets"), slot: slot, keyPath: \.actualSets, range: 1...20)
             }
             if slot.log.prescription.reps != nil {
-                countStepper("Reps", slot: slot, keyPath: \.actualReps, range: 1...999)
+                countStepper(String(localized: "Reps"), slot: slot, keyPath: \.actualReps, range: 1...999)
             }
             if slot.log.prescription.loadKg != nil {
                 loadStepper(slot)
@@ -413,7 +413,7 @@ struct ProgramSessionView: View {
             }
             .labelsHidden()
             .accessibilityLabel("Load")
-            .accessibilityValue(slot.log.actualLoadKg.map { "\(AlmanacNumber.compact($0)) kilograms" } ?? "Not set")
+            .accessibilityValue(slot.log.actualLoadKg.map { "\(AlmanacNumber.compact($0)) kilograms" } ?? String(localized: "Not set"))
         }
         .frame(minHeight: AlmanacMetrics.minimumControl / 2)
     }
@@ -426,12 +426,12 @@ struct ProgramSessionView: View {
                 get: { slot.log.actualDurationSeconds ?? 0 },
                 set: { value in update(slot.slot) { $0.actualDurationSeconds = value } }),
                 in: 0...1800, step: 5) {
-                Text(slot.log.actualDurationSeconds.map { "\(Int($0)) s" } ?? "—")
+                Text(slot.log.actualDurationSeconds.map { String(localized: "\(Int($0)) s") } ?? "—")
                     .font(AlmanacTypography.font(.data).monospacedDigit())
             }
             .labelsHidden()
             .accessibilityLabel("Duration")
-            .accessibilityValue(slot.log.actualDurationSeconds.map { "\(Int($0)) seconds" } ?? "Not set")
+            .accessibilityValue(slot.log.actualDurationSeconds.map { "\(Int($0)) seconds" } ?? String(localized: "Not set"))
         }
         .frame(minHeight: AlmanacMetrics.minimumControl / 2)
     }
@@ -451,7 +451,7 @@ struct ProgramSessionView: View {
                         unskip(slot)
                     } label: {
                         HStack(alignment: .firstTextBaseline) {
-                            Text(heldItem(for: slot).map(name) ?? "Slot \(slot + 1)")
+                            Text(heldItem(for: slot).map(name) ?? String(localized: "Slot \(slot + 1)"))
                                 .font(AlmanacTypography.font(.body))
                                 .foregroundStyle(AlmanacPalette.textPrimary)
                             Spacer(minLength: 12)
@@ -496,7 +496,7 @@ struct ProgramSessionView: View {
         if let readinessAdjusted { self.readinessAdjusted = readinessAdjusted }
         model.loadItems(programDayId: day.id)
         guard let plan = model.plan(programDayId: day.id, skipping: skippedSlots) else {
-            planProblem = "Almanac could not work out this session's exercises."
+            planProblem = String(localized: "Almanac could not work out this session's exercises.")
             slots = []
             held = []
             suggestions = [:]
@@ -609,7 +609,7 @@ struct ProgramSessionView: View {
     /// enjoy this?" would route both to the same wrong answer.
     private var skipDialogTitle: String {
         guard let slot = promptingSkipForSlot,
-              let entry = slots.first(where: { $0.slot == slot }) else { return "Not today" }
+              let entry = slots.first(where: { $0.slot == slot }) else { return String(localized: "Not today") }
         return "\(name(entry.entry.item)) — how long?"
     }
 
@@ -625,28 +625,28 @@ struct ProgramSessionView: View {
     private func actualsText(_ log: ProgramSessionLog) -> String {
         var parts: [String] = []
         if let sets = log.actualSets, let reps = log.actualReps {
-            parts.append("\(sets) × \(reps)")
+            parts.append(String(localized: "\(sets) × \(reps)"))
         } else if let sets = log.actualSets {
-            parts.append("\(sets) sets")
+            parts.append(String(localized: "\(sets) sets"))
         }
-        if let load = log.actualLoadKg, load > 0 { parts.append("@ \(AlmanacNumber.compact(load)) kg") }
-        if let duration = log.actualDurationSeconds, duration > 0 { parts.append("\(Int(duration)) s") }
-        return parts.isEmpty ? "Not recorded" : parts.joined(separator: " ")
+        if let load = log.actualLoadKg, load > 0 { parts.append(String(localized: "@ \(AlmanacNumber.compact(load)) kg")) }
+        if let duration = log.actualDurationSeconds, duration > 0 { parts.append(String(localized: "\(Int(duration)) s")) }
+        return parts.isEmpty ? String(localized: "Not recorded") : parts.joined(separator: " ")
     }
 
     private func loadText(_ value: Double?) -> String {
         guard let value, value > 0 else { return "—" }
-        return "\(AlmanacNumber.compact(value)) kg"
+        return String(localized: "\(AlmanacNumber.compact(value)) kg")
     }
 
     private func bandName(_ score: Int) -> String {
         switch ReadinessBand.band(for: score) {
-        case .excellent: return "Excellent"
-        case .good: return "Good"
-        case .moderate: return "Moderate"
-        case .belowBaseline: return "Below baseline"
-        case .poor: return "Poor"
-        case .veryLow: return "Very low"
+        case .excellent: return String(localized: "Excellent")
+        case .good: return String(localized: "Good")
+        case .moderate: return String(localized: "Moderate")
+        case .belowBaseline: return String(localized: "Below baseline")
+        case .poor: return String(localized: "Poor")
+        case .veryLow: return String(localized: "Very low")
         }
     }
 }

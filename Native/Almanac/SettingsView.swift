@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import AlmanacCore
 
 @MainActor
@@ -19,6 +20,7 @@ struct SettingsView: View {
     @State private var healthKitStatus: String?
     @State private var error: String?
     @AppStorage("almanac.appearance") private var appearanceRaw = AlmanacAppearance.system.rawValue
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         Form {
@@ -29,6 +31,20 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+            }
+            // iOS's own per-app Language page (#4): Almanac keeps no language
+            // setting of its own, so this row only opens that page.
+            Section {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                } label: {
+                    LabeledContent("Language", value: currentLanguageName)
+                }
+                .accessibilityIdentifier("settings-language")
+            } header: {
+                Text("Language")
+            } footer: {
+                Text("Almanac follows the language chosen for it in iOS Settings. Changing it restarts the app.")
             }
             Section("Daily goal") {
                 Stepper("\(Int(dailyGoal)) mL", value: $dailyGoal, in: 500...5000, step: 250)
@@ -48,15 +64,12 @@ struct SettingsView: View {
                 .accessibilityIdentifier("sync-source-preference-link")
             }
             Section("Reminders") {
-                Toggle("Remind me to drink water", isOn: $remindersEnabled)
-                    .onChange(of: remindersEnabled) { _, _ in Task { await applyReminderSchedule() } }
+                Toggle("Remind me to drink water", isOn: applyingSchedule($remindersEnabled))
                 if remindersEnabled {
-                    Stepper("Every \(reminderIntervalMinutes) min", value: $reminderIntervalMinutes, in: 15...240, step: 15)
-                        .onChange(of: reminderIntervalMinutes) { _, _ in Task { await applyReminderSchedule() } }
-                    Stepper("From \(reminderStartHour):00", value: $reminderStartHour, in: 0...23)
-                        .onChange(of: reminderStartHour) { _, _ in Task { await applyReminderSchedule() } }
-                    Stepper("Until \(reminderEndHour):00", value: $reminderEndHour, in: 0...23)
-                        .onChange(of: reminderEndHour) { _, _ in Task { await applyReminderSchedule() } }
+                    Stepper("Every \(reminderIntervalMinutes) min",
+                            value: applyingSchedule($reminderIntervalMinutes), in: 15...240, step: 15)
+                    Stepper("From \(reminderStartHour):00", value: applyingSchedule($reminderStartHour), in: 0...23)
+                    Stepper("Until \(reminderEndHour):00", value: applyingSchedule($reminderEndHour), in: 0...23)
                 }
                 NavigationLink {
                     NotificationSettingsView(model: notificationModel)
@@ -75,7 +88,7 @@ struct SettingsView: View {
                     get: { bodyMeasurementTrackSides },
                     set: { enabled in
                         do {
-                            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+                            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
                             try ProfileStore(db: db).updateBodyMeasurementTrackSides(enabled)
                             bodyMeasurementTrackSides = enabled
                         } catch { self.error = error.localizedDescription }
@@ -132,10 +145,16 @@ struct SettingsView: View {
         }
     }
 
+    /// The language the app is actually running in, named in that language.
+    private var currentLanguageName: String {
+        let code = Bundle.main.preferredLocalizations.first ?? "en"
+        return Locale.current.localizedString(forLanguageCode: code) ?? code
+    }
+
     private func setDigestionRingEnabled(_ enabled: Bool) {
         digestionRingEnabled = enabled
         do {
-            guard let db = labModel.db else { throw EditorFailure(message: "The database is unavailable.") }
+            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
             try ActivityRingSettingsStore(db: db).setDigestionEnabled(enabled)
             trackingModel.refresh()
         } catch {
@@ -158,7 +177,7 @@ struct SettingsView: View {
                 await model.syncInbound()
                 await model.drainOutbound()
                 await healthModel.syncNow()
-                healthKitStatus = "Connected."
+                healthKitStatus = String(localized: "Connected.")
             } catch {
                 self.error = String(describing: error)
             }
@@ -201,14 +220,34 @@ struct SettingsView: View {
         do {
             try notificationModel.setEnabled(true, for: .water)
             guard try await notificationModel.requestAuthorizationAndSchedule() else {
+                // Refused: run the off path, which saves the setting, turns the
+                // water rule off and reschedules. This used to happen as a side
+                // effect of `.onChange` re-firing on the assignment below.
                 remindersEnabled = false
-                try? model.saveReminderSettings(enabled: false, intervalMinutes: reminderIntervalMinutes,
-                                                 startHour: reminderStartHour, endHour: reminderEndHour)
+                await applyReminderSchedule()
                 return
             }
         } catch {
             remindersEnabled = false
             self.error = String(describing: error)
+            await applyReminderSchedule()
         }
+    }
+
+    /// A binding that writes the value and then applies the reminder schedule.
+    ///
+    /// Not `.onChange`: `.task` loads these four values from the database, and
+    /// `.onChange` fires for that load as well as for a tap. With water reminders
+    /// saved as on, merely opening Settings re-saved them and asked for
+    /// notification permission, with nobody touching a control. A binding's
+    /// setter runs only when the control itself changes the value.
+    private func applyingSchedule<Value>(_ binding: Binding<Value>) -> Binding<Value> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { newValue in
+                binding.wrappedValue = newValue
+                Task { await applyReminderSchedule() }
+            }
+        )
     }
 }

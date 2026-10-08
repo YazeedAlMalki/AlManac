@@ -207,7 +207,7 @@ final class ReadinessModel: ObservableObject {
             // nothing, so the dashboard shows the empty state that goes with
             // "we don't know yet" — and a read failure and a missing baseline
             // are indistinguishable to the user. Say which one it is.
-            readProblem = "Could not read today's readiness data."
+            readProblem = String(localized: "Could not read today's readiness data.")
         }
 
         // Saving is separate from reading, and deliberately so. The score is
@@ -223,7 +223,7 @@ final class ReadinessModel: ObservableObject {
                 pendingFeedback = try recordStore.latestUnratedRecord(before: today.value)
                 saveProblem = nil
             } catch {
-                saveProblem = "Today's readiness was worked out, but Almanac could not save it."
+                saveProblem = String(localized: "Today's readiness was worked out, but Almanac could not save it.")
             }
         }
     }
@@ -285,7 +285,7 @@ final class ReadinessModel: ObservableObject {
     func logMoodAndSoreness(moodScore: Int, moodNotes: String?,
                              sorenessScore: Int, bodyAreas: [String], sorenessNotes: String?) throws {
         guard let moodStore, let sorenessStore, let cycleId else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         let now = Date()
         let moodID = try moodStore.log(MoodLogDraft(score: moodScore, timestamp: now, notes: moodNotes),
@@ -303,7 +303,7 @@ final class ReadinessModel: ObservableObject {
     /// `value` is `"thumbs_up"` or `"thumbs_down"` (§5.23).
     func submitFeedback(_ value: String) throws {
         guard let recordStore, let pendingFeedback else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         try recordStore.setFeedback(cycleId: pendingFeedback.readinessCycleId, value: value)
         refresh()

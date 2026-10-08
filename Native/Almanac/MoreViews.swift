@@ -185,7 +185,7 @@ struct MeasurementsView: View {
                     ForEach(customRecords) { record in
                         let definition = customDefinitions.first { $0.id == record.definitionId }
                         measurementRow(
-                            title: definition?.name ?? "Custom measurement",
+                            title: definition?.name ?? String(localized: "Custom measurement"),
                             value: record.value,
                             unit: definition?.unit ?? "",
                             date: record.timestamp,
@@ -269,7 +269,7 @@ struct MeasurementsView: View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                Text(date.formatted(date: .abbreviated, time: .omitted))
+                Text(date.almanacFormatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let detail, !detail.isEmpty {
@@ -333,9 +333,9 @@ private struct BodyMeasurementEditor: View {
 
     private func save() {
         guard let db,
-              let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let number = Double(userInput: value),
               number.isFinite, number > 0 else {
-            error = "Enter a positive measurement value."
+            error = String(localized: "Enter a positive measurement value.")
             return
         }
         do {
@@ -413,9 +413,9 @@ private struct CustomMeasurementEditor: View {
         let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanUnit = unit.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanName.isEmpty, !cleanUnit.isEmpty,
-              let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let number = Double(userInput: value),
               number.isFinite, number > 0 else {
-            error = "Enter a name, unit and positive value."
+            error = String(localized: "Enter a name, unit and positive value.")
             return
         }
         do {
@@ -474,5 +474,5 @@ private func recentLogicalDayRange() -> (from: String, to: String) {
 }
 
 private func format(_ value: Double) -> String {
-    value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+    AlmanacNumber.compact(value)
 }

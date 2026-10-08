@@ -19,7 +19,7 @@ struct BodyCircumferenceView: View {
                 ForEach(entries) { entry in
                     VStack(alignment: .leading) {
                         Text("\(entry.measurementType.rawValue.capitalized)\(entry.side.map { " · " + $0.rawValue } ?? ""): \(entry.valueCm.formatted()) cm")
-                        Text(entry.measuredAt.formatted(date: .abbreviated, time: .shortened))
+                        Text(entry.measuredAt.almanacFormatted(date: .abbreviated, time: .shortened))
                         if entry.source == .healthkit { Text("Synced from Health") }
                         if let note = entry.note { Text(note) }
                     }
@@ -109,7 +109,7 @@ private struct CircumferenceEditor: View {
                 TextField("Circumference (cm)", text: $value).keyboardType(.decimalPad)
                 TextField("Note", text: $note, axis: .vertical)
             }
-            .navigationTitle(entry == nil ? "Log circumference" : "Correct circumference")
+            .navigationTitle(entry == nil ? String(localized: "Log circumference") : String(localized: "Correct circumference"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -137,9 +137,10 @@ private struct CircumferenceEditor: View {
     }
 
     private func save(allowUnusual: Bool = false) {
-        guard let number = try? Double(value.trimmingCharacters(in: .whitespacesAndNewlines),
-                                       format: .number, lenient: false) else {
-            error = "Enter a number in centimeters."
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let number = Double(userInput: trimmed)
+                ?? (try? Double(trimmed, format: .number, lenient: false)) else {
+            error = String(localized: "Enter a number in centimeters.")
             return
         }
         do {

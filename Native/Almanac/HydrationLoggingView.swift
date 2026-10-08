@@ -120,7 +120,7 @@ struct HydrationLoggingView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(drink.name)
+                    Text(drink.displayName)
                     Text(qualifierLabel(drink))
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -155,17 +155,17 @@ struct HydrationLoggingView: View {
     /// rather than zero, so an absent figure never reads as "none".
     @ViewBuilder
     private var nutritionSection: some View {
-        if let drink = selected, let amount = Double(amountText), amount > 0 {
+        if let drink = selected, let amount = Double(userInput: amountText), amount > 0 {
             let scale = drink.volumeMilliliters > 0 ? amount / drink.volumeMilliliters : 1
             Section {
                 if drink.caloriesKcal > 0 {
-                    figure("Calories", "\(AlmanacNumber.compact(drink.caloriesKcal * scale)) kcal")
+                    figure(String(localized: "Calories"), String(localized: "\(AlmanacNumber.compact(drink.caloriesKcal * scale)) kcal"))
                 }
                 if drink.sodiumMilligrams > 0 {
-                    figure("Sodium", "\(AlmanacNumber.compact(drink.sodiumMilligrams * scale)) mg")
+                    figure(String(localized: "Sodium"), String(localized: "\(AlmanacNumber.compact(drink.sodiumMilligrams * scale)) mg"))
                 }
                 if let sugar = drink.sugarGrams, sugar > 0 {
-                    figure("Sugar", "\(AlmanacNumber.compact(sugar * scale)) g")
+                    figure(String(localized: "Sugar"), String(localized: "\(AlmanacNumber.compact(sugar * scale)) g"))
                 }
             } header: {
                 Text("This amount")
@@ -189,24 +189,26 @@ struct HydrationLoggingView: View {
     private var customDrinks: [Drink] { drinks.filter(\.isCustom) }
 
     private func qualifierLabel(_ drink: Drink) -> String {
-        drink.isCustom ? "Your figures" : "Typical value, not measured"
+        drink.isCustom ? String(localized: "Your figures") : String(localized: "Typical value, not measured")
     }
 
     private func scalingFootnote(_ drink: Drink, scale: Double) -> String {
         let base = Int(drink.volumeMilliliters.rounded())
         if abs(scale - 1) < 0.001 {
             return drink.isCustom
-                ? "Your own figures for \(base) mL."
-                : "Typical values for a \(base) mL serving, not measured from a composition table."
+                ? String(localized: "Your own figures for \(base) mL.")
+                : String(localized: "Typical values for a \(base) mL serving, not measured from a composition table.")
         }
-        return "Scaled from a \(base) mL serving to the amount logged. \(drink.isCustom ? "Your own figures." : "Typical values, not measured.")"
+        return drink.isCustom
+            ? String(localized: "Scaled from a \(base) mL serving to the amount logged. Your own figures.")
+            : String(localized: "Scaled from a \(base) mL serving to the amount logged. Typical values, not measured.")
     }
 
     // MARK: - Save
 
     private func save() {
         guard let drink = selected else { return }
-        let amount = Double(amountText).map { Milliliters($0) }
+        let amount = Double(userInput: amountText).map { Milliliters($0) }
         do {
             warnings = try model.logDrink(drink, volume: amount, note: optionalText(note))
             if warnings.isEmpty {
@@ -276,8 +278,8 @@ struct CustomDrinkView: View {
     }
 
     private func save() {
-        guard let volume = Double(volumeText), volume > 0 else {
-            error = "Enter a serving size greater than zero."
+        guard let volume = Double(userInput: volumeText), volume > 0 else {
+            error = String(localized: "Enter a serving size greater than zero.")
             return
         }
         do {
@@ -288,9 +290,9 @@ struct CustomDrinkView: View {
                 name: name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     ? "Custom drink" : name,
                 liquidType: type, volumeMilliliters: volume,
-                caloriesKcal: Double(caloriesText) ?? 0,
-                sodiumMilligrams: Double(sodiumText) ?? 0,
-                sugarGrams: Double(sugarText))
+                caloriesKcal: Double(userInput: caloriesText) ?? 0,
+                sodiumMilligrams: Double(userInput: sodiumText) ?? 0,
+                sugarGrams: Double(userInput: sugarText))
             onSave(drink)
             dismiss()
         } catch {

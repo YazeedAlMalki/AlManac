@@ -84,7 +84,7 @@ struct TrendsView: View {
                                         .multilineTextAlignment(.leading)
                                 }
                                 Spacer(minLength: 10)
-                                Image(systemName: "chevron.right")
+                                Image(systemName: "chevron.forward")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
                             }
@@ -96,7 +96,7 @@ struct TrendsView: View {
                     if let error {
                         AlmanacCard {
                             VStack(alignment: .leading, spacing: 12) {
-                                AlmanacStatusMark(text: "Could not load trends", tone: .critical)
+                                AlmanacStatusMark(text: String(localized: "Could not load trends"), tone: .critical)
                                 Text(error)
                                     .font(AlmanacTypography.font(.body))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
@@ -154,11 +154,11 @@ struct TrendsView: View {
         let snapshot = snapshot
         return AlmanacCard(padding: 0) {
             HStack(spacing: 0) {
-                summaryCell("Average", snapshot.map { AlmanacNumber.compact($0.average) } ?? "—")
+                summaryCell(String(localized: "Average"), snapshot.map { AlmanacNumber.compact($0.average) } ?? "—")
                 AlmanacRule(axis: .vertical).frame(height: 52)
-                summaryCell("Low", snapshot.map { AlmanacNumber.compact($0.minimum) } ?? "—")
+                summaryCell(String(localized: "Low"), snapshot.map { AlmanacNumber.compact($0.minimum) } ?? "—")
                 AlmanacRule(axis: .vertical).frame(height: 52)
-                summaryCell("Direction", snapshot.map { directionLabel($0.direction) } ?? "—")
+                summaryCell(String(localized: "Direction"), snapshot.map { directionLabel($0.direction) } ?? "—")
             }
             .padding(.vertical, 18)
         }
@@ -181,7 +181,7 @@ struct TrendsView: View {
     private var chart: some View {
         AlmanacCard(padding: 16) {
             VStack(alignment: .leading, spacing: 14) {
-                AlmanacSectionHeader(title: "Readiness", detail: "0–100")
+                AlmanacSectionHeader(title: String(localized: "Readiness"), detail: "0–100")
                 Chart {
                     RuleMark(y: .value("Reference band", ReadinessFormula.compromisedThreshold))
                         .foregroundStyle(AlmanacPalette.warning.opacity(0.55))
@@ -227,7 +227,7 @@ struct TrendsView: View {
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
                         AxisGridLine().foregroundStyle(AlmanacPalette.divider)
-                        AxisValueLabel(format: .dateTime.day().month(.abbreviated))
+                        AxisValueLabel(format: .almanacDateTime.day().month(.abbreviated))
                             .foregroundStyle(AlmanacPalette.textSecondary)
                     }
                 }
@@ -264,10 +264,10 @@ struct TrendsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(point.date.formatted(date: .complete, time: .omitted))
+                            Text(point.date.almanacFormatted(date: .complete, time: .omitted))
                                 .font(AlmanacTypography.font(.sectionTitle))
                                 .foregroundStyle(AlmanacPalette.textPrimary)
-                            Text(point.record.state == .final ? "Final check-in" : "Provisional estimate")
+                            Text(point.record.state == .final ? String(localized: "Final check-in") : String(localized: "Provisional estimate"))
                                 .font(AlmanacTypography.font(.label))
                                 .foregroundStyle(AlmanacPalette.accent)
                         }
@@ -278,12 +278,12 @@ struct TrendsView: View {
                             .monospacedDigit()
                     }
                     if let text = point.record.textDescription {
-                        Text(text)
+                        Text(ReadinessText.display(text))
                             .font(AlmanacTypography.font(.body))
                             .foregroundStyle(AlmanacPalette.textSecondary)
                     }
                     if let recommendation = point.record.recommendation {
-                        Text(recommendation)
+                        Text(ReadinessText.display(recommendation))
                             .font(AlmanacTypography.font(.body))
                             .foregroundStyle(AlmanacPalette.textPrimary)
                     }
@@ -300,7 +300,7 @@ struct TrendsView: View {
         selectedDate = nil
         guard let db else {
             records = []
-            error = "Trends are temporarily unavailable. Pull to try again."
+            error = String(localized: "Trends are temporarily unavailable. Pull to try again.")
             return
         }
         do {
@@ -311,7 +311,7 @@ struct TrendsView: View {
             #if DEBUG
             print("Almanac Trends load failed: \(error)")
             #endif
-            self.error = "Trends are temporarily unavailable. Pull to try again."
+            self.error = String(localized: "Trends are temporarily unavailable. Pull to try again.")
         }
     }
 
@@ -326,9 +326,9 @@ struct TrendsView: View {
 
     private func directionLabel(_ direction: TrendDirection) -> String {
         switch direction {
-        case .up: return "Rising"
-        case .down: return "Easing"
-        case .flat: return "Steady"
+        case .up: return String(localized: "Rising")
+        case .down: return String(localized: "Easing")
+        case .flat: return String(localized: "Steady")
         }
     }
 }

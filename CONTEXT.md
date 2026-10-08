@@ -182,6 +182,11 @@ Seven more were settled while making fasting and prayer times work end to end
 (2026-10-06), where the spec gave the rule but not the default or the edge. None
 is confirmed.
 
+More were settled on 2026-10-06 while carrying out that day's handoff (readiness,
+vitals, Kitchen, workout templates). Each sits in the subsection for its area and
+is marked with that date. **None of these has been confirmed.** Where the owner
+*did* answer, the entry says "confirmed by the owner" and names the date.
+
 **Macro targets — left null.** `goal_target_snapshot`'s protein, carbohydrate and
 fat columns are nullable and stay empty. Nothing in the BRD, the spec or the
 handoff says how to derive a macro split, and this repository does not invent a
@@ -295,16 +300,31 @@ counts valid days. This is the degenerate case rather than a calibration choice:
 a baseline made only of the day it scores is vacuous by identity, not by being
 short, so it invents no threshold the spec does not already state.
 
-Still open, and still a product decision rather than an arithmetic one: whether a
-missing personal baseline should also *withhold* a recommendation, or merely mark
-it preliminary. *Overrule by:* excluding today from the window — which is a
-different reading of §9.8 than the one the spec states, and would need every band
-re-read, since the bands are tuned against a multi-reading
-day — or by making `ReadinessBaseline` carry the number of days behind each
-metric and having `ReadinessEngine` refuse to score against a depth it can name.
-Measured figures are in `docs/features/readiness.md`; what it cost the two
-checklist rows that were asserting on the defect, and the launch-argument seeding
-hook that repaired them, are in `docs/implementation-status.md`.
+**Confirmed by the owner, 2026-10-06: a missing personal baseline withholds the
+recommendation**, rather than merely marking it preliminary. He also confirmed
+the same day that the score's colour and the Training Program's score-based
+scaling stay exactly as they are. Built in `ReadinessEngine`; see
+`docs/features/readiness.md` ("No personal baseline withholds the
+recommendation"). The two overrules recorded earlier for the baseline itself
+still stand: excluding today from the window — which is a different reading of
+§9.8 than the one the spec states, and would need every band re-read — or making
+`ReadinessBaseline` carry the number of days behind each metric and having
+`ReadinessEngine` refuse to score against a depth it can name. Measured figures
+are in `docs/features/readiness.md`; what it cost the two checklist rows that
+were asserting on the defect, and the launch-argument seeding hook that repaired
+them, are in `docs/implementation-status.md`.
+
+**When the withhold applies — unconfirmed (2026-10-06).** The owner confirmed
+*that* a missing baseline withholds; *what counts as missing* was read here as:
+the scored day carries at least one resting-HR or HRV reading, and **none** of
+the readings it carries has a baseline. A sleep-only day is "inputs missing" and
+unchanged; a day where one reading was compared against a real baseline keeps
+its sentence. What is withheld is the band sentence, in `textDescription` and
+`recommendation`; the score, colour, confidence and context text stay.
+*Overrule by:* the stricter reading — withhold when **any** reading present lacks
+a baseline — by making `ReadinessEngine.lacksPersonalBaseline` return
+`(rhrPresent && baseline.restingHeartRate == nil) || (hrvPresent && baseline.hrv == nil)`,
+and inverting `testOneComparedReadingKeepsTheBandSentence`.
 
 ### Fasting and prayer (2026-10-06)
 
@@ -399,6 +419,41 @@ the same ingredient; dried and fresh apricots are not. The allergen check reads
 each food's own names plus the canonical name, never fewer. *Overrule by:*
 editing the word lists in `IngredientNormaliser`, adding aliases to
 `IngredientTable.curatedAliases`, or pinning a food with `IngredientTable.curate`.
+
+### Training templates (2026-10-06)
+
+**Confirmed by the owner, 2026-10-06: a template is exercises, but editable.**
+Applying one fills the session with its exercises, with sets and reps where the
+template has them, as a starting point. The session then stays his to change.
+Built: `TemplateApplier`, Migration 055; see `docs/features/training.md`. The
+calls below were left to the build. **None of these has been confirmed.**
+
+**A session that already has logged bouts asks first.** The template's exercises
+are added after them only on "Add after them". Replacing is never offered,
+because it would delete logged work. *Overrule by:* passing
+`appendingAfterExisting: true` from the start in `TrainingDashboardView.apply`,
+or refusing outright.
+
+**Applying records nothing as done.** The plan goes in the `prescribed*`
+columns, `actual*` stays empty, and the row reads "Planned · …" until something
+is recorded. *Overrule by:* copying the plan into `actual*` in
+`TemplateApplier.apply`, which would make an untrained session read as done.
+
+**One entry point: "Start from a template" on the Training screen, applied to
+today.** It fills his own ad-hoc session for the day, never a watch workout or a
+program day's session. The first template applied names the session. *Overrule
+by:* adding a "Use today" action to `TrainingTemplateView`'s rows, which the
+proposal had suggested.
+
+**A plan is not load (2026-10-07).** Applying a template writes only planned
+numbers, and `WorkloadComputer` used to count a bout's planned numbers when it
+had no actual ones, so starting a template added its full tonnage to Today's
+load, readiness and Insights before anything was done. Now a bout with nothing
+recorded as done (no actual value, no elapsed time, no RPE) adds nothing. A bout
+with some actuals still fills the rest from its plan. The same rule stops a
+program exercise skipped for the session from counting as done work. Raised by
+the Codex review on PR #6. *Overrule by:* removing the `wasPerformed` filter in
+`WorkloadComputer.summary(for:)`.
 
 ### Weighing
 

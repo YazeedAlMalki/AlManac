@@ -21,21 +21,64 @@ are marked pass is worse than no checklist, because it manufactures confidence.
 
 | | |
 |---|---|
-| Core suite | **PASS** — 627 tests, 78 suites, zero failures (recounted 2026-09-30 against `f3c10e2`; the 606/75 recorded earlier was captured before the last commit's tests landed) |
+| Core suite | **PASS** — recounted 2026-10-06 on Swift 6.3.3, x86_64 Linux (a cloud container, `swift test`): branch `claude/handoff-2026-10-06` **987 Swift Testing tests in 107 suites + 379 XCTest (1 skipped, the opt-in real-bundle test), 0 failures**; master `efb1c0b` **938 in 99 suites + 373 XCTest (1 skipped), 0 failures**. The 627/78 that stood here was 2026-09-30's. |
 | App + widget build (iPhone 16e simulator) | **PASS** |
 | Insights UI tests | **PASS** — 5 of 5 |
 | Notification settings UI tests | **PASS** — 5 of 5 |
 | Timeline UI tests | **PASS** — 3 of 3, after two defects were fixed (see §6) |
 | The three suites above, together | **PASS** — 13 of 13, 8m42s |
-| Full UI suite (68 tests) | **UNRUN** — exceeds a 50-minute command timeout. A background run reached 13 passed / 1 failed (`BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, which also failed on two earlier runs of a different subset, so it is pre-existing and state-dependent) before it was stopped. The other 54 are **not** claimed either way. |
-| Device-only steps (§4) | **UNRUN** — no agent can drive these. |
-| Training Program steps (§7) | **7 of 17 driven (PASS)** — `TrainingProgramUITests` pass 3 of 3 in a full-file run, twice in a row (2026-10-02); 7.1–7.6 and the 7.9 No-leg were driven. The rest are **UNRUN (UI)**: built and core-tested, but no UI test drives them (see §7). One test-infra bug (stale-frame tap after `reveal`) was found and fixed in the harness; the app was not at fault |
+| Full UI suite | **UNRUN** — **83 test methods** by grep on the 2026-10-06 branch (78 on master, plus 4 in the new `KitchenUITests` and 1 template test in `TrainingHistoryUITests`); the "68" that stood here was 2026-09-30's. The whole suite **does** run in CI (`test-ios`, a fresh simulator, about 2.5 hours). On master `efb1c0b` (run 37354673943, 2026-10-05): **78 run, 7 failed** — `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, `NotificationSettingsUITests` ×3 (`testASwitchFlipsAndReverts`, `testTheScreenSaysWhetherNotificationsAreAllowed`, `testTurningEverythingOffAsksFirst`), `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`, `TrainingProgramUITests.testRemovingFromRotationThenRestoringItsPosition`. **This branch at `3653be0`** (run 37452597841, 2026-10-06): **83 run, 7 failed.** Four are master's: `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, `NotificationSettingsUITests.testASwitchFlipsAndReverts`, `NotificationSettingsUITests.testTheScreenSaysWhetherNotificationsAreAllowed`, `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`. Three are new tests of this branch's that failed on their first run: `KitchenUITests.testAPantryItemCanBeAddedAndRemoved`, `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` and `TrainingHistoryUITests.testApplyingATemplateFillsTodayAndStaysEditable`. Three of master's failures passed here and are taken as flaky, not fixed: BodyCompositionWellness, NotificationSettings `testTurningEverythingOffAsksFirst`, TrainingProgram `testRemovingFromRotationThenRestoringItsPosition`. `TrainingProgramUITests` passed 13 of 13, including 7.10 and 7.11 with the new way of clearing today's readings. `KitchenUITests` opening Recipes and choosing a recipe passed. The new failures' messages could not be read from the session: the log tool returns only the last 5,000 lines, and the artifact and log-zip hosts are blocked. One cause was certain (the template test looked for text fields with a helper that never searches text fields) and is fixed, a likely one in the allergen test is fixed, and CI now prints every failure message at the end of the log (`Summarise failures`). **Second run, `0e6fd55`** (run 37472541675): **83 run, 5 failed**, with every failure message printed by the new `Summarise failures` step. The template test now **passes**, and so do all three NotificationSettings tests. Failed:
+- `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence` and `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`: master's own. Both are a harness snapshot error at `UIScrollSupport.swift:174`.
+- `AllergenFilterUITests.testRecordingPeanutsMakesTheSearchSayWhatItChecked`: "Profile never opened". It passed on master and on this branch's first run, and it runs before any Kitchen test, so it is taken as a navigation flake.
+- `KitchenUITests.testAPantryItemCanBeAddedAndRemoved`: "Multiple matching elements" for "Pantry". The mode picker's segment and the toolbar button share the name. Fixed in the test.
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld`: "the allergen disclaimer is missing". The note is an `AlmanacProblemNote`, which is one element rather than a static text. Fixed in the test.
 
-**Recounted 2026-10-02 (`c4bd0be`):** the core suite is now **900 tests, 95
-suites, 0 failures** (168.7 s), up from the 768/88 it stood at immediately
-before that commit. The UI rows above are still the 2026-09-30 run and have not
-been re-driven, except **§7 Training Program** (driven 2026-10-02, this run, 3
-of 3); the §7 row therefore claims current code, the other UI rows do not.
+Both Kitchen failures were the tests' own lookups, not the app.
+
+**Third run, `12ffa44`** (run 37495143616): **83 run, 6 failed.**
+
+- `KitchenUITests.testAPantryItemCanBeAddedAndRemoved` and the template test **pass**.
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` got further, past the hidden entry and the disclaimer. It then failed with "the hidden recipe is not listed once the entry is opened": the tap landed on the entry's cell and left it collapsed. The test now taps the disclosure's own button and finds the recipe by identifier or name.
+- The other five failures are in code this branch does not touch. Each has also failed on master or on an earlier run of this branch:
+  - `AllergenFilterUITests.testAToggledAllergenIsStillThereAfterReopening`: the toggle did not flip.
+  - `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`.
+  - `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`.
+  - `NotificationSettingsUITests` ×2: "Settings does not offer the reminders screen".
+
+**Fourth run, `83578ea`** (run 37515020087): **83 run, 6 failed.**
+
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` got past every check of the app: the hidden entry, the disclaimer, opening the entry, the recipe's own page, the warning naming Peanuts, and "Log anyway" asking for confirmation. It then failed on its last line: "Failed to tap Cancel". On iOS 26 that dialog is a popover with no Cancel button, and tapping outside it cancels. The test then tapped outside when there was no Cancel button; that failed too (fifth run).
+- The other five, again tests this branch does not touch:
+  - `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`.
+  - `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, both a harness snapshot error at `UIScrollSupport.swift:174`.
+  - `NotificationSettingsUITests` ×3: "Settings does not offer the reminders screen".
+- `AllergenFilterUITests` passed this time.
+
+**Fifth run, `8e7b555`** (run 37534202710): **83 run, 3 failed** — the fewest yet.
+
+- `KitchenUITests.testARecipeDeclaringARecordedAllergenIsWithheld` failed on its last check, "the confirmation did not close": tapping outside the iOS 26 popover did not close it either. That was a usability problem as well as a test one, because the popover had no visible way to back out. The page now asks with an **alert**, which always shows Cancel, and the test taps that Cancel. **Passed on the sixth run.**
+- `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence` and `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`: master's own, the harness snapshot error at `UIScrollSupport.swift:174`.
+- BodyCompositionWellness, all of NotificationSettings and AllergenFilter passed this time.
+
+**Sixth run, `cccf311`** (run 37548425210, finished 2026-10-07 01:20 UTC): **83 run, 4 failed, none of them this branch's.**
+
+- **Every test this branch added passes:** all four `KitchenUITests` (opening Recipes, pantry add and remove, choosing a recipe with one serving pre-filled, and the allergen test end to end, including Cancel on the new alert) and `TrainingHistoryUITests.testApplyingATemplateFillsTodayAndStaysEditable`. `TrainingProgramUITests` passed again.
+- The four failures are all on master's own failing list (run 37354673943):
+  - `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`.
+  - `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`.
+  - `ProblemChannelUITests.testHydrationWithASuccessfulWriteDoesNotClaimItCouldNotRead`, these three at the harness snapshot error in `UIScrollSupport.swift:174`.
+  - `NotificationSettingsUITests.testRemindersScreenOpensFromSettings`: "Settings does not offer the reminders screen".
+- None of the four is diagnosed. They are master's to fix, not this branch's.
+- `xcodebuild` (app + widget) and the Linux core suite were green on `cccf311`.
+
+They flip between runs, which is the shared-state flakiness `docs/implementation-status.md` describes for this suite. That is the baseline a branch is compared against; the 2026-10-06 handoff's "four known failures" (BodyCircumference 1, BodyCompositionWellness 2, Attributions 1) does not match it, and none of the seven is diagnosed. The 2026-10-06 work was written without Xcode; CI's `xcodebuild` compiled it, and CI's `test-ios` is its only UI run. |
+| Device-only steps (§4) | **UNRUN** — no agent can drive these. |
+| Training Program steps (§7) | **17 of 17 recorded PASS** — the last full-file run was 2026-10-05: `TrainingProgramUITests` 13 of 13 (iPhone 16e, iOS 26.3, on a shared and dirty database; see `docs/implementation-status.md`). The "7 of 17" that stood here was 2026-10-02's. The 2026-10-06 branch changed how 7.10 and 7.11 clear today's readings (the Vitals log now includes today); `TrainingProgramUITests` then passed 13 of 13 in CI on that branch (first run `3653be0`, and again on `cccf311`), 7.10 and 7.11 included. |
+
+**Recounted 2026-10-02 (`c4bd0be`):** the core suite was then **900 tests, 95
+suites, 0 failures** (168.7 s). Superseded by the 2026-10-06 count in the table.
+The Insights, Notification settings and Timeline UI rows are still the
+2026-09-30 run and have not been re-driven; they do not claim current code.
 
 ---
 
@@ -44,10 +87,10 @@ of 3); the §7 row therefore claims current code, the other UI rows do not.
 | # | Step | Result |
 |---|---|---|
 | 1.1 | `swift build` clean | **PASS** |
-| 1.2 | `swift test` green | **PASS** — 627/627 |
+| 1.2 | `swift test` green | **PASS** — 2026-10-06: 987 + 379 (1 skipped) on the branch, 938 + 373 (1 skipped) on master; see the status table |
 | 1.3 | App target builds for a simulator | **PASS** |
 | 1.4 | Widget extension is built and embedded | **PASS** — `AlmanacWidgets.appex` present in the built app |
-| 1.5 | Every migration applies to a virgin database | **PASS** — 45 migrations, exercised by every core test |
+| 1.5 | Every migration applies to a virgin database | **PASS** — 2026-10-06: 49 on master; 54 on the branch (001–049 and 051–055, 050 reserved for the fasting work), exercised by every core test |
 | 1.6 | A profile from before migration 041 upgrades without being replaced | **PASS** |
 | 1.7 | A second `migrate` on an up-to-date database is a no-op | **PASS** |
 
@@ -220,11 +263,13 @@ the row text records the scope.
 **How 7.10/7.11 get a score to choose.** Both tests hand-enter a resting rate
 and an HRV through Modules → Vitals, which is BRD §6.7's "manual fallback" and
 the whole of the new `VitalsView`. Each test first clears the hand-entered
-readings left by earlier runs — from the Vitals log for past days, and from the
-seeding spec for today, because the log deliberately excludes today's readings
-(`records(metric:from:to:)`'s `to:` is exclusive) and the today card offers no
-delete. It then plants three prior days of ordinary readings and types exactly
-two readings of its own, for today.
+readings left by earlier runs from the Vitals log. Until 2026-10-06 the log left
+out today's readings (an exclusive upper bound, a defect), so today was cleared
+through the seeding spec instead; the log now ends with today and the one helper
+reaches it. **That change has not been driven yet** — the two rows below stand on
+the 2026-10-05 run, which used the old clearing route. It then plants three
+prior days of ordinary readings and types exactly two readings of its own, for
+today.
 
 The prior days are planted by launch argument (`-AlmanacSeedVitals`, parsed by
 `VitalsSeedPlan`) rather than typed, because the editor's `DatePicker` cannot be

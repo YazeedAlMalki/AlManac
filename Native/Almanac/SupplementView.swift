@@ -57,7 +57,7 @@ struct SupplementView: View {
                 }
                 Button("Add plan", systemImage: AlmanacIcon.quickAdd) { addingPlan = true }
             } header: {
-                AlmanacSectionHeader(title: "Plans")
+                AlmanacSectionHeader(title: String(localized: "Plans"))
             } footer: {
                 Text("A plan you stop taking is kept rather than removed, so its history stays attached to it.")
             }
@@ -68,7 +68,7 @@ struct SupplementView: View {
                         historyRow(entry)
                     }
                 } header: {
-                    AlmanacSectionHeader(title: "Recent history")
+                    AlmanacSectionHeader(title: String(localized: "Recent history"))
                 }
             }
         }
@@ -99,7 +99,7 @@ struct SupplementView: View {
         let taken = todayEntries.filter(\.taken).count
 
         return VStack(alignment: .leading, spacing: 10) {
-            AlmanacEyebrow(text: "Today")
+            AlmanacEyebrow(text: String(localized: "Today"))
             Text(headline(due: due, taken: taken))
                 .font(AlmanacTypography.font(.sectionTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)
@@ -148,28 +148,28 @@ struct SupplementView: View {
     /// the honest reading is whether *anything* was logged, because the plan's
     /// own notes are the only statement of how often it is due.
     private func headline(due: Int?, taken: Int) -> String {
-        guard due != 0 else { return "Nothing due yet today" }
+        guard due != 0 else { return String(localized: "Nothing due yet today") }
         guard let due else {
-            if taken == 0 { return "Nothing logged today" }
+            if taken == 0 { return String(localized: "Nothing logged today") }
             return taken == 1 ? "1 logged today" : "\(taken) logged today"
         }
-        if taken >= due { return "All \(due) taken" }
-        if taken == 0 { return "None of \(due) taken" }
+        if taken >= due { return String(localized: "All \(due) taken") }
+        if taken == 0 { return String(localized: "None of \(due) taken") }
         return "\(taken) of \(due) taken"
     }
 
     private func state(for plan: SupplementPlan) -> (symbol: String, label: String, tone: AlmanacStatusTone) {
         let entries = todayEntries.filter { $0.planId == plan.id }
         if entries.contains(where: { !$0.taken }) {
-            return ("xmark.circle.fill", "Logged as not taken", .warning)
+            return ("xmark.circle.fill", String(localized: "Logged as not taken"), .warning)
         }
         if !entries.isEmpty {
             let count = entries.filter(\.taken).count
             return ("checkmark.circle.fill",
-                    count == 1 ? "Taken" : "Taken \(count)×",
+                    count == 1 ? String(localized: "Taken") : String(localized: "Taken \(count)×"),
                     .good)
         }
-        return ("circle", "Not logged", .neutral)
+        return ("circle", String(localized: "Not logged"), .neutral)
     }
 
     private func dueCountToday(_ active: [SupplementPlan]) -> Int? {
@@ -254,7 +254,7 @@ struct SupplementView: View {
 
     private func reminderTime(_ plan: SupplementPlan) -> String {
         guard let minute = plan.reminderMinuteOfDay else { return "—" }
-        return String(format: "%02d:%02d", minute / 60, minute % 60)
+        return NumberDisplay.localized(String(format: "%02d:%02d", minute / 60, minute % 60))
     }
 
     // MARK: - History
@@ -265,12 +265,12 @@ struct SupplementView: View {
                 Text(planName(entry.planId))
                     .font(AlmanacTypography.font(.body))
                     .foregroundStyle(AlmanacPalette.textPrimary)
-                Text(entry.timestamp.formatted(date: .abbreviated, time: .shortened))
+                Text(entry.timestamp.almanacFormatted(date: .abbreviated, time: .shortened))
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }
             Spacer(minLength: 12)
-            Text(entry.taken ? "Taken" : "Not taken")
+            Text(entry.taken ? String(localized: "Taken") : String(localized: "Not taken"))
                 .font(AlmanacTypography.font(.label))
                 .foregroundStyle(entry.taken ? AlmanacPalette.good : AlmanacPalette.warning)
         }
@@ -294,7 +294,7 @@ struct SupplementView: View {
     /// though — a plan row could be removed out from under its log — and showing
     /// the raw id would be worse than saying so.
     private func planName(_ id: Int64) -> String {
-        plans.first { $0.id == id }?.name ?? "Unknown plan"
+        plans.first { $0.id == id }?.name ?? String(localized: "Unknown plan")
     }
 
     // MARK: - Load
@@ -315,7 +315,7 @@ struct SupplementView: View {
             // is merely empty and a screen that could not be read never look the
             // same — the same distinction `AlmanacProblemNote` exists for.
             self.error = String(describing: error)
-            readProblem = "Could not read your supplement plans."
+            readProblem = String(localized: "Could not read your supplement plans.")
         }
     }
 }

@@ -28,7 +28,7 @@ struct NutritionPortionPickerView: View {
             TextField("Amount, in grams", text: $gramsText)
                 .keyboardType(.decimalPad)
             TextField("Quantity as you'd say it (e.g. \"2 cups\")", text: $quantityText)
-            if let grams = Double(gramsText), grams > 0,
+            if let grams = Double(userInput: gramsText), grams > 0,
                let preview = model.macroPreview(for: foodRef, grams: grams) {
                 previewRow(preview)
             }
@@ -56,7 +56,7 @@ struct NutritionPortionPickerView: View {
     }
 
     private func formatted(_ amount: Double) -> String {
-        amount.rounded() == amount ? String(Int(amount)) : String(amount)
+        NumberDisplay.localized(amount.rounded() == amount ? String(Int(amount)) : String(amount))
     }
 
     private func previewRow(_ preview: MacroPreview) -> some View {
@@ -81,6 +81,6 @@ struct NutritionPortionPickerView: View {
     }
 
     private func formattedGrams(_ value: Double) -> String {
-        String(format: "%.1f", value)
+        NumberDisplay.localized(String(format: "%.1f", value))
     }
 }

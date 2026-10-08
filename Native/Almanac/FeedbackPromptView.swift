@@ -18,7 +18,7 @@ struct FeedbackPromptView: View {
         if let record = model.pendingFeedback {
             AlmanacCard {
                 VStack(alignment: .leading, spacing: 14) {
-                    AlmanacSectionHeader(title: "A note from yesterday")
+                    AlmanacSectionHeader(title: String(localized: "A note from yesterday"))
                     Text("Was \(record.anchorDate)’s guidance helpful?")
                         .font(AlmanacTypography.font(.bodyMedium))
                         .foregroundStyle(AlmanacPalette.textPrimary)

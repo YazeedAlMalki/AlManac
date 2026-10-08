@@ -57,11 +57,11 @@ struct ContextTagsView: View {
                 tagGrid
                 TextField("Notes", text: $notes, axis: .vertical)
                     .lineLimit(2...5)
-                Button(hasUnsavedChanges ? "Save for \(displayDay)" : "Saved", action: save)
+                Button(hasUnsavedChanges ? String(localized: "Save for \(displayDay)") : String(localized: "Saved"), action: save)
                     .disabled(!hasUnsavedChanges)
                     .accessibilityIdentifier("context-tags-save")
             } header: {
-                AlmanacSectionHeader(title: "What happened")
+                AlmanacSectionHeader(title: String(localized: "What happened"))
             } footer: {
                 Text("Tags are the confounders a readiness or correlation reading cannot explain on its own.")
             }
@@ -72,7 +72,7 @@ struct ContextTagsView: View {
                         historyRow(event)
                     }
                 } header: {
-                    AlmanacSectionHeader(title: "Earlier", detail: "last \(Self.historyDayCount) days")
+                    AlmanacSectionHeader(title: String(localized: "Earlier"), detail: String(localized: "last \(Self.historyDayCount) days"))
                 }
             }
         }
@@ -156,7 +156,7 @@ struct ContextTagsView: View {
                     .monospacedDigit()
                 Spacer(minLength: 12)
                 if !event.tags.isEmpty {
-                    Text("\(event.tags.count) tag\(event.tags.count == 1 ? "" : "s")")
+                    Text("\(event.tags.count) tags")
                         .font(AlmanacTypography.font(.caption))
                         .foregroundStyle(AlmanacPalette.textSecondary)
                 }
@@ -205,7 +205,7 @@ struct ContextTagsView: View {
                 // Nothing stored for this day, so this is a create. It needs
                 // something to record — an empty row is not a fact about the day.
                 guard canSave else {
-                    error = "Add a tag or a note before saving."
+                    error = String(localized: "Add a tag or a note before saving.")
                     return
                 }
                 _ = try store.log(ContextEventDraft(date: day, tags: selected.map(\.rawValue).sorted(),
@@ -230,17 +230,15 @@ struct ContextTagsView: View {
     /// fallback so an unreadable day is shown as itself rather than as nothing.
     private var displayDay: String {
         guard let date = LogicalDay(day).dayStart else { return day }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM yyyy"
-        return formatter.string(from: date)
+        return date.almanacFormatted(date: .abbreviated, time: .omitted)
     }
 
     private var relativeLabel: String {
-        if isToday { return "Today" }
+        if isToday { return String(localized: "Today") }
         if let yesterday = timeModel.day(before: timeModel.logicalDay(Date()))?.value, day == yesterday {
-            return "Yesterday"
+            return String(localized: "Yesterday")
         }
-        return "Logical day"
+        return String(localized: "Logical day")
     }
 
     private func load(day newDay: String) {
@@ -261,7 +259,7 @@ struct ContextTagsView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read your context tags."
+            readProblem = String(localized: "Could not read your context tags.")
         }
     }
 }

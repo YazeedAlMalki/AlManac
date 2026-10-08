@@ -37,7 +37,7 @@ struct ReadinessDashboardView: View {
                         checkingIn = true
                     } label: {
                         Label(
-                            model.outcome?.state == .final ? "Edit mood & soreness" : "Complete today’s check-in",
+                            model.outcome?.state == .final ? String(localized: "Edit mood & soreness") : String(localized: "Complete today’s check-in"),
                             systemImage: model.outcome?.state == .final ? AlmanacIcon.edit : AlmanacIcon.check
                         )
                     }
@@ -47,7 +47,7 @@ struct ReadinessDashboardView: View {
                     inputs
 
                     VStack(alignment: .leading, spacing: 14) {
-                        AlmanacSectionHeader(title: "Rhythm", detail: "Month to date")
+                        AlmanacSectionHeader(title: String(localized: "Rhythm"), detail: String(localized: "Month to date"))
                         EditorialRhythmCalendarView(model: trackingModel)
                     }
 
@@ -78,7 +78,7 @@ struct ReadinessDashboardView: View {
 
     private var masthead: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AlmanacEyebrow(text: Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+            AlmanacEyebrow(text: Date.now.formatted(.almanacDateTime.weekday(.wide).day().month(.wide)))
             Text("Today")
                 .font(AlmanacTypography.font(.screenTitle))
                 .foregroundStyle(AlmanacPalette.textPrimary)
@@ -99,7 +99,7 @@ struct ReadinessDashboardView: View {
             VStack(alignment: .leading, spacing: 18) {
                 if dynamicTypeSize.isAccessibilitySize {
                     VStack(alignment: .leading, spacing: 12) {
-                        AlmanacEyebrow(text: "Readiness")
+                        AlmanacEyebrow(text: String(localized: "Readiness"))
                         readinessValue(outcome)
                         if let confidence = outcome?.confidence {
                             AlmanacStatusMark(
@@ -174,24 +174,24 @@ struct ReadinessDashboardView: View {
                 if let outcome {
                     if dynamicTypeSize.isAccessibilitySize {
                         VStack(alignment: .leading, spacing: 8) {
-                            AlmanacStatusMark(text: isFinal ? "Final" : "Provisional", tone: isFinal ? .good : .neutral)
+                            AlmanacStatusMark(text: isFinal ? String(localized: "Final") : String(localized: "Provisional"), tone: isFinal ? .good : .neutral)
                             if let day = model.calibrationDay {
-                                AlmanacStatusMark(text: "Preliminary · day \(day) of 21", tone: .neutral)
+                                AlmanacStatusMark(text: String(localized: "Preliminary · day \(day) of 21"), tone: .neutral)
                             }
                             if !outcome.missingInputs.isEmpty {
-                                Text("\(outcome.missingInputs.count) input\(outcome.missingInputs.count == 1 ? "" : "s") missing")
+                                Text("\(outcome.missingInputs.count) inputs missing")
                                     .font(AlmanacTypography.font(.caption))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
                             }
                         }
                     } else {
                         HStack(spacing: 10) {
-                            AlmanacStatusMark(text: isFinal ? "Final" : "Provisional", tone: isFinal ? .good : .neutral)
+                            AlmanacStatusMark(text: isFinal ? String(localized: "Final") : String(localized: "Provisional"), tone: isFinal ? .good : .neutral)
                             if let day = model.calibrationDay {
-                                AlmanacStatusMark(text: "Day \(day) of 21", tone: .neutral)
+                                AlmanacStatusMark(text: String(localized: "Day \(day) of 21"), tone: .neutral)
                             }
                             if !outcome.missingInputs.isEmpty {
-                                Text("\(outcome.missingInputs.count) input\(outcome.missingInputs.count == 1 ? "" : "s") missing")
+                                Text("\(outcome.missingInputs.count) inputs missing")
                                     .font(AlmanacTypography.font(.caption))
                                     .foregroundStyle(AlmanacPalette.textSecondary)
                             }
@@ -208,8 +208,8 @@ struct ReadinessDashboardView: View {
         if let recommendation = model.outcome?.recommendation, !recommendation.isEmpty {
             AlmanacCard {
                 VStack(alignment: .leading, spacing: 10) {
-                    AlmanacSectionHeader(title: "For this cycle")
-                    Text(recommendation)
+                    AlmanacSectionHeader(title: String(localized: "For this cycle"))
+                    Text(ReadinessText.display(recommendation))
                         .font(AlmanacTypography.font(.body))
                         .foregroundStyle(AlmanacPalette.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -220,22 +220,22 @@ struct ReadinessDashboardView: View {
 
     private var dailyRecord: some View {
         VStack(alignment: .leading, spacing: 14) {
-            AlmanacSectionHeader(title: "Today’s record")
+            AlmanacSectionHeader(title: String(localized: "Today’s record"))
             AlmanacCard(padding: 0) {
                 VStack(spacing: 0) {
                     AlmanacMetricRow(
                         icon: AlmanacIcon.sleep,
-                        title: "Sleep",
+                        title: String(localized: "Sleep"),
                         value: model.sleepDurationMinutes.map(durationLabel) ?? "—",
-                        detail: model.sleepDurationMinutes == nil ? "No primary sleep episode available" : "Primary sleep",
+                        detail: model.sleepDurationMinutes == nil ? String(localized: "No primary sleep episode available") : String(localized: "Primary sleep"),
                         tone: model.sleepDurationMinutes == nil ? .neutral : nil
                     )
                     AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
                         icon: AlmanacIcon.hydration,
-                        title: "Hydration",
-                        value: "\(AlmanacNumber.compact(hydrationModel.todayTotal.value)) mL",
-                        detail: "of \(AlmanacNumber.compact(hydrationGoal)) mL",
+                        title: String(localized: "Hydration"),
+                        value: String(localized: "\(AlmanacNumber.compact(hydrationModel.todayTotal.value)) mL"),
+                        detail: String(localized: "of \(AlmanacNumber.compact(hydrationGoal)) mL"),
                         tone: hydrationTone,
                         // A reading is a door. Each of these rows is the name of
                         // a feature, and Today is where someone first wonders
@@ -250,7 +250,7 @@ struct ReadinessDashboardView: View {
                     AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
                         icon: AlmanacIcon.nutrition,
-                        title: "Nutrition",
+                        title: String(localized: "Nutrition"),
                         value: nutritionValue,
                         detail: nutritionDetail,
                         // Keyed on the day's energy, not on `todaysTotals`: a
@@ -263,7 +263,7 @@ struct ReadinessDashboardView: View {
                     AlmanacRule(inset: AlmanacRule.metricTextInset)
                     AlmanacMetricRow(
                         icon: AlmanacIcon.training,
-                        title: "Training",
+                        title: String(localized: "Training"),
                         value: trainingValue,
                         detail: trainingDetailText,
                         tone: trainingModel.todaysSummary == nil ? .neutral : nil,
@@ -301,7 +301,7 @@ struct ReadinessDashboardView: View {
 
     private var inputRows: some View {
         VStack(spacing: 0) {
-            inputRow("Sleep", value: model.sleepDurationMinutes.map(durationLabel), missingValue: "Not available")
+            inputRow(String(localized: "Sleep"), value: model.sleepDurationMinutes.map(durationLabel), missingValue: String(localized: "Not available"))
             AlmanacRule()
             // The two rows that were dead ends until §6.7's manual fallback
             // existed. They are doors now, and only because they became doors
@@ -311,46 +311,46 @@ struct ReadinessDashboardView: View {
             // person reading "Not available" here is someone with nothing
             // syncing them — asking them to go and fix a permission is a
             // different conversation from asking for the number they measured.
-            metricDoor("Resting heart rate", value: model.latestRHR.map { "\(AlmanacNumber.compact($0)) bpm" },
-                       missingValue: "Not available", identifier: "readiness-input-rhr")
+            metricDoor(String(localized: "Resting heart rate"), value: model.latestRHR.map { String(localized: "\(AlmanacNumber.compact($0)) bpm") },
+                       missingValue: String(localized: "Not available"), identifier: "readiness-input-rhr")
             AlmanacRule()
-            metricDoor("HRV", value: model.latestHRV.map { "\(AlmanacNumber.compact($0)) ms" },
-                       missingValue: "Not available", identifier: "readiness-input-hrv")
+            metricDoor(String(localized: "HRV"), value: model.latestHRV.map { String(localized: "\(AlmanacNumber.compact($0)) ms") },
+                       missingValue: String(localized: "Not available"), identifier: "readiness-input-hrv")
             AlmanacRule()
-            inputRow("Mood", value: model.todayMood.map { "\($0.score)/10" }, missingValue: "Not logged")
+            inputRow(String(localized: "Mood"), value: model.todayMood.map { String(localized: "\($0.score)/\(10)") }, missingValue: String(localized: "Not logged"))
             AlmanacRule()
-            inputRow("Soreness", value: model.todaySoreness.map { "\($0.overallScore)/10" }, missingValue: "Not logged")
+            inputRow(String(localized: "Soreness"), value: model.todaySoreness.map { String(localized: "\($0.overallScore)/\(10)") }, missingValue: String(localized: "Not logged"))
         }
     }
 
     private var trainingDetailCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            AlmanacSectionHeader(title: "Training detail")
+            AlmanacSectionHeader(title: String(localized: "Training detail"))
             AlmanacCard(padding: 0) {
                 VStack(spacing: 0) {
                     if let summary = trainingModel.todaysSummary {
                         if let tonnage = summary.totalTonnageKg {
-                            inputRow("Tonnage", value: "\(AlmanacNumber.compact(tonnage)) kg", missingValue: nil)
+                            inputRow(String(localized: "Tonnage"), value: String(localized: "\(AlmanacNumber.compact(tonnage)) kg"), missingValue: nil)
                         }
                         if let distance = summary.totalDistanceMeters {
                             AlmanacRule()
-                            inputRow("Distance", value: "\(AlmanacNumber.compact(distance)) m", missingValue: nil)
+                            inputRow(String(localized: "Distance"), value: String(localized: "\(AlmanacNumber.compact(distance)) m"), missingValue: nil)
                         }
                         if let duration = summary.totalDurationSeconds {
                             AlmanacRule()
-                            inputRow("Time", value: durationLabel(Int(duration.rounded())), missingValue: nil)
+                            inputRow(String(localized: "Time"), value: durationLabel(Int(duration.rounded())), missingValue: nil)
                         }
                         if let reps = summary.totalReps {
                             AlmanacRule()
-                            inputRow("Reps", value: "\(reps)", missingValue: nil)
+                            inputRow(String(localized: "Reps"), value: NumberDisplay.localized(String(reps)), missingValue: nil)
                         }
                         if let rounds = summary.totalRounds {
                             AlmanacRule()
-                            inputRow("Rounds", value: "\(rounds)", missingValue: nil)
+                            inputRow(String(localized: "Rounds"), value: NumberDisplay.localized(String(rounds)), missingValue: nil)
                         }
                         if let rpe = summary.averageRPE {
                             AlmanacRule()
-                            inputRow("Average RPE", value: String(format: "%.1f/10", rpe), missingValue: nil)
+                            inputRow(String(localized: "Average RPE"), value: NumberDisplay.localized(String(format: "%.1f/10", rpe)), missingValue: nil)
                         }
                     }
                 }
@@ -416,7 +416,7 @@ struct ReadinessDashboardView: View {
     }
 
     private var nutritionDetail: String {
-        todaysEnergy?.summary ?? "No nutrition logged yet"
+        todaysEnergy?.summary ?? String(localized: "No nutrition logged yet")
     }
 
     private var trainingValue: String {
@@ -425,12 +425,12 @@ struct ReadinessDashboardView: View {
         if let rounds = summary.totalRounds { return "\(rounds) rounds" }
         if let tonnage = summary.totalTonnageKg { return "\(AlmanacNumber.compact(tonnage)) kg" }
         if let distance = summary.totalDistanceMeters { return "\(AlmanacNumber.compact(distance)) m" }
-        return "Logged"
+        return String(localized: "Logged")
     }
 
     private var trainingDetailText: String? {
-        guard trainingModel.todaysSummary != nil else { return "No session logged yet" }
-        return "Session recorded today"
+        guard trainingModel.todaysSummary != nil else { return String(localized: "No session logged yet") }
+        return String(localized: "Session recorded today")
     }
 
     private var greeting: String {
@@ -471,14 +471,14 @@ struct ReadinessDashboardView: View {
     /// is a meta-string tic; the state is simply stated, and the card already
     /// says "Readiness" directly above it.
     private func readinessStateLabel(_ outcome: ReadinessOutcome?) -> String {
-        guard let outcome, outcome.score != nil else { return "Waiting on signals" }
-        return outcome.state == .final ? "Final" : "Provisional"
+        guard let outcome, outcome.score != nil else { return String(localized: "Waiting on signals") }
+        return outcome.state == .final ? String(localized: "Final") : String(localized: "Provisional")
     }
 
     private func readinessHeadline(_ outcome: ReadinessOutcome?) -> String {
-        guard let outcome else { return "Readiness is waiting" }
-        if outcome.score == nil { return "More signals are needed" }
-        return outcome.textDescription ?? "Today’s readiness assessment"
+        guard let outcome else { return String(localized: "Readiness is waiting") }
+        if outcome.score == nil { return String(localized: "More signals are needed") }
+        return outcome.textDescription.map(ReadinessText.display) ?? String(localized: "Today’s readiness assessment")
     }
 
     private func readinessDetail(_ outcome: ReadinessOutcome?) -> String {
@@ -488,10 +488,10 @@ struct ReadinessDashboardView: View {
         // here. The note below carries the real reason; this line stops giving
         // instructions that cannot help.
         if model.readProblem != nil {
-            return "The signals below could not be read just now."
+            return String(localized: "The signals below could not be read just now.")
         }
         guard let outcome else {
-            return "Connect Apple Health or log today’s check-in. Almanac will not replace missing readings with zero."
+            return String(localized: "Connect Apple Health or log today’s check-in. Almanac will not replace missing readings with zero.")
         }
         if outcome.score == nil {
             let missing = missingInputNames(outcome.missingInputs)
@@ -499,7 +499,7 @@ struct ReadinessDashboardView: View {
                 ? "Almanac could not produce a defensible score from the available signals."
                 : "Still needed: \(missing.joined(separator: ", "))."
         }
-        return "This assessment combines the signals below. It describes today; it does not diagnose or prescribe."
+        return String(localized: "This assessment combines the signals below. It describes today; it does not diagnose or prescribe.")
     }
 
     private func missingInputNames(_ inputs: [ReadinessInputKind]) -> [String] {
@@ -508,7 +508,7 @@ struct ReadinessDashboardView: View {
             case .sleep: return "sleep"
             case .sleepQuality: return "sleep quality"
             case .rhr: return "resting heart rate"
-            case .hrv: return "HRV"
+            case .hrv: return String(localized: "HRV")
             case .mood: return "mood"
             case .soreness: return "soreness"
             }

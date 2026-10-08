@@ -98,6 +98,6 @@ struct WaterWidgetView: View {
     }
 
     private var totalText: String {
-        entry.total == entry.total.rounded() ? "\(Int(entry.total)) ml" : String(format: "%.0f ml", entry.total)
+        String(localized: "\(Int(entry.total.rounded())) ml")
     }
 }

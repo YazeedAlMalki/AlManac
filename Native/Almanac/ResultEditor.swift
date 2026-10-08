@@ -88,7 +88,7 @@ struct ResultEditor: View {
                     }
                 }
             }
-            .navigationTitle(result == nil ? "Add result" : "Edit result")
+            .navigationTitle(result == nil ? String(localized: "Add result") : String(localized: "Edit result"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -101,7 +101,7 @@ struct ResultEditor: View {
     private var testSection: some View {
         Section("Test") {
             if !testName.isEmpty {
-                LabeledContent(analyteID == nil ? "Unmatched test" : "Selected test", value: testName)
+                LabeledContent(analyteID == nil ? String(localized: "Unmatched test") : String(localized: "Selected test"), value: testName)
             }
             TextField("Search names or aliases", text: $query)
                 .autocorrectionDisabled()
@@ -121,7 +121,7 @@ struct ResultEditor: View {
                 }
             }
             if analyteID != nil {
-                Button(result == nil ? "Clear selection" : "Remove catalog mapping") { analyteID = nil; testName = content.sourceAnalyteText ?? "" }
+                Button(result == nil ? String(localized: "Clear selection") : String(localized: "Remove catalog mapping")) { analyteID = nil; testName = content.sourceAnalyteText ?? "" }
             }
             Text("If a test is not listed, enter its original name below. It can be mapped later.")
                 .font(.caption).foregroundStyle(.secondary)
@@ -164,19 +164,19 @@ struct ResultEditor: View {
     private func decimal(_ value: String, field: String, required: Bool = false) throws -> Double? {
         if value.isEmpty && !required { return nil }
         guard let number = Double(value), number.isFinite else {
-            throw EditorFailure(message: "Enter a finite number for \(field), using a decimal point.")
+            throw EditorFailure(message: String(localized: "Enter a finite number for \(field), using a decimal point."))
         }
         return number
     }
 
     private func save() {
         do {
-            guard let store = model.store else { throw EditorFailure(message: "The database is unavailable.") }
+            guard let store = model.store else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
             guard analyteID != nil || !(content.sourceAnalyteText ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw EditorFailure(message: "Select a test or enter its original name.")
+                throw EditorFailure(message: String(localized: "Select a test or enter its original name."))
             }
             if result != nil && reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                throw EditorFailure(message: "Enter a reason for this correction.")
+                throw EditorFailure(message: String(localized: "Enter a reason for this correction."))
             }
             let collected = try editedDate(text: date, precision: precision, original: result?.collectedAt ?? .unknown)
             var saved = content
@@ -193,21 +193,21 @@ struct ResultEditor: View {
                 saved.numericValue = try decimal(number, field: "the value", required: true)
             case .qualitativeCoded, .ordinal:
                 guard let value = content.codedValue, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    throw EditorFailure(message: "Enter the reported result.")
+                    throw EditorFailure(message: String(localized: "Enter the reported result."))
                 }
                 saved.codedValue = value
             case .text:
                 guard let value = content.textValue, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    throw EditorFailure(message: "Enter the descriptive result.")
+                    throw EditorFailure(message: String(localized: "Enter the descriptive result."))
                 }
                 saved.textValue = value
             case .ratio:
                 saved.ratioNumerator = try decimal(numerator, field: "numerator", required: true)
                 saved.ratioDenominator = try decimal(denominator, field: "denominator", required: true)
-                guard saved.ratioDenominator != 0 else { throw EditorFailure(message: "The denominator cannot be zero.") }
+                guard saved.ratioDenominator != 0 else { throw EditorFailure(message: String(localized: "The denominator cannot be zero.")) }
             case .titer:
                 guard let n = Int(numerator), let d = Int(denominator), n > 0, d > 0 else {
-                    throw EditorFailure(message: "A titer needs two positive whole numbers, such as 1 and 160.")
+                    throw EditorFailure(message: String(localized: "A titer needs two positive whole numbers, such as 1 and 160."))
                 }
                 saved.titerNumerator = n; saved.titerDenominator = d
             case .absent: break

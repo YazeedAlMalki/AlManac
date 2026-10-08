@@ -49,7 +49,7 @@ final class HydrationModel: ObservableObject {
     /// other fields (calorie tracking, sodium/sugar tracking, daily goal)
     /// untouched.
     func saveReminderSettings(enabled: Bool, intervalMinutes: Int, startHour: Int, endHour: Int) throws {
-        guard let settingsStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let settingsStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let base = hydrationSettings ?? (try? settingsStore.getOrCreate()) ?? HydrationSettings()
         let updated = HydrationSettings(
             isCalorieTrackingEnabled: base.isCalorieTrackingEnabled,
@@ -71,7 +71,7 @@ final class HydrationModel: ObservableObject {
     /// other fields untouched. Mirrors `saveReminderSettings` so the goal
     /// lives in the single source of truth instead of `@AppStorage`.
     func saveDailyGoal(milliliters: Double) throws {
-        guard let settingsStore else { throw EditorFailure(message: "The database is unavailable.") }
+        guard let settingsStore else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         let base = hydrationSettings ?? (try? settingsStore.getOrCreate()) ?? HydrationSettings()
         guard base.dailyGoalMilliliters != milliliters else { return }
         let updated = HydrationSettings(
@@ -116,7 +116,7 @@ final class HydrationModel: ObservableObject {
             // indistinguishable from one that genuinely has nothing logged.
             // Read the failure, say it, and let the note clear itself the moment
             // a read does succeed.
-            readProblem = "Could not read today's hydration log."
+            readProblem = String(localized: "Could not read today's hydration log.")
         }
     }
 
@@ -127,7 +127,7 @@ final class HydrationModel: ObservableObject {
     }
 
     func log(amount: Milliliters, note: String?) throws {
-        guard store != nil, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard store != nil, let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         // Through the fasting-aware log: water during a dry fast ends it, and
         // water between Maghrib and Fajr belongs to the night window (§7.2).
         try FastingAwareHydrationLog(db: db).log(HydrationLogDraft(amount: amount, loggedAt: Date(), note: note))
@@ -145,7 +145,7 @@ final class HydrationModel: ObservableObject {
     /// are the seam that makes it reachable.
     private func loggingService() throws -> HydrationLoggingService {
         guard let db, let settingsStore else {
-            throw EditorFailure(message: "The database is unavailable.")
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
         }
         return HydrationLoggingService(store: HydrationStore(db: db), settingsStore: settingsStore)
     }
@@ -206,7 +206,7 @@ final class HydrationModel: ObservableObject {
     }
 
     func delete(id: String) throws {
-        guard store != nil, let db else { throw EditorFailure(message: "The database is unavailable.") }
+        guard store != nil, let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         // Deleting the drink that broke a dry fast gives the fast back.
         try FastingAwareHydrationLog(db: db).delete(id: id)
         refresh()
@@ -264,7 +264,7 @@ final class HydrationModel: ObservableObject {
             // updating, which is the same silence as an unreadable log even
             // though the cause and the fix differ. Said out loud, and cleared
             // by the first sync that works.
-            syncProblem = "Apple Health sync is not going through. The figures below may be out of date."
+            syncProblem = String(localized: "Apple Health sync is not going through. The figures below may be out of date.")
         }
     }
 

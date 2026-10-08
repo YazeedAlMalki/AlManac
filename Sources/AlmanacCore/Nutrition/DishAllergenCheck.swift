@@ -26,13 +26,10 @@ public struct DishAllergenJudgement: Sendable, Hashable {
     /// reads names, and a name naming peanuts is what was found.
     public var warning: String? {
         guard verdict.isFilteredOut else { return nil }
-        let titles = verdict.declared.sorted { $0.sortIndex < $1.sortIndex }.map(\.title)
-        let list = titles.count == 1
-            ? titles[0]
-            : titles.dropLast().joined(separator: ", ") + " and " + titles[titles.count - 1]
-        var text = "Allergen warning: this names \(list), which you have recorded as an allergen."
+        let list = localizedList(verdict.declared.sorted { $0.sortIndex < $1.sortIndex }.map(\.title))
+        var text = localized("Allergen warning: this names %@, which you have recorded as an allergen.", list)
         if !foundIn.isEmpty {
-            text += " Found in: \(foundIn.joined(separator: ", "))."
+            text += " " + localized("Found in: %@.", foundIn.joined(separator: localized(", ")))
         }
         return text
     }
@@ -127,11 +124,20 @@ public struct DishAllergenCheck: Sendable {
         return AllergenPartition(shown: shown, hidden: hidden, allergens: allergens)
     }
 
+    /// What a screen calls a dish: Kitchen says recipe, Saved meals says meal.
+    public enum Noun: Sendable { case recipe, meal }
+
     /// The disclaimer a dish list owes whenever allergens are recorded, whether
-    /// or not anything was hidden. `noun` is what the screen calls a dish.
-    public static func disclaimer(noun: String, allergens: Set<FoodAllergen>) -> String? {
+    /// or not anything was hidden. One whole sentence per noun, not the noun
+    /// spliced into one: in Arabic the noun's gender changes the sentence.
+    public static func disclaimer(noun: Noun, allergens: Set<FoodAllergen>) -> String? {
         guard !allergens.isEmpty else { return nil }
-        return "Checked \(noun) and ingredient names only — a name can be silent about an allergen, so Almanac cannot confirm a \(noun) is allergen-free."
+        switch noun {
+        case .recipe:
+            return localized("Checked recipe and ingredient names only — a name can be silent about an allergen, so Almanac cannot confirm a recipe is allergen-free.")
+        case .meal:
+            return localized("Checked meal and ingredient names only — a name can be silent about an allergen, so Almanac cannot confirm a meal is allergen-free.")
+        }
     }
 
     /// Every primary name under each dish: its own, its ingredients', and theirs

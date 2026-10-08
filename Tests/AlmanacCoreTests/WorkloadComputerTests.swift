@@ -31,11 +31,31 @@ struct WorkloadComputerTests {
         #expect(summary.totalReps == 25)
     }
 
-    @Test("Tonnage falls back to prescribed values when actuals are missing")
+    @Test("A performed bout fills the actuals it did not record from the plan")
     func fallsBackToPrescribed() {
-        let bouts = [bout(prescriptionType: "reps_load", prescribedSets: 3, prescribedReps: 10, prescribedLoadKg: 60)]
+        // Sets recorded as done; reps and load taken from the plan.
+        let bouts = [bout(prescriptionType: "reps_load", prescribedSets: 3, prescribedReps: 10, prescribedLoadKg: 60,
+                          actualSets: 3)]
         let summary = WorkloadComputer.summary(for: bouts)
         #expect(summary.totalTonnageKg == 1800)
+    }
+
+    @Test("A bout with only a plan — nothing recorded as done — is not load")
+    func planOnlyIsNotLoad() {
+        // What applying a template leaves, and what a skipped program exercise
+        // is logged as (2026-10-07).
+        let planned = [
+            bout(prescriptionType: "reps_load", prescribedSets: 3, prescribedReps: 10, prescribedLoadKg: 60),
+            bout(prescriptionType: "distance", sequenceIndex: 1, prescribedDistanceMeters: 400),
+            bout(prescriptionType: "duration", sequenceIndex: 2, prescribedDurationSeconds: 30),
+            bout(prescriptionType: "work_in_time", sequenceIndex: 3, prescribedRounds: 5)
+        ]
+        #expect(WorkloadComputer.summary(for: planned) == .empty)
+
+        // An RPE alone says it was done, so the plan's numbers stand in.
+        let rated = [bout(prescriptionType: "reps_load", prescribedSets: 3, prescribedReps: 10,
+                          prescribedLoadKg: 60, rpe: 8)]
+        #expect(WorkloadComputer.summary(for: rated).totalTonnageKg == 1800)
     }
 
     @Test("Actual values take precedence over prescribed when both are present")

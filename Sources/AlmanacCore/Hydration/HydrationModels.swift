@@ -114,21 +114,21 @@ public enum ActivityLevel: String, Codable, Sendable, CaseIterable, Hashable, Id
 
     public var title: String {
         switch self {
-        case .sedentary: return "Sedentary"
-        case .light: return "Lightly active"
-        case .moderate: return "Moderately active"
-        case .high: return "Very active"
-        case .veryHigh: return "Extra active"
+        case .sedentary: return localized("Sedentary")
+        case .light: return localized("Lightly active")
+        case .moderate: return localized("Moderately active")
+        case .high: return localized("Very active")
+        case .veryHigh: return localized("Extra active")
         }
     }
 
     public var explanation: String {
         switch self {
-        case .sedentary: return "Desk work, little exercise."
-        case .light: return "Light exercise one or two days a week."
-        case .moderate: return "Exercise three to five days a week."
-        case .high: return "Hard exercise six or seven days a week."
-        case .veryHigh: return "Physical work, or twice-a-day training."
+        case .sedentary: return localized("Desk work, little exercise.")
+        case .light: return localized("Light exercise one or two days a week.")
+        case .moderate: return localized("Exercise three to five days a week.")
+        case .high: return localized("Hard exercise six or seven days a week.")
+        case .veryHigh: return localized("Physical work, or twice-a-day training.")
         }
     }
 

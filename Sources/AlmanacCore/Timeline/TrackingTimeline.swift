@@ -92,7 +92,7 @@ public struct TrackingTimeline {
     private func map(_ entries: [TimelineEntry]) -> [TrackingTimelineItem] {
         entries.map { entry in
             let detailParts = [entry.detail,
-                               entry.rangeFit == .potential ? "Date may overlap this day" : nil]
+                               entry.rangeFit == .potential ? localized("Date may overlap this day") : nil]
                 .compactMap { $0 }
             return TrackingTimelineItem(
                 id: "\(entry.domain)-\(entry.recordID)",
@@ -115,7 +115,7 @@ public struct TrackingTimeline {
         case .none:
             return nil
         case .missing(let reason):
-            return "Missing: \(reason)"
+            return localized("Missing: %@", reason)
         case .quantity(let text, let unit):
             return unit.map { "\(text) \($0)" } ?? text
         case .bounded(let comparator, let text, let unit):
@@ -157,13 +157,13 @@ private struct TrackingSupplementProvider: TimelineProviding {
         for session in try WorkoutSessionStore(db: db).sessions(date: day) {
             let details = [
                 session.durationMinutes.map { "\($0) min" },
-                session.rpe.map { "RPE \($0)/10" },
+                session.rpe.map { localized("RPE %@/10", NumberDisplay.localized(String($0))) },
                 session.notes
             ].compactMap { $0 }
             result.append(makeEntry(
                 kind: "session", table: "workoutSession", id: String(session.id),
                 occurrence: occurrence(session.startTimestamp, fallback: day),
-                title: session.sessionType ?? "Training",
+                title: session.sessionType ?? localized("Training"),
                 detail: details.isEmpty ? nil : details.joined(separator: " · "),
                 value: .none
             ))
@@ -197,7 +197,7 @@ private struct TrackingSupplementProvider: TimelineProviding {
             result.append(makeEntry(
                 kind: "mood", table: "mood_log", id: String(record.id),
                 occurrence: occurrence(record.timestamp, fallback: day),
-                title: "Mood", detail: record.notes,
+                title: localized("Mood"), detail: record.notes,
                 value: .quantity(text: String(record.score), unit: "/10")
             ))
         }
@@ -207,7 +207,7 @@ private struct TrackingSupplementProvider: TimelineProviding {
             result.append(makeEntry(
                 kind: "soreness", table: "soreness_log", id: String(record.id),
                 occurrence: occurrence(record.timestamp, fallback: day),
-                title: "Soreness", detail: areas ?? record.notes,
+                title: localized("Soreness"), detail: areas ?? record.notes,
                 value: .quantity(text: String(record.overallScore), unit: "/10")
             ))
         }
@@ -216,9 +216,9 @@ private struct TrackingSupplementProvider: TimelineProviding {
             result.append(makeEntry(
                 kind: "episode", table: "sleep_episode", id: String(record.id),
                 occurrence: occurrence(record.start, fallback: day),
-                title: "Sleep · \(record.effectiveType)",
-                detail: "\(record.durationMinutes) min",
-                value: .quantity(text: String(record.durationMinutes), unit: "min")
+                title: localized("Sleep · %@", "\(record.effectiveType)"),
+                detail: localized("%@ min", NumberDisplay.localized(String(record.durationMinutes))),
+                value: .quantity(text: String(record.durationMinutes), unit: localized("min"))
             ))
         }
 
@@ -261,27 +261,27 @@ private struct TrackingSupplementProvider: TimelineProviding {
     }
 
     private func numberText(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+        NumberDisplay.localized(value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value))
     }
 
     private func bodyTitle(_ metric: String) -> String {
         switch metric {
-        case "weight": return "Weight"
-        case "body_fat_pct": return "Body fat"
-        case "lean_mass_kg": return "Lean mass"
-        case "skeletal_muscle_kg": return "Skeletal muscle"
-        case "visceral_rating": return "Visceral rating"
+        case "weight": return localized("Weight")
+        case "body_fat_pct": return localized("Body fat")
+        case "lean_mass_kg": return localized("Lean mass")
+        case "skeletal_muscle_kg": return localized("Skeletal muscle")
+        case "visceral_rating": return localized("Visceral rating")
         default: return metric.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
 
     private func vitalTitle(_ metric: String) -> String {
         switch metric {
-        case "rhr": return "Resting heart rate"
-        case "hrv": return "Heart-rate variability"
-        case "steps": return "Steps"
-        case "activeEnergy": return "Active energy"
-        case "restingEnergy": return "Resting energy"
+        case "rhr": return localized("Resting heart rate")
+        case "hrv": return localized("Heart-rate variability")
+        case "steps": return localized("Steps")
+        case "activeEnergy": return localized("Active energy")
+        case "restingEnergy": return localized("Resting energy")
         default: return metric.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }

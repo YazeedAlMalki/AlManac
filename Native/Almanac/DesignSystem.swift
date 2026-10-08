@@ -166,11 +166,11 @@ enum AlmanacTypography {
 enum AlmanacReadinessPresentation {
     static func confidenceLabel(_ confidence: ReadinessConfidence) -> String {
         switch confidence {
-        case .high: return "High confidence"
-        case .medium: return "Medium confidence"
-        case .low: return "Low confidence"
-        case .veryLow: return "Very low confidence"
-        case .insufficient: return "Insufficient data"
+        case .high: return String(localized: "High confidence")
+        case .medium: return String(localized: "Medium confidence")
+        case .low: return String(localized: "Low confidence")
+        case .veryLow: return String(localized: "Very low confidence")
+        case .insufficient: return String(localized: "Insufficient data")
         }
     }
 
@@ -193,9 +193,40 @@ enum AlmanacReadinessPresentation {
 }
 
 enum AlmanacNumber {
+    /// A whole number as itself, anything else to one decimal, in the app's
+    /// digits (`NumberDisplay`). An editor prefilled with this reads it back
+    /// through `Double(userInput:)`, which takes either language's digits.
     static func compact(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+        NumberDisplay.localized(value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value))
     }
+}
+
+extension Calendar {
+    /// The calendar every date on screen is shown in: Gregorian, whatever the
+    /// device's own (#4, decision 3). An Arabic phone set to Saudi Arabia
+    /// defaults to Umm al-Qura, and every date Almanac stores is Gregorian, so
+    /// a screen in the device's calendar would name a different month from the
+    /// one the data is filed under. Month and weekday names, and digits, still
+    /// follow the language. Hijri dates the fasting work shows on purpose come
+    /// from `HijriDate`, not from this.
+    static var almanacDisplay: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = .autoupdatingCurrent
+        calendar.timeZone = .autoupdatingCurrent
+        return calendar
+    }
+}
+
+extension Date {
+    /// `formatted(date:time:)`, in `Calendar.almanacDisplay`.
+    func almanacFormatted(date: Date.FormatStyle.DateStyle, time: Date.FormatStyle.TimeStyle) -> String {
+        formatted(Date.FormatStyle(date: date, time: time, calendar: .almanacDisplay))
+    }
+}
+
+extension FormatStyle where Self == Date.FormatStyle {
+    /// `.dateTime`, in `Calendar.almanacDisplay`.
+    static var almanacDateTime: Date.FormatStyle { Date.FormatStyle(calendar: .almanacDisplay) }
 }
 
 enum AlmanacMetrics {
@@ -227,9 +258,9 @@ enum AlmanacAppearance: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .system: return "System"
-        case .light: return "Light"
-        case .dark: return "Dark"
+        case .system: return String(localized: "System")
+        case .light: return String(localized: "Light")
+        case .dark: return String(localized: "Dark")
         }
     }
 

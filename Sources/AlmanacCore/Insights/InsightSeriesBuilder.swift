@@ -32,15 +32,15 @@ public enum InsightMetric: String, Sendable, Hashable, CaseIterable, Identifiabl
 
     public var displayName: String {
         switch self {
-        case .readiness: return "Readiness"
-        case .sleepMinutes: return "Sleep"
-        case .hydrationMilliliters: return "Hydration"
-        case .steps: return "Steps"
-        case .restingHeartRate: return "Resting heart rate"
-        case .bodyWeightKg: return "Weight"
-        case .trainingLoadTonnageKg: return "Training load"
-        case .mood: return "Mood"
-        case .soreness: return "Soreness"
+        case .readiness: return localized("Readiness")
+        case .sleepMinutes: return localized("Sleep")
+        case .hydrationMilliliters: return localized("Hydration")
+        case .steps: return localized("Steps")
+        case .restingHeartRate: return localized("Resting heart rate")
+        case .bodyWeightKg: return localized("Weight")
+        case .trainingLoadTonnageKg: return localized("Training load")
+        case .mood: return localized("Mood")
+        case .soreness: return localized("Soreness")
         }
     }
 

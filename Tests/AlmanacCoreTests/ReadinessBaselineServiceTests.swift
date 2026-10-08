@@ -267,6 +267,15 @@ struct ReadinessBaselineServiceTests {
         #expect(outcome.missingInputs.contains(.hrv))
         #expect(outcome.score == 72)
         #expect(outcome.confidence == .veryLow)
+
+        // Owner, 2026-10-06: with no personal baseline the band sentence is
+        // withheld. Before that, this day read "Recovery is good — ready for a
+        // strong session" on a comparison that never happened.
+        #expect(outcome.recommendation == nil)
+        #expect(outcome.textDescription?.hasPrefix(ReadinessEngine.noPersonalBaselineText) == true,
+                "got \(outcome.textDescription ?? "nil")")
+        #expect(outcome.textDescription?.contains("Recovery") == false)
+        #expect(outcome.color == ReadinessFormula.color(for: 72), "the colour is not withheld")
     }
 
     // MARK: - §9.8 shift-specific

@@ -22,7 +22,7 @@ struct ReportListView: View {
                     ReportDetailView(model: model, reportID: report.id)
                 } label: {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(report.laboratoryNameText ?? "Laboratory report").font(.headline)
+                        Text(report.laboratoryNameText ?? String(localized: "Laboratory report")).font(.headline)
                         Text("\(dateLabel(report.reportedAt)), \(report.resultCount) results")
                             .font(.subheadline).foregroundStyle(.secondary)
                         if report.hasUnresolvedConflict {
@@ -95,7 +95,7 @@ struct ReportEditor: View {
                     Section("Correction") { TextField("Reason for this change", text: $reason, axis: .vertical) }
                 }
             }
-            .navigationTitle(report == nil ? "New report" : "Edit report")
+            .navigationTitle(report == nil ? String(localized: "New report") : String(localized: "Edit report"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -106,11 +106,11 @@ struct ReportEditor: View {
     }
     private func save() {
         do {
-            guard let store = model.store else { throw EditorFailure(message: "The database is unavailable.") }
+            guard let store = model.store else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
             let value = try editedDate(text: date, precision: precision, original: report?.reportedAt ?? .unknown)
             if let report {
                 guard !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    throw EditorFailure(message: "Enter a reason for the correction.")
+                    throw EditorFailure(message: String(localized: "Enter a reason for the correction."))
                 }
                 var edit = LabReportEdit()
                 edit.laboratoryNameText = name.isEmpty ? .clear : .set(name)
@@ -142,7 +142,7 @@ struct ReportDetailView: View {
         List {
             if let report {
                 Section {
-                    LabeledContent("Laboratory", value: report.laboratoryNameText ?? "Unknown")
+                    LabeledContent("Laboratory", value: report.laboratoryNameText ?? String(localized: "Unknown"))
                     LabeledContent("Report date", value: dateLabel(report.reportedAt))
                     Button("Edit report") { editingReport = true }
                     if report.hasUnresolvedConflict {
@@ -227,9 +227,9 @@ struct CSVImportView: View {
                 if let outcome {
                     Section("Import result") {
                         LabeledContent("Reports",
-                            value: "\(outcome.reportsCreated) created · \(outcome.reportsUnchanged) unchanged · \(outcome.reportConflicts) held")
+                            value: String(localized: "\(outcome.reportsCreated) created · \(outcome.reportsUnchanged) unchanged · \(outcome.reportConflicts) held"))
                         LabeledContent("Observations",
-                            value: "\(outcome.observationsCreated) added · \(outcome.observationsUnchanged) unchanged")
+                            value: String(localized: "\(outcome.observationsCreated) added · \(outcome.observationsUnchanged) unchanged"))
                         if outcome.invalidRowCount > 0 {
                             Text("\(outcome.invalidRowCount) rows skipped — see the source file").foregroundStyle(.secondary)
                         }
@@ -256,8 +256,8 @@ struct CSVImportView: View {
 
     private func importCSV() {
         do {
-            guard let store = model.store else { throw EditorFailure(message: "The database is unavailable.") }
-            guard let jobs = model.importJobs else { throw EditorFailure(message: "The database is unavailable.") }
+            guard let store = model.store else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
+            guard let jobs = model.importJobs else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
             outcome = try LabReportCSVImport.importReports(csv: csv, into: store, recording: jobs)
             model.changed()
         } catch { self.error = String(describing: error) }
@@ -308,10 +308,10 @@ private struct LabImportJobRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
-                Text(job.sourceName ?? "Pasted import")
+                Text(job.sourceName ?? String(localized: "Pasted import"))
                     .font(.headline)
                 Spacer()
-                Text(job.startedAt.formatted(date: .abbreviated, time: .shortened))
+                Text(job.startedAt.almanacFormatted(date: .abbreviated, time: .shortened))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -351,15 +351,15 @@ extension LabImportStatus {
     /// the raw value, because `rawValue` is a storage key and not English.
     var displayText: String {
         switch self {
-        case .matched: return "Every row matched"
-        case .partial: return "Some rows did not match"
-        case .unmatched: return "No rows matched"
-        case .invalid: return "No usable rows"
-        case .conflicted: return "Report details need review"
-        case .failed: return "The import did not finish"
+        case .matched: return String(localized: "Every row matched")
+        case .partial: return String(localized: "Some rows did not match")
+        case .unmatched: return String(localized: "No rows matched")
+        case .invalid: return String(localized: "No usable rows")
+        case .conflicted: return String(localized: "Report details need review")
+        case .failed: return String(localized: "The import did not finish")
         // Never shown as a problem: it is this app's own pending work, and a
         // person cannot act on it.
-        case .unresolved: return "Checking"
+        case .unresolved: return String(localized: "Checking")
         }
     }
 
@@ -379,17 +379,17 @@ extension LabImportJob {
     /// mark plus three counts is four separate announcements otherwise, and a
     /// screen reader user has to hold all four to learn that nothing was lost.
     var accessibilityDescription: String {
-        let when = startedAt.formatted(date: .abbreviated, time: .shortened)
+        let when = startedAt.almanacFormatted(date: .abbreviated, time: .shortened)
         if let reason = failureReason {
-            return "Import on \(when) did not finish. \(reason)"
+            return String(localized: "Import on \(when) did not finish. \(reason)")
         }
         guard rowsUsable > 0 else {
-            return "Import on \(when): \(status.displayText)."
+            return String(localized: "Import on \(when): \(status.displayText).")
         }
-        var parts = ["\(rowsMatched) of \(rowsUsable) rows matched the catalog"]
-        if rowsAmbiguous > 0 { parts.append("\(rowsAmbiguous) need a choice from candidates") }
-        if rowsUnmatched > 0 { parts.append("\(rowsUnmatched) did not match") }
-        if invalidRows > 0 { parts.append("\(invalidRows) were not laboratory lines") }
-        return "Import on \(when). " + parts.joined(separator: ". ") + "."
+        var parts = [String(localized: "\(rowsMatched) of \(rowsUsable) rows matched the catalog")]
+        if rowsAmbiguous > 0 { parts.append(String(localized: "\(rowsAmbiguous) need a choice from candidates")) }
+        if rowsUnmatched > 0 { parts.append(String(localized: "\(rowsUnmatched) did not match")) }
+        if invalidRows > 0 { parts.append(String(localized: "\(invalidRows) were not laboratory lines")) }
+        return String(localized: "Import on \(when). ") + parts.joined(separator: ". ") + "."
     }
 }

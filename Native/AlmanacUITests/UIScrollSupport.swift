@@ -62,19 +62,17 @@ enum RevealDirection {
 /// checklist rows 7.10 and 7.11 claim to cover. Only the history the baseline
 /// needs is planted.
 ///
-/// It does *clear* today, and that is not the same thing. A spec entry with no
-/// value — `rhr@0` — removes that metric's manual readings for today, because
-/// `VitalsView` keeps today's readings off its log (`records(metric:from:to:)`'s
-/// `to:` is exclusive) and the today card has no delete, so **nothing in the UI
-/// can remove one**. Measured on this simulator: four runs of the two readiness
-/// tests had left 16 readings on today, invisible to the delete helper the whole
-/// time, and both tests still passed because `meanPerDay` averages within a day
-/// before averaging across days. A test that means to assert about today's
-/// readings has to name today.
+/// It can also *clear* a day: a spec entry with no value — `rhr@0` — removes
+/// that metric's manual readings on that day. That existed because until
+/// 2026-10-06 `VitalsView` kept today's readings off its log (an exclusive upper
+/// bound), so nothing in the UI could remove one, and four runs of the two
+/// readiness tests had left 16 readings on today. The log now ends with today,
+/// so `clearHandEnteredReadings` reaches them and no test here needs the clear
+/// form any more. It is kept, and still covered by `VitalsSeedPlanTests`.
 extension XCUIApplication {
     /// Relaunches with `spec` planted, e.g.
-    /// `seedVitals("rhr@0,hrv@0,rhr=52@-1,hrv=55@-1")` — which clears today's
-    /// readings and plants yesterday's.
+    /// `seedVitals("rhr=52@-1,hrv=55@-1")` — which plants yesterday's readings,
+    /// replacing any manual ones already on that day.
     ///
     /// Terminates rather than launching over the top: XCTest does not reliably
     /// deliver changed launch arguments to an already-running process, and a
@@ -169,13 +167,25 @@ extension XCUIApplication {
         /// and the fallback never fires. `cells` is no better: this app's
         /// `List`s expose no cells at all, so that query is always empty and the
         /// check is silently off.
+        ///
+        /// Read from one snapshot, not element by element. The list is still
+        /// settling after a swipe, and `allElementsBoundByIndex` resolves each
+        /// index again when its frame is read: when the set has shrunk in
+        /// between, XCTest fails the test ("No matches found for Element at
+        /// index 12", CI 2026-10-07, in BodyCircumference and ProblemChannel)
+        /// rather than answering. A snapshot is immutable, so it cannot lose an
+        /// element halfway through being read.
         func anchor() -> CGFloat? {
-            collectionViews.firstMatch
-                .descendants(matching: .staticText)
-                .allElementsBoundByIndex
-                .filter { $0.frame.height > 1 }
-                .map(\.frame.minY)
-                .min()
+            guard let root = try? collectionViews.firstMatch.snapshot() else { return nil }
+            var top: CGFloat?
+            func walk(_ node: XCUIElementSnapshot) {
+                if node.elementType == .staticText, node.frame.height > 1 {
+                    top = min(top ?? node.frame.minY, node.frame.minY)
+                }
+                node.children.forEach(walk)
+            }
+            walk(root)
+            return top
         }
 
         var lastSeen = anchor()

@@ -47,8 +47,8 @@ struct VitalsView: View {
     @State private var error: String?
     @State private var readProblem: String?
 
-    /// Days of history below today's readings. A logbook, not an analytics
-    /// screen — same bound `SupplementView` uses, and for the same reason.
+    /// Days in the log, today included. A logbook, not an analytics screen —
+    /// same bound `SupplementView` uses, and for the same reason.
     private static let historyDayCount = 14
 
     var body: some View {
@@ -79,7 +79,7 @@ struct VitalsView: View {
                     }
                 }
             } header: {
-                AlmanacSectionHeader(title: "Recent readings")
+                AlmanacSectionHeader(title: String(localized: "Recent readings"))
             } footer: {
                 Text(historyFooter)
             }
@@ -132,7 +132,7 @@ struct VitalsView: View {
     }
 
     private func detail(for metric: VitalsMetric) -> String {
-        guard let record = today[metric] else { return "Not entered" }
+        guard let record = today[metric] else { return String(localized: "Not entered") }
         let time = record.timestamp.formatted(date: .omitted, time: .shortened)
         return record.source == VitalsRecordStore.manualSource
             ? "Entered at \(time)"
@@ -208,13 +208,6 @@ struct VitalsView: View {
         let model = TimeModel(timeZone: .current)
         let today = model.logicalDay(Date())
         let todayStart = model.start(of: today)
-        // Walked with `day(before:)` rather than by subtracting 86,400 seconds:
-        // the repo's rule is that DST and calendar changes stay the calendar's
-        // problem, and a fortnight of history is exactly where that shows up.
-        var windowStart = today
-        for _ in 1..<Self.historyDayCount {
-            windowStart = model.day(before: windowStart) ?? windowStart
-        }
         do {
             var readings: [VitalsMetric: VitalsRecord] = [:]
             for metric in VitalsMetric.allCases {
@@ -226,17 +219,18 @@ struct VitalsView: View {
                     readings[metric] = try store.latestValue(for: metric, since: start)
                 }
             }
-            let rows = try VitalsMetric.allCases
-                .flatMap { try store.records(metric: $0.rawValue, from: windowStart.value, to: today.value) }
-                .sorted { $0.timestamp > $1.timestamp }
+            // Today included: the log is where a hand-entered reading is
+            // corrected or deleted, and today's card offers neither. See
+            // `VitalsRecordStore.log` for the half-open bound this replaced.
+            self.history = try store.log(metrics: VitalsMetric.allCases, dayCount: Self.historyDayCount,
+                                         endingOn: today, timeModel: model, limit: 40)
             self.today = readings
-            self.history = Array(rows.prefix(40))
             readProblem = nil
         } catch {
             // Distinct from an empty list, and left beside it rather than
             // replacing it: "nothing recorded" and "could not read" are different
             // claims (see `AlmanacProblemNote`).
-            self.readProblem = "Could not read your vitals log. Figures below may be out of date."
+            self.readProblem = String(localized: "Could not read your vitals log. Figures below may be out of date.")
         }
     }
 
@@ -310,7 +304,7 @@ private struct VitalsEntryEditor: View {
                     .keyboardType(.decimalPad)
                     .accessibilityIdentifier("vitals-value")
             }
-            .navigationTitle(isCorrection ? "Correct reading" : "Log a reading")
+            .navigationTitle(isCorrection ? String(localized: "Correct reading") : String(localized: "Log a reading"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
@@ -340,7 +334,8 @@ private struct VitalsEntryEditor: View {
 
     private func save(allowUnusual: Bool = false) {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let number = try? Double(trimmed, format: .number, lenient: false) else {
+        guard let number = Double(userInput: trimmed)
+                ?? (try? Double(trimmed, format: .number, lenient: false)) else {
             error = VitalsEntryError.invalidValue(metricBeingEdited).localizedDescription
             return
         }

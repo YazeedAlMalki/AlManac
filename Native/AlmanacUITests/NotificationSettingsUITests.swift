@@ -99,6 +99,17 @@ final class NotificationSettingsUITests: XCTestCase {
         settings.tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
 
+        // Opening Settings must not ask for anything. It used to: loading the
+        // saved water-reminder settings fired `.onChange`, which re-saved them and
+        // requested notification permission, and the system alert then sat over
+        // the list so the link below could not be scrolled to. That surfaced as
+        // "does not offer the reminders screen", which named the wrong cause.
+        // Only meaningful while permission is still undecided; once an earlier
+        // test has answered it, no alert can appear either way.
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertFalse(springboard.alerts.firstMatch.waitForExistence(timeout: 2),
+                       "opening Settings raised a system alert: \(springboard.alerts.firstMatch.label)")
+
         let link = app.buttons["notification-settings-link"]
         XCTAssertTrue(app.reveal(link), "Settings does not offer the reminders screen")
         link.tap()

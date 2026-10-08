@@ -89,7 +89,7 @@ struct KitchenRecipesView: View {
                 ? "Add what is in your kitchen to see recipes you can make with it."
                 : "None of your recipes use what is in your pantry."
         case .recent:
-            return "None of your recipes use what you have logged this week."
+            return String(localized: "None of your recipes use what you have logged this week.")
         case .browse:
             return query.isEmpty
                 ? "No recipes yet. A saved meal built from ingredients is a recipe."
@@ -113,7 +113,7 @@ struct KitchenRecipesView: View {
     private func hiddenRow(_ match: RecipeMatch) -> HiddenDishRow {
         HiddenDishRow(ref: match.recipe, name: match.name, reason: match.verdict.reason,
                       warning: match.allergen.warning ?? match.verdict.reason ?? "",
-                      ingredients: match.ingredients.map { $0.name ?? "An unnamed ingredient" })
+                      ingredients: match.ingredients.map { $0.name ?? String(localized: "An unnamed ingredient") })
     }
 
     private func choose(_ match: RecipeMatch) {
@@ -152,11 +152,11 @@ private struct RecipeRow: View {
 
     private var summary: String {
         let missing = match.missing
-        guard !missing.isEmpty else { return "Everything on hand" }
+        guard !missing.isEmpty else { return String(localized: "Everything on hand") }
         // An ingredient whose reference row has gone is still missing; it just
         // cannot be named, and it is not dropped from the count.
         let names = missing.map { $0.name ?? "an unnamed ingredient" }
-        return "Missing \(names.joined(separator: ", "))"
+        return String(localized: "Missing \(names.joined(separator: String(localized: ", ")))")
     }
 }
 

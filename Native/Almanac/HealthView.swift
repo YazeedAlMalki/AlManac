@@ -25,7 +25,7 @@ struct HealthView: View {
                 .disabled(model.isSyncing)
 
                 if let lastSynced = model.lastSynced {
-                    Text("Last synced \(lastSynced.formatted(date: .abbreviated, time: .shortened))")
+                    Text("Last synced \(lastSynced.almanacFormatted(date: .abbreviated, time: .shortened))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -88,7 +88,7 @@ struct HealthView: View {
         let grouped = number.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
             .first!
             .replacingOccurrences(of: "(?<=[0-9])(?=[0-9]{3})", with: ",", options: .regularExpression)
-        return grouped + (number.contains(".") ? number.suffix(from: number.firstIndex(of: ".")!) : "")
+        return NumberDisplay.localized(grouped + (number.contains(".") ? number.suffix(from: number.firstIndex(of: ".")!) : ""))
             + " " + unit
     }
 }

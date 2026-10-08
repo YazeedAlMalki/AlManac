@@ -91,7 +91,7 @@ struct InsightsView: View {
                     }
                 }
             } header: {
-                AlmanacSectionHeader(title: "Trends")
+                AlmanacSectionHeader(title: String(localized: "Trends"))
             } footer: {
                 Text("Direction compares the older half of the recorded days to the newer half, so one noisy day does not flip the arrow.")
             }
@@ -107,7 +107,7 @@ struct InsightsView: View {
                     }
                 }
             } header: {
-                AlmanacSectionHeader(title: "Associations")
+                AlmanacSectionHeader(title: String(localized: "Associations"))
             } footer: {
                 // The BRD's guardrail, stated on the screen rather than in a
                 // comment. `r` is association; nothing here measures a cause.
@@ -117,7 +117,7 @@ struct InsightsView: View {
             Section {
                 badgeRow
             } header: {
-                AlmanacSectionHeader(title: "Today")
+                AlmanacSectionHeader(title: String(localized: "Today"))
             } footer: {
                 Text("Badges are recomputed each time this screen opens. “Perfect log” is not awarded: what a perfect log means is not decided.")
             }
@@ -168,7 +168,7 @@ struct InsightsView: View {
                     .foregroundStyle(AlmanacPalette.textPrimary)
                 Spacer(minLength: 12)
                 if let r = summary.rValue {
-                    Text(String(format: "r %.2f", r))
+                    Text(NumberDisplay.localized(String(format: "r %.2f", r)))
                         .font(AlmanacTypography.font(.data).monospacedDigit())
                         .foregroundStyle(AlmanacPalette.textPrimary)
                 }
@@ -185,14 +185,14 @@ struct InsightsView: View {
                 // The insufficient state, in words, with the number that would
                 // clear it. Not a dash and not a zero.
                 AlmanacStatusMark(
-                    text: "Not enough paired days — \(summary.sampleSize) of \(summary.minimumRequired)",
+                    text: String(localized: "Not enough paired days — \(summary.sampleSize) of \(summary.minimumRequired)"),
                     tone: .neutral)
             }
             // The comparable-day filter, stated rather than applied silently. A
             // number computed from 20 of 24 days reads exactly like one computed
             // from 24 unless the screen says which happened.
             if summary.excludedTransitionDays > 0 {
-                Text("\(summary.excludedTransitionDays) day\(summary.excludedTransitionDays == 1 ? "" : "s") in a schedule change left out")
+                Text("\(summary.excludedTransitionDays) days in a schedule change left out")
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
             }
@@ -239,7 +239,7 @@ struct InsightsView: View {
     }
 
     private func format(_ value: Double) -> String {
-        value.rounded() == value ? String(Int(value)) : String(format: "%.1f", value)
+        AlmanacNumber.compact(value)
     }
 
     private func directionSymbol(_ direction: TrendDirection) -> String {
@@ -260,11 +260,11 @@ struct InsightsView: View {
 
     private func badgeTitle(_ badge: AchievementBadge) -> String {
         switch badge {
-        case .stepsTargetMet: return "Steps recorded"
-        case .highLoadDay: return "Heavy training day"
-        case .fastedDay: return "Dry fast"
-        case .nutritionTargetsMet: return "Nutrition targets met"
-        case .perfectLog: return "Perfect log"
+        case .stepsTargetMet: return String(localized: "Steps recorded")
+        case .highLoadDay: return String(localized: "Heavy training day")
+        case .fastedDay: return String(localized: "Dry fast")
+        case .nutritionTargetsMet: return String(localized: "Nutrition targets met")
+        case .perfectLog: return String(localized: "Perfect log")
         }
     }
 
@@ -299,7 +299,7 @@ struct InsightsView: View {
             loaded = true
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read your insights."
+            readProblem = String(localized: "Could not read your insights.")
             trends = []
             correlations = []
             loaded = true

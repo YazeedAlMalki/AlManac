@@ -45,7 +45,7 @@ struct DigestionQuickEntryView: View {
     private enum Kind: String, CaseIterable, Identifiable {
         case bowel, urination
         var id: String { rawValue }
-        var title: String { self == .bowel ? "Bowel movement" : "Urination" }
+        var title: String { self == .bowel ? String(localized: "Bowel movement") : String(localized: "Urination") }
     }
 
     /// How much blood, where the user has observed some.
@@ -61,10 +61,10 @@ struct DigestionQuickEntryView: View {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .none: return "None seen"
-            case .streak: return "Streak"
-            case .small: return "Small amount"
-            case .large: return "Large amount"
+            case .none: return String(localized: "None seen")
+            case .streak: return String(localized: "Streak")
+            case .small: return String(localized: "Small amount")
+            case .large: return String(localized: "Large amount")
             }
         }
     }
@@ -75,9 +75,9 @@ struct DigestionQuickEntryView: View {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .unstated: return "Not stated"
-            case .yes: return "Yes"
-            case .no: return "No"
+            case .unstated: return String(localized: "Not stated")
+            case .yes: return String(localized: "Yes")
+            case .no: return String(localized: "No")
             }
         }
     }
@@ -180,7 +180,7 @@ struct DigestionQuickEntryView: View {
             }
             .accessibilityIdentifier("stool-color")
         } header: {
-            AlmanacSectionHeader(title: "Colour")
+            AlmanacSectionHeader(title: String(localized: "Colour"))
         } footer: {
             Text("Almanac records what you saw and does not interpret it.")
         }
@@ -205,7 +205,7 @@ struct DigestionQuickEntryView: View {
             }
             .accessibilityIdentifier("digestion-gas")
         } header: {
-            AlmanacSectionHeader(title: "Symptoms")
+            AlmanacSectionHeader(title: String(localized: "Symptoms"))
         } footer: {
             // Says what a nil means, because "Gas: not stated" is otherwise a
             // value the user cannot produce and so cannot interpret.
@@ -269,7 +269,7 @@ struct DigestionQuickEntryView: View {
                 AlmanacStatusMark(text: confirmation, tone: .good)
             }
         } header: {
-            AlmanacSectionHeader(title: "Today")
+            AlmanacSectionHeader(title: String(localized: "Today"))
         }
     }
 
@@ -296,12 +296,12 @@ struct DigestionQuickEntryView: View {
                                        // in docs/features/digestion.md.
                                        notes: cleanNotes),
                     logicalDay: day)
-                confirmation = "Bowel movement logged"
+                confirmation = String(localized: "Bowel movement logged")
             case .urination:
                 _ = try UrinationStore(db: db).log(
                     UrinationDraft(timestamp: time, colorGrade: grade, notes: cleanNotes),
                     logicalDay: day)
-                confirmation = "Urination logged"
+                confirmation = String(localized: "Urination logged")
             }
             notes = ""
             reload()
@@ -343,7 +343,7 @@ struct DigestionQuickEntryView: View {
             readProblem = nil
         } catch {
             self.error = String(describing: error)
-            readProblem = "Could not read today's entries."
+            readProblem = String(localized: "Could not read today's entries.")
             entries = []
         }
     }
@@ -353,9 +353,9 @@ struct DigestionQuickEntryView: View {
         if let color = entry.color { parts.append(StoolColor(rawValue: color)?.displayName ?? readable(color)) }
         if entry.bloodPresent {
             let amount = entry.bloodAmount.map { readable($0) }
-            parts.append(amount.map { "Blood seen, \($0)" } ?? "Blood seen")
+            parts.append(amount.map { "Blood seen, \($0)" } ?? String(localized: "Blood seen"))
         }
-        if let gas = entry.gas { parts.append(gas ? "Gas" : "No gas") }
+        if let gas = entry.gas { parts.append(gas ? String(localized: "Gas") : String(localized: "No gas")) }
         if let note = entry.notes, !note.isEmpty { parts.append(note) }
         return parts.joined(separator: " · ")
     }

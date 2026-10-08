@@ -102,13 +102,14 @@ public struct DayEnergy: Hashable, Sendable {
     /// rather than in a view because the rule is not obvious: whether a day is
     /// partial depends on the food being absent, not merely on it being nil.
     public var summary: String {
-        guard isFoodComplete else { return "Partial total — some values are unavailable" }
+        guard isFoodComplete else { return localized("Partial total — some values are unavailable") }
         switch (foodCount, drinkCount) {
-        case (_, 0): return "\(foodCount) foods counted"
-        case (0, 1): return "1 drink counted"
-        case (0, _): return "\(drinkCount) drinks counted"
-        case (_, 1): return "\(foodCount) foods and 1 drink counted"
-        default: return "\(foodCount) foods and \(drinkCount) drinks counted"
+        case (_, 0): return localized("%@ foods counted", NumberDisplay.localized(String(foodCount)))
+        case (0, 1): return localized("1 drink counted")
+        case (0, _): return localized("%@ drinks counted", NumberDisplay.localized(String(drinkCount)))
+        case (_, 1): return localized("%@ foods and 1 drink counted", NumberDisplay.localized(String(foodCount)))
+        default: return localized("%@ foods and %@ drinks counted", NumberDisplay.localized(String(foodCount)),
+                                  NumberDisplay.localized(String(drinkCount)))
         }
     }
 }
