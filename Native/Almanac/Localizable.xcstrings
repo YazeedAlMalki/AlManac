@@ -381,6 +381,70 @@
         }
       }
     },
+    "%lld days": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا أيام"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "يوم واحد"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "يومان"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld أيام"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld يومًا"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld يوم"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld days in a schedule change left out": {
       "localizations": {
         "en": {
@@ -1163,6 +1227,26 @@
         }
       }
     },
+    "%lldh %lldm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld س %lld د"
+          }
+        }
+      }
+    },
+    "%lldm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld د"
+          }
+        }
+      }
+    },
     "%lldm %llds": {
       "localizations": {
         "ar": {
@@ -1767,6 +1851,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تعذّر فتح Almanac"
+          }
+        }
+      }
+    },
+    "Almanac could not produce a defensible score from the available signals.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يتمكن Almanac من حساب درجة يُعتمد عليها من المؤشرات المتاحة."
           }
         }
       }
@@ -4477,6 +4571,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "جيد"
+          }
+        }
+      }
+    },
+    "Good afternoon, %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طاب نهارك، %@"
+          }
+        }
+      }
+    },
+    "Good evening, %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مساء الخير، %@"
+          }
+        }
+      }
+    },
+    "Good morning, %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صباح الخير، %@"
           }
         }
       }
@@ -7881,6 +8005,26 @@
         }
       }
     },
+    "Readings from Apple Health are corrected in Apple Health.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قراءات تطبيق الصحة تُصحَّح في تطبيق الصحة."
+          }
+        }
+      }
+    },
+    "Readings you type in can be corrected or removed here. Readings from Apple Health are corrected in Apple Health.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءات التي تُدخلها بنفسك تُصحَّح أو تُحذف هنا. أما قراءات تطبيق الصحة فتُصحَّح في تطبيق الصحة."
+          }
+        }
+      }
+    },
     "Reason": {
       "localizations": {
         "ar": {
@@ -9277,6 +9421,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا يزال غير منتظم"
+          }
+        }
+      }
+    },
+    "Still needed: %@.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ما زال ينقص: %@."
           }
         }
       }
@@ -11179,6 +11333,16 @@
         }
       }
     },
+    "mood": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المزاج"
+          }
+        }
+      }
+    },
     "north": {
       "localizations": {
         "ar": {
@@ -11289,6 +11453,16 @@
         }
       }
     },
+    "resting heart rate": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نبض القلب أثناء الراحة"
+          }
+        }
+      }
+    },
     "scaled from %lld": {
       "localizations": {
         "ar": {
@@ -11305,6 +11479,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "محدَّد"
+          }
+        }
+      }
+    },
+    "sleep": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النوم"
+          }
+        }
+      }
+    },
+    "sleep quality": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جودة النوم"
+          }
+        }
+      }
+    },
+    "soreness": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ألم العضلات"
           }
         }
       }

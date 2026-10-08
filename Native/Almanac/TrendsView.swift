@@ -10,7 +10,7 @@ struct TrendsView: View {
         case year = 365
 
         var id: Int { rawValue }
-        var title: String { "\(rawValue) days" }
+        var title: String { String(localized: "\(rawValue) days") }
     }
 
     private struct Point: Identifiable {

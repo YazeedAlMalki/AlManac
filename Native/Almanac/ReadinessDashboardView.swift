@@ -435,13 +435,12 @@ struct ReadinessDashboardView: View {
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
-        let salutation: String
+        let name = model.displayName
         switch hour {
-        case 5..<12: salutation = "Good morning"
-        case 12..<17: salutation = "Good afternoon"
-        default: salutation = "Good evening"
+        case 5..<12: return String(localized: "Good morning, \(name)")
+        case 12..<17: return String(localized: "Good afternoon, \(name)")
+        default: return String(localized: "Good evening, \(name)")
         }
-        return "\(salutation), \(model.displayName)"
     }
 
     private func refresh() {
@@ -496,8 +495,8 @@ struct ReadinessDashboardView: View {
         if outcome.score == nil {
             let missing = missingInputNames(outcome.missingInputs)
             return missing.isEmpty
-                ? "Almanac could not produce a defensible score from the available signals."
-                : "Still needed: \(missing.joined(separator: ", "))."
+                ? String(localized: "Almanac could not produce a defensible score from the available signals.")
+                : String(localized: "Still needed: \(missing.formatted(.list(type: .and))).")
         }
         return String(localized: "This assessment combines the signals below. It describes today; it does not diagnose or prescribe.")
     }
@@ -505,12 +504,12 @@ struct ReadinessDashboardView: View {
     private func missingInputNames(_ inputs: [ReadinessInputKind]) -> [String] {
         inputs.map {
             switch $0 {
-            case .sleep: return "sleep"
-            case .sleepQuality: return "sleep quality"
-            case .rhr: return "resting heart rate"
+            case .sleep: return String(localized: "sleep")
+            case .sleepQuality: return String(localized: "sleep quality")
+            case .rhr: return String(localized: "resting heart rate")
             case .hrv: return String(localized: "HRV")
-            case .mood: return "mood"
-            case .soreness: return "soreness"
+            case .mood: return String(localized: "mood")
+            case .soreness: return String(localized: "soreness")
             }
         }
     }
@@ -518,6 +517,6 @@ struct ReadinessDashboardView: View {
     private func durationLabel(_ minutes: Int) -> String {
         let hours = minutes / 60
         let mins = minutes % 60
-        return hours > 0 ? "\(hours)h \(mins)m" : "\(mins)m"
+        return hours > 0 ? String(localized: "\(hours)h \(mins)m") : String(localized: "\(mins)m")
     }
 }

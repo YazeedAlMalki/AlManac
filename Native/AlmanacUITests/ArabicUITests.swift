@@ -174,7 +174,9 @@ final class ArabicUITests: XCTestCase {
             case .staticText, .button, .textField, .switch, .cell, .link, .segmentedControl:
                 shown = node.label.isEmpty ? (node.value as? String ?? "") : node.label
             case .navigationBar:
-                shown = node.identifier
+                // A bar with no title is named after its SwiftUI host type
+                // (`_TtGC7SwiftUI…`), which is not text anyone sees.
+                shown = node.identifier.hasPrefix("_Tt") ? "" : node.identifier
             default:
                 shown = ""
             }
