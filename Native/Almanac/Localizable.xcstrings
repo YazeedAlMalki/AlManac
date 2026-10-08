@@ -2052,7 +2052,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "الجنس البيولوجي"
+            "value": "الجنس"
           }
         }
       }
@@ -5952,7 +5952,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "لم تُختر مدينة"
+            "value": "لم يتم اختيار مدينة"
           }
         }
       }
@@ -6692,7 +6692,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "لا شيء مسجّل اليوم بعد."
+            "value": "لا شيء مسجّل اليوم حتى الآن."
           }
         }
       }
@@ -7402,7 +7402,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "حُفظ الملف الشخصي"
+            "value": "حفظ الملف الشخصي"
           }
         }
       }
