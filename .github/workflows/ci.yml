@@ -298,6 +298,47 @@ jobs:
         run: |
           grep -E ": error: |Test Case .* failed" "$RUNNER_TEMP/xcodebuild-test.log" | cut -c1-600 || true
 
+      # The Arabic screenshot pass (ArabicUITests.testScreenshotEveryScreenInArabic)
+      # prints each screen's Latin-script text and off-screen elements as
+      # `ARABIC-PASS` lines. Gathered here so a reader of the log's tail sees them.
+      - name: Arabic pass report
+        if: always()
+        run: |
+          grep -h "^ARABIC-PASS" "$RUNNER_TEMP/xcodebuild-test.log" | sort -u | cut -c1-400 || true
+
+      # The pass's screenshots as plain PNGs, so reading them does not need Xcode.
+      - name: Export the Arabic screenshots
+        if: always()
+        run: |
+          set -uo pipefail
+          BUNDLE="$RUNNER_TEMP/AlmanacUITests.xcresult"
+          OUT="$RUNNER_TEMP/attachments"
+          [ -d "$BUNDLE" ] || exit 0
+          xcrun xcresulttool export attachments --path "$BUNDLE" --output-path "$OUT" || exit 0
+          mkdir -p "$RUNNER_TEMP/arabic-screenshots"
+          python3 - "$OUT" "$RUNNER_TEMP/arabic-screenshots" <<'PY' || echo "::warning::could not sort the Arabic screenshots"
+          import json, os, shutil, sys
+          src, dst = sys.argv[1], sys.argv[2]
+          manifest = json.load(open(os.path.join(src, "manifest.json")))
+          for test in manifest:
+              for a in test.get("attachments", []):
+                  name = a.get("suggestedHumanReadableName", "")
+                  if name.startswith("ar-"):
+                      base = name.split("_", 1)[0] if name.endswith(".png") else name
+                      target = base if base.endswith(".png") else base + ".png"
+                      shutil.copy(os.path.join(src, a["exportedFileName"]), os.path.join(dst, target))
+          print(len(os.listdir(dst)), "Arabic screenshots")
+          PY
+
+      - name: Attach the Arabic screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arabic-screenshots
+          path: ${{ runner.temp }}/arabic-screenshots
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Attach the result bundle
         if: always()
         uses: actions/upload-artifact@v4
