@@ -78,7 +78,7 @@ public struct NotificationRuleStore: @unchecked Sendable {
         let enabled: Bool
         switch type {
         case .readiness, .water, .suhoor, .iftar: enabled = true
-        case .meal, .bedtime, .supplement, .contextualSnack, .contextualHydration: enabled = false
+        case .meal, .bedtime, .supplement, .contextualSnack, .contextualHydration, .prayer: enabled = false
         }
         return NotificationRule(type: type, isEnabled: enabled)
     }
@@ -99,8 +99,8 @@ public struct NotificationRuleStore: @unchecked Sendable {
             updatedAt: row.string("updatedAt").flatMap(iso8601ToDate) ?? clock.now)
     }
 
-    /// Every type's rule, in `NotificationType.allCases` order — always nine
-    /// entries, whether or not rows exist for all of them.
+    /// Every type's rule, in `NotificationType.allCases` order — one entry per
+    /// type, whether or not rows exist for all of them.
     public func allRules() throws -> [NotificationRule] {
         try NotificationType.allCases.map { try rule(for: $0) }
     }

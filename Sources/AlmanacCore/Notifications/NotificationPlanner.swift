@@ -84,12 +84,21 @@ public struct NotificationPlanner: @unchecked Sendable {
         let nowOnly = try suppression.nowOnlyAxes()
         let occurrences = try suppression.nightOccurrences(around: instant)
         let postShiftEpisodes = try suppression.postShiftEpisodes(around: instant)
+        let dryFast = try suppression.dryFastSpans(around: instant, horizon: horizon, nowOnly: nowOnly)
 
+        // The doc above promised this filter and the code never applied it.
+        // The days walked start at today's logical day, so every reminder
+        // earlier today was a candidate, and the scheduler turns a past instant
+        // into "fire in one second" — opening the app after Maghrib announced
+        // iftar again, every time.
+        let end = instant.addingTimeInterval(horizon)
         let kept = candidates.filter { candidate in
-            let context = nowOnly.with(
+            guard candidate.fireAt > instant, candidate.fireAt <= end else { return false }
+            var context = nowOnly.with(
                 isNightShift: suppression.isWithinNightShift(at: candidate.fireAt, occurrences: occurrences),
                 isPostShiftSleep: suppression.isWithinPostShiftSleep(at: candidate.fireAt,
                                                                       episodes: postShiftEpisodes))
+            context.isDryFastActive = dryFast.contains(candidate.fireAt)
             return !NotificationSuppressionMatrix.shouldSuppress(candidate.type, in: context)
         }
 
@@ -130,6 +139,7 @@ public struct NotificationPlanner: @unchecked Sendable {
         try appendBedtime(day: day, into: &candidates)
         try appendSuhoor(day: day, into: &candidates)
         try appendIftar(day: day, into: &candidates)
+        try appendPrayers(day: day, into: &candidates)
         try appendMeals(day: day, into: &candidates)
         try appendSupplements(day: day, into: &candidates)
         try appendContextualHydration(day: day, into: &candidates)
@@ -190,6 +200,24 @@ public struct NotificationPlanner: @unchecked Sendable {
         candidates.append(PlannedNotification(
             identifier: "almanac.iftar.\(day.value)", type: .iftar, fireAt: fireAt,
             title: NotificationText.iftarTitle, body: NotificationText.iftarBody))
+    }
+
+    /// One alert per chosen prayer, at its cached time. On a fast day with the
+    /// iftar reminder on, Maghrib's alert is left to iftar: both would fire at
+    /// the same instant, and iftar's already says Maghrib has come.
+    private func appendPrayers(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
+        guard try rules.isEnabled(.prayer),
+              let cached = try PrayerTimeCacheStore(db: db).cachedDay(day.value) else { return }
+        let chosen = try PrayerSettingsStore(db: db).settings().alertPrayers
+        let iftarCovers = try rules.isEnabled(.iftar) && ReligiousFastScheduleStore(db: db).isFastDay(day.value)
+        for time in cached.times where PrayerTime.obligatoryNames.contains(time.name) && chosen.contains(time.name) {
+            if time.name == "maghrib" && iftarCovers { continue }
+            candidates.append(PlannedNotification(
+                identifier: "almanac.prayer.\(time.name).\(day.value)",
+                type: .prayer, fireAt: time.timestamp,
+                title: NotificationText.prayerTitle(time.name),
+                body: NotificationText.prayerBody(time.name, timeText: timeText(time.timestamp))))
+        }
     }
 
     /// One notification per meal type, because `MealReminderSettingsStore` is

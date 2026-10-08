@@ -1,19 +1,90 @@
 # Fasting — Slice 6 design, v1
 
-**Status:** all of §6's build plan is done except notification suppression
-(step 6, blocked on Slice 11) and the `nutritionWindowId` cross-module wiring
-(step 5's second half). Intermittent fasting core (migration 022):
-`fasting_session`, `FastingSessionStore`, `IFSuggestion`. Prayer-time
-calculation: vendored `Adhan`, `AdhanCalculator`. Religious fasting +
-prayer infrastructure (migration 024): `religious_fast_schedule` +
-`ReligiousFastScheduleStore`, `prayer_settings` + `PrayerSettingsStore`,
-`prayer_times_cache` + `PrayerTimeCacheStore` + `PrayerTimeEngine`,
-`nutrition_window` + `NutritionWindowStore`, and `ReligiousFastingService`
-tying the auto-create/auto-end flow together. 67 tests across this slice,
-green. Nothing calls any of it yet — see §6's closing note. Schema and
-engine logic transcribed verbatim from `../../../almanac-tech-spec-v1.0.md`
-§5.21–5.22, §7.2, §11–14, Appendix B — the recovered, authoritative Technical
-Spec (`docs/architecture/spec-reconciliation.md`).
+**Status (2026-10-06): complete, and reachable from the running app.** Every
+rule below was built and unit-tested by 2026-09-29; almost none of it ran on a
+phone. Section 0 is what was wrong and what is now true. The sections after it
+are the original design record, corrected where they had gone stale.
+
+## 0. Completed 2026-10-06 — what was broken, what is now true
+
+**Religious fasting never ran.** Nothing in the app ever created a
+`religious_fast_schedule` row, so `isFastDay` was false on every date: no
+Ramadan, no session, no night window, no suhoor or iftar reminder, no Ramadan
+readiness baseline. `ReligiousFastScheduleStore.ensureRamadanSchedules` now
+creates this Hijri year's Ramadan (if it has not ended) and next year's on every
+refresh, inheriting the user's last on/off choice. Mondays and Thursdays and the
+White Days are toggles on the Fasting screen. Any date can be marked or unmarked
+by hand (`setManualFastDay`, logged on a `"manual"` schedule row; the newest
+correction wins, and `"clear"` hands the date back to the calendar). Eid
+al-Fitr, Eid al-Adha and the days of Tashreeq are never a voluntary fast day.
+
+**A religious session is now derived, not accumulated.**
+`ReligiousFastingService.ensureDay` computes the session from the schedule, the
+day's Fajr and Maghrib, the first intake of any kind at or after Fajr
+(`FastingIntakeLog`), and the time — and writes that. Before Fajr there is no
+session; from Fajr it is open; at the first intake it ends there; at Maghrib,
+unbroken, it ends at Maghrib. Because it is recomputed, it is right however the
+facts changed: a drink from the widget, a meal moved in an editor, a deleted
+entry, water imported from Apple Health, prayer times recalculated after travel,
+a day un-marked. `FastingCoordinator.refresh` runs it for yesterday and today on
+launch, on every foreground, after Health sync and on the Fasting screen.
+
+Three defects that derivation removes:
+
+- **Suhoor invalidated the day's fast.** The session was created at any hour, so
+  one opened at 04:10 for a 04:50 Fajr; §11.1's backdating rule then saw a meal
+  "before the session's start" and invalidated it, and suhoor water "ended" it
+  with a negative duration. §11.1's tree no longer touches religious sessions,
+  `recordIntake` ignores anything before the start, and no session exists before
+  Fajr. Sessions an older build damaged are repaired on the next refresh.
+- **Opened first after Maghrib, a fast stayed open** until the next refresh, and
+  the iftar drink then "broke" it. It is now recorded as kept, at Maghrib.
+- **The calendar date, not the logical day.** Riyadh's Fajr is 03:35 in June,
+  before the 04:00 boundary, so the fast was looked for under the previous day.
+
+**Logging never reached the rules.** `FastingAwareNutritionLog` and
+`FastingAwareHydrationLog` existed and nothing called them; a logged lunch never
+ended a fast. Every write path now goes through them — food logging and delete,
+water and catalog drinks and delete, both Activity Rings editors and their
+deletes, and the widget's water button — and they carry the night-window
+assignment too, so no call site applies a rule by hand. Deleting the entry that
+ended a fast gives the fast back (intermittent: through the same restore an edit
+uses; religious: by re-derivation). A drink with calories now ends an
+intermittent fast (§11.1: "any calorie-containing entry").
+
+**Intermittent fasting:** the screen looked the fast up by today's logical day,
+so one started at 20:00 vanished at 04:00 while still running and "Start" was
+offered over it (and failed on the one-active index). It now shows the active
+session whatever day it began, with a live timer and the protocol's target.
+§11.1's suggestion ("No calories have been logged for N hours. Are you currently
+fasting?") is on the screen: Yes starts an `if_confirmed_suggestion` session
+from the last food log, No suppresses it for four hours; never on a religious
+fast day, never with nothing logged. An intermittent fast still running at Fajr
+on a fast day ends at Fajr so the religious one can open.
+
+**The read side of §7.2 exists.** The Fasting screen shows the night window —
+last night's during the day, tonight's after Maghrib — with what was eaten and
+drunk in it, and the coming fast days with their reasons and Hijri dates.
+
+**The widget** shows suhoor, the iftar countdown, broken or kept on a fast day,
+from the same `ReligiousFastDay.phase` the screen uses; its End button ends only
+an intermittent fast.
+
+**Prayer times** (§12): see `docs/features/notifications.md` for the alerts, and
+`Sources/AlmanacCore/Prayer/` for: the bundled city list is finally reachable
+(a picker on the Prayer screen); a chosen city stays chosen — Core Location is
+only fed in automatic mode, and only as a one-shot fix; a detected fix is named
+after the nearest bundled city within 50 km instead of keeping the old city's
+name; seven more calculation methods the vendored library already had, plus
+custom angles; the Hanafi Asr (Migration050 `asrMethod`); per-prayer offsets on
+screen; the Qibla bearing; and **Umm al-Qura's Ramadan Isha**, Maghrib + 120
+minutes — the library leaves it to the caller, and every Ramadan Isha in the
+default method was half an hour early. `ensureCache` also rebuilds a cache
+computed for another place or method, which is how a settings write whose
+recalculation never landed used to stay in force for a month.
+
+**Decisions taken without the owner** are recorded in `CONTEXT.md` under
+"Fasting and prayer (2026-10-06)".
 
 ## 1. Why this doc is short
 
@@ -310,14 +381,10 @@ before the intake were genuinely fasted, and the record should say so.
   direction as `FastingAwareNutritionLog` (Hydration must not know Fasting
   exists). It records the drink first and unconditionally: a broken fast is
   still a real thing the user drank.
-- **Not wired into the hydration write paths yet — the known gap.** Four call
-  sites still write through `HydrationStore` directly and bypass the rule:
-  `HydrationModel.log`, `HydrationModel.logDrink`, the widget's
-  `LogWaterIntent`, and the Activity Rings day-detail hydration editor. Until
-  those are switched to `FastingAwareHydrationLog`, logging water during a fast
-  does not break it in the running app; the rule is correct and tested, just not
-  called from those four paths yet. This is the same "discipline cost" the night
-  -window assignment already carries (six paths wired, a seventh will forget).
+- ~~Not wired into the hydration write paths yet.~~ **Wired 2026-10-06**, into
+  all of them, and the religious half is now also derived from the log on every
+  refresh, so a path that is missed costs one refresh rather than a wrong fast
+  (§0).
 
 **The night window is no longer lost for the day (fixed 2026-09-29).** Window
 creation used to sit inside the session-*creation* branch, gated on
@@ -358,12 +425,10 @@ a production caller, and so does the night-window assigner.)
 | --- | --- |
 | `ReligiousFastingService.ensureDay` | `FastingModel.ensureToday()`, the Fasting screen's own load |
 | `NightNutritionWindowAssigner` | `ReligiousFastingService.ensureDay` (retroactively) plus six write paths — see above |
-| `FastingAwareHydrationLog` | **nothing yet** — the four hydration write paths above still bypass it |
-| `PrayerTimeEngine.ensureCache`, `ReligiousFastScheduleStore.applyLocationUpdate` | `FastingModel` |
+| `FastingAwareHydrationLog` | `HydrationModel.log`/`logDrink`/`delete`, the Activity Rings hydration editor and delete, the widget's `LogWaterIntent` (2026-10-06) |
+| `FastingAwareNutritionLog` | `NutritionModel.log`/`delete`, the Activity Rings nutrition editor and delete (2026-10-06) |
+| `FastingCoordinator.refresh` | `FastingModel.ensureToday` — launch, every foreground, after Health sync, after prayer times change, the Fasting screen |
+| `PrayerTimeEngine.ensureCache` | `PrayerModel.ensureCache` — launch and every foreground |
 
-Still nothing: no shift-schedule UI, no background scheduling (the scheduler is
-Slice 11, and the 48-hour horizon and the re-run triggers are listed in
-`docs/implementation-status.md`), and the read side — **no screen anywhere
-displays a night window's contents.** The column is written and correct; nothing
-renders "what you ate during the fast", which is the user-visible half of §7.2
-and the reason the feature is not finished.
+Still nothing: no shift-schedule UI. ~~No screen displays a night window's
+contents~~ — the Fasting screen does, since 2026-10-06 (§0).

@@ -34,6 +34,7 @@ struct InsightsQueryTests {
     private func logHydration(_ milliliters: Int, on day: String, at hour: Int = 12) throws {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "Asia/Riyadh")
         guard let instant = formatter.date(from: "\(day) \(String(format: "%02d", hour)):00") else {
             Issue.record("bad fixture date \(day)")

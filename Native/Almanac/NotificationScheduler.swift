@@ -59,7 +59,7 @@ struct NotificationScheduler {
         let plannedIDs = Set(plan.notifications.map(\.identifier))
         let stale = pending
             .map(\.identifier)
-            .filter { Self.ownedPrefix.hasPrefix($0) && !plannedIDs.contains($0) }
+            .filter { $0.hasPrefix(Self.ownedPrefix) && !plannedIDs.contains($0) }
         if !stale.isEmpty {
             center.removePendingNotificationRequests(withIdentifiers: stale)
         }
@@ -108,7 +108,7 @@ struct NotificationScheduler {
     func cancelAll() async {
         let ids = await center.pendingNotificationRequests()
             .map(\.identifier)
-            .filter { Self.ownedPrefix.hasPrefix($0) }
+            .filter { $0.hasPrefix(Self.ownedPrefix) }
         guard !ids.isEmpty else { return }
         center.removePendingNotificationRequests(withIdentifiers: ids)
     }
@@ -119,7 +119,7 @@ struct NotificationScheduler {
     func pendingOwnedIdentifiers() async -> [String] {
         await center.pendingNotificationRequests()
             .map(\.identifier)
-            .filter { Self.ownedPrefix.hasPrefix($0) }
+            .filter { $0.hasPrefix(Self.ownedPrefix) }
             .sorted()
     }
 

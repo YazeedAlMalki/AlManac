@@ -196,6 +196,10 @@ public extension BackupService {
             throw BackupError.corruptBundle(reason: "database payload is not an Almanac database")
         }
         try HydrationStore(db: restored).reconcileAfterRestore()
+        // Spec line 1942 step 6d: "Rebuild nutrition_window assignments for
+        // religious fast days" — on the private copy, before the swap, so the
+        // restored night windows hold exactly the entries inside them.
+        try NightNutritionWindowAssigner(db: restored).assignUnassigned()
 
         var attemptedDocumentTargets: [URL] = []
         var originalDocuments: [(target: URL, data: Data?)] = []

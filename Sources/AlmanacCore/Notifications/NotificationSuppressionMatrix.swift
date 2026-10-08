@@ -12,6 +12,9 @@ public enum NotificationType: String, Sendable, Hashable, CaseIterable {
     case iftar
     case contextualSnack = "contextual_snack"
     case contextualHydration = "contextual_hydration"
+    /// A prayer's time has come (Migration050). Not in Appendix B, which
+    /// predates it; see the matrix below for why nothing suppresses it.
+    case prayer
 }
 
 /// The five state axes Appendix B suppresses against, at the moment a
@@ -87,6 +90,13 @@ public enum NotificationSuppressionMatrix {
             return context.isConfirmedIFActive || context.isPostShiftSleep
         case .contextualHydration:
             return context.isDryFastActive || context.isPostShiftSleep
+        case .prayer:
+            // Not an Appendix B row. A prayer's time is the same fact during a
+            // fast, a shift or a sleep, and the user who turned this on asked
+            // to be told it — muting Dhuhr because they are asleep after a night
+            // shift is a decision about their prayer the app has no standing to
+            // make. The per-prayer list is where they choose.
+            return false
         }
     }
 }

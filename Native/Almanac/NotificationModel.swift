@@ -15,7 +15,7 @@ import AlmanacCore
 /// `reconcileNotifications()` that reads current state and is safe to call from
 /// anywhere, and wires it to the two points every one of those events passes
 /// through anyway: the app going to the foreground (`AlmanacApp`'s `scenePhase`
-/// handler, already the home of `prayprModel.ensureCache`/`fastingModel.
+/// handler, already the home of `prayerModel.ensureCache`/`fastingModel.
 /// ensureToday`), and the settings screen after a rule is changed. A missed
 /// call site costs at most one pass of staleness rather than a permanently
 /// wrong schedule, because the next foreground repairs it.
