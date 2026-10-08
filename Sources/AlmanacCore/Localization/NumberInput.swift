@@ -59,18 +59,25 @@ extension Int {
 /// writes is always what `NumberInput` reads back. An English run in Germany
 /// keeps "72.5" rather than getting a "72,5" its own fields would refuse.
 public enum NumberDisplay {
-    public static func localized(_ ascii: String) -> String {
+    /// The locale's zero and decimal separator, when its digits are not ASCII.
+    /// Read once: a change of language relaunches the app.
+    private static let glyphs: (zero: Unicode.Scalar, separator: String)? = {
         let formatter = NumberFormatter()
         formatter.locale = .current
-        guard let zero = formatter.string(from: 0)?.unicodeScalars.first, zero != "0" else { return ascii }
-        let separator = formatter.decimalSeparator ?? "."
+        guard let zero = formatter.string(from: NSNumber(value: 0))?.unicodeScalars.first,
+              zero != "0" else { return nil }
+        return (zero, formatter.decimalSeparator ?? ".")
+    }()
+
+    public static func localized(_ ascii: String) -> String {
+        guard let glyphs = Self.glyphs else { return ascii }
         var result = ""
         for scalar in ascii.unicodeScalars {
             if ("0"..."9").contains(scalar),
-               let digit = Unicode.Scalar(zero.value + scalar.value - 0x30) {
+               let digit = Unicode.Scalar(glyphs.zero.value + scalar.value - 0x30) {
                 result.unicodeScalars.append(digit)
             } else if scalar == "." {
-                result += separator
+                result += glyphs.separator
             } else {
                 result.unicodeScalars.append(scalar)
             }
