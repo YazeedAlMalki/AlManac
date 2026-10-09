@@ -48,17 +48,45 @@ final class GeneralAtwaterTests: XCTestCase {
         XCTAssertEqual(estimate.carbohydrateTerm, .availablePlusFibre)
     }
 
-    // CoFID publishes available carbohydrate as monosaccharide equivalents. It is
-    // used as published; the ~5-10 % hydration uplift is a v2 specific-factor matter.
-    func testMonosaccharideEquivalentsArePairedWithFibreToo() throws {
-        // 4 × 20 + 9 × 5 + 4 × (10 + 2) + 7 × 0 = 80 + 45 + 48 = 173
+    // CoFID publishes available carbohydrate as monosaccharide equivalents, which
+    // CoFID itself prices at 3.75 kcal/g. It is converted to weight (× 3.75/4)
+    // before the 4 kcal/g term, and then paired with fibre like the others.
+    func testMonosaccharideEquivalentsAreConvertedToWeightAndPairedWithFibre() throws {
+        // 4 × 20 + 9 × 5 + 4 × (10 × 0.9375 + 2) + 7 × 0 = 80 + 45 + 45.5 = 170.5
         let estimate = try XCTUnwrap(GeneralAtwater.estimate(from: [
             value("protein", 20), value("fat_total", 5),
             value("carbohydrate_available_monosaccharide", 10), value("fibre_total_dietary", 2),
             value("alcohol", 0, .zeroReported),
         ], basis: .per100g))
-        XCTAssertEqual(estimate.kilocalories, 173, accuracy: 1e-9)
+        XCTAssertEqual(estimate.kilocalories, 170.5, accuracy: 1e-9)
         XCTAssertEqual(estimate.carbohydrateTerm, .availableMonosaccharidePlusFibre)
+    }
+
+    // CoFID white sugar (17-063) publishes 105 g of carbohydrate per 100 g as
+    // monosaccharide equivalents. Read as a weight that was 420 kcal; CIQUAL's and
+    // AFCD's white sugar are 399 and 400.
+    func testCoFIDSugarIsNoLongerHeavierThanItself() throws {
+        // 4 × 105 × 0.9375 = 393.75
+        let sugar = [value("protein", 0, .zeroReported), value("fat_total", 0, .zeroReported),
+                     value("carbohydrate_available_monosaccharide", 105),
+                     value("fibre_total_dietary", 0, .zeroReported)]
+        let estimate = try XCTUnwrap(GeneralAtwater.estimate(from: sugar, basis: .per100g))
+        XCTAssertEqual(estimate.kilocalories, 393.75, accuracy: 1e-9)
+        XCTAssertEqual(GeneralAtwater.totalCarbohydrateGrams(from: sugar, basis: .per100g) ?? 0,
+                       98.4375, accuracy: 1e-9)
+    }
+
+    // The same total-carbohydrate read the estimate uses, exposed for anything
+    // that sums or shows "carbs" across sources.
+    func testTotalCarbohydrateGramsReadsEachSourcesTermTheSameWayTheEstimateDoes() {
+        XCTAssertEqual(GeneralAtwater.totalCarbohydrateGrams(from: [
+            value("carbohydrate_by_difference", 67.7), value("fibre_total_dietary", 10.1)], basis: .per100g), 67.7)
+        XCTAssertEqual(GeneralAtwater.totalCarbohydrateGrams(from: [
+            value("carbohydrate_available", 50), value("fibre_total_dietary", 3)], basis: .per100g), 53)
+        XCTAssertNil(GeneralAtwater.totalCarbohydrateGrams(from: [
+            value("carbohydrate_available", 50)], basis: .per100g), "fibre is never assumed")
+        XCTAssertEqual(GeneralAtwater.alcoholGrams(from: [], basis: .per100g), 0)
+        XCTAssertEqual(GeneralAtwater.alcoholGrams(from: [value("alcohol", 8.1)], basis: .per100g), 8.1)
     }
 
     func testAvailableCarbohydrateWithoutFibreHasNoEstimate() {

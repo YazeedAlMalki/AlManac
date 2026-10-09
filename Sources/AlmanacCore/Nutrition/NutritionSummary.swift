@@ -39,10 +39,57 @@ public struct NutritionTotals: Sendable, Hashable {
     /// Nutrients at least one counted meal did not report, reported as not
     /// analysed, or reported in a unit that disagrees with another meal's.
     public let incompleteNutrients: [String]
+    /// Counted meals (log entry ids) whose food has no calorie figure at all, so
+    /// `kcal` leaves them out.
+    public let mealsWithoutEnergy: [String]
 
+    init(kcal: Double, energyBases: Set<EnergyEstimate.Method>, nutrients: [String: Double],
+         mealsCounted: Int, mealsWithoutAmount: [String], mealsWithoutReference: [SourceIdentifier],
+         incompleteNutrients: [String], mealsWithoutEnergy: [String] = []) {
+        self.kcal = kcal
+        self.energyBases = energyBases
+        self.nutrients = nutrients
+        self.mealsCounted = mealsCounted
+        self.mealsWithoutAmount = mealsWithoutAmount
+        self.mealsWithoutReference = mealsWithoutReference
+        self.incompleteNutrients = incompleteNutrients
+        self.mealsWithoutEnergy = mealsWithoutEnergy
+    }
+
+    /// Every nutrient of every meal accounted for. Rarely true of a real day:
+    /// publishers state carbohydrate under different ids, so any day mixing two
+    /// sources has a carbohydrate id some meal did not report.
     public var isComplete: Bool {
         mealsWithoutAmount.isEmpty && mealsWithoutReference.isEmpty
             && incompleteNutrients.isEmpty
+    }
+
+    /// Every meal logged in the range is in `kcal`. The question a calorie
+    /// total has to answer, and a different one from `isComplete`: keying the
+    /// "this is a floor" note on `isComplete` put it beside nearly every mixed
+    /// day, with a reason ("missing an amount or a reference match") that was
+    /// not true of any of them.
+    public var isEnergyComplete: Bool {
+        mealsWithoutAmount.isEmpty && mealsWithoutReference.isEmpty && mealsWithoutEnergy.isEmpty
+    }
+
+    /// Why `kcal` understates, naming each cause that applies, or nil when it
+    /// does not. Shown text, so it goes through the localisation table; each
+    /// count has a "1" key and a "%@" key, the way `DayEnergy.summary` does.
+    public var energyCaveat: String? {
+        func count(_ n: Int, one: String, many: String) -> String? {
+            n == 0 ? nil : n == 1 ? localized(one) : localized(many, NumberDisplay.localized(String(n)))
+        }
+        let reasons = [
+            count(mealsWithoutAmount.count,
+                  one: "1 food has no amount", many: "%@ foods have no amount"),
+            count(mealsWithoutReference.count,
+                  one: "1 food is not in the food catalogue", many: "%@ foods are not in the food catalogue"),
+            count(mealsWithoutEnergy.count,
+                  one: "1 food has no calorie figure", many: "%@ foods have no calorie figure"),
+        ].compactMap { $0 }
+        guard !reasons.isEmpty else { return nil }
+        return localized("Partial total: %@. Their calories are not counted.", localizedList(reasons))
     }
 }
 
@@ -69,7 +116,9 @@ public struct DayEnergy: Hashable, Sendable {
     /// How many drinks contributed, so a caller can name the composition in
     /// words without inventing a second figure.
     public let drinkCount: Int
-    /// False only when food *was* logged and could not be fully totalled.
+    /// False only when food *was* logged and its calories could not all be
+    /// counted (`NutritionTotals.isEnergyComplete`) — not when some other
+    /// nutrient is missing, which says nothing about this figure.
     ///
     /// A day with no food at all is complete, not partial: the absence of the
     /// other half of the total says nothing about whether this half is whole.
@@ -91,7 +140,7 @@ public struct DayEnergy: Hashable, Sendable {
         return DayEnergy(kcal: parts.reduce(0, +),
                          foodCount: food?.mealsCounted ?? 0,
                          drinkCount: drinks.count,
-                         isFoodComplete: food?.isComplete ?? true)
+                         isFoodComplete: food?.isEnergyComplete ?? true)
     }
 
     /// What the total is made of, in one line and in words.
@@ -204,6 +253,7 @@ public struct NutritionSummary: Sendable {
         var withoutAmount: [String] = []
         var withoutReference: [SourceIdentifier] = []
         var incomplete: Set<String> = []
+        var withoutEnergy: [String] = []
         var kcal = 0.0
         var bases: Set<EnergyEstimate.Method> = []
 
@@ -227,6 +277,7 @@ public struct NutritionSummary: Sendable {
                 // This meal contributed calories nobody can put a number on, so
                 // the running total understates and must say so.
                 incomplete.insert("energy_kcal")
+                withoutEnergy.append(entry.id)
             }
         }
 
@@ -262,6 +313,6 @@ public struct NutritionSummary: Sendable {
         return NutritionTotals(
             kcal: kcal, energyBases: bases, nutrients: totals, mealsCounted: counted.count,
             mealsWithoutAmount: withoutAmount, mealsWithoutReference: withoutReference,
-            incompleteNutrients: incomplete.sorted())
+            incompleteNutrients: incomplete.sorted(), mealsWithoutEnergy: withoutEnergy)
     }
 }

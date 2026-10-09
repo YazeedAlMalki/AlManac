@@ -89,7 +89,17 @@ The term is chosen per food:
 |---|---|---|
 | Carbohydrate by difference | as published | USDA |
 | Available carbohydrate + dietary fibre | sum | CIQUAL, AFCD |
-| Available carbohydrate as monosaccharide equivalents + fibre | sum | CoFID |
+| Available carbohydrate as monosaccharide equivalents + fibre | × 3.75/4 to weight, then sum | CoFID |
+
+CoFID's monosaccharide equivalents count starch as the glucose it hydrolyses to
+(×1.10) and disaccharides likewise (×1.05), which is why CoFID prices them at
+3.75 kcal/g. Until 2026-10-07 they were taken at 4 kcal/g as a weight, which
+overstated every CoFID food: median +8.3 kcal/100 g against the publisher, white
+bread +10 %, white sugar 420 kcal/100 g from "105 g of carbohydrate per 100 g".
+`GeneralAtwater.monosaccharideEquivalentsToWeight` converts first, so one
+4 kcal/g factor holds for every source, and `totalCarbohydrateGrams` is the one
+cross-source reading of "carbs" for anything that sums or shows them. The
+coverage table below predates the change; its counts are unaffected.
 
 Fibre is never assumed: available carbohydrate without a fibre value gives no
 total. A trace or a "< x" enters the sum as 0, and so does absent or unanalysed
@@ -171,6 +181,18 @@ conflict reporting; what was eaten is recorded in `NutritionLogStore`
 (revision-tracked, timeline-integrated) and totalled against the catalog by
 `NutritionSummary`, joined at read time so a corrected reference value
 corrects every meal already logged against it.
+
+**Cross-source recipes (2026-10-07).** The reduction sums a nutrient only when
+every ingredient reports that id, and publishers state carbohydrate under
+different ids, so a USDA-plus-CIQUAL recipe lost its carbohydrate and with it
+Almanac's calorie figure. `NutritionDishEditor.crossSourceValues` now adds, per
+ingredient and then summed: total carbohydrate (stored as
+`carbohydrate_by_difference`) when the same-id sums left none, alcohol with
+absent taken as zero when any ingredient has some, and `energy_kcal` as the sum
+of each ingredient's `EnergyEstimate.preferred`. Logging a dish now counts what
+logging its ingredients would. `create` also registers the `almanac` source
+row itself: no shipped bundle carries one, so dish creation previously failed
+its foreign key on every real device while tests that hand-seeded it passed.
 
 A `nutrition_dish` row marks a `nutrition_food` row as device-authored. On
 reimport, pipeline foods, portions and food-level factors are replaced together,

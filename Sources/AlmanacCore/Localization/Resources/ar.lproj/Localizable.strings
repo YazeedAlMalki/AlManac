@@ -344,3 +344,12 @@
 "ms" = "ملّي ثانية";
 "kcal" = "سعرة";
 "mg" = "ملغ";
+
+/* NutritionTotals.energyCaveat */
+"Partial total: %@. Their calories are not counted." = "مجموع جزئي: %@. لم تُحتسب سعراتها.";
+"1 food has no amount" = "طعام واحد بلا كمية";
+"%@ foods have no amount" = "أطعمة عددها %@ بلا كمية";
+"1 food is not in the food catalogue" = "طعام واحد غير موجود في فهرس الأطعمة";
+"%@ foods are not in the food catalogue" = "أطعمة عددها %@ غير موجودة في فهرس الأطعمة";
+"1 food has no calorie figure" = "طعام واحد بلا قيمة سعرات";
+"%@ foods have no calorie figure" = "أطعمة عددها %@ بلا قيمة سعرات";
