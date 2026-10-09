@@ -1,9 +1,11 @@
 # TheMealDB — what the terms permit (Kitchen build-out, step 0)
 
-**Checked 2026-10-06 and again 2026-10-07. Result: conditionally permitted, not
-verified from the primary text, so the gate stays closed.** No TheMealDB data is
-imported, and `tools/` has no import tool for it. §"Re-check, 2026-10-07" below
-has what was learned and what it leaves open.
+**Checked 2026-10-06 and 2026-10-07 from a cloud container (could not reach the
+site), then read from the primary pages on the iMac on 2026-10-08. Result:
+permitted for a paid supporter, with bundling and per-recipe rights still not
+granted in so many words, so the gate stays closed.** No TheMealDB data is
+imported, and `tools/` has no import tool for it. §"Primary-source check,
+2026-10-08" at the end has the answers and what the owner has to decide.
 
 ## What was asked
 
@@ -111,3 +113,45 @@ reaches the API, which these containers do not.
 Sources consulted (search results only, not fetched):
 `https://www.themealdb.com/terms_of_use.php`, `https://www.themealdb.com/faq.php`,
 `https://www.themealdb.com/api.php`, `https://www.themealdb.com/docs_api_guide.php`.
+
+## Primary-source check, 2026-10-08
+
+Read directly from the iMac, in the browser: `terms_of_use.php` (headed "Last
+updated: 01/07/2025" — the page does not say whether that is 1 July or 7
+January), `api.php`, `faq.php`, and the site's own agent guide at `/AGENTS.md`.
+Paraphrased, not quoted; read the pages for the exact text before relying on a
+detail.
+
+| Question | What the pages say | Settled? |
+|---|---|---|
+| Storing / copying the data | Content returned by the API may be scraped, copied and modified, provided the official endpoints are used; scraping the website is not allowed; copyright and trademark notices may not be removed or altered. | Yes, via the API |
+| Bundling in a shipped app | Not stated. "Copy" is granted; shipping a copy inside every install is not named, and the terms separately bar reselling the API without permission. | **No** |
+| Redistribution | Same gap as bundling. Nothing grants it; the reselling clause is the nearest text. | **No** |
+| App Store release | The free key `1` is for development and education only; an app may not be published to an app store unless the developer is a paid subscriber. | Yes: paid |
+| Commercial use | Allowed, but the FAQ expects a commercial supporter tier on Patreon. Paid use also has a rate limit; the FAQ says the API itself has no limits. | Yes: a tier is required |
+| Attribution | Paid use must mention TheMealDB as the data source. The site's agent guide suggests this line: `Recipe data and imagery: TheMealDB (https://www.themealdb.com/)`. Artwork should link back to the site where appropriate. | Yes |
+| Per-recipe rights | The terms bar using third-party content in the API without the owner's permission. Most artwork is user-created; each image carries a `strCreativeCommons` tag to check. Many records name an outside `strSource`. The database cannot grant rights over text or images it does not hold. | **No** |
+| Record shape | Up to 20 `strIngredientN` / `strMeasureN` pairs per meal, no serving count. The free key lists at most 100 items; the paid key lists the whole database. | Yes |
+
+**What this settles.** The 2026-10-07 table's "Attribution wording: nothing
+found" and "App Store release: paid key required" are now confirmed from the
+source, and the attribution line is known. **What it does not settle** is the
+one thing the gate asks: whether a copy of the data may ship inside the app.
+The terms neither grant nor forbid it, and could-not-confirm still counts as
+not permitted.
+
+**The owner's options**, in the order that costs least:
+
+1. **Ask.** One email to `thedatadb@gmail.com`: may a paid-tier app ship a
+   snapshot of the recipe data and the images it needs, and who owns the rights
+   to recipe text and images where `strSource` names someone else. A written
+   yes closes the gate; the answer should be filed here with its date.
+2. **Do not ship it.** Kitchen keeps its v1 as the owner's own dishes, and the
+   regional food data the owner is building remains the plan for food data.
+3. **Fetch live instead of bundling.** Fits the terms best (the API is the
+   permitted route) and breaks the app's local-first rule for recipes, so it is
+   a product change, not a build step.
+
+If the answer is yes: a supporter tier (an owner's cost), an entry in
+`docs/attribution-requirement.md` and `AttributionCatalog` with the line above,
+then step 5 through the ingredient table. None of that is started.
