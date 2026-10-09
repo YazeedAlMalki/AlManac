@@ -440,7 +440,7 @@ struct EditorFailure: Error, LocalizedError {
 
 func optionalText(_ text: String) -> String? { text.isEmpty ? nil : text }
 func dateLabel(_ date: PartialDateTime) -> String {
-    date.isKnown ? date.text : "Date unknown"
+    date.isKnown ? date.text : String(localized: "Date unknown")
 }
 func readable(_ raw: String) -> String { raw.replacingOccurrences(of: "_", with: " ").capitalized }
 

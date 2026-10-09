@@ -224,6 +224,21 @@ extension Date {
     }
 }
 
+extension LogicalDay {
+    /// The day's 04:00 instant in the current zone, for display only. The stored
+    /// value stays the label — nothing here is written back, the same rule
+    /// `PartialDateTime.span` follows.
+    var dayStart: Date? {
+        TimeModel(timeZone: .current).bounds(of: self)?.start
+    }
+
+    /// The day as a reader sees it ("9 Oct 2026", "٩ أكتوبر ٢٠٢٦"), with the
+    /// stored "YYYY-MM-DD" as the fallback so an unreadable day still shows.
+    var displayText: String {
+        dayStart?.almanacFormatted(date: .abbreviated, time: .omitted) ?? value
+    }
+}
+
 extension FormatStyle where Self == Date.FormatStyle {
     /// `.dateTime`, in `Calendar.almanacDisplay`.
     static var almanacDateTime: Date.FormatStyle { Date.FormatStyle(calendar: .almanacDisplay) }

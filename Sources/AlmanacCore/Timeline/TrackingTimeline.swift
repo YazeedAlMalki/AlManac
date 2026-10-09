@@ -117,10 +117,11 @@ public struct TrackingTimeline {
         case .missing(let reason):
             return localized("Missing: %@", reason)
         case .quantity(let text, let unit):
-            return unit.map { "\(text) \($0)" } ?? text
+            let number = NumberDisplay.localized(text)
+            return unit.map { "\(number) \(UnitDisplay.localized($0))" } ?? number
         case .bounded(let comparator, let text, let unit):
-            let body = "\(comparator) \(text)"
-            return unit.map { "\(body) \($0)" } ?? body
+            let body = "\(comparator) \(NumberDisplay.localized(text))"
+            return unit.map { "\(body) \(UnitDisplay.localized($0))" } ?? body
         case .coded(let text), .narrative(let text), .ratio(let text), .titer(let text):
             return text
         case .derived(let text, let ruleVersion):
@@ -156,7 +157,7 @@ private struct TrackingSupplementProvider: TimelineProviding {
 
         for session in try WorkoutSessionStore(db: db).sessions(date: day) {
             let details = [
-                session.durationMinutes.map { "\($0) min" },
+                session.durationMinutes.map { localized("%@ min", NumberDisplay.localized(String($0))) },
                 session.rpe.map { localized("RPE %@/10", NumberDisplay.localized(String($0))) },
                 session.notes
             ].compactMap { $0 }
@@ -175,7 +176,7 @@ private struct TrackingSupplementProvider: TimelineProviding {
                 result.append(makeEntry(
                     kind: "measurement", table: "body_composition_measurement", id: String(record.id),
                     occurrence: occurrence(record.timestamp, fallback: day),
-                    title: bodyTitle(record.metric), detail: record.source,
+                    title: bodyTitle(record.metric), detail: sourceLabel(record.source),
                     value: .quantity(text: numberText(record.value), unit: record.unit)
                 ))
             }
@@ -226,12 +227,18 @@ private struct TrackingSupplementProvider: TimelineProviding {
             result.append(makeEntry(
                 kind: "vital", table: "vitals_record", id: String(record.id),
                 occurrence: occurrence(record.timestamp, fallback: day),
-                title: vitalTitle(record.metric), detail: record.source,
+                title: vitalTitle(record.metric), detail: sourceLabel(record.source),
                 value: .quantity(text: numberText(record.value), unit: record.unit)
             ))
         }
 
         return result
+    }
+
+    /// Where a reading came from, as shown. The stored value is a code
+    /// (`manual`); anything else is a source's own name and stays as it is.
+    private func sourceLabel(_ source: String) -> String {
+        source == VitalsRecordStore.manualSource ? localized("Entered by hand") : source
     }
 
     private func makeEntry(kind: String, table: String, id: String,

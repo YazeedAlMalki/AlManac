@@ -208,7 +208,7 @@ struct SupplementView: View {
                     .font(AlmanacTypography.font(.body))
                     .foregroundStyle(plan.isActive ? AlmanacPalette.textPrimary : AlmanacPalette.textSecondary)
                 Spacer(minLength: 12)
-                Text("\(AlmanacNumber.compact(plan.doseAmount)) \(plan.doseUnit)")
+                Text(verbatim: "\(AlmanacNumber.compact(plan.doseAmount)) \(UnitDisplay.localized(plan.doseUnit))")
                     .font(AlmanacTypography.font(.data).monospacedDigit())
                     .foregroundStyle(AlmanacPalette.textPrimary)
             }

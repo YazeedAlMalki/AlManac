@@ -264,15 +264,6 @@ struct ContextTagsView: View {
     }
 }
 
-private extension LogicalDay {
-    /// The day's 04:00 instant in the current zone, for display only. The stored
-    /// value stays the label — nothing here is written back, the same rule
-    /// `PartialDateTime.span` follows.
-    var dayStart: Date? {
-        TimeModel(timeZone: .current).bounds(of: self)?.start
-    }
-}
-
 private extension Array {
     /// Rows of `size`, the last one short if the count does not divide.
     func chunked(into size: Int) -> [[Element]] {

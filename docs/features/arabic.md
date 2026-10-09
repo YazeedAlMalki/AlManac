@@ -109,8 +109,18 @@ marks, so whatever `NumberDisplay` writes reads back. The date of birth is
 stored in ASCII digits whichever keyboard typed it.
 
 **Direction.** Chevrons are `chevron.forward`, which mirrors. Insights' trend
-arrows (`arrow.up.right`) are left as they are until a screenshot with data
-shows which way the charts' time axis runs in Arabic.
+arrows are `arrow.up.forward` and `arrow.down.forward`, which mirror too: a
+trend arrow says which way a value moved over time, and in Arabic time reads
+right to left. The populated pass (run 37921069016) could not settle this from
+a chart, because the readiness chart had one scored day, so it rests on the
+platform's convention. The association arrows ("higher together") compare two
+measures rather than two times, so they keep `arrow.up.right`.
+
+**Units are codes where they are kept.** "ml", "bpm" and "kg" are stored and
+compared as written. `UnitDisplay.localized` translates the ones Almanac writes
+itself where they are shown. A laboratory's own units ("mmol/L") are its text
+and stay as given. A catalog drink's name is translated at display in both
+places it is shown (`Drink.displayName`, `DrinkAttachment.displayName`).
 
 ## Tests
 
@@ -132,7 +142,12 @@ shows which way the charts' time axis runs in Arabic.
   also plants two weeks of resting heart rate and HRV so Insights has trends
   to draw arrows for, and it prints where everything on Trends, Insights and
   Vitals sits, so the charts' direction can be read from the log. Its
-  screenshots and lines are prefixed `pop-`.
+  screenshots and lines are prefixed `pop-`. Its first run found English that
+  only appears with entries: Vitals' units, "Entered at …", "entered by hand"
+  and its "YYYY-MM-DD" days; Today's kcal and kg and the per-value nutrient
+  names; the Timeline's "Hydration", units and "manual"; a catalog drink's name
+  on Hydration; and Trends' "0–100". All of these now have Arabic. Names people
+  type (exercises, supplements) and brand names stay as they are.
 - `LocalizationTableTests`: the table parses, has no empty value, and covers
   every source key with the same specifiers. It also checks argument
   substitution.

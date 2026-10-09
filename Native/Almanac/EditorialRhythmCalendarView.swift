@@ -175,7 +175,9 @@ struct EditorialRhythmCalendarView: View {
                     Text("Per-value status")
                         .font(AlmanacTypography.font(.bodyMedium))
                         .foregroundStyle(AlmanacPalette.textPrimary)
-                    ForEach(["Calories", "Carbohydrates", "Protein", "Fat", "Fiber"], id: \.self) { name in
+                    ForEach([String(localized: "Calories"), String(localized: "Carbohydrates"),
+                             String(localized: "Protein"), String(localized: "Fat"),
+                             String(localized: "Fiber")], id: \.self) { name in
                         HStack(spacing: 8) {
                             Text(name)
                                 .font(AlmanacTypography.font(.body))
