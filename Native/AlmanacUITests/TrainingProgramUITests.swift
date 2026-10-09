@@ -851,12 +851,19 @@ final class TrainingProgramUITests: XCTestCase {
         let twoDaysAgo = logicalDayLabel(2)
 
         // Both readings are on the log, each attributed to the day it named. The
-        // label carries `record.logicalDay` as a raw `yyyy-MM-dd`, so unlike the
-        // editor's own controls this one is the same string in every locale.
+        // row shows the day formatted for the reader, so the day is read from
+        // its identifier (`vitals-reading-<yyyy-MM-dd>-<id>`), which carries
+        // `record.logicalDay` as stored and is the same string in every locale.
+        let yesterdayRow = app.firstElement(identifierPrefix: "vitals-reading-\(yesterday)-")
+        let twoDaysAgoRow = app.firstElement(identifierPrefix: "vitals-reading-\(twoDaysAgo)-")
         XCTAssertTrue(app.waitUntil(timeout: 5) {
-            app.staticText(beginningWith: "61 bpm, Resting heart rate · \(yesterday)").exists
-                && app.staticText(beginningWith: "44 ms, Heart-rate variability · \(twoDaysAgo)").exists
-        }, "the seeded readings are not on the log under the days they named")
+            yesterdayRow.exists && yesterdayRow.label.hasPrefix("61 bpm, Resting heart rate")
+                && twoDaysAgoRow.exists && twoDaysAgoRow.label.hasPrefix("44 ms, Heart-rate variability")
+        }, """
+            the seeded readings are not on the log under the days they named: \
+            \(yesterday) → \(yesterdayRow.exists ? yesterdayRow.label : "no row"), \
+            \(twoDaysAgo) → \(twoDaysAgoRow.exists ? twoDaysAgoRow.label : "no row")
+            """)
 
         // And neither counted as today's, which is the whole mechanism: today's
         // card reads them as absent, so they can only ever be baseline.
@@ -866,7 +873,8 @@ final class TrainingProgramUITests: XCTestCase {
                       "a reading planted on two days ago was presented as today's HRV")
     }
 
-    /// `days` logical days before today, as the `yyyy-MM-dd` the Vitals log prints.
+    /// `days` logical days before today, as the `yyyy-MM-dd` a Vitals row's
+    /// identifier carries.
     ///
     /// The four hours are §7.1's boundary, which `TimeModel` owns and this target
     /// cannot import: a logical day starts at 04:00 local, so between midnight and

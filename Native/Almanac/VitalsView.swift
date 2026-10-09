@@ -161,8 +161,11 @@ struct VitalsView: View {
         // On the combined element, so a test can count and swipe readings
         // without matching the two lines of copy a row is made of. Prefixed with
         // the row's id rather than a constant so "the next reading" is a query
-        // rather than an index into a list that shrinks under the test.
-        .accessibilityIdentifier("vitals-reading-\(record.id)")
+        // rather than an index into a list that shrinks under the test. The
+        // stored day is in it too: the row shows the day formatted for the
+        // reader's language, and a test needs one that is the same in all of
+        // them.
+        .accessibilityIdentifier("vitals-reading-\(record.logicalDay)-\(record.id)")
         .swipeActions {
             // Only what was typed here. A synced reading is retracted by
             // correcting it in Apple Health, and the store refuses anyway — the
