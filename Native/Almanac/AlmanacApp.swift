@@ -395,6 +395,12 @@ final class LaboratoryModel: ObservableObject {
             if let plan = KitchenSeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
                 try plan.apply(into: db)
             }
+            // Same two gates. The shift editor persists and the simulator's
+            // database is shared across runs, so a UI test names the schedule
+            // it starts from. See `ShiftSeedPlan`.
+            if let plan = ShiftSeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
+                try plan.apply(into: db, now: Date(), timeModel: TimeModel(timeZone: .current))
+            }
             #endif
             startupError = nil
         } catch {

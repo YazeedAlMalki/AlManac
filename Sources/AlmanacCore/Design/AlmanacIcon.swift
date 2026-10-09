@@ -35,6 +35,7 @@ public enum AlmanacIcon {
     public static let laboratory = "cross.case"
     public static let profile = "person"
     public static let prayer = "sun.horizon"
+    public static let circadian = "clock.arrow.2.circlepath"
     public static let fasting = "moon.stars"
     public static let settings = "gearshape"
     /// Body composition is a card grid, not a ruler — `AlmanacIcon.body` is

@@ -114,6 +114,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     case supplements
     case context
     case prayer
+    case circadian
     case bodyCircumference
     case vitals
     case laboratory
@@ -136,7 +137,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .todayRoot: return .today
         case .trendsRoot, .trendsDetail: return .trends
         case .training, .hydration, .nutrition, .fasting, .supplements, .context,
-             .prayer, .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
+             .prayer, .circadian, .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
              .timeline, .bodyComposition, .profile, .settings:
             return .modules
         }
@@ -155,6 +156,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .supplements: return localized("Supplements")
         case .context: return localized("Context")
         case .prayer: return localized("Prayer")
+        case .circadian: return localized("Shifts & rhythm")
         case .bodyCircumference: return localized("Body circumferences")
         case .vitals: return localized("Vitals")
         case .laboratory: return localized("Laboratory")
@@ -177,6 +179,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .supplements: return AlmanacIcon.supplement
         case .context: return AlmanacIcon.context
         case .prayer: return AlmanacIcon.prayer
+        case .circadian: return AlmanacIcon.circadian
         case .bodyCircumference: return AlmanacIcon.body
         case .vitals: return AlmanacIcon.vitals
         case .laboratory: return AlmanacIcon.laboratory
@@ -199,7 +202,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         switch self {
         case .training, .hydration, .nutrition, .fasting, .supplements, .context:
             return .track
-        case .prayer, .fasting:
+        case .prayer, .fasting, .circadian:
             return .dailyContext
         case .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
              .timeline, .bodyComposition, .profile:
