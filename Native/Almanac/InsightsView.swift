@@ -222,14 +222,14 @@ struct InsightsView: View {
         let unit = summary.metric.unit ?? ""
         let range = unit.isEmpty
             ? "" : " \(unit)"
-        return "across \(summary.dayCount) of \(summary.windowCount) days · "
-            + "\(format(summary.snapshot.minimum))–\(format(summary.snapshot.maximum))\(range)"
+        let spread = "\(format(summary.snapshot.minimum))–\(format(summary.snapshot.maximum))\(range)"
+        return String(localized: "across \(summary.dayCount) of \(summary.windowCount) days · \(spread)")
     }
 
     private func valueText(_ summary: TrendSummary) -> String {
         let average = format(summary.snapshot.average)
         guard let unit = summary.metric.unit else { return average }
-        return "\(average) \(unit)"
+        return String(localized: "\(average) \(unit)")
     }
 
     private func format(_ value: Double) -> String {
@@ -246,9 +246,9 @@ struct InsightsView: View {
 
     private func directionText(_ direction: TrendDirection) -> String {
         switch direction {
-        case .up: return "rising"
-        case .down: return "falling"
-        case .flat: return "steady"
+        case .up: return String(localized: "rising")
+        case .down: return String(localized: "falling")
+        case .flat: return String(localized: "steady")
         }
     }
 

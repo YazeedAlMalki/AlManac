@@ -69,6 +69,15 @@ final class ArabicUITests: XCTestCase {
     ///
     /// Read-only, like the test above: it opens screens and scrolls them, and
     /// taps nothing that writes.
+    ///
+    /// CI runs it twice. In the suite it runs early, on an empty database, so it
+    /// sees empty states. A second step runs it again after the whole suite,
+    /// with `ALMANAC_ARABIC_PASS=populated`, on the database the English tests
+    /// filled. In that run it also plants two weeks of resting heart rate and
+    /// HRV, rising and falling, so Insights has a trend to draw an arrow for,
+    /// and it prints where everything on the chart screens sits
+    /// (`layout` lines), which is how the charts' direction is read from the
+    /// log. Its names carry a `pop-` prefix.
     func testScreenshotEveryScreenInArabic() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(ar)", "-AppleLocale", "ar_SA"]
@@ -77,6 +86,9 @@ final class ArabicUITests: XCTestCase {
             return false
         }
         app.launch()
+        if populated {
+            XCTAssertTrue(app.seedVitals(Self.twoWeeksOfVitals), "the vitals seed was refused")
+        }
         XCTAssertTrue(app.buttons["tab-today"].waitForExistence(timeout: 15), "no bottom bar")
 
         capture(app, "01-today")
@@ -96,7 +108,7 @@ final class ArabicUITests: XCTestCase {
             insights.tap()
             capture(app, "04-insights")
         } else {
-            print("ARABIC-PASS\t04-insights\tnot reachable from Trends")
+            print("ARABIC-PASS\t\(tag("04-insights"))\tnot reachable from Trends")
         }
 
         openModulesRoot(app)
@@ -107,13 +119,30 @@ final class ArabicUITests: XCTestCase {
             openModulesRoot(app)
             let row = app.buttons[module.arabic]
             guard app.reveal(row) else {
-                print("ARABIC-PASS\t\(name)\tno Modules row reads \(module.arabic)")
+                print("ARABIC-PASS\t\(tag(name))\tno Modules row reads \(module.arabic)")
                 continue
             }
             row.tap()
             capture(app, name)
         }
     }
+
+    /// The second run, on the database the suite left behind (see above).
+    private var populated: Bool {
+        ProcessInfo.processInfo.environment["ALMANAC_ARABIC_PASS"] == "populated"
+    }
+
+    private func tag(_ name: String) -> String { populated ? "pop-\(name)" : name }
+
+    /// Fourteen mornings: resting heart rate rising 50 → 63 and HRV falling
+    /// 70 → 57, so every trend row has a direction and none is flat.
+    private static let twoWeeksOfVitals = (0...13).flatMap { back in
+        ["rhr=\(63 - back)@-\(back)", "hrv=\(57 + back)@-\(back)"]
+    }.joined(separator: ",")
+
+    /// Screens with charts, whose element positions are printed in the
+    /// populated run.
+    private static let chartScreens: Set<String> = ["03-trends", "04-insights", "21-vitals"]
 
     /// The Modules tab at its root. A relaunch rather than the back button:
     /// it is the one route back that works from any screen, sheet or alert.
@@ -134,7 +163,9 @@ final class ArabicUITests: XCTestCase {
 
     /// One screenshot per page, scrolling until the page stops changing, and the
     /// page's report lines.
-    private func capture(_ app: XCUIApplication, _ name: String, pages: Int = 6) {
+    private func capture(_ app: XCUIApplication, _ screen: String, pages: Int = 6) {
+        let name = tag(screen)
+        let layout = populated && Self.chartScreens.contains(screen)
         settle(app)
         var seen = Set<String>()
         var last: [String] = []
@@ -144,7 +175,7 @@ final class ArabicUITests: XCTestCase {
             shot.lifetime = .keepAlways
             add(shot)
 
-            let now = report(app, name, seen: &seen)
+            let now = report(app, name, seen: &seen, layout: layout)
             if page > 1, now == last { break }
             last = now
             if page < pages {
@@ -157,7 +188,8 @@ final class ArabicUITests: XCTestCase {
     /// Prints what on this page is Latin script or outside the window, once per
     /// screen, and returns the page's text with positions so the caller can tell
     /// whether a swipe moved anything.
-    private func report(_ app: XCUIApplication, _ name: String, seen: inout Set<String>) -> [String] {
+    private func report(_ app: XCUIApplication, _ name: String, seen: inout Set<String>,
+                        layout: Bool = false) -> [String] {
         guard let root = try? app.snapshot() else { return [] }
         let window = root.frame
         var page: [String] = []
@@ -179,6 +211,12 @@ final class ArabicUITests: XCTestCase {
                 shown = node.identifier.hasPrefix("_Tt") ? "" : node.identifier
             default:
                 shown = ""
+            }
+            if layout, node.frame.width > 0, !(shown.isEmpty && node.label.isEmpty) {
+                let kind = node.elementType == .image ? "image"
+                    : node.elementType == .staticText ? "text" : "\(node.elementType.rawValue)"
+                let said = shown.isEmpty ? node.label : shown
+                line("layout", "\(kind) x=\(Int(node.frame.minX))…\(Int(node.frame.maxX)) y=\(Int(node.frame.minY)) \(said.prefix(80))")
             }
             if !shown.isEmpty {
                 page.append("\(shown)@\(Int(node.frame.minY))")

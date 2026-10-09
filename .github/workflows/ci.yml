@@ -298,24 +298,43 @@ jobs:
         run: |
           grep -E ": error: |Test Case .* failed" "$RUNNER_TEMP/xcodebuild-test.log" | cut -c1-600 || true
 
+      # The Arabic pass again, on the database the suite just filled: logged
+      # training, meals, water, measurements and recipes, plus two weeks of
+      # vitals the test plants itself. The run in the suite saw only empty
+      # states. TEST_RUNNER_ variables reach the test process without the prefix.
+      - name: Arabic pass on the populated simulator
+        if: always()
+        run: |
+          set -euo pipefail
+          TEST_RUNNER_ALMANAC_ARABIC_PASS=populated xcodebuild test-without-building \
+            -project Native/Almanac.xcodeproj \
+            -scheme Almanac \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -only-testing:AlmanacUITests/ArabicUITests/testScreenshotEveryScreenInArabic \
+            -resultBundlePath "$RUNNER_TEMP/ArabicPopulated.xcresult" \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/arabic-populated.log"
+
       # The Arabic screenshot pass (ArabicUITests.testScreenshotEveryScreenInArabic)
       # prints each screen's Latin-script text and off-screen elements as
       # `ARABIC-PASS` lines. Gathered here so a reader of the log's tail sees them.
       - name: Arabic pass report
         if: always()
         run: |
-          grep -h "^ARABIC-PASS" "$RUNNER_TEMP/xcodebuild-test.log" | sort -u | cut -c1-400 || true
+          grep -h "^ARABIC-PASS" "$RUNNER_TEMP/xcodebuild-test.log" | grep -v $'\tlayout\t' | sort -u | cut -c1-400 || true
+          # The populated run in page order, since layout lines are read by position.
+          [ -f "$RUNNER_TEMP/arabic-populated.log" ] &&
+            grep -h "^ARABIC-PASS" "$RUNNER_TEMP/arabic-populated.log" | awk '!seen[$0]++' | cut -c1-400 || true
 
       # The pass's screenshots as plain PNGs, so reading them does not need Xcode.
       - name: Export the Arabic screenshots
         if: always()
         run: |
           set -uo pipefail
-          BUNDLE="$RUNNER_TEMP/AlmanacUITests.xcresult"
-          OUT="$RUNNER_TEMP/attachments"
-          [ -d "$BUNDLE" ] || exit 0
-          xcrun xcresulttool export attachments --path "$BUNDLE" --output-path "$OUT" || exit 0
           mkdir -p "$RUNNER_TEMP/arabic-screenshots"
+          for BUNDLE in "$RUNNER_TEMP/AlmanacUITests.xcresult" "$RUNNER_TEMP/ArabicPopulated.xcresult"; do
+          [ -d "$BUNDLE" ] || continue
+          OUT="$RUNNER_TEMP/attachments-$(basename "$BUNDLE" .xcresult)"
+          xcrun xcresulttool export attachments --path "$BUNDLE" --output-path "$OUT" || continue
           python3 - "$OUT" "$RUNNER_TEMP/arabic-screenshots" <<'PY' || echo "::warning::could not sort the Arabic screenshots"
           import json, os, shutil, sys
           src, dst = sys.argv[1], sys.argv[2]
@@ -329,6 +348,7 @@ jobs:
                       shutil.copy(os.path.join(src, a["exportedFileName"]), os.path.join(dst, target))
           print(len(os.listdir(dst)), "Arabic screenshots")
           PY
+          done
 
       - name: Attach the Arabic screenshots
         if: always()
