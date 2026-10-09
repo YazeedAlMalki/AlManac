@@ -139,9 +139,12 @@ places it is shown (`Drink.displayName`, `DrinkAttachment.displayName`).
   assertions, since some Latin text is meant to stay (below).
   CI runs it a second time after the whole suite ("Arabic pass on the
   populated simulator"), on the database the English tests filled. That run
-  also plants two weeks of resting heart rate and HRV so Insights has trends
-  to draw arrows for, and it prints where everything on Trends, Insights and
-  Vitals sits, so the charts' direction can be read from the log. Its
+  also plants two weeks of readiness history (`ReadinessHistorySeedPlan`:
+  each day's night, morning vitals and the score they earn, climbing), since
+  the app itself scores only today. So Trends has a chart with a direction and
+  Insights has trends to draw arrows for, and the run prints where everything
+  on Trends, Insights and Vitals sits, so the charts' direction can be read
+  from the log. Its
   screenshots and lines are prefixed `pop-`. Its first run found English that
   only appears with entries: Vitals' units, "Entered at …", "entered by hand"
   and its "YYYY-MM-DD" days; Today's kcal and kg and the per-value nutrient
