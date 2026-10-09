@@ -1,11 +1,10 @@
 # Almanac — Arabic
 
 **Status (2026-10-08):** the whole app has Arabic, switched by iOS's own
-per-app Language setting. Slices 0–4 of #4 are built on
-`claude/arabic-2026-10-07`, which also carries the fasting and prayer work
-merged from master (#5), in Arabic. The screenshot pass and the owner's
-read-through are open. The owner's call, 2026-10-07: "the whole app gets
-Arabic". That brings BRD v1.6's deferred "Arabic UI" into scope.
+per-app Language setting. Slices 0–4 of #4 are on master (PR #9), after the
+owner's read-through. The first screenshot pass ran on an empty database and
+its findings are fixed (below). The owner's call, 2026-10-07: "the whole app
+gets Arabic". That brings BRD v1.6's deferred "Arabic UI" into scope.
 
 ## How text reaches the screen
 
@@ -97,6 +96,11 @@ decimal point for the locale's, only when those digits are not ASCII, and
 changes nothing else. `AlmanacNumber.compact` and the core's numbers in
 sentences use it.
 
+Numbers written into a translation itself ("من ١٠", "٠٤:٠٠", "٢٥٠ مل") are in
+Arabic-Indic digits too, so a sentence never mixes the two kinds
+(`%lld من 10` showed as "٧ من 10"). The one exception is "+03:00" in the
+lab-entry hint, which is what a person types.
+
 **Typed numbers are read in either language's digits.** The number pad types
 ٧٢٫٥ in Arabic, which `Double(_:)` refuses. Every numeric field parses through
 `Double(userInput:)` / `Int(userInput:)` (`NumberInput`). They read
@@ -105,8 +109,8 @@ marks, so whatever `NumberDisplay` writes reads back. The date of birth is
 stored in ASCII digits whichever keyboard typed it.
 
 **Direction.** Chevrons are `chevron.forward`, which mirrors. Insights' trend
-arrows (`arrow.up.right`) are left as they are until the screenshot pass shows
-which way the charts' time axis runs in Arabic.
+arrows (`arrow.up.right`) are left as they are until a screenshot with data
+shows which way the charts' time axis runs in Arabic.
 
 ## Tests
 
@@ -115,6 +119,14 @@ which way the charts' time axis runs in Arabic.
   path), that the bar runs right to left, and that the Modules screen's title
   is Arabic (the app catalog's path). Every other UI suite pins
   `-AppleLanguages (en)`.
+- `ArabicUITests.testScreenshotEveryScreenInArabic` is the screenshot pass.
+  It opens Today, the quick-log sheet, Trends, Insights, the Modules menu and
+  every module in Arabic, scrolls each, and writes nothing. Each page's
+  screenshot is kept. CI uploads them as plain PNGs in the `arabic-screenshots`
+  artifact. Each page's Latin-script text, any element outside the window and
+  any system alert are printed as `ARABIC-PASS` lines, which the "Arabic pass
+  report" step gathers at the end of the log. Both are reports, not
+  assertions, since some Latin text is meant to stay (below).
 - `LocalizationTableTests`: the table parses, has no empty value, and covers
   every source key with the same specifiers. It also checks argument
   substitution.
@@ -125,12 +137,20 @@ which way the charts' time axis runs in Arabic.
 
 ## Open
 
-- **The screenshot pass.** Every screen in Arabic, on a simulator, for
-  layout, truncation and the charts' direction. Neither gate can see a
-  `String` the app builds and shows verbatim. Slice 4 found 150 of them:
-  assignments, helper labels, tuple returns and unit fragments. The pass is
-  where any that are left would show.
-- **The owner's read-through.** All translations are Modern Standard Arabic
-  written in the build, with one glossary throughout (سجّل for log, قراءة for
-  reading, مخزن المطبخ for pantry, المقرَّر for prescription). They count as done
-  only once the owner has read them.
+- **A screenshot pass with data.** The first pass (run 37821810861,
+  2026-10-08) ran first in the suite, on a virgin simulator, so it saw empty
+  states. It found nothing off screen and no system alert. The English it
+  found was in `String`s the app built and showed verbatim: Today's greeting
+  and its "Still needed: …" line, the readiness duration labels, the Trends
+  and Insights range pickers ("30 days"), and Vitals' history footer. All of
+  these now have Arabic, and the second pass (run 37837350874) confirmed it.
+  That pass also showed "04:00" in ASCII digits among Arabic-Indic ones,
+  which led to the digit rule above. The rest of the Latin text it reported is meant to
+  stay: Almanac, HRV, HealthKit, CSV, the stored default name "User" and the
+  fixture laboratory's name. Screens with entries in them (charts, logged
+  sessions, meals) and the trend arrows' direction still need a run on a
+  populated simulator.
+
+The owner's read-through of the translations is done (2026-10-08). They are
+Modern Standard Arabic with one glossary throughout (سجّل for log, قراءة for
+reading, مخزن المطبخ for pantry, المقرَّر for prescription).

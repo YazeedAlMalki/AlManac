@@ -42,13 +42,7 @@ struct InsightsView: View {
             case .ninetyDays: return 90
             }
         }
-        var title: String {
-            switch self {
-            case .fourteenDays: return "14 days"
-            case .thirtyDays: return "30 days"
-            case .ninetyDays: return "90 days"
-            }
-        }
+        var title: String { String(localized: "\(dayCount) days") }
     }
 
     private let timeModel = TimeModel(timeZone: .current)

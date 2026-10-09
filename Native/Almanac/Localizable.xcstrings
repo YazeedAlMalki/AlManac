@@ -381,6 +381,70 @@
         }
       }
     },
+    "%lld days": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld day"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld days"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا أيام"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "يوم واحد"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "يومان"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld أيام"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld يومًا"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld يوم"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld days in a schedule change left out": {
       "localizations": {
         "en": {
@@ -682,7 +746,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld سعرة/100 غ"
+            "value": "%lld سعرة/١٠٠ غ"
           }
         }
       }
@@ -772,7 +836,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld من 10"
+            "value": "%lld من ١٠"
           }
         }
       }
@@ -792,7 +856,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld من 10"
+            "value": "%lld من ١٠"
           }
         }
       }
@@ -802,7 +866,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld قراءة، آخر 30 يومًا"
+            "value": "%lld قراءة، آخر ٣٠ يومًا"
           }
         }
       }
@@ -1158,7 +1222,27 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld/10"
+            "value": "%lld/١٠"
+          }
+        }
+      }
+    },
+    "%lldh %lldm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld س %lld د"
+          }
+        }
+      }
+    },
+    "%lldm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld د"
           }
         }
       }
@@ -1238,7 +1322,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "قراءة واحدة، آخر 30 يومًا"
+            "value": "قراءة واحدة، آخر ٣٠ يومًا"
           }
         }
       }
@@ -1248,7 +1332,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "16:8"
+            "value": "١٦:٨"
           }
         }
       }
@@ -1258,7 +1342,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "18:6"
+            "value": "١٨:٦"
           }
         }
       }
@@ -1436,7 +1520,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يحتاج العيار إلى عددين صحيحين موجبين، مثل 1 و160."
+            "value": "يحتاج العيار إلى عددين صحيحين موجبين، مثل ١ و١٦٠."
           }
         }
       }
@@ -1771,6 +1855,16 @@
         }
       }
     },
+    "Almanac could not produce a defensible score from the available signals.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يتمكن Almanac من حساب درجة يُعتمد عليها من المؤشرات المتاحة."
+          }
+        }
+      }
+    },
     "Almanac could not turn its reminders off.": {
       "localizations": {
         "ar": {
@@ -1806,7 +1900,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "تبدأ أيام Almanac عند 04:00 بالتوقيت المحلي."
+            "value": "تبدأ أيام Almanac عند ٠٤:٠٠ بالتوقيت المحلي."
           }
         }
       }
@@ -3106,7 +3200,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "تشير الخطوط المتقطعة إلى %lld و%lld على مقياس الجاهزية من 0 إلى 100."
+            "value": "تشير الخطوط المتقطعة إلى %lld و%lld على مقياس الجاهزية من ٠ إلى ١٠٠."
           }
         }
       }
@@ -3166,7 +3260,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "اليوم %lld من 21"
+            "value": "اليوم %lld من ٢١"
           }
         }
       }
@@ -3696,7 +3790,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "ثماني درجات، من 1 الباهت إلى 8 البني الداكن. لا وصف منشورًا هنا للدرجات الوسطى، لذا سُمّي الطرفان فقط."
+            "value": "ثماني درجات، من ١ الباهت إلى ٨ البني الداكن. لا وصف منشورًا هنا للدرجات الوسطى، لذا سُمّي الطرفان فقط."
           }
         }
       }
@@ -4406,7 +4500,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "من الساعة %lld:00"
+            "value": "من الساعة %lld:٠٠"
           }
         }
       }
@@ -4477,6 +4571,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "جيد"
+          }
+        }
+      }
+    },
+    "Good afternoon, %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طاب نهارك، %@"
+          }
+        }
+      }
+    },
+    "Good evening, %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مساء الخير، %@"
+          }
+        }
+      }
+    },
+    "Good morning, %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "صباح الخير، %@"
           }
         }
       }
@@ -4576,7 +4700,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يجب أن يكون الطول رقمًا بين 0 و300 سم."
+            "value": "يجب أن يكون الطول رقمًا بين ٠ و٣٠٠ سم."
           }
         }
       }
@@ -4886,7 +5010,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "بترتيب حدوثها حسب وقت اليوم. يبدأ اليوم عند 04:00، فإدخال الساعة 03:00 يتبع الليلة السابقة."
+            "value": "بترتيب حدوثها حسب وقت اليوم. يبدأ اليوم عند ٠٤:٠٠، فإدخال الساعة ٠٣:٠٠ يتبع الليلة السابقة."
           }
         }
       }
@@ -5106,7 +5230,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "آخر 30 يومًا"
+            "value": "آخر ٣٠ يومًا"
           }
         }
       }
@@ -5116,7 +5240,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "آخر 7 أيام"
+            "value": "آخر ٧ أيام"
           }
         }
       }
@@ -5126,7 +5250,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "آخر 90 يومًا"
+            "value": "آخر ٩٠ يومًا"
           }
         }
       }
@@ -5516,7 +5640,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "اليوم المنطقي %@ — يبدأ اليوم عند 04:00."
+            "value": "اليوم المنطقي %@ — يبدأ اليوم عند ٠٤:٠٠."
           }
         }
       }
@@ -7446,7 +7570,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "مبدئي · اليوم %lld من 21"
+            "value": "مبدئي · اليوم %lld من ٢١"
           }
         }
       }
@@ -7726,7 +7850,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "الجهد %lld/10"
+            "value": "الجهد %lld/١٠"
           }
         }
       }
@@ -7736,7 +7860,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "الجهد المُدرَك (1–10)"
+            "value": "الجهد المُدرَك (١–١٠)"
           }
         }
       }
@@ -7746,7 +7870,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يتراوح الجهد المُدرَك (RPE) من 1 إلى 10."
+            "value": "يتراوح الجهد المُدرَك (RPE) من ١ إلى ١٠."
           }
         }
       }
@@ -7877,6 +8001,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "القراءات"
+          }
+        }
+      }
+    },
+    "Readings from Apple Health are corrected in Apple Health.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قراءات تطبيق الصحة تُصحَّح في تطبيق الصحة."
+          }
+        }
+      }
+    },
+    "Readings you type in can be corrected or removed here. Readings from Apple Health are corrected in Apple Health.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءات التي تُدخلها بنفسك تُصحَّح أو تُحذف هنا. أما قراءات تطبيق الصحة فتُصحَّح في تطبيق الصحة."
           }
         }
       }
@@ -9281,6 +9425,16 @@
         }
       }
     },
+    "Still needed: %@.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ما زال ينقص: %@."
+          }
+        }
+      }
+    },
     "Streak": {
       "localizations": {
         "ar": {
@@ -10394,7 +10548,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "تضيف أم القرى 30 دقيقة إلى العشاء في رمضان، كما في التقاويم السعودية. عصر الجمهور هو وقت الشافعية والمالكية والحنابلة، وعصر الحنفية أبعد، عند بلوغ الظل مثليه."
+            "value": "تضيف أم القرى ٣٠ دقيقة إلى العشاء في رمضان، كما في التقاويم السعودية. عصر الجمهور هو وقت الشافعية والمالكية والحنابلة، وعصر الحنفية أبعد، عند بلوغ الظل مثليه."
           }
         }
       }
@@ -10504,7 +10658,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "حتى الساعة %lld:00"
+            "value": "حتى الساعة %lld:٠٠"
           }
         }
       }
@@ -10614,7 +10768,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "القيمة (مثلًا 16.27)"
+            "value": "القيمة (مثلًا ١٦٫٢٧)"
           }
         }
       }
@@ -10884,7 +11038,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "الأيام البيض (13–15)"
+            "value": "الأيام البيض (١٣–١٥)"
           }
         }
       }
@@ -11179,6 +11333,16 @@
         }
       }
     },
+    "mood": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المزاج"
+          }
+        }
+      }
+    },
     "north": {
       "localizations": {
         "ar": {
@@ -11289,6 +11453,16 @@
         }
       }
     },
+    "resting heart rate": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نبض القلب أثناء الراحة"
+          }
+        }
+      }
+    },
     "scaled from %lld": {
       "localizations": {
         "ar": {
@@ -11305,6 +11479,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "محدَّد"
+          }
+        }
+      }
+    },
+    "sleep": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النوم"
+          }
+        }
+      }
+    },
+    "sleep quality": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "جودة النوم"
+          }
+        }
+      }
+    },
+    "soreness": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ألم العضلات"
           }
         }
       }

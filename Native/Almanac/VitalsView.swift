@@ -185,8 +185,8 @@ struct VitalsView: View {
 
     private var historyFooter: String {
         history.contains { $0.source == VitalsRecordStore.manualSource }
-            ? "Readings you type in can be corrected or removed here. Readings from Apple Health are corrected in Apple Health."
-            : "Readings from Apple Health are corrected in Apple Health."
+            ? String(localized: "Readings you type in can be corrected or removed here. Readings from Apple Health are corrected in Apple Health.")
+            : String(localized: "Readings from Apple Health are corrected in Apple Health.")
     }
 
     private func name(for metric: String) -> String {

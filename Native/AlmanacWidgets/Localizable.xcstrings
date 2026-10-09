@@ -16,7 +16,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "+250 مل"
+            "value": "+٢٥٠ مل"
           }
         }
       }
@@ -26,7 +26,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "يضيف كوبًا كبيرًا (250 مل) إلى مجموع ماء اليوم."
+            "value": "يضيف كوبًا كبيرًا (٢٥٠ مل) إلى مجموع ماء اليوم."
           }
         }
       }
@@ -126,7 +126,7 @@
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "سجّل 250 مل من الماء"
+            "value": "سجّل ٢٥٠ مل من الماء"
           }
         }
       }
