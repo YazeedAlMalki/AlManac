@@ -169,6 +169,14 @@ struct TabRoutingTests {
         }
     }
 
+    @Test("Shifts & rhythm is a Modules screen, listed under Daily context")
+    func circadianLivesUnderDailyContext() {
+        #expect(AppRoute.circadian.tab == .modules)
+        #expect(AppRoute.circadian.title == "Shifts & rhythm")
+        let dailyContext = AppRoute.menu.first { $0.section == .dailyContext }
+        #expect(dailyContext?.routes.contains(.circadian) == true)
+    }
+
     @Test("A route the menu does not show is reachable, because it is still a route")
     func pushedOnlyRoutesAreStillRoutes() {
         // Import history has no row of its own — it is pushed from Laboratory —
