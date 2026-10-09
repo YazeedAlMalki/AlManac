@@ -127,6 +127,12 @@ shows which way the charts' time axis runs in Arabic.
   any system alert are printed as `ARABIC-PASS` lines, which the "Arabic pass
   report" step gathers at the end of the log. Both are reports, not
   assertions, since some Latin text is meant to stay (below).
+  CI runs it a second time after the whole suite ("Arabic pass on the
+  populated simulator"), on the database the English tests filled. That run
+  also plants two weeks of resting heart rate and HRV so Insights has trends
+  to draw arrows for, and it prints where everything on Trends, Insights and
+  Vitals sits, so the charts' direction can be read from the log. Its
+  screenshots and lines are prefixed `pop-`.
 - `LocalizationTableTests`: the table parses, has no empty value, and covers
   every source key with the same specifiers. It also checks argument
   substitution.

@@ -48,14 +48,14 @@ public enum InsightMetric: String, Sendable, Hashable, CaseIterable, Identifiabl
     public var unit: String? {
         switch self {
         case .readiness: return nil
-        case .sleepMinutes: return "min"
-        case .hydrationMilliliters: return "mL"
-        case .steps: return "steps"
-        case .restingHeartRate: return "bpm"
-        case .bodyWeightKg: return "kg"
-        case .trainingLoadTonnageKg: return "kg"
-        case .mood: return "/10"
-        case .soreness: return "/10"
+        case .sleepMinutes: return localized("min")
+        case .hydrationMilliliters: return localized("mL")
+        case .steps: return localized("steps")
+        case .restingHeartRate: return localized("bpm")
+        case .bodyWeightKg: return localized("kg")
+        case .trainingLoadTonnageKg: return localized("kg")
+        case .mood: return localized("/10")
+        case .soreness: return localized("/10")
         }
     }
 

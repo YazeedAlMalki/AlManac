@@ -11233,6 +11233,16 @@
         }
       }
     },
+    "across %lld of %lld days · %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في %lld من %lld يومًا · %@"
+          }
+        }
+      }
+    },
     "complete": {
       "localizations": {
         "ar": {
@@ -11259,6 +11269,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الشرق"
+          }
+        }
+      }
+    },
+    "falling": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في انخفاض"
           }
         }
       }
@@ -11463,6 +11483,16 @@
         }
       }
     },
+    "rising": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في ارتفاع"
+          }
+        }
+      }
+    },
     "scaled from %lld": {
       "localizations": {
         "ar": {
@@ -11549,6 +11579,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الجنوب الغربي"
+          }
+        }
+      }
+    },
+    "steady": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ثابت"
           }
         }
       }
