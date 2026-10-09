@@ -412,7 +412,7 @@ struct ReadinessDashboardView: View {
 
     private var nutritionValue: String {
         guard let energy = todaysEnergy else { return "—" }
-        return "\(AlmanacNumber.compact(energy.kcal)) kcal"
+        return String(localized: "\(AlmanacNumber.compact(energy.kcal)) kcal")
     }
 
     private var nutritionDetail: String {
@@ -423,7 +423,7 @@ struct ReadinessDashboardView: View {
         guard let summary = trainingModel.todaysSummary else { return "—" }
         if let duration = summary.totalDurationSeconds { return durationLabel(Int(duration.rounded())) }
         if let rounds = summary.totalRounds { return "\(rounds) rounds" }
-        if let tonnage = summary.totalTonnageKg { return "\(AlmanacNumber.compact(tonnage)) kg" }
+        if let tonnage = summary.totalTonnageKg { return String(localized: "\(AlmanacNumber.compact(tonnage)) kg") }
         if let distance = summary.totalDistanceMeters { return "\(AlmanacNumber.compact(distance)) m" }
         return String(localized: "Logged")
     }

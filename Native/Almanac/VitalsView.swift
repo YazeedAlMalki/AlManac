@@ -119,7 +119,7 @@ struct VitalsView: View {
             // screen exists: a person who has not measured anything and a person
             // who measured zero are different facts, and only one of them is a
             // reading.
-            value: today[metric].map { "\(AlmanacNumber.compact($0.value)) \(metric.unit)" } ?? "—",
+            value: today[metric].map { String(localized: "\(AlmanacNumber.compact($0.value)) \(UnitDisplay.localized(metric.unit))") } ?? "—",
             detail: detail(for: metric),
             tone: today[metric] == nil ? .neutral : nil
         )
@@ -135,8 +135,8 @@ struct VitalsView: View {
         guard let record = today[metric] else { return String(localized: "Not entered") }
         let time = record.timestamp.formatted(date: .omitted, time: .shortened)
         return record.source == VitalsRecordStore.manualSource
-            ? "Entered at \(time)"
-            : "From Apple Health at \(time)"
+            ? String(localized: "Entered at \(time)")
+            : String(localized: "From Apple Health at \(time)")
     }
 
     /// Stable per metric so a UI test can read today's resting rate without
@@ -150,10 +150,10 @@ struct VitalsView: View {
 
     private func historyRow(_ record: VitalsRecord) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("\(AlmanacNumber.compact(record.value)) \(unit(for: record.metric))")
+            Text(verbatim: "\(AlmanacNumber.compact(record.value)) \(UnitDisplay.localized(unit(for: record.metric)))")
                 .font(AlmanacTypography.font(.body).monospacedDigit())
                 .foregroundStyle(AlmanacPalette.textPrimary)
-            Text("\(name(for: record.metric)) · \(record.logicalDay) · \(timeLabel(record))")
+            Text(verbatim: "\(name(for: record.metric)) · \(LogicalDay(record.logicalDay).displayText) · \(timeLabel(record))")
                 .font(AlmanacTypography.font(.caption))
                 .foregroundStyle(AlmanacPalette.textSecondary)
         }
@@ -198,7 +198,7 @@ struct VitalsView: View {
     }
 
     private func timeLabel(_ record: VitalsRecord) -> String {
-        record.source == VitalsRecordStore.manualSource ? "entered by hand" : "Apple Health"
+        record.source == VitalsRecordStore.manualSource ? String(localized: "entered by hand") : "Apple Health"
     }
 
     // MARK: - Data
@@ -287,7 +287,7 @@ private struct VitalsEntryEditor: View {
                     // The correction is a new number for the same instant and the
                     // same metric. Saying so is what stops "correct" from being
                     // read as "replace this reading with another one".
-                    Text("A correction changes the number only. The reading stays on \(record!.logicalDay) at \(record!.timestamp.formatted(date: .omitted, time: .shortened)).")
+                    Text("A correction changes the number only. The reading stays on \(LogicalDay(record!.logicalDay).displayText) at \(record!.timestamp.formatted(date: .omitted, time: .shortened)).")
                         .font(AlmanacTypography.font(.caption))
                         .foregroundStyle(AlmanacPalette.textSecondary)
                 } else {

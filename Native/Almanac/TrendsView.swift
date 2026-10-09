@@ -181,7 +181,7 @@ struct TrendsView: View {
     private var chart: some View {
         AlmanacCard(padding: 16) {
             VStack(alignment: .leading, spacing: 14) {
-                AlmanacSectionHeader(title: String(localized: "Readiness"), detail: "0–100")
+                AlmanacSectionHeader(title: String(localized: "Readiness"), detail: String(localized: "0–100"))
                 Chart {
                     RuleMark(y: .value("Reference band", ReadinessFormula.compromisedThreshold))
                         .foregroundStyle(AlmanacPalette.warning.opacity(0.55))

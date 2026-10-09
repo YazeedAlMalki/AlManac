@@ -37,6 +37,12 @@ public struct DrinkAttachment: Sendable, Hashable {
     public var sugarG: Double?
     public var qualifier: DrinkValueQualifier
 
+    /// The name as shown: a catalog drink's stored English name translated, a
+    /// drink the person named exactly as typed (`Drink.displayName`'s rule).
+    public var displayName: String {
+        qualifier == .catalogUnsourcedEstimate ? localized(drinkName) : drinkName
+    }
+
     public init(drinkID: String, drinkName: String, caloriesKcal: Double, sodiumMg: Double,
                 sugarG: Double?, qualifier: DrinkValueQualifier) {
         self.drinkID = drinkID
@@ -237,7 +243,7 @@ public struct HydrationStore: HealthSampleWriting, TimelineProviding, @unchecked
             return TimelineEntry(
                 domain: domain, kind: "log", recordTable: "hydration_log", recordID: id,
                 occurrence: occurrence, basis: .occurrence,
-                title: "Hydration", detail: row.string("note_text"),
+                title: localized("Hydration"), detail: row.string("note_text"),
                 value: .quantity(text: String(amount), unit: "ml"),
                 lifecycle: nil, rangeFit: fit)
         }

@@ -53,7 +53,7 @@ public struct FastingIntakeLog: @unchecked Sendable {
         for entry in try hydration.logs(from: bounds.start, to: bounds.end) {
             guard let at = entry.loggedAt.span?.start, at >= start, at < end else { continue }
             found.append(Intake(kind: .drink, id: entry.id, at: at,
-                                label: entry.drink?.drinkName, amount: entry.amount.value))
+                                label: entry.drink?.displayName, amount: entry.amount.value))
         }
         return found.sorted { $0.at == $1.at ? $0.id < $1.id : $0.at < $1.at }
     }

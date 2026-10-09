@@ -1307,6 +1307,16 @@
         }
       }
     },
+    "0–100": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "٠–١٠٠"
+          }
+        }
+      }
+    },
     "1 exercise": {
       "localizations": {
         "ar": {
@@ -2481,6 +2491,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "إلغاء"
+          }
+        }
+      }
+    },
+    "Carbohydrates": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكربوهيدرات"
           }
         }
       }
@@ -3995,6 +4015,16 @@
         }
       }
     },
+    "Entered at %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُدخلت الساعة %@"
+          }
+        }
+      }
+    },
     "Equipment": {
       "localizations": {
         "ar": {
@@ -4315,6 +4345,26 @@
         }
       }
     },
+    "Fat": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الدهون"
+          }
+        }
+      }
+    },
+    "Fiber": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الألياف"
+          }
+        }
+      }
+    },
     "Figures below may be out of date.": {
       "localizations": {
         "ar": {
@@ -4501,6 +4551,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "من الساعة %lld:٠٠"
+          }
+        }
+      }
+    },
+    "From Apple Health at %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "من تطبيق الصحة الساعة %@"
           }
         }
       }
@@ -7721,6 +7781,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "التدرّج"
+          }
+        }
+      }
+    },
+    "Protein": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "البروتين"
           }
         }
       }
@@ -11269,6 +11339,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الشرق"
+          }
+        }
+      }
+    },
+    "entered by hand": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أُدخلت يدويًا"
           }
         }
       }

@@ -236,10 +236,13 @@ struct InsightsView: View {
         AlmanacNumber.compact(value)
     }
 
+    /// `forward`, not `right`: the arrow says which way the value moved over
+    /// time, and in Arabic time reads right to left. The `forward` symbols
+    /// mirror in a right-to-left layout; `arrow.up.right` never does.
     private func directionSymbol(_ direction: TrendDirection) -> String {
         switch direction {
-        case .up: return "arrow.up.right"
-        case .down: return "arrow.down.right"
+        case .up: return "arrow.up.forward"
+        case .down: return "arrow.down.forward"
         case .flat: return "minus"
         }
     }

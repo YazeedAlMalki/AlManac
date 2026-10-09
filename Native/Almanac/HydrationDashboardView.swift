@@ -53,7 +53,7 @@ struct HydrationDashboardView: View {
                             HStack(spacing: 6) {
                                 Text("\(Int(entry.amount.value)) mL")
                                 if let drink = entry.drink {
-                                    Text(drink.drinkName)
+                                    Text(drink.displayName)
                                         .font(.caption).foregroundStyle(.secondary)
                                 }
                             }
