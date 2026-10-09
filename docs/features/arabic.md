@@ -111,10 +111,12 @@ stored in ASCII digits whichever keyboard typed it.
 **Direction.** Chevrons are `chevron.forward`, which mirrors. Insights' trend
 arrows are `arrow.up.forward` and `arrow.down.forward`, which mirror too: a
 trend arrow says which way a value moved over time, and in Arabic time reads
-right to left. The populated pass (run 37921069016) could not settle this from
-a chart, because the readiness chart had one scored day, so it rests on the
-platform's convention. The association arrows ("higher together") compare two
-measures rather than two times, so they keep `arrow.up.right`.
+right to left. Run 37991364027 confirmed it on a chart: with 14 seeded days of
+readiness, the Trends chart's oldest bin (25–27 September) sat at the right
+edge (x 319–367 of 420) and the newest (9–11 October) at the left (x −11–36),
+so a rising trend climbs leftward, as the mirrored arrow points. The
+association arrows ("higher together") compare two measures rather than two
+times, so they keep `arrow.up.right`.
 
 **Units are codes where they are kept.** "ml", "bpm" and "kg" are stored and
 compared as written. `UnitDisplay.localized` translates the ones Almanac writes
