@@ -395,6 +395,11 @@ final class LaboratoryModel: ObservableObject {
             if let plan = KitchenSeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
                 try plan.apply(into: db)
             }
+            // And for readiness history: the app scores only today, so a chart
+            // with past days needs them planted. See `ReadinessHistorySeedPlan`.
+            if let plan = ReadinessHistorySeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
+                try plan.apply(into: db)
+            }
             #endif
             startupError = nil
         } catch {

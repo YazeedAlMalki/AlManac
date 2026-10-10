@@ -109,6 +109,22 @@ extension XCUIApplication {
         let failure = staticTexts["Almanac could not open"]
         return !failure.waitForExistence(timeout: 5)
     }
+
+    /// Relaunches with the last `days` days of readiness history planted — a
+    /// night, the morning's vitals and the score they earn, per day
+    /// (`ReadinessHistorySeedPlan`). Same shape and reasons as `seedVitals`;
+    /// re-applying it leaves the same rows.
+    @discardableResult
+    func seedReadinessHistory(days: Int) -> Bool {
+        terminate()
+        while let index = launchArguments.firstIndex(of: "-AlmanacSeedReadinessHistory") {
+            launchArguments.removeSubrange(index..<min(index + 2, launchArguments.count))
+        }
+        launchArguments += ["-AlmanacSeedReadinessHistory", String(days)]
+        launch()
+        let failure = staticTexts["Almanac could not open"]
+        return !failure.waitForExistence(timeout: 5)
+    }
 }
 
 extension XCUIApplication {
