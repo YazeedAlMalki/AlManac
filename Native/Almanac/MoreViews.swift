@@ -164,6 +164,22 @@ struct MeasurementsView: View {
                     .disabled(db == nil)
             }
 
+            // A year of each metric, charted, with its readings to correct or
+            // delete (BRD §6.6, §6.17).
+            Section("History") {
+                ForEach(BodyMetric.allCases) { metric in
+                    NavigationLink {
+                        BodyMetricHistoryView(db: db, metric: metric) {
+                            reload()
+                            trackingModel.refresh()
+                        }
+                    } label: {
+                        Text(metric.title)
+                    }
+                    .accessibilityIdentifier("body-history-\(metric.rawValue)")
+                }
+            }
+
             // The readings themselves, which is a different question from "where
             // am I". Its own section rather than stacked under the cards so a
             // screen with 200 readings still shows five cards above the fold.

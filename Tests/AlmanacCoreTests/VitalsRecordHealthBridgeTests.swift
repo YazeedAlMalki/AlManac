@@ -20,6 +20,22 @@ struct VitalsRecordHealthBridgeTests {
         #expect(counts.inserted == 1)
     }
     
+    /// body-composition.md §3: weight's only home is
+    /// `body_composition_measurement`. A bodyMass sample reaching this bridge
+    /// must write nothing to `vitals_record`.
+    @Test("A bodyMass sample is not written to vitals_record")
+    func bodyMassIsNotAVital() throws {
+        let timestamp = Date(timeIntervalSince1970: 1000)
+        let weight = HealthSample(externalID: "hk-weight-001", domain: .bodyMass,
+                                  start: timestamp, end: timestamp, value: 82.4, unit: "kg")
+        let counts = try bridge.apply(HealthChangeSet(added: [weight], deletedExternalIDs: [], nextAnchor: nil), in: db)
+        #expect(counts.inserted == 0)
+        let rows = try db.query("SELECT COUNT(*) AS n FROM vitals_record;").first?.int("n")
+        #expect(rows == 0)
+        let weights = try db.query("SELECT COUNT(*) AS n FROM vitals_record WHERE metric = 'weight';").first?.int("n")
+        #expect(weights == 0)
+    }
+
     @Test("Insert multiple vitals domains")
     func insertMultipleDomains() throws {
         let timestamp = Date(timeIntervalSince1970: 1000)
