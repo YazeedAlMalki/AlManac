@@ -48,6 +48,18 @@ public struct NotificationPlan: Sendable, Hashable {
     }
 
     public static func empty(_ at: Date) -> NotificationPlan { NotificationPlan(computedAt: at, notifications: []) }
+
+    /// The prefix `NotificationPlanner` gives every identifier it mints.
+    public static let ownedPrefix = "almanac."
+
+    /// Whether a pending request is one this app scheduled. The app-side
+    /// scheduler removes only these, so a request some other feature left is
+    /// never swept up. Here rather than in the scheduler so it can be tested:
+    /// the reversed check (`ownedPrefix.hasPrefix(identifier)`) shipped once
+    /// and matched nothing, so stale reminders were never removed.
+    public static func isOwned(_ identifier: String) -> Bool {
+        identifier.hasPrefix(ownedPrefix)
+    }
 }
 
 /// The per-type wording §14.2 specifies, as pure functions.

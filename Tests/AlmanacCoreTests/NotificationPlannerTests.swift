@@ -539,6 +539,44 @@ struct NotificationPlannerTests {
         #expect(readinessDays(in: try planner.plan(horizon: 6 * 3600)) == ["2025-09-18"])
     }
 
+    @Test("A reminder earlier today, already past, is not planned")
+    func earlierTodayIsDropped() throws {
+        // Today's wake is 05:00, an hour before `now`: its readiness reminder
+        // has passed. Planned anyway, the scheduler would fire it in a second.
+        try logDayShift(wake: riyadh(5), sleepStart: riyadh(23))
+
+        let plan = try planner.plan()
+
+        #expect(planned(plan, .readiness, on: day).isEmpty)
+        #expect(plan.notifications.allSatisfy { $0.fireAt > now })
+    }
+
+    @Test("Nothing beyond the horizon is planned, even on a day the horizon touches")
+    func beyondTheHorizonIsDropped() throws {
+        try logDayShift(wake: riyadh(7), sleepStart: riyadh(23))
+        let horizon: TimeInterval = 6 * 3600
+
+        let plan = try planner.plan(horizon: horizon)
+
+        // Today is covered, so its bedtime is a candidate; 22:xx is past 12:00.
+        #expect(planned(plan, .bedtime, on: day).isEmpty)
+        #expect(!plan.notifications.isEmpty)
+        #expect(plan.notifications.allSatisfy { $0.fireAt > now && $0.fireAt <= now.addingTimeInterval(horizon) })
+    }
+
+    @Test("Ownership: only identifiers the planner mints are the app's to remove")
+    func ownershipIsByPrefix() throws {
+        try logDayShift(wake: riyadh(7), sleepStart: riyadh(23))
+        let minted = try planner.plan().notifications.map(\.identifier)
+        #expect(!minted.isEmpty)
+        #expect(minted.allSatisfy(NotificationPlan.isOwned))
+
+        #expect(NotificationPlan.isOwned("almanac.water.2025-09-18.1758164400"))
+        #expect(!NotificationPlan.isOwned("com.other.almanac.water"))
+        #expect(!NotificationPlan.isOwned("almanac"))
+        #expect(!NotificationPlan.isOwned(""))
+    }
+
     private func readinessDays(in plan: NotificationPlan) -> [String] {
         plan.notifications.filter { $0.type == .readiness }
             .compactMap { $0.identifier.split(separator: ".").last.map(String.init) }

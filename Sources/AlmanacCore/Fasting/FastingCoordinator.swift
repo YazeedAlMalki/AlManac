@@ -85,7 +85,15 @@ public struct FastingCoordinator: @unchecked Sendable {
         let today = calendarDate(instant)
         try schedules.ensureRamadanSchedules(around: today)
         var outcomes: [String: ReligiousFastingOutcome] = [:]
-        for date in [shift(today, by: -1), today].compactMap({ $0 }) {
+        let yesterday = shift(today, by: -1)
+        // A fast from before yesterday still open: the app was not opened from
+        // that day's Fajr until now. Closed first, at its own Maghrib, because
+        // a fast today would otherwise end it at today's Fajr when it yields.
+        if let open = try sessions.activeSession(), open.sessionType == .religious,
+           let yesterday, open.logicalDay < yesterday {
+            outcomes[open.logicalDay] = try ensureDay(open.logicalDay, at: instant)
+        }
+        for date in [yesterday, today].compactMap({ $0 }) {
             outcomes[date] = try ensureDay(date, at: instant)
         }
         return outcomes
