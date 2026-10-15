@@ -24,6 +24,10 @@ final class HydrationModel: ObservableObject {
     /// write to, replacing the `@AppStorage` copy that used to drift
     /// independently of it.
     @Published private(set) var hydrationSettings: HydrationSettings?
+    /// BRD §6.3's "dark colour despite target → raise target", for today.
+    /// Nil when it could not be read; the dashboard then says nothing, because
+    /// a missing reading is not a reason to change anyone's target.
+    @Published private(set) var colourFeedback: UrineColourHydrationFeedback.Verdict?
 
     private var healthProvider: (any HealthProvider)?
     private var healthWriter: (any HealthWriter)?
@@ -107,6 +111,12 @@ final class HydrationModel: ObservableObject {
             todayTotal = try store.total(from: range.start, to: range.end)
             todaysEntries = try store.logs(from: range.start, to: range.end)
             readProblem = nil
+            if let db {
+                colourFeedback = try? UrineColourHydrationFeedbackReader(db: db).feedback(
+                    on: today.value,
+                    intakeMilliliters: todayTotal.value,
+                    targetMilliliters: hydrationSettings?.dailyGoalMilliliters ?? 2000)
+            }
         } catch {
             // Do not crash the dashboard — but do not pretend either. This used
             // to carry only a comment saying it "will simply show stale figures

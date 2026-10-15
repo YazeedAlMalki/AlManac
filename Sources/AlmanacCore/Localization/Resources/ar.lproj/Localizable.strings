@@ -349,3 +349,5 @@
 /* Digestion history (2026-10-15) */
 "Colour not recorded" = "اللون غير مسجل";
 "Digestion" = "الهضم";
+"Urine colour does not change your water target on a fast day." = "لون البول لا يغيّر هدف الماء في يوم الصيام.";
+"Your latest urine was %@ after you reached your %@ mL target. Raise it to %@ mL? Draft wording, not clinician-reviewed." = "كان آخر بول %@ بعد أن بلغت هدفك %@ مل. هل ترفعه إلى %@ مل؟ صياغة مبدئية، لم يراجعها طبيب.";

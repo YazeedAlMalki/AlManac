@@ -33,6 +33,7 @@ struct HydrationDashboardView: View {
                         .tint(AlmanacPalette.accent)
                 }.padding(.vertical, 4)
             }
+            colourFeedbackSection
             Section("Today") {
                 // `else if`, not two notes: if the log cannot be read at all,
                 // the state of the Health sync is not the thing worth the user's
@@ -94,6 +95,35 @@ struct HydrationDashboardView: View {
         .sheet(isPresented: $logging) { HydrationLoggingView(model: model) }
         .task { model.refresh() }
         .editorError($error)
+    }
+
+    /// BRD §6.3's feedback from urine colour, offered rather than applied:
+    /// the target is the person's, so a raise is a button, not a silent edit.
+    /// Draft wording, and it says so.
+    @ViewBuilder
+    private var colourFeedbackSection: some View {
+        if let verdict = model.colourFeedback, let message = verdict.message {
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(message)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("hydration.colour-feedback")
+                    if case let .raise(_, to, _) = verdict {
+                        Button("Raise target to \(Int(to)) mL") {
+                            do {
+                                try model.saveDailyGoal(milliliters: to)
+                                model.refresh()
+                            } catch {
+                                self.error = String(describing: error)
+                            }
+                        }
+                        .accessibilityIdentifier("hydration.colour-feedback.raise")
+                    }
+                }
+            } header: {
+                Text("Urine colour")
+            }
+        }
     }
 
     private func delete(at offsets: IndexSet) {
