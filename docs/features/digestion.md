@@ -177,5 +177,7 @@ to overrule them. The raise is offered, never applied silently.
   dark and 6 is; no reading; suspended on a fast day; other days ignored; no
   target; the wording is labelled draft.
 - `AttributionTests.bristolScaleIsCredited`.
-- `DigestionHistoryUITests` (2), driven on a simulator: see
-  `docs/implementation-status.md` 2026-10-15 for the run.
+- `DigestionHistoryUITests` (2), **passed** on a wiped iPhone 16e
+  (2026-10-15): the screen offers its three ranges and says it does not
+  interpret; logging a Type 4 through Quick Log raises the Type 4 count by one,
+  and every count row carries its number and its name.

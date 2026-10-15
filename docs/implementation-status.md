@@ -1,7 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done (UI runs
-blocked by a damaged simulator runtime). Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
+Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done; the
+simulator runtime was re-downloaded and the three UI suites pass. Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
 work (workout templates, the readiness withhold, the Vitals log), merging
 through PR #6; the fasting entry is second. Updated 2026-10-06. **Fasting and prayer times work end to end in the running
 app** — religious fasting had never run on a phone (no fast day was ever
@@ -27,7 +27,31 @@ The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
 
-## 2026-10-15 — Slices 7 and 9 toward done; UI runs blocked by a damaged simulator runtime
+## 2026-10-15 — Slices 7 and 9 toward done
+
+**Second pass, same day (owner's go-ahead).** The damaged iOS 26.3 runtime was
+deleted (`xcrun simctl runtime delete`) and re-downloaded
+(`xcodebuild -downloadPlatform iOS`, iOS 26.3.1, 23D8133, 10.5 GB). The app's
+data was wiped (`xcrun simctl uninstall 71088226-… com.almanac.personal`) before
+each run, and the three suites were run by name on the iPhone 16e:
+
+| Run | Result |
+|---|---|
+| First run | 2 passed, 2 failed: the discontinue test (a real app bug, below) and one new digestion test (a test bug, below) |
+| Final run, after both fixes | **4 of 4 passed** — `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, both `DigestionHistoryUITests` |
+
+- **The discontinue test found a real bug.** The plan list showed only when
+  some plan was active, so discontinuing your only plan hid it behind "No
+  supplement plans yet." Fixed in `SupplementView` (`41e36de`). That is why it
+  failed on CI's fresh simulator and passed on populated ones.
+- **The circumference test passed unchanged.** Its recorded snapshot error was
+  already fixed by `9c82961` (2026-10-07); it had not run cleanly since.
+- **The new digestion test had a lookup bug**, fixed in `f94660d`.
+
+**Score after the second pass.** Slice 9: **5 of 6**. Slice 7: **7 of 8**. The
+one open item in each is an owner gate group (G1/G2; G3/G4/G5).
+
+### First pass (before the runtime was replaced)
 
 **Branch** `claude/slices-7-9-completion`, from master `c4b5f0a`. Done on the
 owner's iMac (Xcode 26.3, x86_64).

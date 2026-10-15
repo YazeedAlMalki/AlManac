@@ -29,6 +29,7 @@ body-composition and custom measurements and accepts manual values.
 | Progress photos (gate G3) | **Owner gate open.** Still deferred (2026-09-16); not built |
 | Lab import-job failure row (gate G4) | **Owner gate open.** Already built as "yes, a row" before this pass; not changed |
 | Verified LOINC codes (gate G5) | **Owner gate open.** None seeded |
+| The two failing UI tests | **Pass** on a wiped simulator (2026-10-15). The discontinue test had found a real bug — the only plan, once discontinued, was hidden behind the empty state — fixed in `SupplementView` |
 
 Decisions taken without the owner are in `CONTEXT.md`, "Body and wellness
 (2026-10-15)".
