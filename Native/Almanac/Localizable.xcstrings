@@ -2373,12 +2373,12 @@
         }
       }
     },
-    "At Maghrib, on religious fast days.": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "عند المغرب، في أيام الصيام التعبّدي."
+    "At Maghrib or after it, on religious fast days." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند المغرب أو بعده، في أيام الصيام التعبّدي."
           }
         }
       }
@@ -2489,6 +2489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "وقت النوم"
+          }
+        }
+      }
+    },
+    "Before Fajr, on religious fast days." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبل الفجر، في أيام الصيام التعبّدي."
           }
         }
       }
@@ -6313,6 +6323,26 @@
         }
       }
     },
+    "Minutes after Maghrib: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دقائق بعد المغرب: %lld"
+          }
+        }
+      }
+    },
+    "Minutes before Fajr: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دقائق قبل الفجر: %lld"
+          }
+        }
+      }
+    },
     "Missing %@": {
       "localizations": {
         "ar": {
@@ -9703,6 +9733,16 @@
         }
       }
     },
+    "Set a time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحديد وقت"
+          }
+        }
+      }
+    },
     "Sets": {
       "localizations": {
         "ar": {
@@ -11291,16 +11331,6 @@
         }
       }
     },
-    "Twenty minutes before Fajr, on religious fast days.": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "قبل الفجر بعشرين دقيقة، في أيام الصيام التعبّدي."
-          }
-        }
-      }
-    },
     "Twice daily": {
       "localizations": {
         "ar": {
@@ -11567,6 +11597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "استخدم موقعك الحالي أو اختر مدينة لحساب أوقات الصلاة."
+          }
+        }
+      }
+    },
+    "Used only on a day with no sleep or shift time to go by." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُستخدم فقط في يوم لا يتوفر فيه وقت نوم أو مناوبة يُعتمد عليه."
           }
         }
       }

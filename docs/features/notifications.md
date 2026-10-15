@@ -223,10 +223,16 @@ ones a user might have been relying on.
   time and says it is computed at log time and app launch, so it is delivered
   immediately by `deliverNow`. It still goes through the matrix.
 - **Suppression columns are read-only** — see above.
-- **No per-type user-set times for readiness, water, bedtime, suhoor, iftar.** The
-  storage exists (`scheduledTimeHHMM`); the settings screen exposes switches and
-  the existing water interval only. Time-adjustment for the other types is a
-  follow-up, and until then those types have no time for a user to have set.
+- ~~No per-type user-set times for readiness, water, bedtime, suhoor, iftar.~~
+  **Built 2026-10-16 for readiness, bedtime, suhoor and iftar** (water keeps its
+  interval). Suhoor and iftar are derived from prayer times, so a person moves
+  their *distance* from the prayer: 5–90 minutes before Fajr, 0–60 after
+  Maghrib (Migration 058, `notification_rule.offsetMinutes`). Readiness and
+  bedtime take a clock time in `scheduledTimeHHMM`, used only on a day with no
+  sleep or shift time to go by (§14.2: bedtime "falls back to user-set time").
+  The controls appear under each switch on the Reminders screen while it is
+  on. Unconfirmed decisions are in `CONTEXT.md`, "The 2026-10-16 handoff".
+  Whether the reminder then arrives at that minute on a device is **UNRUN**.
 - **Nothing verifies a notification actually arrived.** That is a device-only
   step and is listed unrun in `docs/acceptance-checklist.md`.
 

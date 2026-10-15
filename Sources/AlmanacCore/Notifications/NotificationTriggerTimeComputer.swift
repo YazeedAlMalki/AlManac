@@ -29,15 +29,15 @@ import Foundation
 public enum NotificationTriggerTimeComputer {
 
     /// §14.2 — 20 minutes before Fajr, only on a scheduled religious fast day.
-    public static func suhoorTrigger(fajr: Date, isFastDay: Bool) -> Date? {
+    public static func suhoorTrigger(fajr: Date, isFastDay: Bool, leadMinutes: Int = 20) -> Date? {
         guard isFastDay else { return nil }
-        return fajr.addingTimeInterval(-20 * 60)
+        return fajr.addingTimeInterval(-Double(leadMinutes) * 60)
     }
 
     /// §14.2 — at Maghrib itself, only on a scheduled religious fast day.
-    public static func iftarTrigger(maghrib: Date, isFastDay: Bool) -> Date? {
+    public static func iftarTrigger(maghrib: Date, isFastDay: Bool, delayMinutes: Int = 0) -> Date? {
         guard isFastDay else { return nil }
-        return maghrib
+        return maghrib.addingTimeInterval(Double(delayMinutes) * 60)
     }
 
     /// §14.2 — "every `intervalMinutes` minutes during the user's active

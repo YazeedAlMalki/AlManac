@@ -87,6 +87,42 @@ final class NotificationSettingsUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Turn them all off"].exists, "the confirmation did not dismiss")
     }
 
+    /// BRD §6.14's "time-adjustable", for suhoor: its distance from Fajr moves
+    /// in 5-minute steps and is still there after a relaunch. Whether the
+    /// reminder then arrives 25 minutes before Fajr is device-only and unrun.
+    func testSuhoorDistanceFromFajrIsKeptAcrossALaunch() {
+        openReminders()
+        let suhoor = app.switches["notification-rule-suhoor"]
+        XCTAssertTrue(app.reveal(suhoor), "no suhoor switch")
+        if suhoor.value as? String == "0" { suhoor.tapSwitchControl() }
+        XCTAssertEqual(suhoor.value as? String, "1", "suhoor could not be turned on")
+
+        let stepper = app.steppers["notification-offset-suhoor"]
+        XCTAssertTrue(app.reveal(stepper), "suhoor, turned on, offers no distance from Fajr")
+        // Back to the spec's 20 first, whatever an earlier run left.
+        for _ in 0..<20 where !app.staticTexts["Minutes before Fajr: 20"].exists {
+            let label = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Minutes before Fajr")).firstMatch.label
+            let current = Int(label.split(separator: " ").last ?? "") ?? 20
+            stepper.buttons[current > 20 ? "Decrement" : "Increment"].tap()
+        }
+        XCTAssertTrue(app.staticTexts["Minutes before Fajr: 20"].exists, "suhoor does not start at §14.2's 20 minutes")
+
+        stepper.buttons["Increment"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.staticTexts["Minutes before Fajr: 25"].exists },
+                      "the distance did not move in a 5-minute step")
+
+        app.terminate()
+        app.launch()
+        openReminders()
+        let after = app.staticTexts["Minutes before Fajr: 25"]
+        XCTAssertTrue(app.reveal(after), "the distance did not survive a relaunch: "
+                      + "\(app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.contains("Fajr") })")
+
+        // Leave the spec's distance behind for the next run.
+        app.steppers["notification-offset-suhoor"].buttons["Decrement"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.staticTexts["Minutes before Fajr: 20"].exists })
+    }
+
     // MARK: - Helpers
 
     private func openReminders() {

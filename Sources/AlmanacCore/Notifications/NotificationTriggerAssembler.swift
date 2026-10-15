@@ -32,17 +32,17 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
 
     /// §14.2 — nil when `day` has no cached prayer times at all; not being a
     /// scheduled fast day is handled by the pure computer, not here.
-    public func suhoorTrigger(for day: LogicalDay) throws -> Date? {
+    public func suhoorTrigger(for day: LogicalDay, leadMinutes: Int = 20) throws -> Date? {
         guard let fajr = try time("fajr", on: day) else { return nil }
         return NotificationTriggerTimeComputer.suhoorTrigger(
-            fajr: fajr, isFastDay: try religiousFasts.isFastDay(day.value))
+            fajr: fajr, isFastDay: try religiousFasts.isFastDay(day.value), leadMinutes: leadMinutes)
     }
 
     /// §14.2 — nil when `day` has no cached prayer times at all.
-    public func iftarTrigger(for day: LogicalDay) throws -> Date? {
+    public func iftarTrigger(for day: LogicalDay, delayMinutes: Int = 0) throws -> Date? {
         guard let maghrib = try time("maghrib", on: day) else { return nil }
         return NotificationTriggerTimeComputer.iftarTrigger(
-            maghrib: maghrib, isFastDay: try religiousFasts.isFastDay(day.value))
+            maghrib: maghrib, isFastDay: try religiousFasts.isFastDay(day.value), delayMinutes: delayMinutes)
     }
 
     /// §14.2 — empty when `day` has no shift occurrence, or one with no

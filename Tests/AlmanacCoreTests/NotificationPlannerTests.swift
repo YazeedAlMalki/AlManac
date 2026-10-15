@@ -125,6 +125,79 @@ struct NotificationPlannerTests {
         #expect(iftar.map(\.fireAt) == [maghrib])
     }
 
+    // MARK: - Per-type times (2026-10-16)
+
+    private func fastDay(fajr: Date, maghrib: Date) throws {
+        try PrayerTimeCacheStore(db: db).upsert(
+            date: day.value, times: allSixTimes(fajr: fajr, maghrib: maghrib),
+            latitude: 24.7136, longitude: 46.6753, calculationMethod: "umm_al_qura")
+        try ReligiousFastScheduleStore(db: db).createSchedule(
+            scheduleType: "ramadan", startGregorianDate: day.value, endGregorianDate: day.value)
+    }
+
+    @Test("A suhoor distance moves the reminder off Fajr, and its title says how far")
+    func suhoorLeadIsAdjustable() throws {
+        let fajr = riyadh(4, 30)
+        try fastDay(fajr: fajr, maghrib: riyadh(18, 5))
+        try rules.setOffsetMinutes(45, for: .suhoor)
+
+        let plan = try NotificationPlanner(db: db, timeModel: timeModel, clock: FixedClock(riyadh(2))).plan()
+        let suhoor = try #require(planned(plan, .suhoor).first)
+        #expect(suhoor.fireAt == fajr.addingTimeInterval(-45 * 60))
+        #expect(suhoor.title == "Suhoor — 45 minutes remaining")
+        // The body still names Fajr itself, not the reminder's own time.
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = timeModel.timeZone
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        #expect(suhoor.body.contains(formatter.string(from: fajr)))
+    }
+
+    @Test("An iftar distance fires after Maghrib and names when Maghrib was")
+    func iftarDelayIsAdjustable() throws {
+        let maghrib = riyadh(18, 5)
+        try fastDay(fajr: riyadh(4, 30), maghrib: maghrib)
+        try rules.setOffsetMinutes(15, for: .iftar)
+
+        let iftar = try #require(planned(try planner.plan(), .iftar).first)
+        #expect(iftar.fireAt == maghrib.addingTimeInterval(15 * 60))
+        #expect(iftar.body.hasPrefix("Maghrib was at "))
+
+        // Back to none: at Maghrib, with §14.2's own words.
+        try rules.setOffsetMinutes(nil, for: .iftar)
+        let atMaghrib = try #require(planned(try planner.plan(), .iftar).first)
+        #expect(atMaghrib.fireAt == maghrib)
+        #expect(atMaghrib.body == NotificationText.iftarBody)
+    }
+
+    @Test("A bedtime time is used on a day with no sleep window, and never instead of one")
+    func bedtimeTimeIsAFallback() throws {
+        try rules.setEnabled(true, for: .bedtime)
+        try rules.setScheduledMinuteOfDay(22 * 60 + 15, for: .bedtime)
+        #expect(planned(try planner.plan(), .bedtime, on: day).map(\.fireAt) == [riyadh(22, 15)])
+
+        // With a sleep window the shift's own time wins (30 minutes before it).
+        try logDayShift(wake: riyadh(7), sleepStart: riyadh(23, 30))
+        #expect(planned(try planner.plan(), .bedtime, on: day).map(\.fireAt) == [riyadh(23)])
+    }
+
+    @Test("A bedtime after midnight belongs to the end of the logical day")
+    func bedtimeAfterMidnightIsTheSameLogicalDay() throws {
+        try rules.setEnabled(true, for: .bedtime)
+        try rules.setScheduledMinuteOfDay(30, for: .bedtime)
+        #expect(planned(try planner.plan(), .bedtime, on: day).map(\.fireAt) == [riyadh(0, 30, day: "2025-09-19")])
+    }
+
+    @Test("A readiness time is used only when no wake time is known")
+    func readinessTimeIsAFallback() throws {
+        try rules.setScheduledMinuteOfDay(6 * 60 + 45, for: .readiness)
+        #expect(planned(try planner.plan(), .readiness, on: day).map(\.fireAt) == [riyadh(6, 45)])
+
+        try logDayShift(wake: riyadh(7, 30), sleepStart: riyadh(23))
+        #expect(planned(try planner.plan(), .readiness, on: day).map(\.fireAt) == [riyadh(7, 30)])
+    }
+
     @Test("No fast schedule means no suhoor and no iftar even with cached prayer times")
     func noFastScheduleNoSuhoorOrIftar() throws {
         try PrayerTimeCacheStore(db: db).upsert(

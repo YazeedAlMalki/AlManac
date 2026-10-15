@@ -153,6 +153,7 @@
 "Lupin flour, and some bakery and gluten-free products." = "دقيق الترمس، وبعض المخبوزات والمنتجات الخالية من الغلوتين.";
 "Machine" = "جهاز";
 "Maghrib has arrived. Your fast has ended." = "حان المغرب. انتهى صيامك.";
+"Maghrib was at %@. Your fast has ended." = "كان المغرب عند %@. انتهى صيامك.";
 "Maintain" = "المحافظة";
 "Male" = "ذكر";
 "Milk" = "الحليب";
@@ -245,6 +246,7 @@
 "Squid, octopus, clams, mussels, snails, scallops." = "الحبار والأخطبوط والمحار وبلح البحر والحلزون والإسكالوب.";
 "Steps" = "الخطوات";
 "Straight sets" = "مجموعات متتالية";
+"Suhoor — %@ minutes remaining" = "السحور — بقيت %@ دقيقة";
 "Suhoor — 20 minutes remaining" = "السحور — بقيت ٢٠ دقيقة";
 "Sulphites" = "الكبريتيت";
 "Superset" = "مجموعة مركّبة";
