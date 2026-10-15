@@ -111,6 +111,13 @@ public enum LabCatalogSeed {
         e("almanac:lab.vitamin-d.1-25-dihydroxy", "1,25-dihydroxyvitamin D", "vitamin",
           "vitamin_d", "1_25_dihydroxy", .quantitative,
           ["1,25 dihydroxyvitamin D", "Calcitriol", "1,25(OH)2D"]),
+        // The unbound fraction of 25-OH D, measured directly or calculated from
+        // total 25-OH D, DBP and albumin. A different quantity from the total
+        // (most 25-OH D circulates bound), in different units, and never
+        // interchangeable with it. Seeded 2026-10-15; source in `sources`.
+        e("almanac:lab.vitamin-d.25oh-free", "25-hydroxyvitamin D, free", "vitamin",
+          "vitamin_d", "25oh_free", .quantitative,
+          ["Free 25 OH Vitamin D", "Free 25(OH)D", "Free vitamin D", "Free 25-hydroxyvitamin D"]),
 
         e("almanac:lab.vitamin-e.alpha-tocopherol", "Alpha-tocopherol", "vitamin",
           "vitamin_e", "alpha_tocopherol", .quantitative,
@@ -212,6 +219,16 @@ public enum LabCatalogSeed {
           "haematology", nil, "percentage", .quantitative,
           ["Basophils %", "Basophils percent", "% basophils", "Basophil percentage"]),
 
+        // Reticulocytes, by the differential's rule: the bare name is the
+        // absolute count and "%" is the percentage, two analytes in two
+        // dimensions. Seeded 2026-10-15.
+        e("almanac:lab.haematology.reticulocytes-absolute", "Reticulocytes, absolute",
+          "haematology", nil, nil, .quantitative,
+          ["Reticulocytes", "Reticulocyte count", "Absolute reticulocytes", "Retic count"]),
+        e("almanac:lab.haematology.reticulocytes-percentage", "Reticulocytes, percentage",
+          "haematology", nil, "percentage", .quantitative,
+          ["Reticulocytes %", "Reticulocyte percentage", "% reticulocytes", "Retic %"]),
+
         e("almanac:lab.iron.ferritin", "Ferritin", "iron_studies", nil, nil, .quantitative,
           ["Ferritin", "Serum ferritin"], "فيريتين"),
         e("almanac:lab.iron.serum-iron", "Iron", "iron_studies", nil, nil, .quantitative,
@@ -257,6 +274,31 @@ public enum LabCatalogSeed {
           .quantitative, ["ALT", "SGPT", "Alanine aminotransferase"]),
         e("almanac:lab.chemistry.ast", "Aspartate aminotransferase", "chemistry", nil, nil,
           .quantitative, ["AST", "SGOT", "Aspartate aminotransferase"]),
+        // The liver panel beyond ALT/AST. Seeded 2026-10-15. Total and direct
+        // bilirubin are two analytes; the bare name "Bilirubin" is the total,
+        // which is what a report printing one bilirubin line means.
+        e("almanac:lab.chemistry.alp", "Alkaline phosphatase", "chemistry", nil, nil,
+          .quantitative, ["ALP", "Alk phos", "Alkaline phosphatase", "ALKP"]),
+        e("almanac:lab.chemistry.ggt", "Gamma-glutamyl transferase", "chemistry", nil, nil,
+          .quantitative, ["GGT", "Gamma GT", "GGTP", "Gamma glutamyl transferase",
+                          "Gamma-glutamyltransferase"]),
+        e("almanac:lab.chemistry.bilirubin-total", "Bilirubin, total", "chemistry", nil, "total",
+          .quantitative, ["Total bilirubin", "Bilirubin", "TBIL", "T. bili", "Bilirubin total"]),
+        e("almanac:lab.chemistry.bilirubin-direct", "Bilirubin, direct", "chemistry", nil, "direct",
+          .quantitative, ["Direct bilirubin", "Conjugated bilirubin", "DBIL", "D. bili",
+                          "Bilirubin direct"]),
+        e("almanac:lab.chemistry.albumin", "Albumin", "chemistry", nil, nil,
+          .quantitative, ["Albumin", "Serum albumin", "ALB"]),
+        // Homocysteine is a marker for both B9 and B12, and the catalog has one
+        // family per analyte, so it sits in chemistry rather than being claimed
+        // by either vitamin. It measures homocysteine itself, hence `direct`.
+        e("almanac:lab.chemistry.homocysteine", "Homocysteine", "chemistry", nil, nil,
+          .quantitative, ["Homocysteine", "Total homocysteine", "tHcy", "Hcy"]),
+        // The carrier protein, not a vitamin D measurement: its level is not set
+        // by vitamin D status, so it is chemistry, not the vitamin family.
+        e("almanac:lab.chemistry.vitamin-d-binding-protein", "Vitamin D binding protein",
+          "chemistry", nil, nil, .quantitative,
+          ["Vitamin D binding protein", "DBP", "VDBP", "Gc globulin", "Gc protein"]),
         e("almanac:lab.chemistry.crp", "C-reactive protein", "chemistry", nil, nil,
           .quantitative, ["CRP", "C reactive protein", "hs-CRP"]),
 
@@ -274,6 +316,39 @@ public enum LabCatalogSeed {
         e("almanac:lab.thyroid.free-t4", "Free thyroxine", "thyroid", nil, nil,
           .quantitative, ["Free T4", "FT4", "Free thyroxine"]),
 
+        e("almanac:lab.thyroid.free-t3", "Free triiodothyronine", "thyroid", nil, nil,
+          .quantitative, ["Free T3", "FT3", "Free triiodothyronine"]),
+        e("almanac:lab.thyroid.tpo-antibodies", "Thyroid peroxidase antibodies", "thyroid", nil, nil,
+          .quantitative, ["TPO antibodies", "Anti-TPO", "TPOAb", "Anti thyroid peroxidase",
+                          "Thyroid peroxidase antibodies", "Antithyroid peroxidase antibodies"]),
+
+        // Urinalysis. Every name says "urine" unless the test exists only in
+        // urine (leukocyte esterase, nitrite, urobilinogen, specific gravity),
+        // so a blood line never matches a urine analyte. Dipstick results are
+        // graded (negative, trace, 1+…), so they are ordinal; nitrite is
+        // positive or negative. Seeded 2026-10-15.
+        e("almanac:lab.urine.specific-gravity", "Urine specific gravity", "urinalysis", nil, nil,
+          .quantitative, ["Specific gravity", "Urine specific gravity", "SG", "Sp gravity"]),
+        e("almanac:lab.urine.ph", "Urine pH", "urinalysis", nil, nil,
+          .quantitative, ["Urine pH", "pH urine", "pH, urine"]),
+        e("almanac:lab.urine.protein", "Urine protein", "urinalysis", nil, nil,
+          .ordinal, ["Urine protein", "Protein, urine", "Protein urine", "Urine albumin dipstick"]),
+        e("almanac:lab.urine.glucose", "Urine glucose", "urinalysis", nil, nil,
+          .ordinal, ["Urine glucose", "Glucose, urine", "Glucose urine"]),
+        e("almanac:lab.urine.ketones", "Urine ketones", "urinalysis", nil, nil,
+          .ordinal, ["Urine ketones", "Ketones, urine", "Ketones urine"]),
+        e("almanac:lab.urine.blood", "Urine blood", "urinalysis", nil, nil,
+          .ordinal, ["Urine blood", "Blood, urine", "Blood urine", "Urine haemoglobin",
+                     "Urine hemoglobin"]),
+        e("almanac:lab.urine.leukocyte-esterase", "Leukocyte esterase", "urinalysis", nil, nil,
+          .ordinal, ["Leukocyte esterase", "Leucocyte esterase", "Urine leukocytes", "LEU"]),
+        e("almanac:lab.urine.nitrite", "Urine nitrite", "urinalysis", nil, nil,
+          .qualitativeCoded, ["Nitrite", "Nitrites", "Urine nitrite", "NIT"]),
+        e("almanac:lab.urine.bilirubin", "Urine bilirubin", "urinalysis", nil, nil,
+          .ordinal, ["Urine bilirubin", "Bilirubin, urine", "Bilirubin urine"]),
+        e("almanac:lab.urine.urobilinogen", "Urobilinogen", "urinalysis", nil, nil,
+          .ordinal, ["Urobilinogen", "Urine urobilinogen", "UBG"]),
+
         e("almanac:lab.serology.hepatitis-b-surface-antigen", "Hepatitis B surface antigen",
           "serology", nil, nil, .qualitativeCoded,
           ["HBsAg", "Hepatitis B surface antigen"]),
@@ -282,6 +357,76 @@ public enum LabCatalogSeed {
     ]
 
     public static var all: [Entry] { vitamins + core }
+
+    /// Where an analyte's identity is documented: what the test is called and
+    /// what it measures. **Not a source of reference values** — the catalog
+    /// holds none, and ranges stay as each laboratory printed them.
+    ///
+    /// Started 2026-10-15 for the analytes seeded that day; entries seeded
+    /// earlier are not yet cited. MedlinePlus (U.S. National Library of
+    /// Medicine) pages were each fetched on 2026-10-15 and returned HTTP 200.
+    public struct Source: Sendable, Hashable {
+        public let title: String
+        public let url: String
+    }
+
+    static func medlinePlus(_ title: String, _ path: String) -> Source {
+        Source(title: "MedlinePlus (U.S. National Library of Medicine): \(title)",
+               url: "https://medlineplus.gov/\(path)")
+    }
+
+    static let bikleSchwartz2019 = Source(
+        title: "Bikle DD, Schwartz J. Vitamin D Binding Protein, Total and Free Vitamin D Levels "
+            + "in Different Physiological and Pathophysiological Conditions. "
+            + "Frontiers in Endocrinology. 2019;10:317.",
+        url: "https://doi.org/10.3389/fendo.2019.00317")
+
+    public static let sources: [String: Source] = {
+        let urinalysis = medlinePlus("Urinalysis", "ency/article/003579.htm")
+        return [
+            "almanac:lab.haematology.reticulocytes-absolute":
+                medlinePlus("Reticulocyte Count", "lab-tests/reticulocyte-count/"),
+            "almanac:lab.haematology.reticulocytes-percentage":
+                medlinePlus("Reticulocyte Count", "lab-tests/reticulocyte-count/"),
+            "almanac:lab.chemistry.alp":
+                medlinePlus("Alkaline Phosphatase", "lab-tests/alkaline-phosphatase/"),
+            "almanac:lab.chemistry.ggt":
+                medlinePlus("Gamma-glutamyl Transferase (GGT) Test", "lab-tests/gamma-glutamyl-transferase-ggt-test/"),
+            "almanac:lab.chemistry.bilirubin-total":
+                medlinePlus("Bilirubin Blood Test", "lab-tests/bilirubin-blood-test/"),
+            "almanac:lab.chemistry.bilirubin-direct":
+                medlinePlus("Bilirubin Blood Test", "lab-tests/bilirubin-blood-test/"),
+            "almanac:lab.chemistry.albumin":
+                medlinePlus("Albumin Blood Test", "lab-tests/albumin-blood-test/"),
+            "almanac:lab.thyroid.free-t3":
+                medlinePlus("Triiodothyronine (T3) Tests", "lab-tests/triiodothyronine-t3-tests/"),
+            "almanac:lab.thyroid.tpo-antibodies":
+                medlinePlus("Thyroid Antibody Tests", "lab-tests/thyroid-antibody-tests/"),
+            "almanac:lab.chemistry.homocysteine":
+                medlinePlus("Homocysteine Test", "lab-tests/homocysteine-test/"),
+            "almanac:lab.chemistry.vitamin-d-binding-protein": bikleSchwartz2019,
+            "almanac:lab.vitamin-d.25oh-free": bikleSchwartz2019,
+            "almanac:lab.urine.specific-gravity":
+                medlinePlus("Urine specific gravity test", "ency/article/003587.htm"),
+            "almanac:lab.urine.ph":
+                medlinePlus("Urine pH test", "ency/article/003583.htm"),
+            "almanac:lab.urine.protein":
+                medlinePlus("Protein in Urine", "lab-tests/protein-in-urine/"),
+            "almanac:lab.urine.glucose":
+                medlinePlus("Glucose in Urine Test", "lab-tests/glucose-in-urine-test/"),
+            "almanac:lab.urine.ketones":
+                medlinePlus("Ketones in Urine", "lab-tests/ketones-in-urine/"),
+            "almanac:lab.urine.blood":
+                medlinePlus("Blood in Urine", "lab-tests/blood-in-urine/"),
+            "almanac:lab.urine.leukocyte-esterase": urinalysis,
+            "almanac:lab.urine.nitrite":
+                medlinePlus("Nitrites in Urine", "lab-tests/nitrites-in-urine/"),
+            "almanac:lab.urine.bilirubin":
+                medlinePlus("Bilirubin in Urine", "lab-tests/bilirubin-in-urine/"),
+            "almanac:lab.urine.urobilinogen":
+                medlinePlus("Urobilinogen in Urine", "lab-tests/urobilinogen-in-urine/")
+        ]
+    }()
 
     public static let panels: [(id: String, name: String, members: [String])] = [
         // Complete, in the sense a laboratory means it: red indices, platelet
@@ -314,6 +459,30 @@ public enum LabCatalogSeed {
         ("almanac:panel.thyroid", "Thyroid panel", [
             "almanac:lab.thyroid.tsh",
             "almanac:lab.thyroid.free-t4"
+        ]),
+        // Seeded 2026-10-15. Free T3 and TPO antibodies are deliberately not
+        // added to the thyroid panel above: a "thyroid panel" that grows would
+        // make an older import's panel assign lines its report never printed.
+        ("almanac:panel.liver", "Liver panel", [
+            "almanac:lab.chemistry.alt",
+            "almanac:lab.chemistry.ast",
+            "almanac:lab.chemistry.alp",
+            "almanac:lab.chemistry.ggt",
+            "almanac:lab.chemistry.bilirubin-total",
+            "almanac:lab.chemistry.bilirubin-direct",
+            "almanac:lab.chemistry.albumin"
+        ]),
+        ("almanac:panel.urinalysis", "Urinalysis (dipstick)", [
+            "almanac:lab.urine.specific-gravity",
+            "almanac:lab.urine.ph",
+            "almanac:lab.urine.protein",
+            "almanac:lab.urine.glucose",
+            "almanac:lab.urine.ketones",
+            "almanac:lab.urine.blood",
+            "almanac:lab.urine.leukocyte-esterase",
+            "almanac:lab.urine.nitrite",
+            "almanac:lab.urine.bilirubin",
+            "almanac:lab.urine.urobilinogen"
         ]),
         ("almanac:panel.iron", "Iron studies", [
             "almanac:lab.iron.ferritin",

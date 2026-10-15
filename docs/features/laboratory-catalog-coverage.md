@@ -1,13 +1,43 @@
 # Almanac — Laboratory catalog coverage
 
-**Version:** 0.3 (revises 0.2)
-**Date:** 2026-09-30
+**Version:** 0.4 (revises 0.3)
+**Date:** 2026-10-15
 **Generated from:** `Sources/AlmanacCore/Laboratory/LabCatalogSeed.swift`
 **Pinned by:** `CatalogCoverageTests` — `testEveryDocumentedVitaminFormIsSeeded`,
 `testVitaminEntriesAreClassifiedByWhatTheyMeasure`,
 `testTheVitaminCountIsNotOverstated`, `testCBCPanelIsComplete` — and, from 0.3,
 `LabCatalogCoverageFollowUpTests` for everything the 0.2 "not seeded" table
 below used to defer.
+
+## What changed in 0.4
+
+Everything still marked "not seeded" in 0.3's table except nucleated red cells
+and immature granulocytes is now seeded, each with a source citation in
+`LabCatalogSeed.sources`, and pinned by `LabCatalogRemainingCoverageTests`:
+
+| Area | Seeded ids |
+|---|---|
+| Reticulocytes | `almanac:lab.haematology.reticulocytes-absolute`, `…reticulocytes-percentage` |
+| Liver beyond ALT/AST | `almanac:lab.chemistry.alp`, `…ggt`, `…bilirubin-total`, `…bilirubin-direct`, `…albumin`, and `almanac:panel.liver` (7 members) |
+| Thyroid | `almanac:lab.thyroid.free-t3`, `…tpo-antibodies` (the thyroid panel is unchanged) |
+| Homocysteine | `almanac:lab.chemistry.homocysteine` — in chemistry, not a vitamin family, because it marks both B9 and B12 and an analyte has one family |
+| Vitamin D | `almanac:lab.vitamin-d.25oh-free` (a fifth vitamin D form) and `almanac:lab.chemistry.vitamin-d-binding-protein` (a carrier protein, so chemistry) |
+| Urinalysis | ten `almanac:lab.urine.*` analytes and `almanac:panel.urinalysis` (10 members). Dipstick results are `ordinal`, nitrite `qualitative_coded`, specific gravity and pH `quantitative` |
+
+**Citations identify the test, not a range.** They are MedlinePlus (U.S.
+National Library of Medicine) pages, each fetched on 2026-10-15, and Bikle &
+Schwartz, *Frontiers in Endocrinology* 2019;10:317, for the two vitamin D
+entries. No reference interval was added anywhere; ranges stay as each source
+printed them. Entries seeded before 0.4 are not yet cited.
+
+**Names that could collide were decided, not left to chance.** A bare
+"Bilirubin" is the serum total; urine analytes carry "urine" in their names
+unless the test only exists in urine (leukocyte esterase, nitrite,
+urobilinogen, specific gravity). `testNoAliasIsSharedByTwoAnalytes` still
+passes.
+
+With free 25-OH D the vitamin counts move: **25** vitamin-family entries, **21**
+of them direct.
 
 ## What changed in 0.3
 
@@ -137,14 +167,15 @@ tracked below, not implied.
 | Area | Status |
 |---|---|
 | Differential percentages (neut %, lymph %, mono %, eos %, baso %) | **Seeded in 0.3** as five further analytes. Not in the CBC panel — see below. |
-| Reticulocytes, nucleated RBC, immature granulocytes | **not seeded** |
-| Liver panel beyond ALT/AST — ALP, GGT, bilirubin, albumin | **not seeded** |
+| Reticulocytes | **Seeded in 0.4**, absolute and percentage |
+| Nucleated RBC, immature granulocytes | **not seeded** (not in the 2026-10-15 request) |
+| Liver panel beyond ALT/AST — ALP, GGT, bilirubin, albumin | **Seeded in 0.4**, with a liver panel |
 | Full electrolytes — chloride, bicarbonate, calcium, magnesium, phosphate | **Seeded in 0.3**, with ionised calcium as a separate analyte, and an `almanac:panel.electrolytes` panel of eight |
-| Thyroid beyond TSH/FT4 — free T3, TPO antibodies | **not seeded** |
-| Homocysteine | **not seeded** — see the vitamin table |
-| Vitamin D binding protein, free 25-OH D | **not seeded** |
-| Urinalysis | **not seeded** — `SpecimenKind.urine` exists and urine results store correctly; no urine analytes are catalogued |
-| Verified LOINC codes | **none** — licensing unresolved; the table and `verified` flag are ready |
+| Thyroid beyond TSH/FT4 — free T3, TPO antibodies | **Seeded in 0.4** |
+| Homocysteine | **Seeded in 0.4**, in chemistry |
+| Vitamin D binding protein, free 25-OH D | **Seeded in 0.4** |
+| Urinalysis | **Seeded in 0.4** — ten dipstick analytes and a panel |
+| Verified LOINC codes | **none** — licensing unresolved; the table and `verified` flag are ready. **Owner gate G5, open (2026-10-15)** |
 | Reference intervals in the catalog | **out of scope by decision** — ranges are preserved as the source printed them; no catalog fallback is applied |
 
 ## Folding a percent sign
@@ -173,11 +204,24 @@ stated, in a different unit dimension, with no record of where it came from. So
 the panel is unchanged at 15 members and the percentages are catalogued,
 matchable, and separate.
 
-Seeded totals: **24** vitamin-family entries, **48** core entries, **72**
-analytes, **6** panels. (Counted from the seed source; `LabCatalogSeed.all`
+Seeded totals at 0.3: **24** vitamin-family entries, **48** core entries, **72**
+analytes, **6** panels. At 0.4: **25** vitamin-family entries, **69** core
+entries, **94** analytes, **8** panels. (Counted from the seed source; `LabCatalogSeed.all`
 is `vitamins + core`.)
 
-## Not built: import-job records
+## Import-job records — built, and the doc below was stale
+
+**Corrected 2026-10-15.** The section below was written on 2026-09-30. Import
+jobs were then built in `d21d9a9` ("Record every laboratory import, and let a
+later alias fix it"): Migration 046 (`import_job`), `LabImportJobStore`,
+`LabImportJobReconciler`, `LabImportJobTests`, and the Import history screen.
+As built, **a failed import does leave a job row**, with status `failed` and a
+`failure_reason` (`LabImportJobStore.markFailed`). That is the code's choice,
+not an owner decision: **owner gate G4 is open** and nothing was changed here.
+If the owner decides "no row", the change is to stop calling `markFailed` and
+delete the row instead.
+
+The original text, kept for the record:
 
 §2.5 distinguishes an *import job* from a *sync cursor*, and the distinction is
 a real one — a job has a start, an outcome and a row count; a cursor has a

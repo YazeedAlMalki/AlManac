@@ -29,6 +29,9 @@ final class CatalogCoverageTests: XCTestCase {
         "almanac:lab.vitamin-d.25oh-d2",
         "almanac:lab.vitamin-d.25oh-d3",
         "almanac:lab.vitamin-d.1-25-dihydroxy",
+        // Added 2026-10-15 (coverage doc 0.4): the free fraction is a fifth,
+        // distinct vitamin D measurement.
+        "almanac:lab.vitamin-d.25oh-free",
         "almanac:lab.vitamin-e.alpha-tocopherol",
         "almanac:lab.vitamin-e.gamma-tocopherol",
         "almanac:lab.vitamin-k.phylloquinone",
@@ -65,7 +68,7 @@ final class CatalogCoverageTests: XCTestCase {
 
     func testFamiliesWithSeveralFormsCarryDistinctAnalytes() throws {
         let (db, _) = try seeded()
-        for (subfamily, count) in [("vitamin_d", 4), ("vitamin_b12", 3), ("vitamin_b9", 2),
+        for (subfamily, count) in [("vitamin_d", 5), ("vitamin_b12", 3), ("vitamin_b9", 2),
                                    ("vitamin_e", 2), ("vitamin_k", 2), ("vitamin_a", 2),
                                    ("vitamin_b1", 2), ("vitamin_b2", 2)] {
             let n = Int(try db.query("""
@@ -102,10 +105,11 @@ final class CatalogCoverageTests: XCTestCase {
 
     func testTheVitaminCountIsNotOverstated() throws {
         let (_, catalog) = try seeded()
-        XCTAssertEqual(try catalog.analyteIDs(family: "vitamin").count, 24,
-                       "24 catalog entries in vitamin families")
-        XCTAssertEqual(try catalog.directAnalyteIDs(family: "vitamin").count, 20,
-                       "of which 20 are direct measurements — not 24 vitamin forms")
+        // 25 and 21 from 2026-10-15: free 25-OH D is a direct measurement.
+        XCTAssertEqual(try catalog.analyteIDs(family: "vitamin").count, 25,
+                       "25 catalog entries in vitamin families")
+        XCTAssertEqual(try catalog.directAnalyteIDs(family: "vitamin").count, 21,
+                       "of which 21 are direct measurements — not 25 vitamin forms")
         XCTAssertEqual(LabCatalogSeed.vitaminRoleCounts[.precursor], 1)
         XCTAssertEqual(LabCatalogSeed.vitaminRoleCounts[.functionalMarker], 2)
         XCTAssertEqual(LabCatalogSeed.vitaminRoleCounts[.metabolicMarker], 1)
