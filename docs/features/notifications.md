@@ -37,6 +37,19 @@ during a fast or a shift, and the user asked to be told it. On a fast day with
 iftar on, Maghrib's alert is left to iftar, which fires at the same instant.
 Identifier `almanac.prayer.<name>.<day>`.
 
+## Added 2026-10-15 — supplement reminders can be set
+
+The planner had planned supplement reminders since 2026-09-29, but no screen
+could set one: `SupplementPlanStore.setReminder` had no caller. The plan editor
+now has "Remind me" and a time, written through `SupplementReminderSetting`,
+which also turns the `supplement` type on (it is seeded off; otherwise a
+reminder set on a plan would never fire — unconfirmed, `CONTEXT.md`). Saving or
+discontinuing a plan runs `reconcileNotifications()`. Appendix B's supplement
+row (only post-shift sleep suppresses) is pinned at the matrix and, from this
+date, at the planner too (`supplementSendsThroughOtherAxes`), alongside
+`editorReminderIsPlanned`, `editorReminderOff`, `discontinuedPlanIsNotPlanned`
+and `invalidReminderTime`. **Arrival on a device is UNRUN.**
+
 ## What the feature is
 
 Ten notification types — §14.2's nine plus `prayer` — all local (`UNUserNotificationCenter`, no

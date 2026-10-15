@@ -182,6 +182,9 @@ Seven more were settled while making fasting and prayer times work end to end
 (2026-10-06), where the spec gave the rule but not the default or the edge. None
 is confirmed.
 
+More were settled on 2026-10-15 while taking Slices 7 and 9 toward done; they
+are under "Digestion and urination" and "Body and wellness" below.
+
 More were settled on 2026-10-06 while carrying out that day's handoff (readiness,
 vitals, Kitchen, workout templates). Each sits in the subsection for its area and
 is marked with that date. **None of these has been confirmed.** Where the owner
@@ -454,6 +457,89 @@ with some actuals still fills the rest from its plan. The same rule stops a
 program exercise skipped for the session from counting as done work. Raised by
 the Codex review on PR #6. *Overrule by:* removing the `wasPerformed` filter in
 `WorkloadComputer.summary(for:)`.
+
+### Digestion and urination (2026-10-15)
+
+Settled while taking Slice 9 toward done. **None of these has been confirmed.**
+The two owner gates for this slice (the medical advisory and the digestion ring's
+fill rule) were left blank and are **not** decided here; see
+`docs/features/digestion.md` §3–§4.
+
+**History lives at Modules → Records → Digestion, over 7, 30 or 90 days.** It
+lists counts by Bristol type (all seven, zeros included), by urine grade (all
+eight), by colour name (only colours that occur), a bar per day, and each day's
+entries. It interprets nothing. *Overrule by:* `AppRoute.digestion`'s section,
+or `DigestionHistoryView.Span`.
+
+**A colour the user did not record is counted as "Colour not recorded", and a
+spelling outside the six is kept as written**, never folded into the nearest
+named colour. *Overrule by:* `DigestionColourTally.init(stored:)`.
+
+**Urine colour feedback: "dark" is grade 6, 7 or 8; "despite the target" means
+the day's intake has reached the day's goal; only the latest reading of the day
+counts; the raise is 250 mL; it is offered as a button, never applied
+silently; and it is suspended for the whole of a religious fast day.** BRD §6.3
+gives the rule's shape and no numbers. The wording is a draft and says "not
+clinician-reviewed". *Overrule by:* `UrineColourHydrationFeedback.darkGrades`,
+`.raiseStepMilliliters`, or `.evaluate`; to apply the raise automatically, call
+`HydrationModel.saveDailyGoal` from `refresh()` instead of showing the button.
+
+**The Bristol scale is credited with "No licence identified".** The seven type
+names are the published wording of Lewis & Heaton (1997). No licence or
+permission for reproducing them was found, so the Attributions entry says so
+rather than naming one. *Overrule by:* recording the licence or permission in
+the `bristol-stool-form-scale` entry of `AttributionCatalog`, or rewording the
+type names in Almanac's own words.
+
+### Body and wellness (2026-10-15)
+
+Settled while taking Slice 7 toward done. **None of these has been confirmed.**
+The three owner gates for this slice (progress photos, the lab import-job
+failure row, verified LOINC codes) were left blank and are **not** decided here.
+
+**Only a reading the person typed can be corrected or deleted.** An imported
+reading belongs to Health or the device (BRD §5.6). A correction does not change
+a copy already sent to Health; a deletion takes a not-yet-sent reading off the
+Health queue. Same rule as the waist store. *Overrule by:*
+`BodyCompositionMeasurementStore.correct` / `.delete`.
+
+**The seven built-in circumference points stay, and the owner can hide any of
+them and add their own.** The built-ins carry left/right sides, the waist's
+Health sync and a typo guard, which a free-text point does not. Owner points are
+`custom_measurement_definition` rows in centimetres, with no sides and no typo
+guard beyond "positive". Hiding a point keeps its readings (Migration 056).
+*Overrule by:* migrating the seven into `custom_measurement_definition` and
+retiring `BodyMeasurementType`, which is a data migration with a decision
+about existing sided rows.
+
+**Turning a supplement plan's reminder on also turns on supplement reminders as
+a type.** §5.25 seeds the type off, so without this a reminder set on a plan
+would never fire. Turning one plan's reminder off leaves the type alone.
+*Overrule by:* `SupplementReminderSetting.set`.
+
+**Lab unit conversion: a series is shown in its latest result's unit;
+everything else is converted only by decimal scaling within one dimension;
+mass ↔ substance and two different activity units are not converted; nothing is
+stored.** `docs/features/laboratory.md` §8a. *Overrule by:*
+`LabUnitConversion.series` (target unit) or `.convert`.
+
+**Lab re-test suggestion: the last result's day plus the person's own median
+interval, from at least three results on distinct days; month- or year-dated
+results are left out.** No clinical interval is used. *Overrule by:*
+`LabRetestSuggestion.minimumResults` / `.suggest`.
+
+**Where the new analytes sit.** Homocysteine and vitamin D binding protein are
+chemistry, not vitamins (one is a marker shared by B9 and B12, the other a
+carrier protein). Free 25-OH D is the fifth vitamin D form, so the vitamin
+counts are now 25 entries, 21 direct. A bare "Bilirubin" is the total, a bare
+"Reticulocytes" the absolute count. Urine analytes carry "urine" in their names
+unless the test exists only in urine. New panels: liver (7) and urinalysis (10);
+the thyroid panel is unchanged. *Overrule by:* `LabCatalogSeed`.
+
+**Lab citations name where a test is described, not where a range comes from.**
+MedlinePlus pages, and Bikle & Schwartz (2019) for the two vitamin D entries.
+Entries seeded before 2026-10-15 are not yet cited. *Overrule by:*
+`LabCatalogSeed.sources`.
 
 ### Weighing
 

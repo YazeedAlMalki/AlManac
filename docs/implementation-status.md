@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
+Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done (UI runs
+blocked by a damaged simulator runtime). Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
 work (workout templates, the readiness withhold, the Vitals log), merging
 through PR #6; the fasting entry is second. Updated 2026-10-06. **Fasting and prayer times work end to end in the running
 app** — religious fasting had never run on a phone (no fast day was ever
@@ -25,6 +26,104 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-15 — Slices 7 and 9 toward done; UI runs blocked by a damaged simulator runtime
+
+**Branch** `claude/slices-7-9-completion`, from master `c4b5f0a`. Done on the
+owner's iMac (Xcode 26.3, x86_64).
+
+**Score.** Slice 9 (digestion and urination): **4 of 6** checklist items done.
+Slice 7 (body and wellness): **6 of 8** done. Every open item is either an owner
+gate left blank or a UI run that could not happen (below). Neither slice can
+pass 6/6 or 8/8 until the five gates are answered.
+
+### What ran, and what it showed
+
+| Run | Result |
+|---|---|
+| `swift test` on master `c4b5f0a`, before any change | **1,079 Swift Testing tests in 120 suites + 382 XCTest (1 skipped), 0 failures** |
+| `swift test` on the branch head | **1,143 in 125 suites + 382 XCTest (1 skipped), 0 failures** |
+| `xcodebuild build-for-testing` (app, widget, UI tests) with every change | **TEST BUILD SUCCEEDED** |
+| `DigestionHistoryUITests` (2, new) | **UNRUN** — see below |
+| `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence` | **UNRUN** — see below |
+| `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible` | **UNRUN** — see below |
+
+**Why no UI test ran.** The iOS 26.3 simulator runtime image mounted on this
+Mac is damaged: reading files from it fails with "Input/output error", and
+`diskutil verifyVolume` on it exits 134. Inside a simulator,
+`installcoordinationd` cannot be launched (exit 78, `posix_spawn … Input/output
+error`), so installing, uninstalling or listing apps hangs. That is why the
+first `xcrun simctl uninstall … com.almanac.personal` never returned, on the
+iPhone 16e that had been working, before anything else was touched. Restarting
+the simulator service, rebooting the device and switching to a fresh iPhone 17
+did not help. **Fixing it needs a Mac restart or deleting and re-downloading
+the iOS 26.3 simulator runtime**, which is the owner's call. The two
+failing UI tests were therefore **not diagnosed and not changed**. Their
+recorded error (`UIScrollSupport.swift:174`) points at code that
+`UIScrollSupport` already rewrote on 2026-10-07 to read one snapshot; whether
+that fixed them is unknown until they run.
+
+### What changed
+
+Slice 9:
+1. **History** — `DigestionHistory` + `DigestionHistoryReader` (core) and
+   Modules → Records → Digestion (`DigestionHistoryView`): 7/30/90 days, counts
+   by Bristol type, colour name and urine grade, a bar per day, a day list.
+   Nothing interpreted. `DigestionHistoryTests` (10).
+2. **Colour and grade carry text** — every count and entry row uses the
+   number-and-name labels; colours with no record read "Colour not recorded".
+   Pinned by `DigestionHistoryTests.colourCounts` and the existing label tests.
+3. **Urine colour → water target** — `UrineColourHydrationFeedback`, shown on
+   the hydration screen as an offered raise, suspended on religious fast days.
+   `UrineColourHydrationFeedbackTests` (9).
+4. **Bristol attribution** — `AttributionCatalog` entry, "No licence
+   identified". `AttributionTests.bristolScaleIsCredited`.
+
+Slice 7:
+1. **Body measurements** — correct and delete manual rows; a year's chart per
+   metric. Weight stays out of `vitals_record`, now pinned by
+   `VitalsRecordHealthBridgeTests.bodyMassIsNotAVital`. 6 new store tests.
+2. **Circumference points** — `CircumferencePointCatalog`, Migration **056**
+   (highest on master was 055): hide built-ins, add your own, a chart per point.
+   `CircumferencePointCatalogTests` (9).
+3. **Supplement reminders** — settable in the plan editor
+   (`SupplementReminderSetting`), re-planned on save and on discontinue. 5 new
+   planner tests, including the supplement suppression row at planner level.
+4. **Context tags** — confirmed built; correlation use belongs to Slice 10
+   (`docs/features/body-composition.md`).
+5. **Labs** — 22 analytes and 2 panels seeded with citations
+   (`laboratory-catalog-coverage.md` 0.4). `LabCatalogRemainingCoverageTests`
+   (11); the vitamin count pins moved 24→25 and 20→21 because free 25-OH D is a
+   vitamin D form.
+6. **Unit conversion and re-test** — `LabUnitConversion`,
+   `LabRetestSuggestion`; rules in `laboratory.md` §8a–8b, logged unconfirmed.
+   `LabConversionAndRetestTests` (13). Not on a screen. The "6 Oct handoff" that
+   queued this was not found in the repository; the rule follows
+   `laboratory.md` §8 instead.
+
+Also: `docs/features/laboratory-catalog-coverage.md` said import-job records
+were "not built"; they were built in `d21d9a9`, and a failed import already
+leaves a row. The doc now says so. Gate G4 is still open.
+
+### Owner gates — all five were blank
+
+| Gate | Item it blocks | State |
+|---|---|---|
+| G1 medical advisory | Slice 9 item 5 | open, nothing built |
+| G2 digestion ring fill rule | Slice 9 item 5 | open, nothing built |
+| G3 progress photos | Slice 7 item 7 | open, still deferred |
+| G4 failed import leaves a job row | Slice 7 item 7 | open; the code already says "yes" |
+| G5 verified LOINC codes | Slice 7 item 7 | open, none seeded |
+
+### Not run
+
+- Any UI test (simulator runtime damaged, above).
+- Supplement notification arrival on a device.
+- The new screens were compiled, not looked at: no screenshot was possible.
+- Arabic translations for the new app-side strings (core strings have Arabic).
+
+Decisions taken without the owner: `CONTEXT.md`, "Digestion and urination
+(2026-10-15)" and "Body and wellness (2026-10-15)".
 
 ## 2026-10-06 — handoff work from a cloud session: Kitchen merge-ready and built out, readiness withhold, Vitals log
 
