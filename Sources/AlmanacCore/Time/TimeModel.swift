@@ -7,6 +7,19 @@ import Foundation
 public struct LogicalDay: Codable, Sendable, Hashable, Comparable, CustomStringConvertible {
     public let value: String
     public init(_ value: String) { self.value = value }
+
+    /// The calendar date `date` falls on in `timeZone` — what a date picker
+    /// means, as opposed to `TimeModel.logicalDay`, which files an *event*
+    /// under the 04:00 boundary. Built from Gregorian components and
+    /// `%d`, never a formatter, so a phone in Arabic cannot write
+    /// ٢٠٢٦-٠٩-٠٥ into a key (the failure `fix/arabic-digit-day-keys` fixed).
+    public init(calendarDayOf date: Date, in timeZone: TimeZone) {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        self.value = String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+
     public var description: String { value }
     public static func < (a: LogicalDay, b: LogicalDay) -> Bool { a.value < b.value }
 }

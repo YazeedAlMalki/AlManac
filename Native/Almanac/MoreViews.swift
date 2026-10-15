@@ -101,6 +101,8 @@ struct ModulesView: View {
             ContextTagsView(db: db, trackingModel: trackingModel)
         case .prayer:
             PrayerView(model: prayerModel, notificationModel: notificationModel)
+        case .circadian:
+            CircadianView(db: db)
         case .bodyCircumference:
             BodyCircumferenceView(db: db, healthModel: healthModel)
         case .vitals:

@@ -1397,6 +1397,16 @@
         }
       }
     },
+    "A day with no shift entered says nothing about your rhythm.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم الذي لم تُدخل له مناوبة لا يقول شيئًا عن إيقاعك."
+          }
+        }
+      }
+    },
     "A fast is already running. End it before starting another.": {
       "localizations": {
         "ar": {
@@ -1625,6 +1635,16 @@
         }
       }
     },
+    "Add a day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة يوم"
+          }
+        }
+      }
+    },
     "Add a tag or a note before saving.": {
       "localizations": {
         "ar": {
@@ -1711,6 +1731,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "إضافة نتيجة"
+          }
+        }
+      }
+    },
+    "Add shifts": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة مناوبات"
           }
         }
       }
@@ -1911,6 +1941,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تبدأ أيام Almanac عند ٠٤:٠٠ بالتوقيت المحلي."
+          }
+        }
+      }
+    },
+    "Almanac describes your rhythm only from the shifts you enter. If you do not work shifts, there is nothing to do here.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يصف Almanac إيقاعك من المناوبات التي تُدخلها فقط. إذا كنت لا تعمل بنظام المناوبات فلا شيء لفعله هنا."
           }
         }
       }
@@ -3235,6 +3275,16 @@
         }
       }
     },
+    "Date": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التاريخ"
+          }
+        }
+      }
+    },
     "Date of birth (YYYY-MM-DD)": {
       "localizations": {
         "ar": {
@@ -3275,6 +3325,16 @@
         }
       }
     },
+    "Day %lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم %lld"
+          }
+        }
+      }
+    },
     "Day %lld of 21": {
       "localizations": {
         "ar": {
@@ -3311,6 +3371,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "إيقاع نهاري"
+          }
+        }
+      }
+    },
+    "Day shift": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة نهارية"
           }
         }
       }
@@ -4025,6 +4095,16 @@
         }
       }
     },
+    "Entry": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نوع الإدخال"
+          }
+        }
+      }
+    },
     "Equipment": {
       "localizations": {
         "ar": {
@@ -4051,6 +4131,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "إيقاع مسائي"
+          }
+        }
+      }
+    },
+    "Evening shift": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة مسائية"
           }
         }
       }
@@ -6195,6 +6285,16 @@
         }
       }
     },
+    "Night shift": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة ليلية"
+          }
+        }
+      }
+    },
     "No": {
       "localizations": {
         "ar": {
@@ -6591,6 +6691,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا جلسات في هذه الفترة."
+          }
+        }
+      }
+    },
+    "No shift": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا مناوبة"
+          }
+        }
+      }
+    },
+    "No shifts entered yet": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم تُدخل أي مناوبات بعد"
           }
         }
       }
@@ -7171,6 +7291,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "متوقف افتراضيًا، ويُضبط لكل تمرين على حدة لا مرة واحدة للجميع. يقترح Almanac الحمل التالي؛ ولا يغيّر المقرَّر من تلقاء نفسه أبدًا."
+          }
+        }
+      }
+    },
+    "On call": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عند الطلب"
+          }
+        }
+      }
+    },
+    "One day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم واحد"
           }
         }
       }
@@ -8405,6 +8545,16 @@
         }
       }
     },
+    "Remove last day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حذف آخر يوم"
+          }
+        }
+      }
+    },
     "Removed from rotation": {
       "localizations": {
         "ar": {
@@ -8431,6 +8581,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "إعادة تسمية البرنامج"
+          }
+        }
+      }
+    },
+    "Repeat until": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التكرار حتى"
           }
         }
       }
@@ -9105,6 +9265,26 @@
         }
       }
     },
+    "Shift": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المناوبة"
+          }
+        }
+      }
+    },
+    "Shifts & rhythm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المناوبات والإيقاع"
+          }
+        }
+      }
+    },
     "Show digestion ring": {
       "localizations": {
         "ar": {
@@ -9345,6 +9525,16 @@
         }
       }
     },
+    "Split shift": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة مقسّمة"
+          }
+        }
+      }
+    },
     "Sports (comma-separated)": {
       "localizations": {
         "ar": {
@@ -9451,6 +9641,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "البدء من وقت مضى يسجّل صيامًا جاريًا بالفعل. والنهاية هي ما تحدده أنت — لا شيء هنا يراقب وجبتك التالية."
+          }
+        }
+      }
+    },
+    "Starts": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تبدأ في"
           }
         }
       }
@@ -9935,6 +10135,16 @@
         }
       }
     },
+    "The end date is before the start date.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تاريخ الانتهاء يسبق تاريخ البدء."
+          }
+        }
+      }
+    },
     "The fast begins at Fajr, %@ — %@.": {
       "localizations": {
         "ar": {
@@ -10021,6 +10231,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تعذّر تطبيق الموقع الجديد. %@"
+          }
+        }
+      }
+    },
+    "The rotation repeats from the start date until the end date. A day you changed yourself keeps your change.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتكرر الدورة من تاريخ البدء حتى تاريخ الانتهاء. اليوم الذي عدّلته بنفسك يحتفظ بتعديلك."
           }
         }
       }
@@ -11199,6 +11419,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تُستبدَل سجلاتك الحالية بالنسخة الاحتياطية. يُعاد تشغيل التطبيق عند انتهاء الاستعادة."
+          }
+        }
+      }
+    },
+    "Your days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أيامك"
           }
         }
       }
