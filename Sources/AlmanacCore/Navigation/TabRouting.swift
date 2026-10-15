@@ -121,6 +121,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     case laboratoryImportHistory
     case timeline
     case bodyComposition
+    case digestion
     case profile
     case settings
 
@@ -138,7 +139,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .trendsRoot, .trendsDetail: return .trends
         case .training, .hydration, .nutrition, .fasting, .supplements, .context,
              .prayer, .circadian, .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
-             .timeline, .bodyComposition, .profile, .settings:
+             .timeline, .bodyComposition, .digestion, .profile, .settings:
             return .modules
         }
     }
@@ -163,6 +164,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .laboratoryImportHistory: return localized("Import history")
         case .timeline: return localized("Timeline")
         case .bodyComposition: return localized("Body composition")
+        case .digestion: return localized("Digestion")
         case .profile: return localized("Profile")
         case .settings: return localized("Settings")
         }
@@ -186,6 +188,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .laboratoryImportHistory: return AlmanacIcon.importHistory
         case .timeline: return AlmanacIcon.timeline
         case .bodyComposition: return AlmanacIcon.bodyComposition
+        case .digestion: return AlmanacIcon.digestion
         case .profile: return AlmanacIcon.profile
         case .settings: return AlmanacIcon.settings
         }
@@ -205,7 +208,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .prayer, .fasting, .circadian:
             return .dailyContext
         case .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
-             .timeline, .bodyComposition, .profile:
+             .timeline, .bodyComposition, .digestion, .profile:
             return .records
         case .settings:
             return .app

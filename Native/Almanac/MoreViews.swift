@@ -115,6 +115,8 @@ struct ModulesView: View {
             DayTimelineView(db: db)
         case .bodyComposition:
             MeasurementsView(db: db, trackingModel: trackingModel)
+        case .digestion:
+            DigestionHistoryView(db: db)
         case .profile:
             ProfileView(db: db, readinessModel: readinessModel)
         case .settings:

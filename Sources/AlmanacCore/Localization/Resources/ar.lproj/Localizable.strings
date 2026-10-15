@@ -345,3 +345,7 @@
 "ms" = "ملّي ثانية";
 "kcal" = "سعرة";
 "mg" = "ملغ";
+
+/* Digestion history (2026-10-15) */
+"Colour not recorded" = "اللون غير مسجل";
+"Digestion" = "الهضم";
