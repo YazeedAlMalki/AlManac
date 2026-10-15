@@ -30,6 +30,8 @@ struct SupplementView: View {
     @State private var addingPlan = false
     @State private var error: String?
     @State private var readProblem: String?
+    /// Set when a reminder was turned on but notifications are not allowed.
+    @State private var reminderProblem: String?
 
     private let timeModel = TimeModel(timeZone: .current)
 
@@ -42,6 +44,12 @@ struct SupplementView: View {
         List {
             if let readProblem {
                 Section { AlmanacProblemNote(text: readProblem) }
+            }
+            if let reminderProblem {
+                Section {
+                    AlmanacProblemNote(text: reminderProblem)
+                        .accessibilityIdentifier("supplement-reminder-problem")
+                }
             }
 
             Section {
@@ -83,18 +91,31 @@ struct SupplementView: View {
         .navigationTitle("Supplements")
         .task { reload() }
         .sheet(isPresented: $addingPlan) {
-            SupplementPlanEditor(db: db, plan: nil) { saved() }
+            SupplementPlanEditor(db: db, plan: nil) { saved(reminderTurnedOn: $0) }
         }
         .sheet(item: $editingPlan) { plan in
-            SupplementPlanEditor(db: db, plan: plan) { saved() }
+            SupplementPlanEditor(db: db, plan: plan) { saved(reminderTurnedOn: $0) }
         }
         .editorError($error)
     }
 
-    private func saved() {
+    /// Re-plans notifications. When this save turned a reminder on, that tap
+    /// is the deliberate action the system prompt may follow, so it asks for
+    /// permission (the OS only shows the prompt while it is undetermined) and
+    /// says so plainly if notifications are not allowed — otherwise the plan
+    /// would read "Reminder at 21:00" with nothing ever queued.
+    private func saved(reminderTurnedOn: Bool = false) {
         reload()
-        if let notificationModel {
-            Task { await notificationModel.reconcileNotifications() }
+        guard let notificationModel else { return }
+        Task {
+            if reminderTurnedOn {
+                let granted = (try? await notificationModel.requestAuthorizationAndSchedule()) ?? false
+                reminderProblem = granted
+                    ? nil
+                    : String(localized: "Notifications are off for Almanac, so this reminder will not arrive. Allow them in the Settings app.")
+            } else {
+                await notificationModel.reconcileNotifications()
+            }
         }
     }
 
@@ -231,7 +252,7 @@ struct SupplementView: View {
                     Text("·")
                     Text("Discontinued")
                 }
-                if plan.reminderEnabled {
+                if plan.reminderEnabled && plan.isActive {
                     Text("·")
                     Text("Reminder at \(reminderTime(plan))")
                 }

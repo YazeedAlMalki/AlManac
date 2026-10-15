@@ -103,6 +103,12 @@ private struct CircumferenceEditor: View {
                 if let entry {
                     Text("\(entry.measurementType.rawValue.capitalized)\(entry.side.map { " · " + $0.rawValue } ?? "")")
                     Text("Corrections and deletions here do not change previously exported Apple Health samples.")
+                } else if loaded && points.isEmpty {
+                    // Every built-in hidden and no point of the owner's own:
+                    // there is nothing to log to, and a hidden fallback
+                    // selection must not be logged to instead.
+                    Text("Every point is hidden. Show a point or add one in Points and charts.")
+                        .accessibilityIdentifier("circumference-no-points")
                 } else {
                     Picker("Measurement", selection: $point) {
                         ForEach(points) { point in
@@ -131,7 +137,7 @@ private struct CircumferenceEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }.disabled(!loaded)
+                    Button("Save") { save() }.disabled(!loaded || (entry == nil && points.isEmpty))
                 }
             }
             .task {
@@ -158,6 +164,9 @@ private struct CircumferenceEditor: View {
     }
 
     private func save(allowUnusual: Bool = false) {
+        // Belt to the disabled Save: a new reading needs a point that is on
+        // the owner's list.
+        guard entry != nil || points.contains(point) else { return }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let number = Double(userInput: trimmed)
                 ?? (try? Double(trimmed, format: .number, lenient: false)) else {

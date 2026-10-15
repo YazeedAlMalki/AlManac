@@ -15,7 +15,9 @@ struct SupplementPlanEditor: View {
     let db: Database
     /// Nil creates a plan; non-nil edits that one.
     let plan: SupplementPlan?
-    let onSaved: () -> Void
+    /// Called after a save. `true` when this save turned a reminder on, which
+    /// is the deliberate action that may ask for notification permission.
+    let onSaved: (_ reminderTurnedOn: Bool) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -61,6 +63,16 @@ struct SupplementPlanEditor: View {
                          : "Optional. Shown under the name on the adherence list.")
                 }
 
+                // A discontinued plan is never planned (`activePlansWithReminders`),
+                // so a reminder on one could be set and never fire.
+                if plan?.isActive == false {
+                    Section {
+                        Text("A discontinued plan has no reminder.")
+                            .foregroundStyle(AlmanacPalette.textSecondary)
+                    } header: {
+                        Text("Reminder")
+                    }
+                } else {
                 Section {
                     Toggle("Remind me", isOn: $remind)
                         .accessibilityIdentifier("supplement-reminder")
@@ -72,6 +84,7 @@ struct SupplementPlanEditor: View {
                     Text("Reminder")
                 } footer: {
                     Text("Turning a reminder on also turns on supplement reminders in Reminders.")
+                }
                 }
 
                 if isEditing {
@@ -141,10 +154,11 @@ struct SupplementPlanEditor: View {
                 id = try store.create(draft)
             }
             let minute: Int? = remind ? reminderMinute : nil
-            if plan?.reminderEnabled != remind || (remind && plan?.reminderMinuteOfDay != minute) {
+            let editable = plan?.isActive != false
+            if editable, plan?.reminderEnabled != remind || (remind && plan?.reminderMinuteOfDay != minute) {
                 try SupplementReminderSetting(db: db).set(planId: id, enabled: remind, minuteOfDay: minute)
             }
-            onSaved()
+            onSaved(editable && remind && plan?.reminderEnabled != true)
             dismiss()
         } catch {
             self.error = String(describing: error)

@@ -1585,6 +1585,16 @@
         }
       }
     },
+    "A discontinued plan has no reminder.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الخطة الموقوفة ليس لها تذكير."
+          }
+        }
+      }
+    },
     "A fast is already running. End it before starting another.": {
       "localizations": {
         "ar": {
@@ -4449,6 +4459,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "كل استيراد لصقته مسجّل هنا، مع عدد الصفوف التي طابقت الفهرس."
+          }
+        }
+      }
+    },
+    "Every point is hidden. Show a point or add one in Points and charts.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل المواضع مخفية. أظهر موضعًا أو أضف موضعًا في المواضع والرسوم."
           }
         }
       }
@@ -7539,6 +7559,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا شيء مطلوب في هذه الجولة من التناوب."
+          }
+        }
+      }
+    },
+    "Notifications are off for Almanac, so this reminder will not arrive. Allow them in the Settings app.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإشعارات متوقفة لتطبيق Almanac، فلن يصل هذا التذكير. اسمح بها في تطبيق الإعدادات."
           }
         }
       }
