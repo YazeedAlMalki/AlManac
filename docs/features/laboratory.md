@@ -275,6 +275,37 @@ molar mass.
   and the observation is excluded from cross-unit comparison, with the reason
   stated.
 
+### 8a. The conversion rule as built (2026-10-15, unconfirmed)
+
+`LabUnitConversion` applies R8.1–R8.3 for charting one analyte. It writes
+nothing: the converted value is computed when a series is read and travels
+beside the source value with its factor and class.
+
+| Pair | Result |
+|---|---|
+| Same dimension, different scale (g/L → mg/dL, nmol/L → µmol/L, 10^9/L → 10^12/L) | Converted, class `decimal_scaling` |
+| Same dimensionless unit (% → percent) | Converted, factor 1, class `dimensionless` |
+| Two dimensionless kinds (ratio → %) | Not converted: `different_dimension` |
+| Mass ↔ substance (mg/dL → mmol/L) | Not converted: `needs_analyte_factor` (the catalog holds no molar masses yet) |
+| Two different activity units (U/L → IU/mL) | Not converted: `activity_units` |
+| A unit not in `UnitRegistry` | Not converted: `unknown_unit` |
+
+A series is shown in the unit of its **latest** result that has a number and a
+unit. A result that cannot join it is listed with its reason, never dropped
+silently.
+
+### 8b. Suggested re-test (2026-10-15, unconfirmed)
+
+`LabRetestSuggestion` suggests the next result for an analyte from the person's
+own history only: the last result's day plus the **median interval** between
+consecutive results, from **at least three results on distinct days**. Results
+dated only to a month or a year are left out rather than guessed into a day.
+Same-day repeats count once. No clinical re-test interval is used or stored.
+
+Both are in `AlmanacCore` with tests (`LabConversionAndRetestTests`, 13). Neither
+is on a screen yet. Both rules are logged in `CONTEXT.md` ("Body and wellness
+(2026-10-15)") with how to overrule them.
+
 ---
 
 ## 9. Identity, repeats, and correction history
