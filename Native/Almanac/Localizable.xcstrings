@@ -7703,6 +7703,16 @@
         }
       }
     },
+    "One serving is the finished dish divided by this count. With no count set, the whole dish is one serving." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصة الواحدة هي الطبق الجاهز مقسومًا على هذا العدد. وإن لم يُحدَّد عدد، فالطبق كله حصة واحدة."
+          }
+        }
+      }
+    },
     "One session logged so far — a line needs at least two to show a trend.": {
       "localizations": {
         "ar": {
@@ -9613,6 +9623,26 @@
         }
       }
     },
+    "Servings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصص"
+          }
+        }
+      }
+    },
+    "Servings: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصص: %lld"
+          }
+        }
+      }
+    },
     "Session": {
       "localizations": {
         "ar": {
@@ -9659,6 +9689,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الجلسات المسجّلة تلقائيًا من تطبيق الصحة تُعرَض ولا تُعدَّل — فالساعة هي مصدر تلك الأرقام."
+          }
+        }
+      }
+    },
+    "Set a serving count" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحديد عدد الحصص"
           }
         }
       }

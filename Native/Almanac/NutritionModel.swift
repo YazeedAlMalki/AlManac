@@ -142,6 +142,13 @@ final class NutritionModel: ObservableObject {
         try? dishEditor?.oneServingGrams(of: ref)
     }
 
+    /// How many servings a saved dish makes, or nil for none — the whole dish
+    /// is then one serving (owner, 2026-10-06).
+    func setServingCount(_ count: Int?, for ref: SourceIdentifier) throws {
+        guard let dishEditor else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
+        try dishEditor.update(ref, .servings(count))
+    }
+
     func savedMeals() throws -> SavedMealResults {
         guard let db else { return SavedMealResults() }
         return try SavedMeals(db: db).list()

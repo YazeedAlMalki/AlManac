@@ -240,6 +240,49 @@ final class KitchenUITests: XCTestCase {
                       "the meal with no declared allergen was hidden too")
     }
 
+    // MARK: - Servings
+
+    /// Saved meals → swipe the 200 g bowl → Servings → count of 2 → Save. The
+    /// row then says 100 g, and choosing the meal pre-fills 100 g. The seed in
+    /// `setUp` and `tearDown` takes the count back (`KitchenSeedPlan.apply`).
+    func testAServingCountSetOnASavedMealIsWhatItPreFills() throws {
+        try nutritionToolbarButton("Saved meals").tap()
+        XCTAssertTrue(app.navigationBars["Saved meals"].waitForExistence(timeout: 10), "Saved meals never opened")
+
+        let bowl = recipeButton(Self.bowl)
+        XCTAssertTrue(bowl.waitForExistence(timeout: 10),
+                      "the seeded bowl is not listed: \(app.buttons.allElementsBoundByIndex.map(\.label))")
+        XCTAssertTrue(bowl.label.contains("Serving: 200 g"), "the uncounted bowl is not one 200 g serving: \(bowl.label)")
+
+        bowl.swipeLeft()
+        let servings = app.buttons["Servings"]
+        XCTAssertTrue(servings.waitForExistence(timeout: 5), "the saved meal offers no Servings action")
+        servings.tap()
+
+        let toggle = app.switches["serving-count-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10), "the servings sheet never opened")
+        XCTAssertEqual(toggle.value as? String, "0", "the seeded bowl already had a count")
+        toggle.tapSwitchControl()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { toggle.value as? String == "1" }, "the count could not be turned on")
+
+        let stepper = app.steppers["serving-count-stepper"]
+        XCTAssertTrue(stepper.waitForExistence(timeout: 5), "no count control once a count is turned on")
+        XCTAssertTrue(app.staticTexts["Servings: 2"].exists, "a new count does not start at 2")
+        let preview = app.staticTexts["serving-count-preview"]
+        XCTAssertEqual(preview.label, "Serving: 100 g", "the sheet does not show what one serving becomes")
+
+        app.navigationBars.buttons["Save"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 10) { !toggle.exists }, "Save did not close the sheet")
+
+        XCTAssertTrue(app.waitUntil(timeout: 10) { recipeButton(Self.bowl).label.contains("Serving: 100 g") },
+                      "the list still shows the whole bowl: \(recipeButton(Self.bowl).label)")
+
+        recipeButton(Self.bowl).tap()
+        let grams = app.textFields["Amount, in grams"]
+        XCTAssertTrue(app.reveal(grams), "choosing the meal did not reach the logging form")
+        XCTAssertEqual(grams.value as? String, "100", "one counted serving was not pre-filled")
+    }
+
     // MARK: - Helpers
 
     /// The first element of any type carrying `identifier`.

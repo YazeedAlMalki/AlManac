@@ -170,8 +170,14 @@ nothing is pre-filled.
 Choosing a recipe **and choosing a saved meal** pre-fill one serving, still
 editable. Saved meals used to pre-fill the whole stated yield; it is the same
 row, so it now takes the same default. The pre-filled figure is rounded rather
-than truncated. `DishEdit.servingCount` sets a count; **no screen sets one yet**,
-because no screen edits a dish at all.
+than truncated. `DishEdit.servingCount` sets a count. ~~No screen sets one
+yet.~~ **2026-10-16:** Saved meals sets it: swipe a meal, "Servings", and a
+sheet turns a count on (starting at 2, 1–50) and shows what one serving becomes.
+No migration was needed; the column is 052's. Still no screen edits the rest of
+a dish. Tests: `DishServingTests.servingsEdit`,
+`KitchenSeedPlanTests.applyClearsServingCounts`, and
+`KitchenUITests.testAServingCountSetOnASavedMealIsWhatItPreFills`. Decisions
+in `CONTEXT.md`, "The 2026-10-16 handoff".
 
 Imported recipes (when there is an import — §4): TheMealDB's records are
 believed to carry no serving count; that was not checkable from this session

@@ -71,6 +71,14 @@ public struct DishEdit: Sendable, Hashable {
 
     public init() {}
 
+    /// The edit a serving-count control makes: a count, or nil for none, which
+    /// puts the dish back to being one serving whole.
+    public static func servings(_ count: Int?) -> DishEdit {
+        var edit = DishEdit()
+        edit.servingCount = count.map { .set($0) } ?? .clear
+        return edit
+    }
+
     public var touchesAnything: Bool {
         nameText.isChange || yieldGrams.isChange || edibleProportion.isChange || servingCount.isChange
     }

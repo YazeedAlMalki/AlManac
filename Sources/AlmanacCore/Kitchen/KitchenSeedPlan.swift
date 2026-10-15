@@ -107,6 +107,11 @@ public struct KitchenSeedPlan: Sendable, Hashable {
         try editor.setRecipe([DishComponent(Self.riceRef, grams: 200)], for: Self.bowlRef)
         try editor.setRecipe([DishComponent(Self.riceRef, grams: 150),
                               DishComponent(Self.sauceRef, grams: 50)], for: Self.satayRef)
+        // `create` upserts the name and yield and leaves a serving count alone,
+        // so one set by a test would outlive the next seed.
+        for ref in [Self.bowlRef, Self.satayRef] {
+            try editor.update(ref, .servings(nil))
+        }
 
         let log = NutritionLogStore(db: db, zone: ZoneContext(timeModel.timeZone))
         for back in Self.oatsDaysBack {
