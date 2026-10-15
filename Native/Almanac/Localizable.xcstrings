@@ -8405,6 +8405,16 @@
         }
       }
     },
+    "Recovery day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم تعافٍ"
+          }
+        }
+      }
+    },
     "Reference band": {
       "localizations": {
         "ar": {
@@ -11469,6 +11479,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تعذّر تحديد موقعك الآن. حاول مجددًا أو اختر مدينة أدناه."
+          }
+        }
+      }
+    },
+    "Your own call for today. It changes the advice, not the score.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قرارك أنت لهذا اليوم. يغيّر النصيحة، لا الدرجة."
           }
         }
       }

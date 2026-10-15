@@ -185,6 +185,9 @@ is confirmed.
 More were settled on 2026-10-15 while taking Slices 7 and 9 toward done; they
 are under "Digestion and urination" and "Body and wellness" below.
 
+Four more were settled on 2026-10-16 while building the recovery day a person
+declares (§9.6); they are under "Readiness: the declared recovery day" below.
+
 More were settled on 2026-10-06 while carrying out that day's handoff (readiness,
 vitals, Kitchen, workout templates). Each sits in the subsection for its area and
 is marked with that date. **None of these has been confirmed.** Where the owner
@@ -328,6 +331,41 @@ its sentence. What is withheld is the band sentence, in `textDescription` and
 a baseline — by making `ReadinessEngine.lacksPersonalBaseline` return
 `(rhrPresent && baseline.restingHeartRate == nil) || (hrvPresent && baseline.hrv == nil)`,
 and inverting `testOneComparedReadingKeepsTheBandSentence`.
+
+### Readiness: the declared recovery day (2026-10-16)
+
+Settled while building §9.6's "manually selected recovery day (user set via
+UI)". The spec gives the rule, its rank and its wording, and says nothing about
+where it is set or for which days. **None of these has been confirmed.**
+
+**It is a switch on Today, under the "For this cycle" card, and it writes the
+moment it moves.** Not a field in the mood & soreness check-in: that sheet
+saves on Save, so Cancel would drop a declaration, and a recovery day needs no
+mood score to be true. Writing immediately is what keeps it changeable for as
+long as the screen is open, as the readiness switch on a training session is.
+*Overrule by:* moving `ReadinessDashboardView.recoveryDay` into
+`MoodSorenessCheckInView` and calling `ReadinessModel.setRecoveryDay` from its
+`save()`.
+
+**The screen declares today only.** `RecoveryDayStore` takes any logical day and
+a back-dated declaration is attributed to the day it names, but no screen offers
+another day, and declaring one does not rewrite that day's stored score (§9.9).
+*Overrule by:* a day picker that calls `RecoveryDayStore.set` with the chosen
+day — and, if the past record should change too, an explicit rescore of that
+day, which is a §9.9 question rather than a screen one.
+
+**Clearing deletes the row.** A declaration is a switch, not a reading, so its
+own history is not kept; whether the rule held on a scored day is already in
+that day's `readiness_record.precedenceApplied`. *Overrule by:* a `clearedAt`
+column on `recovery_day_declaration` (a migration) and a `clear` that sets it.
+
+**It changes the recommendation and nothing else on screen.** The headline
+gets no suffix (§9.4 lists none for a recovery day, where it does for a planned
+rest day and a deload), and the switch is labelled "Recovery day", described as
+"Your own call for today. It changes the advice, not the score." It never says
+"rest day". *Overrule by:* adding a suffix in `ReadinessEngine.describe`, or
+rewording the two strings in `ReadinessDashboardView.recoveryDay` (and their
+Arabic in `Localizable.xcstrings`).
 
 ### Fasting and prayer (2026-10-06)
 
