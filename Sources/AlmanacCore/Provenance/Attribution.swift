@@ -85,11 +85,19 @@ public enum AttributionCatalog {
         url: "https://unlicense.org/")
     public static let mit = LicenseReference(name: "MIT",
         url: "https://opensource.org/license/mit")
+    /// For a source credited without a licence anyone has identified. Its link
+    /// is the work itself, because there is no licence page to link to. Used
+    /// rather than borrowing an open licence the source never granted; the
+    /// open question is logged in `CONTEXT.md`.
+    public static func licenceNotIdentified(workURL: String) -> LicenseReference {
+        LicenseReference(name: "No licence identified", url: workURL)
+    }
 
     /// Sources the build ships. Append-only; adding an id here without a
     /// matching `entries` row fails `AttributionAudit`.
     public static let bundledSourceIds: [String] = [
-        "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd"
+        "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd",
+        "bristol-stool-form-scale"
     ]
 
     public static let entries: [Attribution] = [
@@ -162,6 +170,22 @@ public enum AttributionCatalog {
                 + "to kcal.",
             sourceNotice: "Food Standards Australia New Zealand. Australian Food Composition Database, "
                 + "Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work."
+        ),
+        // The seven type names in the digestion screens are the scale's
+        // published wording (`BristolType.displayName`), so the scale is a
+        // bundled source. No licence for it has been identified; the entry
+        // says so rather than naming one. Open item in CONTEXT.md.
+        Attribution(
+            sourceId: "bristol-stool-form-scale",
+            title: "Bristol Stool Form Scale",
+            author: "S. J. Lewis and K. W. Heaton, University of Bristol",
+            sourceURL: "https://doi.org/10.3109/00365529709011203",
+            licenses: [licenceNotIdentified(workURL: "https://doi.org/10.3109/00365529709011203")],
+            isModified: true,
+            modificationNote: "The seven type names are shown as published; the one-line summary under "
+                + "each is shortened from the published descriptions.",
+            sourceNotice: "Lewis SJ, Heaton KW. Stool form scale as a useful guide to intestinal "
+                + "transit time. Scandinavian Journal of Gastroenterology. 1997;32(9):920–924."
         )
     ]
 

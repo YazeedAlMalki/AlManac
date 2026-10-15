@@ -8,17 +8,18 @@ import Foundation
 public enum BristolType: Int, Sendable, Codable, CaseIterable {
     case type1 = 1, type2, type3, type4, type5, type6, type7
 
-    /// The type's name on the scale, after Heaton & Lewis (1997), *Scoring
-    /// systems of stool composition and physical form*.
+    /// The type's name on the scale, after Lewis & Heaton (1997), *Stool form
+    /// scale as a useful guide to intestinal transit time*, Scand J
+    /// Gastroenterol 32(9):920–924.
     ///
     /// A picker of `1 2 3 4 5 6 7` is not a reference scale — the number only
     /// means something against its description, and the description is what the
     /// user is actually being asked to recognise. The seven names are the
     /// standard published wording rather than anything written here.
     ///
-    /// **Attribution is an open item.** These strings are reproduced from a
-    /// published scale, and `docs/features/digestion.md` records that the
-    /// Attributions screen has not been extended to cover them.
+    /// Credited on the Attributions screen (`AttributionCatalog`,
+    /// `bristol-stool-form-scale`, 2026-10-15). Its licence is not identified;
+    /// see `CONTEXT.md`.
     public var displayName: String {
         switch self {
         case .type1: return localized("Separate hard lumps")

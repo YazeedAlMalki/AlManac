@@ -62,6 +62,25 @@ struct AttributionTests {
         }
     }
 
+    /// The seven Bristol type names are published wording (Lewis & Heaton,
+    /// 1997), shipped in the digestion screens, so the scale is a bundled source
+    /// and needs an entry like any dataset. Its licence has not been
+    /// identified, and the entry says that rather than naming one.
+    @Test("The Bristol Stool Form Scale is a bundled source, credited to its paper")
+    func bristolScaleIsCredited() throws {
+        #expect(AttributionCatalog.bundledSourceIds.contains("bristol-stool-form-scale"))
+        let entry = try #require(AttributionCatalog.entry(for: "bristol-stool-form-scale"))
+        #expect(entry.title == "Bristol Stool Form Scale")
+        #expect(entry.author == "S. J. Lewis and K. W. Heaton, University of Bristol")
+        #expect(entry.sourceURL == "https://doi.org/10.3109/00365529709011203")
+        #expect(entry.sourceNotice == "Lewis SJ, Heaton KW. Stool form scale as a useful guide to intestinal "
+                + "transit time. Scandinavian Journal of Gastroenterology. 1997;32(9):920–924.")
+        #expect(entry.licenses.map(\.name) == ["No licence identified"],
+                "the licence is unknown and must say so, not borrow an open licence")
+        #expect(entry.isModified, "the in-app summaries are shortened from the published descriptions")
+        try AttributionAudit.assertAttributed(["bristol-stool-form-scale"])
+    }
+
     @Test("A bundled source with no entry fails the build")
     func missingEntryFailsTheBuild() {
         #expect(throws: MissingAttribution.self) {
