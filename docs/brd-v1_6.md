@@ -4,6 +4,8 @@
 **Version:** 1.6 | **Date:** 2026-09-25 | **Owner:** Yazeed | **Status:** Approved  
 **Changelog:** v1.6 — §6.16 Monthly Achievement Calendar replaced by Activity Rings Calendar; dependent references (§6.17, §6.18, §5.4, §10, §12 Slice 10, A1, A3) updated. Diet Profile dependency open.
 
+**Amendment 1 (recorded 2026-10-16):** Arabic UI is in v1 scope by the owner's decision of 2026-10-07. The v1.6 text below is left as approved; where it says Arabic is deferred, Amendment 1 at the end of this document governs.
+
 ## Executive Summary
 
 Native iOS app unifying body signals: nutrition, hydration, caffeine, fasting, sleep, digestion, urination, vitals, training load, mood, body composition → **one readiness assessment per daily cycle**, timed to primary sleep/waking (not fixed clock).
@@ -506,3 +508,28 @@ User flies to different timezone → existing records keep original timestamps/o
 
 ### A8 — Rotating Night-Shift Transition
 Stable day-schedule user switches to night shifts for month: app reads planned rotation → morning readiness & bedtime reminders stop firing → after first night shift, daytime HealthKit sleep classified **primary episode** (not nap) → readiness after that primary sleep / next main waking → general baseline used, reduced confidence, limited-comparable notice → day marked transition context → 21-day app calibration does **not** restart → night-shift-specific baseline activates after sufficient days (threshold: Tech Spec) → 8 AM caffeine interpreted late relative to 10 AM intended sleep → workouts/meals/fasting/timestamps correctly associated → user corrects misclassified sleep episode → Day Type & Circadian Context remain separate → future night-shift compared primarily against comparable night-shift records.
+
+## Amendment 1 — Arabic UI is in v1 (recorded 2026-10-16)
+
+**Decision:** the owner, 2026-10-07: "the whole app gets Arabic", not Kitchen
+alone (`docs/features/kitchen.md` §7; `docs/features/arabic.md`). Recorded here
+on 2026-10-16 so this document stops contradicting it. The approved v1.6 text is
+not edited; this amendment supersedes it on these points only:
+
+| v1.6 passage | v1.6 says | Now |
+|---|---|---|
+| Vision & Goals, *Non-goals* | "Arabic UI (deferred)" | Not a non-goal. Arabic UI is a v1 goal. |
+| Target Users, *Future* row | Arabic after Pre-App Store Hardening | Arabic is no longer a future item. |
+| Platform & Technical Constraints, *Language* | "English UI, i18n-ready for Arabic" | English and Arabic UI, chosen by iOS's per-app language setting. |
+| §6.20, first two bullets | "English-first; all strings externalized for Arabic later" and "Arabic UI not v1" | Every user-facing string has Arabic in v1. RTL layout, Arabic plurals and locale digits are in use, not only prepared for. |
+| §7 Deferred, *Arabic UI* row | "English first; strings externalized" | Removed from Deferred. |
+
+**What exists (2026-10-16):** the app, widget and core strings have Arabic,
+and CI fails the build on any app or widget string without it
+(`tools/localization/check_catalog.py --strict`; `LocalizationTableTests` for
+core). Dates stay Gregorian in Arabic (`docs/features/arabic.md`, decision 3).
+
+**Not done, and not this amendment's to do:** the Arabic text is a **draft**.
+None of it has been reviewed by a native speaker, including the 38 strings for
+Slices 7 and 9 added on 2026-10-16 and the four for dish servings added the same
+day. A native-speaker review before release is an open item for the owner.
