@@ -17,12 +17,14 @@ final class NutritionDishTests: XCTestCase {
         editor = NutritionDishEditor(db: db, clock: clock)
         catalog = NutritionCatalog(db: db)
         try seedSource("usda", group: "A")
-        // Present on a real device after any bundle import (the bundle always
-        // carries an `almanac` source row, even while it ships zero foods
-        // under that namespace) — seeded here so `nutrition_food.namespace`'s
-        // foreign key is satisfiable without going through a real import.
-        try seedSource("almanac", group: "N")
-        for nutrient in ["protein", "fat_total", "carbohydrate_by_difference", "iron"] {
+        try seedSource("ciqual", group: "B")
+        // No `almanac` source row is seeded. This file used to seed one on the
+        // belief that every bundle carries it; the shipped bundle does not, so
+        // every test here passed while `create` failed its foreign key on a real
+        // device. `create` registers the namespace itself now, and these tests
+        // are what prove it.
+        for nutrient in ["protein", "fat_total", "carbohydrate_by_difference", "iron",
+                         "carbohydrate_available", "fibre_total_dietary", "alcohol", "energy_kcal"] {
             try seedNutrient(nutrient)
         }
     }
@@ -82,7 +84,44 @@ final class NutritionDishTests: XCTestCase {
         return ref
     }
 
+    /// A reference food with whatever values it is given, in any namespace.
+    @discardableResult
+    private func seedFood(_ ref: SourceIdentifier, group: String,
+                          _ values: [(String, Double, String)]) throws -> SourceIdentifier {
+        try db.run("""
+            INSERT INTO nutrition_food (food_ref, namespace, local_id, licence_group,
+                                        food_group_code, food_group_name, source_record)
+            VALUES (?, ?, ?, ?, '', '', 'fixture');
+            """, [.text(ref.description), .text(ref.namespace.rawValue), .text(ref.localID), .text(group)])
+        try db.run("""
+            INSERT INTO nutrition_food_name (food_ref, language, name, is_primary, name_fold)
+            VALUES (?, 'en', ?, 1, ?);
+            """, [.text(ref.description), .text(ref.localID), .text(ref.localID)])
+        for (nutrient, amount, unit) in values {
+            try db.run("""
+                INSERT INTO nutrition_value (food_ref, nutrient_id, basis, amount, qualifier,
+                                             source_value, source_nutrient_id, source_unit, licence_group)
+                VALUES (?, ?, 'per_100g', ?, ?, ?, ?, ?, ?);
+                """, [.text(ref.description), .text(nutrient), .real(amount),
+                      .text(amount == 0 ? "zero_reported" : "measured"), .text(String(amount)),
+                      .text(nutrient), .text(unit), .text(group)])
+        }
+        return ref
+    }
+
+    private func energy(of ref: SourceIdentifier) throws -> EnergyEstimate {
+        try XCTUnwrap(try catalog.energy(for: ref, basis: .per100g))
+    }
+
     // MARK: Creating and editing
+
+    func testCreatingADishRegistersTheAlmanacSourceItWritesInto() throws {
+        XCTAssertTrue(try db.query("SELECT 1 FROM nutrition_source WHERE namespace = 'almanac';").isEmpty)
+        try editor.create(localID: "one", nameText: "One")
+        try editor.create(localID: "two", nameText: "Two")
+        XCTAssertEqual(try db.query("SELECT licence_group FROM nutrition_source WHERE namespace = 'almanac';")
+            .map { $0.string("licence_group") }, ["N"])
+    }
 
     func testADishIsCreatedAndValuesTypedInDirectly() throws {
         let ref = try editor.create(localID: "kabsa", nameText: "Kabsa")
@@ -227,6 +266,78 @@ final class NutritionDishTests: XCTestCase {
         XCTAssertFalse(reduction.values.contains { $0.nutrientID == "protein" })
     }
 
+    // USDA chicken (carbohydrate by difference) with CIQUAL rice (available
+    // carbohydrate plus fibre): no carbohydrate id is reported by both, so the
+    // same-id sums alone left the dish with no carbohydrate and no Atwater energy.
+    func testIngredientsFromDifferentPublishersStillGiveTheDishItsCarbohydrateAndEnergy() throws {
+        let chicken = try seedFood(SourceIdentifier(namespace: .usda, localID: "chicken"), group: "A", [
+            ("protein", 22.5, "g"), ("fat_total", 1.9, "g"), ("carbohydrate_by_difference", 0, "g")])
+        let rice = try seedFood(SourceIdentifier(namespace: .ciqual, localID: "rice"), group: "B", [
+            ("protein", 2.95, "g"), ("fat_total", 0.56, "g"), ("carbohydrate_available", 31.7, "g"),
+            ("fibre_total_dietary", 1.1, "g"), ("alcohol", 0, "g")])
+        let dish = try editor.create(localID: "chicken-rice", nameText: "Chicken and rice")
+        let reduction = try editor.setRecipe(
+            [DishComponent(chicken, grams: 200), DishComponent(rice, grams: 300)], for: dish)
+
+        // (200 × 0 + 300 × (31.7 + 1.1)) / 100 = 98.4 g over 500 g = 19.68 per 100 g
+        let carbohydrate = try XCTUnwrap(reduction.values.first { $0.nutrientID == "carbohydrate_by_difference" })
+        XCTAssertEqual(carbohydrate.amount ?? -1, 19.68, accuracy: 1e-9)
+        XCTAssertFalse(reduction.unmeasuredNutrients.contains("carbohydrate_by_difference"))
+        XCTAssertTrue(reduction.unmeasuredNutrients.contains("carbohydrate_available"),
+                      "the publisher-specific ids are still honestly unmeasured")
+
+        // Logging 100 g of the dish counts what 40 g chicken + 60 g rice would.
+        let expected = (try energy(of: chicken).kilocalories * 200 + energy(of: rice).kilocalories * 300) / 500
+        let dishEnergy = try energy(of: dish)
+        XCTAssertEqual(dishEnergy.method, .generalAtwater)
+        XCTAssertEqual(dishEnergy.kilocalories, expected, accuracy: 1e-9)
+    }
+
+    // An ingredient whose macros cannot be read (CoFID leaves fibre blank for
+    // ~46 % of its foods) still has a calorie figure, the publisher's. The dish's
+    // fallback is then the sum of each ingredient's own figure.
+    func testADishWhoseMacrosCannotBeCombinedFallsBackToTheSumOfItsIngredientsEnergy() throws {
+        let chicken = try seedFood(SourceIdentifier(namespace: .usda, localID: "chicken"), group: "A", [
+            ("protein", 22.5, "g"), ("fat_total", 1.9, "g"), ("carbohydrate_by_difference", 0, "g"),
+            ("energy_kcal", 112.2, "KCAL")])
+        let ackee = try seedFood(SourceIdentifier(namespace: .ciqual, localID: "ackee"), group: "B", [
+            ("protein", 2.9, "g"), ("fat_total", 15.2, "g"), ("carbohydrate_available", 0.8, "g"),
+            ("energy_kcal", 151, "kcal")])
+        let dish = try editor.create(localID: "mixed", nameText: "Mixed")
+        try editor.setRecipe([DishComponent(chicken, grams: 100), DishComponent(ackee, grams: 100)], for: dish)
+
+        // Chicken counts at its Atwater 4 × 22.5 + 9 × 1.9 = 107.1, not its published 112.2;
+        // ackee at its published 151. (107.1 + 151) / 2 = 129.05
+        let dishEnergy = try energy(of: dish)
+        XCTAssertEqual(dishEnergy.method, .publisherReported)
+        XCTAssertEqual(dishEnergy.kilocalories, 129.05, accuracy: 1e-9)
+    }
+
+    func testAlcoholFromOneIngredientIsNotLostBecauseAnotherNeverReportedIt() throws {
+        let beef = try seedFood(SourceIdentifier(namespace: .usda, localID: "beef"), group: "A", [
+            ("protein", 20, "g"), ("fat_total", 10, "g"), ("carbohydrate_by_difference", 0, "g")])
+        let wine = try seedFood(SourceIdentifier(namespace: .ciqual, localID: "wine"), group: "B", [
+            ("protein", 0, "g"), ("fat_total", 0, "g"), ("carbohydrate_available", 2, "g"),
+            ("fibre_total_dietary", 0, "g"), ("alcohol", 10, "g")])
+        let dish = try editor.create(localID: "stew", nameText: "Stew")
+        let reduction = try editor.setRecipe(
+            [DishComponent(beef, grams: 100), DishComponent(wine, grams: 100)], for: dish)
+        let alcohol = try XCTUnwrap(reduction.values.first { $0.nutrientID == "alcohol" })
+        XCTAssertEqual(alcohol.amount ?? -1, 5, accuracy: 1e-9)
+        let expected = (try energy(of: beef).kilocalories + energy(of: wine).kilocalories) / 2
+        XCTAssertEqual(try energy(of: dish).kilocalories, expected, accuracy: 1e-9)
+    }
+
+    func testNothingIsDerivedAcrossAUnitConflict() throws {
+        let rice = try seedIngredient("rice", name: "Rice", protein: 2.7, fat: 0.3, carbohydrate: 28.2)
+        let odd = try seedIngredient("odd", name: "Odd", protein: 1, fat: 1, carbohydrate: 1, unit: "mg")
+        let dish = try editor.create(localID: "conflict", nameText: "Conflict")
+        let reduction = try editor.setRecipe(
+            [DishComponent(rice, grams: 50), DishComponent(odd, grams: 50)], for: dish)
+        XCTAssertFalse(reduction.values.contains { $0.nutrientID == "carbohydrate_by_difference" })
+        XCTAssertFalse(reduction.values.contains { $0.nutrientID == "energy_kcal" })
+    }
+
     func testRecomputingPicksUpACorrectedIngredient() throws {
         let rice = try seedIngredient("rice", name: "Rice", protein: 2.7, fat: 0.3, carbohydrate: 28.2)
         let dish = try editor.create(localID: "recomputed", nameText: "Recomputed")
@@ -277,8 +388,8 @@ final class NutritionDishTests: XCTestCase {
         // A bundle-shipped native food, inserted the way NutritionReferenceImporter
         // would — no nutrition_dish row, because it is reference data, not an
         // editable recipe.
+        // `create` above has already registered the `almanac` source row.
         let bundleOwned = SourceIdentifier(namespace: .almanac, localID: "bundle-owned")
-        try seedSource("almanac", group: "N")
         try db.run("""
             INSERT INTO nutrition_food (food_ref, namespace, local_id, licence_group,
                                         food_group_code, food_group_name, source_record)

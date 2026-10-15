@@ -44,13 +44,13 @@ final class EnergyEstimateTests: XCTestCase {
 
     // Processing Design v0.1 §4: per 100 g and per 100 mL never mix.
     func testEachBasisUsesOnlyItsOwnValues() throws {
-        // CoFID wine, per 100 mL: 4 × 0 (trace) + 9 × 0 + 4 × (0.2 + 0) + 7 × 10.7 = 0.8 + 74.9 = 75.7
+        // CoFID wine, per 100 mL: 4 × 0 (trace) + 9 × 0 + 4 × (0.2 × 0.9375 + 0) + 7 × 10.7 = 0.75 + 74.9 = 75.65
         let wine = [value("protein", nil, .trace, basis: .per100ml), value("fat_total", 0, .zeroReported, basis: .per100ml),
                     value("carbohydrate_available_monosaccharide", 0.2, basis: .per100ml),
                     value("fibre_total_dietary", 0, .zeroReported, basis: .per100ml),
                     value("alcohol", 10.7, basis: .per100ml)]
         XCTAssertEqual(try XCTUnwrap(EnergyEstimate.preferred(from: wine, basis: .per100ml)).kilocalories,
-                       75.7, accuracy: 1e-9)
+                       75.65, accuracy: 1e-9)
         XCTAssertNil(EnergyEstimate.preferred(from: wine, basis: .per100g))
 
         // AFCD liquid on both bases. per 100 g: 4 × 0.2 + 9 × 0.2 + 4 × (0.4 + 0) = 0.8 + 1.8 + 1.6 = 4.2
