@@ -141,10 +141,17 @@ column names), with `PrayerCalculationMethod` mapping §5.22's
 Asr within a minute. 5 tests
 (`Tests/AlmanacCoreTests/AdhanCalculatorTests.swift`).
 
-Not built: `PrayerTimeStore`/the 30-day cache, >50 km travel invalidation,
-the bundled 200+-city manual-override JSON, and `PrayerSettingsStore` — all
-of §12 beyond the calculation itself. `AdhanCalculator` is a pure function
-today; nothing calls or persists it yet.
+~~Not built: `PrayerTimeStore`/the 30-day cache, >50 km travel invalidation,
+the bundled 200+-city manual-override JSON, and `PrayerSettingsStore`.~~
+**Corrected 2026-10-16:** that line was true on 2026-09-17 and stale since.
+All four are built, as §6 step 2 below says:
+`Sources/AlmanacCore/Prayer/PrayerSettingsStore.swift` and
+`PrayerTimeCacheStore.swift` (Migration 024, `b941ab4`), the 30-day cache and
+the 50 km haversine check in `PrayerTimeEngine.swift` (`ensureCache`,
+`applyLocationUpdate`), and the city list in
+`Prayer/Resources/manual-cities.json` (230 cities, `9bf1811`, 2026-09-19) read
+by `ManualCityCatalog.swift`. Tests: `PrayerSettingsStoreTests`,
+`PrayerTimeCacheStoreTests`, `PrayerTimeEngineTests`, `ManualCityCatalogTests`.
 
 **Hijri calendar source:** use Foundation's built-in
 `Calendar(identifier: .islamicUmmAlQura)` for Ramadan-month and White-Days
