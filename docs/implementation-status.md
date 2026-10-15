@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done; the
+Updated 2026-10-16: the newest entry is the recovery day a person declares
+(§9.6), readiness ticket 03. Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done; the
 simulator runtime was re-downloaded and the three UI suites pass. Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
 work (workout templates, the readiness withhold, the Vitals log), merging
 through PR #6; the fasting entry is second. Updated 2026-10-06. **Fasting and prayer times work end to end in the running
@@ -26,6 +27,64 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-16 — A recovery day the person declares (§9.6)
+
+Readiness ticket 03, the one remaining readiness gap that needed no owner
+ruling. **Branch** `claude/eager-mcnulty-7c3b4a`, from
+`claude/slices-7-9-completion` at `a4c5891` rather than from master, because
+that branch already holds Migration 056 and this work needed the next number.
+
+**The gap.** §9.6's second precedence rule, "Manually selected recovery day
+(user set via UI)", had its flag (`ReadinessContext.manualRecoveryDay`) and its
+wording in `ReadinessEngine` from the start, and nothing ever set the flag. It
+was the only §9.6 rule that had never fired, and no test exercised it.
+
+### What changed
+
+1. **Migration 057**, `recovery_day_declaration`: one row per declared logical
+   day, keyed on the day as `mood_log` and `soreness_log` are.
+2. **`RecoveryDayStore`** (core): declare, clear, set, read. The caller names
+   the day, so a back-dated declaration lands on the day it names.
+3. **`ReadinessModel`** reads today's declaration into the context, and
+   `setRecoveryDay` writes it and refreshes, so today's stored record follows.
+4. **Today** has a "Recovery day" switch under the "For this cycle" card. It
+   writes as it moves, so it can be moved back while the screen is open. Arabic
+   for its two strings is in the app catalog.
+5. **Docs:** `docs/features/readiness.md` has a section for it, and its row is
+   gone from "Not built, and why". Four choices made without the owner are in
+   `CONTEXT.md`, "Readiness: the declared recovery day (2026-10-16)".
+
+Score, colour, confidence, headline and snapshot are unchanged by it; only the
+recommendation is replaced. An active injury still decides the wording.
+
+### Verification
+
+| Run | Result |
+|---|---|
+| `swift test` on `a4c5891`, before any change | **1,143 Swift Testing tests in 125 suites + 382 XCTest (1 skipped)** — matches the figure recorded for that head on 2026-10-15 |
+| `swift test` on this branch | **1,150 in 126 suites + 387 XCTest (1 skipped), 0 failures** |
+| `ReadinessRecoveryDayUITests` (1, new), iPhone 16e, iOS 26.3.1 | **passed** (51 s), and again (54 s) starting from a day left declared |
+| The same test with `manualRecoveryDay` forced to `false` in `ReadinessModel` | **failed**, at "declaring a recovery day did not change the recommendation (now: Moderate recovery — train at reduced intensity)", and nowhere earlier |
+| `check_catalog.py --strict` on that build | the two new strings have Arabic; the 38 keys still without it are the 2026-10-15 screens' |
+
+The before run was taken from an export of `a4c5891` holding only
+`Package.swift`, `Sources` and `Tests`. Its 15 XCTest failures were all
+`NutritionBundleImportTests` and `NutritionDictionaryContractTests`, which read
+fixtures under `tools/` that the export left out; they are not counted as a
+baseline failure. The 7 + 5 new tests: `RecoveryDayStoreTests` (7) and five in
+`ReadinessEngineTests`. `BodyMeasurementTests.migrationUpgrade`'s literal list
+gained 57, as its comment asks.
+
+The UI test plants three prior days at rhr 52 / hrv 55 and today's pair at
+51 / 53, so there is a real band sentence to compare against. It reads that
+sentence off the screen rather than naming a band, because the simulator's
+database is shared and other suites' history moves the baseline. It turns the
+switch off before it reads anything and again at the end.
+
+**Not run:** the rest of the UI suite. Nothing outside Today's dashboard and
+`ReadinessModel` changed, and the Training Program reads the score, which this
+does not move.
 
 ## 2026-10-15 — Slices 7 and 9 toward done
 
