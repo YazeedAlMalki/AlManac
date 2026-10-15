@@ -96,7 +96,7 @@ struct ModulesView: View {
         case .fasting:
             FastingView(model: fastingModel)
         case .supplements:
-            SupplementView(db: db, trackingModel: trackingModel)
+            SupplementView(db: db, trackingModel: trackingModel, notificationModel: notificationModel)
         case .context:
             ContextTagsView(db: db, trackingModel: trackingModel)
         case .prayer:

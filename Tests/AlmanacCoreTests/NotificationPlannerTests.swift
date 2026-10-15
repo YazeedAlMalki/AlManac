@@ -174,6 +174,76 @@ struct NotificationPlannerTests {
         #expect(supplements.first?.title == "Time for Vitamin D")
     }
 
+    // MARK: - Supplement reminders set from the plan editor (Slice 7, 2026-10-15)
+
+    @Test("Setting a plan's reminder from the editor is enough for it to be planned")
+    func editorReminderIsPlanned() throws {
+        let planStore = SupplementPlanStore(db: db)
+        let id = try planStore.create(SupplementPlanDraft(name: "Magnesium", doseAmount: 300,
+                                                          doseUnit: "mg", frequency: "daily"))
+        #expect(!(try rules.isEnabled(.supplement)), "§5.25 seeds supplement reminders off")
+
+        try SupplementReminderSetting(db: db).set(planId: id, enabled: true, minuteOfDay: 21 * 60)
+
+        let supplements = planned(try planner.plan(), .supplement, on: day)
+        #expect(supplements.map(\.identifier) == ["almanac.supplement.\(id).\(day.value)"])
+        #expect(supplements.first?.fireAt == riyadh(21))
+    }
+
+    @Test("Turning one plan's reminder off leaves the type switch and other plans alone")
+    func editorReminderOff() throws {
+        let planStore = SupplementPlanStore(db: db)
+        let a = try planStore.create(SupplementPlanDraft(name: "A", doseAmount: 1, doseUnit: "tablet", frequency: "daily"))
+        let b = try planStore.create(SupplementPlanDraft(name: "B", doseAmount: 1, doseUnit: "tablet", frequency: "daily"))
+        let setting = SupplementReminderSetting(db: db)
+        try setting.set(planId: a, enabled: true, minuteOfDay: 20 * 60)
+        try setting.set(planId: b, enabled: true, minuteOfDay: 21 * 60)
+        try setting.set(planId: a, enabled: false, minuteOfDay: nil)
+
+        #expect(try rules.isEnabled(.supplement))
+        #expect(planned(try planner.plan(), .supplement, on: day).map(\.fireAt) == [riyadh(21)])
+    }
+
+    @Test("A discontinued plan's reminder is not planned")
+    func discontinuedPlanIsNotPlanned() throws {
+        let planStore = SupplementPlanStore(db: db)
+        let id = try planStore.create(SupplementPlanDraft(name: "Iron", doseAmount: 1,
+                                                          doseUnit: "capsule", frequency: "daily"))
+        try SupplementReminderSetting(db: db).set(planId: id, enabled: true, minuteOfDay: 20 * 60)
+        try planStore.deactivate(id: id)
+        #expect(planned(try planner.plan(), .supplement).isEmpty)
+    }
+
+    @Test("Appendix B's supplement row: a night shift, a dry fast and a confirmed IF do not suppress it")
+    func supplementSendsThroughOtherAxes() throws {
+        let scheduleId = try ShiftScheduleStore(db: db).createSchedule(ShiftScheduleDraft(name: "Nights"))
+        try ShiftScheduleStore(db: db).logOccurrence(ShiftOccurrenceDraft(
+            scheduleId: scheduleId, date: day.value, shiftType: .night,
+            shiftStartTime: riyadh(19), shiftEndTime: riyadh(23, 30),
+            expectedSleepWindowStart: riyadh(23, 45), expectedWakeTime: riyadh(7)))
+        let planStore = SupplementPlanStore(db: db)
+        let id = try planStore.create(SupplementPlanDraft(name: "Zinc", doseAmount: 1,
+                                                          doseUnit: "tablet", frequency: "daily"))
+        try SupplementReminderSetting(db: db).set(planId: id, enabled: true, minuteOfDay: 21 * 60)
+        // 21:00 is inside tonight's night shift; bedtime would be suppressed
+        // there, a supplement is not.
+        #expect(planned(try planner.plan(), .supplement, on: day).map(\.fireAt) == [riyadh(21)])
+        #expect(!NotificationSuppressionMatrix.shouldSuppress(.supplement,
+            in: NotificationSuppressionContext(isDryFastActive: true, isConfirmedIFActive: true,
+                                               isNightShift: true, isReadinessAlreadyFinal: true)))
+    }
+
+    @Test("An out-of-range reminder time is refused and changes nothing")
+    func invalidReminderTime() throws {
+        let planStore = SupplementPlanStore(db: db)
+        let id = try planStore.create(SupplementPlanDraft(name: "C", doseAmount: 1, doseUnit: "tablet", frequency: "daily"))
+        #expect(throws: (any Error).self) {
+            try SupplementReminderSetting(db: db).set(planId: id, enabled: true, minuteOfDay: 1440)
+        }
+        #expect(!(try rules.isEnabled(.supplement)))
+        #expect(try planStore.plan(id: id)?.reminderEnabled == false)
+    }
+
     @Test("Contextual hydration fires before a meal type the user actually eats")
     func contextualHydrationFromLoggedHistory() throws {
         let food = SourceIdentifier(namespace: .almanac, localID: "test-food")

@@ -19,6 +19,9 @@ import Foundation
 struct SupplementView: View {
     let db: Database
     @ObservedObject var trackingModel: TrackingCalendarModel
+    /// Re-plans notifications after a plan's reminder changes. Optional so a
+    /// preview or a test host can show the screen without one.
+    var notificationModel: NotificationModel? = nil
 
     @State private var plans: [SupplementPlan] = []
     @State private var todayEntries: [SupplementLogEntry] = []
@@ -77,12 +80,19 @@ struct SupplementView: View {
         .navigationTitle("Supplements")
         .task { reload() }
         .sheet(isPresented: $addingPlan) {
-            SupplementPlanEditor(db: db, plan: nil) { reload() }
+            SupplementPlanEditor(db: db, plan: nil) { saved() }
         }
         .sheet(item: $editingPlan) { plan in
-            SupplementPlanEditor(db: db, plan: plan) { reload() }
+            SupplementPlanEditor(db: db, plan: plan) { saved() }
         }
         .editorError($error)
+    }
+
+    private func saved() {
+        reload()
+        if let notificationModel {
+            Task { await notificationModel.reconcileNotifications() }
+        }
     }
 
     // MARK: - Adherence
@@ -246,7 +256,9 @@ struct SupplementView: View {
     private func deactivate(_ plan: SupplementPlan) {
         do {
             try SupplementPlanStore(db: db).deactivate(id: plan.id)
-            reload()
+            // A discontinued plan's reminder is no longer planned; re-plan so
+            // a request already queued with the OS is withdrawn.
+            saved()
         } catch {
             self.error = String(describing: error)
         }
