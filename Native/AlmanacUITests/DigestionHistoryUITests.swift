@@ -43,7 +43,7 @@ final class DigestionHistoryUITests: XCTestCase {
         logDefaultBowelMovement()
 
         openHistory()
-        let row = app.element("digestion.history.bristol.4")
+        let row = countRow("digestion.history.bristol.4")
         XCTAssertTrue(app.reveal(row), "the Type 4 row is missing")
         XCTAssertTrue(row.label.contains("Type 4, Smooth, soft sausage"),
                       "the Type 4 row does not carry its number and name: \(row.label)")
@@ -51,7 +51,7 @@ final class DigestionHistoryUITests: XCTestCase {
                        "the logged entry was not counted under Type 4: \(row.label)")
 
         // Grades carry their number, the scale and words, never colour alone.
-        let darkest = app.element("digestion.history.grade.8")
+        let darkest = countRow("digestion.history.grade.8")
         XCTAssertTrue(app.reveal(darkest), "the grade 8 row is missing")
         XCTAssertTrue(darkest.label.contains("Colour grade 8 of 8"), darkest.label)
         XCTAssertTrue(darkest.label.contains("dark brown"), darkest.label)
@@ -60,7 +60,7 @@ final class DigestionHistoryUITests: XCTestCase {
         let month = app.buttons["30 days"]
         XCTAssertTrue(app.reveal(month, direction: .down))
         month.tap()
-        let monthRow = app.element("digestion.history.bristol.4")
+        let monthRow = countRow("digestion.history.bristol.4")
         XCTAssertTrue(app.reveal(monthRow))
         XCTAssertGreaterThanOrEqual(count(in: monthRow.label), before + 1)
     }
@@ -71,9 +71,17 @@ final class DigestionHistoryUITests: XCTestCase {
     /// sausage, 3"). Zero when the row is absent, because then nothing was
     /// logged in the range and the screen shows its empty state instead.
     private func typeFourCount() -> Int {
-        let row = app.element("digestion.history.bristol.4")
+        let row = countRow("digestion.history.bristol.4")
         guard row.waitForExistence(timeout: 3), app.reveal(row) else { return 0 }
         return count(in: row.label)
+    }
+
+    /// A count row by identifier, of whatever element type the combined row
+    /// becomes. Not `app.element(_:)`: that picks a query type once, at the
+    /// moment it is called, and the history loads just after the screen
+    /// appears — so it fell back to a button query that never matches a row.
+    private func countRow(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
     private func count(in label: String) -> Int {
@@ -104,15 +112,25 @@ final class DigestionHistoryUITests: XCTestCase {
     }
 
     private func openHistory() {
-        let modules = app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10))
-        modules.tap()
-        // Tapping the selected tab returns its stack to the root.
-        if !app.navigationBars["Modules"].waitForExistence(timeout: 3) { modules.tap() }
+        // Already on Digestion from an earlier visit: its back button is also
+        // labelled "Modules", so a bare "Modules" query matches two buttons.
+        // Go back with the navigation bar's own button instead.
+        let digestionBar = app.navigationBars["Digestion"]
+        if digestionBar.exists {
+            digestionBar.buttons.firstMatch.tap()
+        } else {
+            let modules = app.buttons["Modules"].firstMatch
+            XCTAssertTrue(modules.waitForExistence(timeout: 10))
+            modules.tap()
+        }
         XCTAssertTrue(app.navigationBars["Modules"].waitForExistence(timeout: 5))
         let link = app.buttons["Digestion"]
         XCTAssertTrue(app.reveal(link), "Modules does not offer Digestion")
         link.tap()
         XCTAssertTrue(app.navigationBars["Digestion"].waitForExistence(timeout: 5))
+        // The counts load just after the screen appears; wait for them.
+        XCTAssertTrue(countRow("digestion.history.totals").waitForExistence(timeout: 5)
+                      || countRow("digestion.history.empty").waitForExistence(timeout: 1),
+                      "the history did not load")
     }
 }
