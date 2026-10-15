@@ -51,6 +51,14 @@ each run, and the three suites were run by name on the iPhone 16e:
 **Score after the second pass.** Slice 9: **5 of 6**. Slice 7: **7 of 8**. The
 one open item in each is an owner gate group (G1/G2; G3/G4/G5).
 
+**Arabic, 2026-10-16.** PR #20's `xcodebuild (app + widget)` job failed at
+its "Untranslated strings" step: 38 app-side strings from this branch had no
+Arabic. All 38 are now in `Native/Almanac/Localizable.xcstrings`, using the
+catalog's existing terms (موضع for a circumference point, تطبيق الصحة,
+بريستول). The two single-count strings ("%lld bowel movements", "%lld
+urinations") carry plural forms in both languages, so English also reads "1
+bowel movement". Draft translations, not reviewed by a native speaker.
+
 ### First pass (before the runtime was replaced)
 
 **Branch** `claude/slices-7-9-completion`, from master `c4b5f0a`. Done on the
@@ -144,7 +152,8 @@ leaves a row. The doc now says so. Gate G4 is still open.
 - Any UI test (simulator runtime damaged, above).
 - Supplement notification arrival on a device.
 - The new screens were compiled, not looked at: no screenshot was possible.
-- Arabic translations for the new app-side strings (core strings have Arabic).
+- The new screens in Arabic: their strings were translated on 2026-10-16
+  (above), but no one has looked at them on a phone set to Arabic.
 
 Decisions taken without the owner: `CONTEXT.md`, "Digestion and urination
 (2026-10-15)" and "Body and wellness (2026-10-15)".

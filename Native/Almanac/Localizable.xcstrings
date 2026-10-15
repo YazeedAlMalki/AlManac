@@ -51,6 +51,16 @@
         }
       }
     },
+    "%@ cm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ سم"
+          }
+        }
+      }
+    },
     "%@ could not be applied. %@": {
       "localizations": {
         "ar": {
@@ -367,6 +377,80 @@
           "stringUnit": {
             "state": "translated",
             "value": "أُضيف %lld · دون تغيير %lld"
+          }
+        }
+      }
+    },
+    "%lld bowel movements": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld bowel movement"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld bowel movements"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا حركات أمعاء"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "حركة أمعاء واحدة"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "حركتا أمعاء"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld حركات أمعاء"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld حركة أمعاء"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld حركة أمعاء"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld bowel movements · %lld urinations": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حركات الأمعاء: %lld · مرات التبوّل: %lld"
           }
         }
       }
@@ -1177,6 +1261,70 @@
         }
       }
     },
+    "%lld urinations": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld urination"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld urinations"
+                }
+              }
+            }
+          }
+        },
+        "ar": {
+          "variations": {
+            "plural": {
+              "zero": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "لا مرات تبوّل"
+                }
+              },
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "مرة تبوّل واحدة"
+                }
+              },
+              "two": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "مرتا تبوّل"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مرات تبوّل"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مرة تبوّل"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld مرة تبوّل"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld were not laboratory lines": {
       "localizations": {
         "ar": {
@@ -1357,6 +1505,36 @@
         }
       }
     },
+    "30 days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "٣٠ يومًا"
+          }
+        }
+      }
+    },
+    "7 days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "٧ أيام"
+          }
+        }
+      }
+    },
+    "90 days": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "٩٠ يومًا"
+          }
+        }
+      }
+    },
     "@ %@ kg": {
       "localizations": {
         "ar": {
@@ -1463,6 +1641,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الخطة التي تتوقف عنها تُحفَظ ولا تُحذَف، فيبقى سجلها مرتبطًا بها."
+          }
+        }
+      }
+    },
+    "A reading already sent to Apple Health keeps its Health copy as it was.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القراءة التي أُرسلت إلى تطبيق الصحة تبقى نسختها هناك كما كانت."
           }
         }
       }
@@ -1645,6 +1833,16 @@
         }
       }
     },
+    "Add a point": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة موضع"
+          }
+        }
+      }
+    },
     "Add a tag or a note before saving.": {
       "localizations": {
         "ar": {
@@ -1711,6 +1909,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "إضافة خطة"
+          }
+        }
+      }
+    },
+    "Add point": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أضف الموضع"
           }
         }
       }
@@ -2435,6 +2643,16 @@
         }
       }
     },
+    "Bowel movements": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حركات الأمعاء"
+          }
+        }
+      }
+    },
     "Bristol type": {
       "localizations": {
         "ar": {
@@ -2461,6 +2679,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "تصفّح التمارين"
+          }
+        }
+      }
+    },
+    "Built-in points": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المواضع المدمجة"
+          }
+        }
+      }
+    },
+    "By Bristol type": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حسب نوع بريستول"
+          }
+        }
+      }
+    },
+    "By colour": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حسب اللون"
+          }
+        }
+      }
+    },
+    "By urine colour grade": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حسب درجة لون البول"
           }
         }
       }
@@ -3095,6 +3353,16 @@
         }
       }
     },
+    "Count": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العدد"
+          }
+        }
+      }
+    },
     "Create a report, then record its results exactly as reported.": {
       "localizations": {
         "ar": {
@@ -3501,6 +3769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الهضم: %@"
+          }
+        }
+      }
+    },
+    "Digestion history could not be read.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تعذّرت قراءة سجل الهضم."
           }
         }
       }
@@ -4091,6 +4369,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "أُدخلت الساعة %@"
+          }
+        }
+      }
+    },
+    "Entries per day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الإدخالات في اليوم"
           }
         }
       }
@@ -4885,12 +5173,32 @@
         }
       }
     },
+    "Hiding a point keeps its readings. Owner points are in centimetres and have no sides.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إخفاء موضع يُبقي قراءاته. المواضع التي تضيفها بنفسك بالسنتيمتر وبلا جانبين."
+          }
+        }
+      }
+    },
     "High confidence": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "ثقة عالية"
+          }
+        }
+      }
+    },
+    "History": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السجل"
           }
         }
       }
@@ -5441,6 +5749,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "اترك الحقل فارغًا لتسجيله كغير منفَّذ. الفراغ ليس صفرًا."
+          }
+        }
+      }
+    },
+    "Left": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأيسر"
           }
         }
       }
@@ -6185,6 +6503,16 @@
         }
       }
     },
+    "Name, for example forearm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الاسم، مثلًا الساعد"
+          }
+        }
+      }
+    },
     "Name, if known": {
       "localizations": {
         "ar": {
@@ -6301,6 +6629,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا"
+          }
+        }
+      }
+    },
+    "No %@ readings in the last year.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا قراءات لـ %@ في السنة الماضية."
           }
         }
       }
@@ -6601,6 +6939,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا درجة جاهزية لليوم، فلا شيء يُخفَّض على أساسه. يسير اليوم كما هو مكتوب."
+          }
+        }
+      }
+    },
+    "No readings for this point in the last year.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا قراءات لهذا الموضع في السنة الماضية."
           }
         }
       }
@@ -7165,6 +7513,16 @@
         }
       }
     },
+    "Nothing recorded in this range.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا شيء مسجّل في هذا النطاق."
+          }
+        }
+      }
+    },
     "Nothing recorded in this window yet.": {
       "localizations": {
         "ar": {
@@ -7601,6 +7959,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الخطط"
+          }
+        }
+      }
+    },
+    "Points and charts": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المواضع والرسوم"
           }
         }
       }
@@ -8085,6 +8453,16 @@
         }
       }
     },
+    "Raise target to %lld mL": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ارفع الهدف إلى %lld مل"
+          }
+        }
+      }
+    },
     "Ramadan": {
       "localizations": {
         "ar": {
@@ -8485,12 +8863,32 @@
         }
       }
     },
+    "Remind me": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ذكّرني"
+          }
+        }
+      }
+    },
     "Remind me to drink water": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
             "value": "ذكّرني بشرب الماء"
+          }
+        }
+      }
+    },
+    "Reminder": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التذكير"
           }
         }
       }
@@ -8861,6 +9259,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "الإيقاع"
+          }
+        }
+      }
+    },
+    "Right": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأيمن"
           }
         }
       }
@@ -10265,6 +10673,16 @@
         }
       }
     },
+    "There is already a point with that name.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوجد موضع بهذا الاسم بالفعل."
+          }
+        }
+      }
+    },
     "There is no readiness score for today yet, so there is nothing to scale by. The day runs as written either way.": {
       "localizations": {
         "ar": {
@@ -10783,6 +11201,16 @@
         }
       }
     },
+    "Turning a reminder on also turns on supplement reminders in Reminders.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تفعيل التذكير يفعّل أيضًا تذكيرات المكمّلات في التذكيرات."
+          }
+        }
+      }
+    },
     "Twenty minutes before Fajr, on religious fast days.": {
       "localizations": {
         "ar": {
@@ -10999,6 +11427,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "سُجّل التبوّل"
+          }
+        }
+      }
+    },
+    "Urination · %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التبوّل · %@"
+          }
+        }
+      }
+    },
+    "Urinations": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مرات التبوّل"
+          }
+        }
+      }
+    },
+    "Urine colour": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لون البول"
           }
         }
       }
@@ -11513,6 +11971,16 @@
         }
       }
     },
+    "Your points": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مواضعك"
+          }
+        }
+      }
+    },
     "Your rule holds %@ kg — the condition was not met.": {
       "localizations": {
         "ar": {
@@ -11539,6 +12007,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "في %lld من %lld يومًا · %@"
+          }
+        }
+      }
+    },
+    "blood recorded": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سُجّل وجود دم"
+          }
+        }
+      }
+    },
+    "cm": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سم"
           }
         }
       }
