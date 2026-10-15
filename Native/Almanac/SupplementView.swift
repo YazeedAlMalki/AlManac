@@ -49,7 +49,10 @@ struct SupplementView: View {
             }
 
             Section {
-                if plans.filter(\.isActive).isEmpty {
+                // Keyed to "no plans at all", not "no active plans": a person
+                // whose only plan is discontinued still has that plan and its
+                // history, and the old check hid it behind an empty state.
+                if plans.isEmpty {
                     Text("No supplement plans yet. Add one to start tracking adherence.")
                         .font(AlmanacTypography.font(.body))
                         .foregroundStyle(AlmanacPalette.textSecondary)
