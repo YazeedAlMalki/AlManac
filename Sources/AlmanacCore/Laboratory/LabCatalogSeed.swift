@@ -2,11 +2,10 @@ import Foundation
 
 /// The seeded catalog for this slice.
 ///
-/// Identity is Almanac's own and stable: `almanac:lab.<family>.<form>`. No
-/// external code is seeded, because none has been verified against its issuing
-/// system — `lab_catalog_external_code` exists and carries a `verified` flag so
-/// codes can be added once checked, and an unverified code is never used for
-/// matching.
+/// Identity is Almanac's own and stable: `almanac:lab.<family>.<form>`.
+/// External codes are LOINC only, each checked before it was seeded and stored
+/// with LOINC's own name (`LabLOINCSeed`, owner G5, 2026-10-16); an unverified
+/// code is never used for matching.
 ///
 /// Vitamin families are enumerated by **distinct measurable form**, not by
 /// family name. "Vitamin D" is not one analyte: 25-OH D total, 25-OH D2,
@@ -536,5 +535,6 @@ public enum LabCatalogSeed {
         for panel in panels {
             try catalog.createPanel(id: panel.id, name: panel.name, analyteIDs: panel.members)
         }
+        try LabLOINCSeed.seed(into: catalog)
     }
 }

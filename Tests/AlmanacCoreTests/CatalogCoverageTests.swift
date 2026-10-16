@@ -140,11 +140,43 @@ final class CatalogCoverageTests: XCTestCase {
         XCTAssertEqual(clashes, [], "an ambiguous alias would make matching arbitrary")
     }
 
-    func testNoExternalCodeIsSeeded() throws {
-        let (db, _) = try seeded()
-        let n = Int(try db.query("SELECT COUNT(*) AS n FROM lab_catalog_external_code;")
-                        .first?.int("n") ?? 0)
-        XCTAssertEqual(n, 0, "no external code is seeded unverified")
+    /// Owner, G5, 2026-10-16: verified LOINC codes. Every seeded code is
+    /// verified, is LOINC, names a real analyte, carries LOINC's own name (the
+    /// licence requires one), and identifies exactly one analyte.
+    func testSeededExternalCodesAreVerifiedLOINCWithTheirNames() throws {
+        let (db, catalog) = try seeded()
+        let rows = try db.query("""
+            SELECT analyte_id, system, code, verified, verified_by, display_name
+            FROM lab_catalog_external_code;
+            """)
+        XCTAssertEqual(rows.count, LabLOINCSeed.codes.count)
+        XCTAssertGreaterThan(rows.count, 150)
+        let analyteIDs = Set(LabCatalogSeed.all.map(\.id))
+        for row in rows {
+            let code = row.string("code") ?? "?"
+            XCTAssertEqual(row.string("system"), "loinc", code)
+            XCTAssertEqual(row.int("verified"), 1, "\(code) is seeded unverified")
+            XCTAssertEqual(row.string("verified_by"), LabLOINCSeed.verifiedBy, code)
+            XCTAssertFalse((row.string("display_name") ?? "").isEmpty, "\(code) has no LOINC name")
+            XCTAssertTrue(analyteIDs.contains(row.string("analyte_id") ?? ""), "\(code) names no analyte")
+            XCTAssertNotNil(try catalog.matchExternalCode(system: "loinc", code: code),
+                            "\(code) does not resolve to exactly one analyte")
+        }
+        XCTAssertEqual(Set(LabLOINCSeed.codes.map(\.code)).count, LabLOINCSeed.codes.count,
+                       "a LOINC code is listed twice")
+        XCTAssertEqual(try catalog.matchExternalCode(system: "loinc", code: "2276-4")?.analyteID,
+                       "almanac:lab.iron.ferritin")
+        XCTAssertEqual(try catalog.matchExternalCode(system: "loinc", code: "8099-4")?.analyteID,
+                       "almanac:lab.thyroid.tpo-antibodies")
+        XCTAssertNil(try catalog.matchExternalCode(system: "loinc", code: "56536-6"),
+                     "thyroglobulin antibodies must not match TPO antibodies")
+    }
+
+    func testLOINCIsCreditedWithTheNoticeItsLicenceRequires() throws {
+        XCTAssertTrue(AttributionCatalog.bundledSourceIds.contains("loinc"))
+        let entry = try XCTUnwrap(AttributionCatalog.entry(for: "loinc"))
+        XCTAssertTrue(entry.sourceNotice?.hasPrefix("This material contains content from LOINC (http://loinc.org).") == true)
+        XCTAssertTrue(entry.sourceNotice?.contains("available at no cost under the license at http://loinc.org/license") == true)
     }
 
     func testLocalizationIsStoredPerLocale() throws {

@@ -28,7 +28,7 @@ body-composition and custom measurements and accepts manual values.
 | Lab unit conversion and re-test suggestion | **Built in core**, not on a screen — `laboratory.md` §8a–8b |
 | Progress photos (gate G3) | **Closed 2026-10-16: still later** (owner). Deferred, as on 2026-09-16; not built |
 | Lab import-job failure row (gate G4) | **Closed 2026-10-16: yes, keep a record** (owner). Built in `d21d9a9`; not changed |
-| Verified LOINC codes (gate G5) | **Owner gate open.** None seeded |
+| Verified LOINC codes (gate G5) | **Closed 2026-10-16: yes** (owner). 163 verified codes seeded; see `docs/features/laboratory-catalog-coverage.md` |
 | The two failing UI tests | **Pass** on a wiped simulator (2026-10-15). The discontinue test had found a real bug — the only plan, once discontinued, was hidden behind the empty state — fixed in `SupplementView` |
 
 Decisions taken without the owner are in `CONTEXT.md`, "Body and wellness

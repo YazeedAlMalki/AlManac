@@ -175,7 +175,7 @@ tracked below, not implied.
 | Homocysteine | **Seeded in 0.4**, in chemistry |
 | Vitamin D binding protein, free 25-OH D | **Seeded in 0.4** |
 | Urinalysis | **Seeded in 0.4** — ten dipstick analytes and a panel |
-| Verified LOINC codes | **none** — licensing unresolved; the table and `verified` flag are ready. **Owner gate G5, open (2026-10-15)** |
+| Verified LOINC codes | **Seeded 2026-10-16: 163 codes for 91 of the 94 analytes** (owner, G5: licence accepted). `LabLOINCSeed`: each code checked against the NLM LOINC lookup and stored with its LOINC long common name, as the licence requires; credited on the Attributions page. None for beta-carotene, free 25-OH D or EGRAC, which LOINC has no exact code for. One draft code (56536-6, thyroglobulin antibodies) was caught by the check and dropped |
 | Reference intervals in the catalog | **out of scope by decision** — ranges are preserved as the source printed them; no catalog fallback is applied |
 
 ## Folding a percent sign

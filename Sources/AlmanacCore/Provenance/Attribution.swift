@@ -85,6 +85,8 @@ public enum AttributionCatalog {
         url: "https://unlicense.org/")
     public static let mit = LicenseReference(name: "MIT",
         url: "https://opensource.org/license/mit")
+    public static let loincLicense = LicenseReference(name: "LOINC License",
+        url: "https://loinc.org/license")
     /// For a source credited without a licence anyone has identified. Its link
     /// is the work itself, because there is no licence page to link to. Used
     /// rather than borrowing an open licence the source never granted; the
@@ -97,7 +99,7 @@ public enum AttributionCatalog {
     /// matching `entries` row fails `AttributionAudit`.
     public static let bundledSourceIds: [String] = [
         "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd",
-        "bristol-stool-form-scale"
+        "bristol-stool-form-scale", "loinc"
     ]
 
     public static let entries: [Attribution] = [
@@ -186,6 +188,22 @@ public enum AttributionCatalog {
                 + "each is shortened from the published descriptions.",
             sourceNotice: "Lewis SJ, Heaton KW. Stool form scale as a useful guide to intestinal "
                 + "transit time. Scandinavian Journal of Gastroenterology. 1997;32(9):920–924."
+        ),
+        // The LOINC codes the lab catalog matches on (`LabLOINCSeed`). The owner
+        // accepted the LOINC licence on 2026-10-16 (G5). The notice is the one
+        // the licence requires of a product that incorporates LOINC content,
+        // verbatim from https://loinc.org/kb/license/.
+        Attribution(
+            sourceId: "loinc",
+            title: "LOINC codes and names for laboratory tests",
+            author: "Regenstrief Institute, Inc. and the LOINC Committee",
+            sourceURL: "https://loinc.org",
+            licenses: [loincLicense],
+            sourceNotice: "This material contains content from LOINC (http://loinc.org). LOINC is "
+                + "copyright © Regenstrief Institute, Inc. and the Logical Observation Identifiers "
+                + "Names and Codes (LOINC) Committee and is available at no cost under the license at "
+                + "http://loinc.org/license. LOINC® is a registered United States trademark of "
+                + "Regenstrief Institute, Inc."
         )
     ]
 
