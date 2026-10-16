@@ -2803,6 +2803,16 @@
         }
       }
     },
+    "Caffeine (mg, optional)": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكافيين (ملغ، اختياري)"
+          }
+        }
+      }
+    },
     "Calculation": {
       "localizations": {
         "ar": {

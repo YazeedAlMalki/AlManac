@@ -74,6 +74,29 @@ final class DrinkCaffeineTests: XCTestCase {
         XCTAssertEqual(CatalogDrinks.byID("catalog_water")?.caffeineMilligrams, 0)
     }
 
+    /// A drink the person adds can carry caffeine too (Migration 064): it is
+    /// saved, read back, and recorded when logged, scaled like the catalog's.
+    func testACustomDrinksCaffeineIsKeptAndRecorded() throws {
+        let db = try makeDB()
+        let saved = try service(db).saveCustomDrink(name: "Gahwa", liquidType: .coffee, volumeMilliliters: 60,
+                                                    caloriesKcal: 1, sodiumMilligrams: 0, caffeineMilligrams: 30)
+
+        let read = try XCTUnwrap(service(db).customDrinks().first { $0.id == saved.id })
+        XCTAssertEqual(read.caffeineMilligrams, 30)
+
+        try service(db).logDrink(read, volume: Milliliters(120), at: at("16:00"))
+        XCTAssertEqual(try caffeine(db).map(\.caffeineMg), [60])
+    }
+
+    func testACustomDrinkSavedWithoutCaffeineRecordsNone() throws {
+        let db = try makeDB()
+        let saved = try service(db).saveCustomDrink(name: "Laban", liquidType: .milk, volumeMilliliters: 250,
+                                                    caloriesKcal: 120, sodiumMilligrams: 100)
+        XCTAssertEqual(try service(db).customDrinks().first { $0.id == saved.id }?.caffeineMilligrams, 0)
+        try service(db).logDrink(saved, at: at("13:00"))
+        XCTAssertTrue(try caffeine(db).isEmpty)
+    }
+
     // MARK: - Judged against intended sleep
 
     /// The BRD's own example: 8 AM coffee is late for a night-shift worker

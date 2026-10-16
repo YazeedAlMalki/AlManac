@@ -189,10 +189,11 @@ final class HydrationModel: ObservableObject {
     @discardableResult
     func saveCustomDrink(name: String, liquidType: LiquidType, volumeMilliliters: Double,
                          caloriesKcal: Double, sodiumMilligrams: Double,
-                         sugarGrams: Double?) throws -> Drink {
+                         sugarGrams: Double?, caffeineMilligrams: Double) throws -> Drink {
         let drink = try loggingService().saveCustomDrink(
             name: name, liquidType: liquidType, volumeMilliliters: volumeMilliliters,
-            caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams, sugarGrams: sugarGrams)
+            caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams, sugarGrams: sugarGrams,
+            caffeineMilligrams: caffeineMilligrams)
         objectWillChange.send()
         return drink
     }

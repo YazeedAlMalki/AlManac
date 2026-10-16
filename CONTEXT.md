@@ -798,10 +798,12 @@ the caffeine is derived from the drink, not a record of its own. *Overrule by:*
 fixed bedtime is assumed in its place, as `ShiftScheduleStore.intendedSleepTimestamp`
 already chose. *Overrule by:* a fallback sleep time in `HydrationLoggingService.logDrink`.
 
-**A custom drink carries no caffeine yet.** Its form and table have no caffeine
-field, and catalog presets cannot be edited (BRD §6.2 "editable"). Left open,
-listed in the audit. *Overrule by:* adding the field to `hydration_drink` and the
-custom-drink form.
+**A custom drink's caffeine is optional and starts at 0.** "Caffeine (mg,
+optional)" on the new-drink form (Migration 064); left blank it is 0, and every
+custom drink saved before reads 0, which is what was recorded for it. Catalog
+presets still cannot be edited (BRD §6.2 "editable"); adding your own drink is
+the way to a different figure. *Overrule by:* `caffeine_mg`'s default in
+Migration 064, or per-drink overrides of `CatalogDrinks`.
 
 ### Weighing
 

@@ -90,24 +90,28 @@ public struct HydrationLoggingService: Sendable {
     @discardableResult
     public func saveCustomDrink(name: String, liquidType: LiquidType, volumeMilliliters: Double,
                                  caloriesKcal: Double, sodiumMilligrams: Double,
-                                 sugarGrams: Double? = nil) throws -> Drink {
+                                 sugarGrams: Double? = nil, caffeineMilligrams: Double = 0) throws -> Drink {
         let drink = Drink(name: name, liquidType: liquidType, volumeMilliliters: volumeMilliliters,
                            caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams,
-                           sugarGrams: sugarGrams, isCustom: true, valueQualifier: .userEntered)
+                           sugarGrams: sugarGrams, caffeineMilligrams: caffeineMilligrams,
+                           isCustom: true, valueQualifier: .userEntered)
         try store.db.run("""
-        INSERT INTO hydration_drink (id, name, liquid_type, volume_ml, calories_kcal, sodium_mg, sugar_g, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO hydration_drink (id, name, liquid_type, volume_ml, calories_kcal, sodium_mg, sugar_g, created_at,
+                                     caffeine_mg)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             name          = excluded.name,
             liquid_type   = excluded.liquid_type,
             volume_ml     = excluded.volume_ml,
             calories_kcal = excluded.calories_kcal,
             sodium_mg     = excluded.sodium_mg,
-            sugar_g       = excluded.sugar_g;
+            sugar_g       = excluded.sugar_g,
+            caffeine_mg   = excluded.caffeine_mg;
         """, [
             .text(drink.id), .text(drink.name), .text(drink.liquidType.rawValue),
             .real(drink.volumeMilliliters), .real(drink.caloriesKcal), .real(drink.sodiumMilligrams),
-            drink.sugarGrams.map { SQLValue.real($0) } ?? .null, .text(iso(drink.createdAt))
+            drink.sugarGrams.map { SQLValue.real($0) } ?? .null, .text(iso(drink.createdAt)),
+            .real(drink.caffeineMilligrams)
         ])
         return drink
     }
@@ -122,7 +126,7 @@ public struct HydrationLoggingService: Sendable {
             else { return nil }
             return Drink(id: id, name: name, liquidType: liquidType, volumeMilliliters: volume,
                          caloriesKcal: calories, sodiumMilligrams: sodium, sugarGrams: row.double("sugar_g"),
-                         isCustom: true, valueQualifier: .userEntered, createdAt: createdAt)
+                         caffeineMilligrams: row.double("caffeine_mg") ?? 0, isCustom: true, valueQualifier: .userEntered, createdAt: createdAt)
         }
     }
 

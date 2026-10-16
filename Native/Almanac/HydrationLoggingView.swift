@@ -243,6 +243,7 @@ struct CustomDrinkView: View {
     @State private var caloriesText = ""
     @State private var sodiumText = ""
     @State private var sugarText = ""
+    @State private var caffeineText = ""
     @State private var error: String?
     var onSave: (Drink) -> Void
 
@@ -262,6 +263,8 @@ struct CustomDrinkView: View {
                     TextField("Calories (kcal)", text: $caloriesText).keyboardType(.numberPad)
                     TextField("Sodium (mg)", text: $sodiumText).keyboardType(.numberPad)
                     TextField("Sugar (g, optional)", text: $sugarText).keyboardType(.decimalPad)
+                    TextField("Caffeine (mg, optional)", text: $caffeineText).keyboardType(.decimalPad)
+                        .accessibilityIdentifier("custom-drink-caffeine")
                 } header: {
                     Text("Nutrition")
                 } footer: {
@@ -295,7 +298,8 @@ struct CustomDrinkView: View {
                 liquidType: type, volumeMilliliters: volume,
                 caloriesKcal: Double(userInput: caloriesText) ?? 0,
                 sodiumMilligrams: Double(userInput: sodiumText) ?? 0,
-                sugarGrams: Double(userInput: sugarText))
+                sugarGrams: Double(userInput: sugarText),
+                caffeineMilligrams: max(0, Double(userInput: caffeineText) ?? 0))
             onSave(drink)
             dismiss()
         } catch {
