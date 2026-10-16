@@ -635,6 +635,14 @@ readiness and 22:30 for bedtime. *Overrule by:* the `?? fallbackTime(…)` in
 `NotificationPlanner.appendReadiness` / `appendBedtime`, and
 `NotificationSettingsView.firstMinute(for:)`.
 
+**"Which fasts do you keep?" is a card on Today, not a screen before the app.**
+The owner chose "ask me first" (T02). There is no first-run screen in the app,
+and a sheet over the first launch would stand in front of every UI test on a
+fresh simulator. Today is the first screen, so the card is the first thing seen;
+it stays until answered, and until then Ramadan stays on. *Overrule by:* moving
+`FastsQuestionCard` (`Native/Almanac/FastingViews.swift`) into a sheet presented
+from `AlmanacApp` while `FastingModel.needsFastsQuestion` is true.
+
 **A backup from before document checksums still restores.** Bundles written
 before 2026-10-16 have no `sha256` column in `bundle_files`; their database is
 checked and their documents cannot be. A bundle that has the column and a

@@ -42,6 +42,16 @@ Three defects that derivation removes:
 - **The calendar date, not the logical day.** Riyadh's Fajr is 03:35 in June,
   before the 04:00 boundary, so the fast was looked for under the previous day.
 
+**Which fasts do you keep? (owner, T02, 2026-10-16: "ask me first").** Today
+shows a card asking about Ramadan, Mondays and Thursdays and the White Days until
+it is answered; Ramadan starts on, the other two off. Saving sets all three
+switches (`FastingCoordinator.answerFastsQuestion`) and records the answer in
+`fasts_question` (Migration 059), so it is not asked again, and a restored backup
+does not ask again either. The same switches stay on the Fasting screen. Until
+it is answered the defaults stand, so Ramadan is still observed. Tests:
+`ReligiousFastingDerivationTests.fastsQuestion`,
+`FastsQuestionUITests.testTodayAsksWhichFastsAndDoesNotAskAgain`.
+
 **A fast left open for two or more days stayed open for good** (found
 2026-10-16). `refresh` re-derived only yesterday and today, so a fast begun on a
 day the app was then not opened for two days was never closed, or was ended at

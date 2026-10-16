@@ -159,7 +159,8 @@ struct AlmanacApp: App {
                 trainingModel: trainingModel,
                 hydrationModel: hydrationModel,
                 nutritionModel: nutritionModel,
-                trackingModel: trackingModel
+                trackingModel: trackingModel,
+                fastingModel: fastingModel
             )
         case .trends:
             // Deliberately *not* wrapped in the coordinator's stack. Trends brings
@@ -405,6 +406,11 @@ final class LaboratoryModel: ObservableObject {
             // it starts from. See `ShiftSeedPlan`.
             if let plan = ShiftSeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
                 try plan.apply(into: db, now: Date(), timeModel: TimeModel(timeZone: .current))
+            }
+            // Same two gates: a UI test asks to see "Which fasts do you keep?"
+            // again, whatever an earlier run answered.
+            if ProcessInfo.processInfo.arguments.contains(FastingCoordinator.askFastsAgainArgument) {
+                try FastingCoordinator(db: db).forgetFastsQuestionAnswer()
             }
             #endif
             startupError = nil

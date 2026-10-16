@@ -91,6 +91,30 @@ struct ReligiousFastingDerivationTests {
                 == ramadan.count)
     }
 
+    @Test("Which fasts do you keep: asked until answered, and the answer sets all three")
+    func fastsQuestion() throws {
+        let c = coordinator(at: at(12))
+        try c.refresh()
+        #expect(try c.needsFastsQuestion())
+        #expect(try schedules.isRamadanEnabled(), "until answered, Ramadan stays on")
+
+        try c.answerFastsQuestion(ramadan: false, mondaysAndThursdays: true, whiteDays: false)
+
+        #expect(try !c.needsFastsQuestion())
+        #expect(try !schedules.isRamadanEnabled())
+        #expect(try schedules.isRecurringEnabled(ReligiousFastScheduleStore.monThu))
+        #expect(try !schedules.isRecurringEnabled(ReligiousFastScheduleStore.whiteDays))
+        // Thursday the 17th is now a fast day by the answer alone.
+        #expect(try schedules.isFastDay(day))
+
+        // Answering again changes the switches; the question stays answered.
+        try c.answerFastsQuestion(ramadan: true, mondaysAndThursdays: false, whiteDays: true)
+        #expect(try !c.needsFastsQuestion())
+        #expect(try schedules.isRamadanEnabled())
+        #expect(try !schedules.isRecurringEnabled(ReligiousFastScheduleStore.monThu))
+        #expect(try schedules.isRecurringEnabled(ReligiousFastScheduleStore.whiteDays))
+    }
+
     @Test("A Ramadan day really is a fast day once the schedule exists")
     func ramadanDayIsAFastDay() throws {
         let range = try #require(ReligiousFastScheduleStore.ramadanRange(hijriYear: 1448))

@@ -145,6 +145,39 @@ public struct FastingCoordinator: @unchecked Sendable {
         try refresh(at: now)
     }
 
+    // MARK: - Which fasts the person keeps (owner, T02, 2026-10-16)
+
+    /// True until the person has said which fasts they keep. Until then the
+    /// defaults stand (Ramadan on, the two standing rules off).
+    public func needsFastsQuestion() throws -> Bool {
+        try db.query("SELECT 1 AS n FROM fasts_question WHERE id = 'local';").isEmpty
+    }
+
+    /// The answer to "Which fasts do you keep?": the three switches set at once,
+    /// today re-derived, and the question not asked again. Answering again (from
+    /// a screen that offers it) changes the switches and keeps the first date.
+    public func answerFastsQuestion(ramadan: Bool, mondaysAndThursdays: Bool, whiteDays: Bool,
+                                    at now: Date? = nil) throws {
+        let instant = now ?? clock.now
+        try db.transaction {
+            try schedules.setRamadanEnabled(ramadan, asOf: calendarDate(instant))
+            try schedules.setRecurringEnabled(ReligiousFastScheduleStore.monThu, enabled: mondaysAndThursdays)
+            try schedules.setRecurringEnabled(ReligiousFastScheduleStore.whiteDays, enabled: whiteDays)
+            try db.run("INSERT INTO fasts_question (id, answeredAt) VALUES ('local', ?) ON CONFLICT(id) DO NOTHING;",
+                       [.text(ISO8601DateFormatter().string(from: instant))])
+        }
+        try refresh(at: instant)
+    }
+
+    /// The launch argument a UI test passes to be asked again: the simulator's
+    /// database is shared across runs, so an earlier answer would hide the card.
+    public static let askFastsAgainArgument = "-AlmanacAskFastsAgain"
+
+    /// Forgets that the question was answered. The switches are left as they are.
+    public func forgetFastsQuestionAnswer() throws {
+        try db.run("DELETE FROM fasts_question;")
+    }
+
     // MARK: - Reading
 
     public func day(_ date: String) throws -> ReligiousFastDay {

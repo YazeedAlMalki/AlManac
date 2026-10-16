@@ -2183,6 +2183,16 @@
         }
       }
     },
+    "Almanac follows these for fasting, suhoor and iftar reminders. You can change them on the Fasting screen." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعتمد Almanac عليها في الصيام وتذكيرات السحور والإفطار. يمكنك تغييرها من شاشة الصيام."
+          }
+        }
+      }
+    },
     "Almanac has not been allowed to send notifications on this device, so nothing is queued. Turn reminders on to be asked.": {
       "localizations": {
         "ar": {
@@ -11857,6 +11867,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "أين؟"
+          }
+        }
+      }
+    },
+    "Which fasts do you keep?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الصيام الذي تلتزم به؟"
           }
         }
       }

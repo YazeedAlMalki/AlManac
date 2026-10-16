@@ -8,6 +8,7 @@ struct ReadinessDashboardView: View {
     @ObservedObject var hydrationModel: HydrationModel
     @ObservedObject var nutritionModel: NutritionModel
     @ObservedObject var trackingModel: TrackingCalendarModel
+    @ObservedObject var fastingModel: FastingModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -31,6 +32,9 @@ struct ReadinessDashboardView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: AlmanacMetrics.sectionGap) {
                     masthead
+                    if fastingModel.needsFastsQuestion {
+                        FastsQuestionCard(model: fastingModel)
+                    }
                     readinessCard
                     recommendation
                     recoveryDay
