@@ -338,3 +338,22 @@ are pinned by `Religious fasting, derived` and `Prayer times, completed`.
 | 8.10 | Suhoor and iftar notifications arrive | **UNRUN** — device-only, §4.1 |
 | 8.11 | The widget shows the iftar countdown on a fast day | **UNRUN** — not placed on a home screen |
 | 8.12 | "Use current location" with a real GPS fix | **UNRUN** — the simulator has no fix set |
+
+## 9. Scenario A4 — phone migration (BRD Appendix A, 2026-10-16)
+
+The BRD's ten steps, each with what drives it. Core rows passed in CI at
+`76ed79b` (run 38927873088). The UI rows are `PhoneMigrationUITests`, added on
+2026-10-16; they stay UNRUN until a CI run reports them.
+
+| # | Step | Mark |
+|---|---|---|
+| 9.1 | Export: one file with the data, documents, manifest and checksums, shared as a ZIP | **PASS** (core) — `BackupBundleTests.testBundleRoundTripsDatabaseAndDocuments`, `BackupZipperTests.testZipEnvelopeRoundTripsBundle`, `testExportedZipOpensWithSystemUnzip`. UI: **UNRUN**, `PhoneMigrationUITests` (Create backup, Share latest backup offered). Progress photos are not in v1 (G3), so "photos" are the laboratory documents |
+| 9.2 | New install | **UNRUN** — a UI test cannot uninstall its own app; the restore is made over the same install. Device: `docs/device-checklist.md`, check 3 |
+| 9.3 | The archive validates; corrupt or unsupported is refused | **PASS** (core) — `testCorruptAndMissingFilesAreRejected`, `testTamperedDatabasePayloadIsRejectedBeforeMutating`, `testTamperedDocumentIsRejectedBeforeAnythingIsWritten`, `testSchemaVersionGateRejectsMismatchedBundleBeforeMutating`, `BackupZipperTests.testUnzipRejectsPayloadCorruption`; the screen offers no Restore on an older version's backup (`BackupView`) |
+| 9.4 | A restore summary is shown | **UNRUN** — `PhoneMigrationUITests` asserts the row is listed and "Replace your records?" is asked before anything changes |
+| 9.5 | Transactional; a simulated failure rolls back with nothing partial | **PASS** (core) — `testDocumentWriteFailureLeavesTheTargetDocumentsUntouched`, `testRollbackRemovesNewDocumentDirectories`, `testValidButNonAlmanacDatabaseIsRejectedBeforeDocumentsCommit` |
+| 9.6 | App-owned ids preserved; no duplicates | **PASS** (core) — `testRestoreReplacesDatabaseWholesaleAndLeavesExtraFiles`, `SyncAndBackupTests.testRestoreReplacesTargetContentsWithSnapshot`. UI: **UNRUN**, `PhoneMigrationUITests` (the backup's profile comes back, the later change does not) |
+| 9.7 | HealthKit permissions asked again | **UNRUN** — device only |
+| 9.8 | HealthKit reconciles separately; cached samples not treated as app-owned | **UNRUN** — device only. Core: `RestoreHealthReconcileTests` |
+| 9.9 | No duplicate workouts or measurements after the resync | **PASS** (core) — `RestoreHealthReconcileTests.testResyncAfterRestoreDuplicatesNoSampleSharingAnIdentifier` (health samples, water, body measurements, vitals). Workouts and sleep are not covered by it. Device: **UNRUN** |
+| 9.10 | Notifications rebuilt where technical | **UNRUN** — the app reconciles its queue on launch (`NotificationModel.reconcileNotifications`); delivery is device only |
