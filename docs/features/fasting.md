@@ -42,6 +42,13 @@ Three defects that derivation removes:
 - **The calendar date, not the logical day.** Riyadh's Fajr is 03:35 in June,
   before the 04:00 boundary, so the fast was looked for under the previous day.
 
+**A fast left open for two or more days stayed open for good** (found
+2026-10-16). `refresh` re-derived only yesterday and today, so a fast begun on a
+day the app was then not opened for two days was never closed, or was ended at
+the next fast day's Fajr when it yielded. `refresh` now closes it first, at its
+own Maghrib. Tests: `olderOpenFastIsClosedAtItsOwnMaghrib`,
+`olderOpenFastIsNotEndedByTheNextFast`.
+
 **Logging never reached the rules.** `FastingAwareNutritionLog` and
 `FastingAwareHydrationLog` existed and nothing called them; a logged lunch never
 ended a fast. Every write path now goes through them — food logging and delete,

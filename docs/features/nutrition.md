@@ -123,6 +123,13 @@ primary name. Names are folded once, at import.
 
 - **Almanac-native foods** — the pipeline slot and group N exist, and §9
   authoring is built; the Saudi/Gulf dish data itself does not exist.
+  **On hold (owner, 2026-10-06; recorded here 2026-10-16):** Slice 8's
+  regional food data, and Slice 4's calorie-burn (MET) and exercise-library
+  data, wait while the owner builds his own data first. The fallback if that
+  fails is the licensed sources, started by three emails (SFDA; the
+  Compendium authors; yuhonas/wrkout). They stay the fallback and are not to
+  be drafted or sent meanwhile. Also in `docs/almanac-technical-spec-v1_0.md`
+  §11 and `docs/features/training.md`.
 - SR Legacy, FNDDS, Branded Foods, Frida, Oman FCT 2024.
 - **Per-food Atwater factors** (v2).
 

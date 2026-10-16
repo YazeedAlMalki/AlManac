@@ -1,5 +1,6 @@
 # Almanac implementation status
 
+Updated 2026-10-16 (later): the newest entry is the AI handoff of 2026-10-16 (A1–A11).
 Updated 2026-10-16: the newest entry is the recovery day a person declares
 (§9.6), readiness ticket 03. Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done; the
 simulator runtime was re-downloaded and the three UI suites pass. Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
@@ -27,6 +28,153 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-16 — The AI handoff of 2026-10-16 (A1–A11)
+
+**Outcome.** One real fasting bug found and fixed (a fast left open for two or
+more days was never closed). Backups now refuse a damaged document. Dish
+serving counts and reminder times for readiness, bedtime, suhoor and iftar can
+be set from the app. The whole UI suite passed on the iMac (97 of 97) and in CI
+(96 of 96), so the "four or five known UI failures" no longer exist. The branch
+is pushed. Blocked items (T02, T04, T07/T08, T25, G1–G5) were not touched.
+
+### What ran
+
+| Run | Result |
+|---|---|
+| `swift test` at `8763a96`, before any change | **1,150 Swift Testing in 126 suites + 387 XCTest (1 skipped), 0 failures**. Matches the handoff |
+| `swift test` with every change below | **1,164 in 126 suites + 390 XCTest (1 skipped), 0 failures** |
+| Full UI suite, suite by suite, app data wiped before each, iPhone 16e iOS 26.3.1, at the A1 change | **97 of 97 passed**, 19 suites, about 100 minutes. Per suite: BodyCompositionWellness 6/6, Attributions 12/12, BodyCircumference 1/1, NotificationSettings 5/5, AllergenFilter 4/4, BodyCompositionGrid 5/5, CrossTabNavigation 4/4, DigestionHistory 2/2, DigestionQuickEntry 7/7, Insights 5/5, Kitchen 7/7, OwnerRequestedFeatures 5/5, ProblemChannel 3/3, ReadinessRecoveryDay 1/1, ShiftsAndRhythm 6/6, Timeline 3/3, TrainingHistory 6/6, TrainingProgram 13/13, Arabic 2/2 |
+| CI on PR #20 at `4fc8641` (run 38813190034) | **all three jobs green**. AlmanacUITests: **96 tests, 0 failures**, 82 min, fresh simulator. "Untranslated strings" passed |
+| CI at `5d5cbed` (this work, pushed) | core and app + widget, "Untranslated strings" included: **green**. UI job still running when this was written |
+| After A6 and A8: `KitchenUITests.testAServingCountSetOnASavedMealIsWhatItPreFills` and `testChoosingARecipeHandsItToTheLoggingForm` | **both passed** |
+| After A8: all of `NotificationSettingsUITests`, app wiped | **6 of 6 passed**, after two test fixes (below) |
+| `check_catalog.py --strict` on an app build with `SWIFT_EMIT_LOC_STRINGS=YES` | 1,203 keys, **0 without Arabic** |
+
+`UIScrollSupport.swift:174`, the harness error recorded earlier, **did not
+occur** in any of the 19 suite logs.
+
+### A1 — fasting edge cases and notification fixes (P0)
+
+| Case | Test | Passes | Fails with the fix reverted |
+|---|---|---|---|
+| (a) first `ensureDay` before Fajr makes no session | `ReligiousFastingDerivationTests.beforeFajrIsSuhoor` (and `preFajrSessionFromOlderBuildIsRemoved`) | yes | yes |
+| (b) first call at/after Maghrib creates the session and ends it | `firstOpenAfterMaghribRecordsAKeptFast` | yes | yes |
+| (c) overdue sessions from **prior days**, not only today's, are closed | `olderOpenFastIsClosedAtItsOwnMaghrib`, `olderOpenFastIsNotEndedByTheNextFast` (new) | yes | yes. **This was a bug:** `refresh` covered only yesterday and today. Fixed in `FastingCoordinator.refresh` |
+| (d) a fresh install has a real path that creates a schedule | `ramadanIsCreatedAutomatically`; the app path is `FastingModel.configure` → `ensureToday` → `refresh` at launch | yes | yes |
+| Scheduler ownership uses `hasPrefix(ownedPrefix)` | `NotificationPlannerTests.ownershipIsByPrefix` (new). The rule moved to `NotificationPlan.isOwned` so it can be tested; the scheduler calls it | yes | yes |
+| Planner drops candidates outside `(now, now + horizon]` | `earlierTodayIsDropped`, `beyondTheHorizonIsDropped` (new) | yes | yes. With the filter removed, the three **older** horizon tests still passed; they did not guard it |
+
+"Reverted" means the fix's line was put back to its broken form and the two
+suites re-run (scripted, then restored). **T02** (the owner approves the
+schedule setup flow) still blocks final sign-off.
+
+### A2 — prayer-time claims (P1)
+
+`docs/features/fasting.md` was wrong, and contradicted its own §6: the 30-day
+cache, the 50 km check, `PrayerSettingsStore` (`b941ab4`) and the 230-city list
+(`9bf1811`, 2026-09-19) are all built. The 19 Sep snapshot was right. The stale
+line is struck and corrected, with files and tests named.
+
+### A3 — UI failures (P1)
+
+None left to diagnose: every suite passed (table above), including the two
+`BodyCompositionWellnessUITests` and the `AttributionsUITests` tests the 6 Oct
+handoff listed. **No fifth failure exists.** No test was weakened.
+
+### A4 — PR #20 CI (P1)
+
+Checked with `gh`. The `e1d2159` Arabic fix worked: "Untranslated strings"
+passed at `4fc8641`, and all three jobs were green. Nothing needed fixing.
+
+### A5 — push (P1)
+
+Pushed `4fc8641..5d5cbed` (the two recovery-day commits plus this work's six),
+no force. `git status -sb` showed the branch level with origin. The docs commit
+for this entry is pushed after it.
+
+### A6 — serving count (P2)
+
+**Contradiction with the handoff:** there is no dish editor to add the control
+to; no screen edits a dish. The count is a "Servings" swipe action on Saved
+meals, opening a sheet (count from 2, range 1–50, shows the resulting serving).
+No migration: the column is 052's. The Kitchen UI seed now resets serving counts.
+Tests: `DishServingTests.servingsEdit`, `KitchenSeedPlanTests.applyClearsServingCounts`
+(fails without the seed change), and the UI test above.
+
+### A7 — BRD Arabic amendment (P2)
+
+Amendment 1 appended to `docs/brd-v1_6.md`, with a pointer under the changelog;
+the approved v1.6 text is unchanged. It records that all Arabic is a **draft**,
+not reviewed by a native speaker. That review is the owner's to arrange.
+
+### A8 — reminder times (P2)
+
+Suhoor and iftar **are** derived from prayer times (Fajr − 20 min, Maghrib), so
+their setting is an **offset**: 5–90 minutes before Fajr, 0–60 after Maghrib
+(Migration **058**, `notification_rule.offsetMinutes`). Readiness and bedtime
+take a clock time in `scheduledTimeHHMM`, used only as a **fallback** when no
+sleep or shift time exists (§14.2's bedtime wording). Five planner tests, two
+store tests, one UI test. Delivery on a device: **UNRUN**.
+
+**A8 broke a UI test, and it is fixed in the test.** The new stepper and time
+rows made `testEveryNotificationTypeHasASwitch` fail twice in a row ("no switch
+for supplement", then "for suhoor"): the shared `reveal` helper swipes from
+mid-screen, the list did not move, and the lower switches were never rendered.
+The test now also drags along the list's leading edge, where only labels sit,
+and still requires every switch on screen. **Not verified:** whether a
+person's own swipe that starts on a stepper scrolls; on the simulator a
+synthesized one did not appear to. Worth a look on the phone. The new suhoor
+test first failed on its own lookup (SwiftUI names the stepper's buttons
+`notification-offset-suhoor-Increment`), fixed in the test.
+
+### A9 — readiness calibration (P2)
+
+`calibrationStopsAtTwentyOne`, `calibrationIsNotAWindow`,
+`shiftChangeDoesNotResetCalibration`: all pass. `calibrationDay = nil` at 28
+valid days **is intended**: §9.7 calibrates the first 21 valid days, and
+`ReadinessBaselineService` returns nil past 21. No behaviour change.
+
+### A10 — restore checksums and de-duplication (P2)
+
+**Contradiction with the handoff:** the database payload's checksum was already
+validated (since 2026-09-23); the **documents** were not. Fixed: per-document
+SHA-256, checked before anything is written; `testTamperedDocumentIsRejectedBeforeAnythingIsWritten`
+failed first (a damaged document was restored and the live database swapped).
+Older bundles without document digests still restore.
+**De-duplication was already in place** for health_sample, hydration_log,
+body_measurement and vitals_record (all keyed on the sample identifier); the
+new `testResyncAfterRestoreDuplicatesNoSampleSharingAnIdentifier` passed on
+the existing code and now pins it. Workouts and sleep were not covered by it.
+
+**Phase 12 "re-deriving fasting windows on restore":** the spec's step 6d
+(rebuild night-window assignments) is **already built**: `restoreBundle` runs
+`NightNutritionWindowAssigner`. Re-deriving the sessions themselves is not in
+the spec, so it was not built. **Found, not changed:** spec step 7a says to
+clear all `sync_anchor` rows on restore; the code restores them and
+`testRestoreReplacesTargetContentsWithSnapshot` requires that. Owner or spec call.
+
+### A11 — docs
+
+The checklist's run table, the README (58 migrations, the test counts, UI
+timing) and a dated on-hold line in `docs/features/nutrition.md` §7. The
+"627 / 68 / 7 of 17" the handoff named had already been replaced on 2026-10-06.
+
+### Not run
+
+- Notification delivery on a device, the widget, a real GPS fix.
+- The full UI suite **after** the A6 and A8 app changes: only the affected suites
+  (Kitchen, NotificationSettings) were re-run locally. CI's run at `5d5cbed` covers the rest.
+- Native-speaker review of any Arabic.
+
+### Unconfirmed decisions logged
+
+All in `CONTEXT.md`, "The 2026-10-16 handoff", each with an *Overrule by:* line:
+closing an overdue fast at its own Maghrib (religious only); servings on Saved
+meals; first count 2, range 1–50; the seed resetting counts; suhoor/iftar as an
+offset with their ranges; the iftar wording after Maghrib; readiness/bedtime
+time as a fallback with 07:00 / 22:30 starts; old bundles accepted without
+document digests.
 
 ## 2026-10-16 — A recovery day the person declares (§9.6)
 

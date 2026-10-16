@@ -188,6 +188,10 @@ are under "Digestion and urination" and "Body and wellness" below.
 Four more were settled on 2026-10-16 while building the recovery day a person
 declares (§9.6); they are under "Readiness: the declared recovery day" below.
 
+More were settled on 2026-10-16 while carrying out that day's AI handoff (fasting,
+dish servings, reminder times, backup checksums); they are under "The
+2026-10-16 handoff" below. None is confirmed.
+
 More were settled on 2026-10-06 while carrying out that day's handoff (readiness,
 vitals, Kitchen, workout templates). Each sits in the subsection for its area and
 is marked with that date. **None of these has been confirmed.** Where the owner
@@ -578,6 +582,64 @@ the thyroid panel is unchanged. *Overrule by:* `LabCatalogSeed`.
 MedlinePlus pages, and Bikle & Schwartz (2019) for the two vitamin D entries.
 Entries seeded before 2026-10-15 are not yet cited. *Overrule by:*
 `LabCatalogSeed.sources`.
+
+### The 2026-10-16 handoff
+
+Settled while carrying out the AI tasks of the 2026-10-16 handoff. **None of
+these has been confirmed.**
+
+**A fast left open from before yesterday is closed at its own Maghrib.** The
+fix for a religious fast nobody re-derived because the app was not opened for
+two or more days. Only the one active religious session is closed this way; an
+intermittent fast left running is not, because it has no scheduled end and
+§11.1 ends it at the next meal. *Overrule by:* the `if let open = …` block at
+the top of `FastingCoordinator.refresh`.
+
+**Dish servings are set from Saved meals, by a swipe.** No screen edits a dish,
+and Saved meals is the only screen that lists them, so the count is a
+"Servings" swipe action there, opening a small sheet. *Overrule by:* moving
+`DishServingCountSheet` (`Native/Almanac/NutritionSavedMealsView.swift`) to
+wherever a dish editor is built.
+
+**A serving count, when first turned on, starts at 2; it runs 1 to 50.** Two is
+the smallest count that changes what one serving is. A dish with no count stays
+one serving whole, which is the owner's rule (2026-10-06), and turning the count
+off goes back to that. *Overrule by:* `DishServingCountSheet.firstCount` and the
+`Stepper` range in the same file.
+
+**The Kitchen test seed takes back serving counts.** It is "authoritative", and
+a count left by one UI test would change the 200 g pre-fill another test
+expects. *Overrule by:* the `.servings(nil)` loop in `KitchenSeedPlan.apply`.
+
+**Suhoor and iftar times are a distance from the prayer, not a clock time.** Both
+are derived from prayer times that move every day, so a clock time would drift
+off them. Suhoor: 5 to 90 minutes before Fajr, default §14.2's 20. Iftar: 0 to
+60 minutes after Maghrib, default §14.2's 0. Steps of 5. Stored in a new column
+(Migration 058, `notification_rule.offsetMinutes`) rather than in
+`scheduledTimeHHMM`, which holds a time of day. *Overrule by:*
+`NotificationRule.offsetRange(for:)`, or by reading `scheduledTimeHHMM` as an
+override in `NotificationPlanner.appendSuhoor` / `appendIftar`.
+
+**An iftar reminder set after Maghrib says when Maghrib was.** §14.2's "Maghrib
+has arrived" would be late news 15 minutes on, so the body becomes "Maghrib was
+at [time]. Your fast has ended." At 0 minutes the spec's own words are kept.
+Suhoor's title says the minutes chosen. *Overrule by:*
+`NotificationText.iftarBody(maghribText:)` / `suhoorTitle(fajrText:minutesRemaining:)`.
+
+**A readiness or bedtime time is a fallback, never an override.** §14.2 says
+bedtime "falls back to user-set time"; readiness is treated the same way. The
+set time is used only on a day with no sleep episode, shift time or (for
+readiness) 7-day wake average to go by. A time before 04:00 belongs to the end
+of the logical day. When first turned on, the picker starts at 07:00 for
+readiness and 22:30 for bedtime. *Overrule by:* the `?? fallbackTime(…)` in
+`NotificationPlanner.appendReadiness` / `appendBedtime`, and
+`NotificationSettingsView.firstMinute(for:)`.
+
+**A backup from before document checksums still restores.** Bundles written
+before 2026-10-16 have no `sha256` column in `bundle_files`; their database is
+checked and their documents cannot be. A bundle that has the column and a
+missing digest is refused as corrupt. *Overrule by:* returning an error instead
+of `return` in `BackupService.verifyDocumentChecksums` when the column is absent.
 
 ### Weighing
 
