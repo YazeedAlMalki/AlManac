@@ -29,6 +29,8 @@ public struct Drink: Sendable, Hashable, Identifiable {
     public let caloriesKcal: Double
     public let sodiumMilligrams: Double
     public let sugarGrams: Double?
+    /// Per `volumeMilliliters`, like the other figures. 0 for a drink with none.
+    public let caffeineMilligrams: Double
     public let isCustom: Bool
 
     /// The name as shown. A catalog drink's English name is what the log
@@ -46,6 +48,7 @@ public struct Drink: Sendable, Hashable, Identifiable {
         caloriesKcal: Double,
         sodiumMilligrams: Double,
         sugarGrams: Double? = nil,
+        caffeineMilligrams: Double = 0,
         isCustom: Bool = false,
         valueQualifier: DrinkValueQualifier = .catalogUnsourcedEstimate,
         createdAt: Date = Date()
@@ -57,6 +60,7 @@ public struct Drink: Sendable, Hashable, Identifiable {
         self.caloriesKcal = caloriesKcal
         self.sodiumMilligrams = sodiumMilligrams
         self.sugarGrams = sugarGrams
+        self.caffeineMilligrams = caffeineMilligrams
         self.isCustom = isCustom
         self.valueQualifier = valueQualifier
         self.createdAt = createdAt
@@ -67,27 +71,29 @@ public struct Drink: Sendable, Hashable, Identifiable {
 /// state, no database row. Every figure here is `catalogUnsourcedEstimate`:
 /// typical values for the named product, not read from a cited
 /// food-composition table. Do not present these as measured anywhere in the
-/// UI without that qualifier visible.
+/// UI without that qualifier visible. Caffeine follows the same rule: typical
+/// figures for the serving (brewed coffee and tea, an espresso shot in a latte
+/// or cappuccino, the makers' stated amounts for colas and energy drinks).
 public enum CatalogDrinks {
     public static let all: [Drink] = [
         Drink(id: "catalog_water", name: "Water", liquidType: .water,
               volumeMilliliters: 250, caloriesKcal: 0, sodiumMilligrams: 0),
 
         Drink(id: "catalog_pepsi", name: "Pepsi", liquidType: .other,
-              volumeMilliliters: 355, caloriesKcal: 150, sodiumMilligrams: 30, sugarGrams: 41),
+              volumeMilliliters: 355, caloriesKcal: 150, sodiumMilligrams: 30, sugarGrams: 41, caffeineMilligrams: 38),
         Drink(id: "catalog_coke", name: "Coca-Cola", liquidType: .other,
-              volumeMilliliters: 355, caloriesKcal: 140, sodiumMilligrams: 34, sugarGrams: 39),
+              volumeMilliliters: 355, caloriesKcal: 140, sodiumMilligrams: 34, sugarGrams: 39, caffeineMilligrams: 34),
         Drink(id: "catalog_sprite", name: "Sprite", liquidType: .other,
               volumeMilliliters: 355, caloriesKcal: 140, sodiumMilligrams: 65, sugarGrams: 38),
         Drink(id: "catalog_fanta", name: "Fanta", liquidType: .other,
               volumeMilliliters: 355, caloriesKcal: 160, sodiumMilligrams: 45, sugarGrams: 42),
 
         Drink(id: "catalog_pepsi_diet", name: "Diet Pepsi", liquidType: .other,
-              volumeMilliliters: 355, caloriesKcal: 0, sodiumMilligrams: 35, sugarGrams: 0),
+              volumeMilliliters: 355, caloriesKcal: 0, sodiumMilligrams: 35, sugarGrams: 0, caffeineMilligrams: 35),
         Drink(id: "catalog_coke_diet", name: "Diet Coke", liquidType: .other,
-              volumeMilliliters: 355, caloriesKcal: 0, sodiumMilligrams: 46, sugarGrams: 0),
+              volumeMilliliters: 355, caloriesKcal: 0, sodiumMilligrams: 46, sugarGrams: 0, caffeineMilligrams: 46),
         Drink(id: "catalog_coke_zero", name: "Coke Zero", liquidType: .other,
-              volumeMilliliters: 355, caloriesKcal: 0, sodiumMilligrams: 50, sugarGrams: 0),
+              volumeMilliliters: 355, caloriesKcal: 0, sodiumMilligrams: 50, sugarGrams: 0, caffeineMilligrams: 34),
 
         Drink(id: "catalog_gatorade", name: "Gatorade (Orange)", liquidType: .sportsDrink,
               volumeMilliliters: 591, caloriesKcal: 140, sodiumMilligrams: 290, sugarGrams: 37),
@@ -102,25 +108,25 @@ public enum CatalogDrinks {
               volumeMilliliters: 240, caloriesKcal: 45, sodiumMilligrams: 250, sugarGrams: 9),
 
         Drink(id: "catalog_coffee_black", name: "Black Coffee", liquidType: .coffee,
-              volumeMilliliters: 240, caloriesKcal: 2, sodiumMilligrams: 5, sugarGrams: 0),
+              volumeMilliliters: 240, caloriesKcal: 2, sodiumMilligrams: 5, sugarGrams: 0, caffeineMilligrams: 95),
         Drink(id: "catalog_coffee_latte", name: "Latte (2% Milk)", liquidType: .coffee,
-              volumeMilliliters: 240, caloriesKcal: 150, sodiumMilligrams: 150, sugarGrams: 12),
+              volumeMilliliters: 240, caloriesKcal: 150, sodiumMilligrams: 150, sugarGrams: 12, caffeineMilligrams: 63),
         Drink(id: "catalog_coffee_cappuccino", name: "Cappuccino", liquidType: .coffee,
-              volumeMilliliters: 240, caloriesKcal: 120, sodiumMilligrams: 120, sugarGrams: 8),
+              volumeMilliliters: 240, caloriesKcal: 120, sodiumMilligrams: 120, sugarGrams: 8, caffeineMilligrams: 63),
 
         Drink(id: "catalog_tea_black", name: "Black Tea", liquidType: .tea,
-              volumeMilliliters: 240, caloriesKcal: 2, sodiumMilligrams: 0, sugarGrams: 0),
+              volumeMilliliters: 240, caloriesKcal: 2, sodiumMilligrams: 0, sugarGrams: 0, caffeineMilligrams: 47),
         Drink(id: "catalog_tea_green", name: "Green Tea", liquidType: .tea,
-              volumeMilliliters: 240, caloriesKcal: 2, sodiumMilligrams: 0, sugarGrams: 0),
+              volumeMilliliters: 240, caloriesKcal: 2, sodiumMilligrams: 0, sugarGrams: 0, caffeineMilligrams: 28),
         Drink(id: "catalog_iced_tea", name: "Iced Tea (Sweetened)", liquidType: .tea,
-              volumeMilliliters: 240, caloriesKcal: 90, sodiumMilligrams: 10, sugarGrams: 22),
+              volumeMilliliters: 240, caloriesKcal: 90, sodiumMilligrams: 10, sugarGrams: 22, caffeineMilligrams: 20),
 
         Drink(id: "catalog_milk_whole", name: "Whole Milk", liquidType: .milk,
               volumeMilliliters: 240, caloriesKcal: 150, sodiumMilligrams: 120, sugarGrams: 12),
         Drink(id: "catalog_milk_skim", name: "Skim Milk", liquidType: .milk,
               volumeMilliliters: 240, caloriesKcal: 80, sodiumMilligrams: 125, sugarGrams: 12),
         Drink(id: "catalog_chocolate_milk", name: "Chocolate Milk", liquidType: .milk,
-              volumeMilliliters: 240, caloriesKcal: 190, sodiumMilligrams: 150, sugarGrams: 24),
+              volumeMilliliters: 240, caloriesKcal: 190, sodiumMilligrams: 150, sugarGrams: 24, caffeineMilligrams: 5),
 
         Drink(id: "catalog_orange_juice", name: "Orange Juice", liquidType: .juice,
               volumeMilliliters: 240, caloriesKcal: 110, sodiumMilligrams: 0, sugarGrams: 26),
@@ -130,11 +136,11 @@ public enum CatalogDrinks {
               volumeMilliliters: 240, caloriesKcal: 137, sodiumMilligrams: 60, sugarGrams: 33),
 
         Drink(id: "catalog_redbull", name: "Red Bull", liquidType: .other,
-              volumeMilliliters: 250, caloriesKcal: 110, sodiumMilligrams: 200, sugarGrams: 27),
+              volumeMilliliters: 250, caloriesKcal: 110, sodiumMilligrams: 200, sugarGrams: 27, caffeineMilligrams: 80),
         Drink(id: "catalog_monster", name: "Monster Energy", liquidType: .other,
-              volumeMilliliters: 355, caloriesKcal: 160, sodiumMilligrams: 370, sugarGrams: 54),
+              volumeMilliliters: 355, caloriesKcal: 160, sodiumMilligrams: 370, sugarGrams: 54, caffeineMilligrams: 120),
         Drink(id: "catalog_kombucha", name: "Kombucha", liquidType: .other,
-              volumeMilliliters: 240, caloriesKcal: 30, sodiumMilligrams: 15, sugarGrams: 4),
+              volumeMilliliters: 240, caloriesKcal: 30, sodiumMilligrams: 15, sugarGrams: 4, caffeineMilligrams: 15),
     ]
 
     /// Search catalog by name (case-insensitive).

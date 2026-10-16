@@ -16,10 +16,10 @@ are built and tested in the core. That breaks A1's latte step and three of
 | # | Requirement | Where | State | Evidence |
 |---|---|---|---|---|
 | 1 | Water logged against a daily target | §6.2 | **Built** | `HydrationStoreTests`, `HydrationFeatureTests`; Quick Log +250/500/750; Settings daily goal; UI `testLoggingADrinkShowsItOnTheDashboardWithCalories` (CI) |
-| 2 | One drink entry fills hydration, caffeine and nutrition (a latte) | §6.2, A1 | **Partial** | Hydration and calories: `HydrationLoggingService.logDrink` attaches scaled calories, sodium and sugar to the hydration row (`HydrationFeatureTests`). **Caffeine: no.** `Drink` has no caffeine field, and nothing in `Native/` writes `caffeine_log` |
+| 2 | One drink entry fills hydration, caffeine and nutrition (a latte) | §6.2, A1 | **Built 2026-10-16** (see below); was Partial | Hydration and calories: `HydrationLoggingService.logDrink` attaches scaled calories, sodium and sugar to the hydration row (`HydrationFeatureTests`). **Caffeine: no.** `Drink` has no caffeine field, and nothing in `Native/` writes `caffeine_log` |
 | 3 | Caffeine presets per drink type, editable | §6.2 | **Not built** | `CatalogDrinks.all` (coffee, tea, colas, energy drinks) carries no caffeine; a custom drink cannot record any |
-| 4 | Caffeine as a variable: mg and time | §6.2 | **Core only** | `CaffeineLogStore` with `CaffeineLogStoreTests`; unreachable from the app |
-| 5 | Caffeine judged against intended sleep, not the clock (8 AM is late for a 10 AM sleeper) | §6.2, §6.11 | **Core only** | `ShiftScheduleStore.intendedSleepTimestamp` and `CaffeineLogStore`'s context, `ShiftAwareCaffeineContextTests` (night shift → `very_late`); unreachable, same cause as 4 |
+| 4 | Caffeine as a variable: mg and time | §6.2 | **Built 2026-10-16**; was Core only | `CaffeineLogStore` with `CaffeineLogStoreTests`; unreachable from the app |
+| 5 | Caffeine judged against intended sleep, not the clock (8 AM is late for a 10 AM sleeper) | §6.2, §6.11 | **Built 2026-10-16**; was Core only | `ShiftScheduleStore.intendedSleepTimestamp` and `CaffeineLogStore`'s context, `ShiftAwareCaffeineContextTests` (night shift → `very_late`); unreachable, same cause as 4 |
 | 6 | Water written to Apple Health; a failed write stays and is retried | §5.5, A6 | **Built** | `HydrationSyncTests.testWritebackPushesUnsyncedManualEntriesOnly`, `testAFailedPushLeavesTheRowPendingAndItIsRetriedNext`. Device: UNRUN (`docs/device-checklist.md`, check 1) |
 | 7 | A clear status while an entry is not yet in Apple Health | §5.5, A6 | **Not shown** | `HydrationEntry.healthKitSynced` exists; no view reads it |
 | 8 | Water reminders: toggleable, time-adjustable | §6.14 | **Built** | Settings → Reminders (interval, from, until); `NotificationSettingsUITests` (CI) |
@@ -43,6 +43,16 @@ are built and tested in the core. That breaks A1's latte step and three of
 | Ramadan night hydration | 10 | **Yes**: the night target and the reminder cadence across Maghrib → Fajr, and how a night shift changes it | Planner and target rules, core tests |
 | Health permissions per feature | 16 | **Yes**: the single sheet was a deliberate choice | Ask per domain when its screen first opens |
 | App Intent not driven | 14 | No | A test that runs `LogWaterIntent` against a database |
+
+## Closed on 2026-10-16: caffeine from logged drinks
+
+Rows 2, 4 and 5. `Drink.caffeineMilligrams` and figures for 15 catalog drinks;
+`HydrationLoggingService.logDrink` writes the hydration row and its
+`caffeine_log` row in one transaction, judged against the day's intended sleep
+from the shift schedule; Migration 063 links the two, so resizing, moving or
+deleting the drink carries its caffeine. Tests: `DrinkCaffeineTests` (9).
+Choices: `CONTEXT.md`, "Caffeine from logged drinks". Still open: row 3 (custom
+drinks, editable presets), and the app does not yet *show* caffeine anywhere.
 
 ## Score
 

@@ -8,16 +8,20 @@ public struct CaffeineLogDraft: Sendable {
     public var drinkEntryId: Int64?
     public var intendedSleepTimestamp: Date?
     public var timezoneOffset: Int?
+    /// The drink this caffeine came with (Migration 063), so the caffeine
+    /// follows it when it is resized, moved or deleted.
+    public var hydrationLogId: String?
 
     public init(timestamp: Date, drinkType: String, caffeineMg: Double,
                 drinkEntryId: Int64? = nil, intendedSleepTimestamp: Date? = nil,
-                timezoneOffset: Int? = nil) {
+                timezoneOffset: Int? = nil, hydrationLogId: String? = nil) {
         self.timestamp = timestamp
         self.drinkType = drinkType
         self.caffeineMg = caffeineMg
         self.drinkEntryId = drinkEntryId
         self.intendedSleepTimestamp = intendedSleepTimestamp
         self.timezoneOffset = timezoneOffset
+        self.hydrationLogId = hydrationLogId
     }
 }
 
@@ -92,8 +96,9 @@ public struct CaffeineLogStore: @unchecked Sendable {
         try db.run("""
         INSERT INTO caffeine_log
             (timestamp, logicalDay, drinkType, caffeineMg, drinkEntryId,
-             intendedSleepTimestamp, hoursBeforeIntendedSleep, caffeineContext, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+             intendedSleepTimestamp, hoursBeforeIntendedSleep, caffeineContext, createdAt,
+             hydrationLogId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(timestamp),
             .text(logicalDay),
@@ -103,7 +108,8 @@ public struct CaffeineLogStore: @unchecked Sendable {
             intendedSleepText.map { SQLValue.text($0) } ?? .null,
             hoursBefore.map { SQLValue.real($0) } ?? .null,
             context.map { SQLValue.text($0) } ?? .null,
-            .text(createdAt)
+            .text(createdAt),
+            draft.hydrationLogId.map { SQLValue.text($0) } ?? .null
         ])
         
         // Fetch the last inserted rowid
@@ -180,6 +186,27 @@ public struct CaffeineLogStore: @unchecked Sendable {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         return f.date(from: text)
+    }
+
+    // MARK: - Following the drink
+
+    /// The drink moved: its caffeine takes the new time, day and intended
+    /// sleep, and its context is judged again against them.
+    func moveDrink(hydrationLogID: String, to date: Date, logicalDay: String,
+                   intendedSleepTimestamp: Date?) throws {
+        let (hoursBefore, context) = computeContext(from: date, to: intendedSleepTimestamp)
+        try db.run("""
+        UPDATE caffeine_log
+        SET timestamp = ?, logicalDay = ?, intendedSleepTimestamp = ?,
+            hoursBeforeIntendedSleep = ?, caffeineContext = ?
+        WHERE hydrationLogId = ?;
+        """, [
+            .text(iso(date)), .text(logicalDay),
+            intendedSleepTimestamp.map { SQLValue.text(iso($0)) } ?? .null,
+            hoursBefore.map { SQLValue.real($0) } ?? .null,
+            context.map { SQLValue.text($0) } ?? .null,
+            .text(hydrationLogID)
+        ])
     }
 
     /// Compute hoursBeforeIntendedSleep and caffeineContext.

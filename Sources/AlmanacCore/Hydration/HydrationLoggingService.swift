@@ -9,10 +9,13 @@ import Foundation
 public struct HydrationLoggingService: Sendable {
     private let store: HydrationStore
     private let settingsStore: HydrationSettingsStore
+    private let timeModel: TimeModel
 
-    public init(store: HydrationStore, settingsStore: HydrationSettingsStore) {
+    public init(store: HydrationStore, settingsStore: HydrationSettingsStore,
+                timeModel: TimeModel = TimeModel(timeZone: .current)) {
         self.store = store
         self.settingsStore = settingsStore
+        self.timeModel = timeModel
     }
 
     private func iso(_ date: Date) -> String {
@@ -22,7 +25,7 @@ public struct HydrationLoggingService: Sendable {
     }
 
     /// Logs `drink`. `volume` overrides the drink's default serving size —
-    /// every scalable figure (sodium, calories, sugar) is scaled to match,
+    /// every scalable figure (sodium, calories, sugar, caffeine) is scaled to match,
     /// so logging half a can never credits a full can's nutrition.
     @discardableResult
     public func logDrink(_ drink: Drink, volume: Milliliters? = nil, at date: Date = Date(),
@@ -32,11 +35,26 @@ public struct HydrationLoggingService: Sendable {
         let scaledSodium = drink.sodiumMilligrams * scale
         let scaledCalories = drink.caloriesKcal * scale
         let scaledSugar = drink.sugarGrams.map { $0 * scale }
+        let scaledCaffeine = drink.caffeineMilligrams * scale
 
         let attachment = DrinkAttachment(drinkID: drink.id, drinkName: drink.name,
                                           caloriesKcal: scaledCalories, sodiumMg: scaledSodium,
                                           sugarG: scaledSugar, qualifier: drink.valueQualifier)
-        let id = try store.log(HydrationLogDraft(amount: amount, loggedAt: date, note: note, drink: attachment))
+        // One entry, every part of it (BRD §6.2): the water and the caffeine
+        // are written together or not at all. The caffeine is judged against
+        // the day's intended sleep from the shift schedule, not the clock;
+        // with no schedule for the day it is recorded unclassified.
+        let id = try store.db.transaction { () throws -> String in
+            let id = try store.log(HydrationLogDraft(amount: amount, loggedAt: date, note: note, drink: attachment))
+            if scaledCaffeine > 0 {
+                let day = timeModel.logicalDay(date).value
+                try CaffeineLogStore(db: store.db).log(CaffeineLogDraft(
+                    timestamp: date, drinkType: drink.id, caffeineMg: scaledCaffeine,
+                    intendedSleepTimestamp: try ShiftScheduleStore(db: store.db).intendedSleepTimestamp(for: day),
+                    hydrationLogId: id), logicalDay: day)
+            }
+            return id
+        }
 
         let settings = try settingsStore.getOrCreate()
         var warnings: [DrinkLoggingWarning] = []

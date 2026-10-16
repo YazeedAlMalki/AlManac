@@ -138,25 +138,49 @@ public struct HydrationStore: HealthSampleWriting, TimelineProviding, @unchecked
         return id
     }
 
+    /// A drink's caffeine (Migration 063) is per amount drunk, so it scales
+    /// with the entry, in the same transaction.
     public func editAmount(id: String, to amount: Milliliters) throws {
-        try db.run("""
-        UPDATE hydration_log SET amount_ml = ? WHERE id = ? AND deleted_at IS NULL;
-        """, [.real(amount.value), .text(id)])
+        try db.transaction {
+            try db.run("""
+            UPDATE caffeine_log SET caffeineMg = caffeineMg * ? / (
+                SELECT amount_ml FROM hydration_log WHERE id = ? AND deleted_at IS NULL)
+            WHERE hydrationLogId = ? AND EXISTS (
+                SELECT 1 FROM hydration_log WHERE id = ? AND deleted_at IS NULL AND amount_ml > 0);
+            """, [.real(amount.value), .text(id), .text(id), .text(id)])
+            try db.run("""
+            UPDATE hydration_log SET amount_ml = ? WHERE id = ? AND deleted_at IS NULL;
+            """, [.real(amount.value), .text(id)])
+        }
     }
 
+    /// Moving a drink moves its caffeine, which is then judged against the
+    /// intended sleep of the day it now falls on.
     public func editLoggedAt(id: String, to date: Date) throws {
-        try db.run("""
-        UPDATE hydration_log SET logged_at = ? WHERE id = ? AND deleted_at IS NULL;
-        """, [.text(iso(date)), .text(id)])
+        try db.transaction {
+            try db.run("""
+            UPDATE hydration_log SET logged_at = ? WHERE id = ? AND deleted_at IS NULL;
+            """, [.text(iso(date)), .text(id)])
+            let timeZone = zone.identifier.flatMap(TimeZone.init(identifier:)) ?? .current
+            let day = TimeModel(timeZone: timeZone).logicalDay(date).value
+            try CaffeineLogStore(db: db).moveDrink(
+                hydrationLogID: id, to: date, logicalDay: day,
+                intendedSleepTimestamp: try ShiftScheduleStore(db: db).intendedSleepTimestamp(for: day))
+        }
     }
 
     /// Soft delete. A HealthKit-sourced row deleted here must stay deleted
     /// even after the next inbound sync re-reads the same anchor range —
-    /// which is exactly what a hard delete would not guarantee.
+    /// which is exactly what a hard delete would not guarantee. A drink's
+    /// caffeine goes with it: it is derived from the drink, not a record of
+    /// its own.
     public func delete(id: String) throws {
-        try db.run("""
-        UPDATE hydration_log SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL;
-        """, [.text(nowText), .text(id)])
+        try db.transaction {
+            try db.run("""
+            UPDATE hydration_log SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL;
+            """, [.text(nowText), .text(id)])
+            try db.run("DELETE FROM caffeine_log WHERE hydrationLogId = ?;", [.text(id)])
+        }
     }
 
     // MARK: - Reads

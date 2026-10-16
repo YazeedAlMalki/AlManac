@@ -774,6 +774,35 @@ source. *Overrule by:* a total-carbohydrate term in `reduce`.
 the nine calorie nutrients (D6), and branded foods stay out (D7: USDA Branded
 is extracted, not canonicalised).
 
+### Caffeine from logged drinks (2026-10-16)
+
+Built after the Hydration & Caffeine audit (`docs/features/hydration-audit-2026-10-16.md`),
+on the owner's go-ahead. How it was built was left to the build; **none of these
+has been confirmed.**
+
+**Caffeine figures are typical values, like the rest of the drink catalog.**
+Brewed coffee 95 mg and black tea 47 mg per 240 mL, green tea 28, sweetened iced
+tea 20; latte and cappuccino 63 (one espresso shot); the makers' stated amounts
+for colas (34 to 46 mg a can), Red Bull (80 mg) and Monster (scaled to 355 mL,
+120 mg); kombucha 15 and chocolate milk 5. Not read from a cited table, and
+labelled the same way as the catalog's other figures. *Overrule by:* the
+`caffeineMilligrams:` values in `CatalogDrinks.all`.
+
+**A drink's caffeine goes with the drink.** Resizing the drink scales it,
+moving it re-judges it against that day's intended sleep, and deleting the
+drink deletes the caffeine row outright (the drink itself is soft-deleted):
+the caffeine is derived from the drink, not a record of its own. *Overrule by:*
+`HydrationStore.editAmount`, `editLoggedAt` and `delete`.
+
+**With no shift schedule for the day, caffeine is recorded unclassified.** No
+fixed bedtime is assumed in its place, as `ShiftScheduleStore.intendedSleepTimestamp`
+already chose. *Overrule by:* a fallback sleep time in `HydrationLoggingService.logDrink`.
+
+**A custom drink carries no caffeine yet.** Its form and table have no caffeine
+field, and catalog presets cannot be edited (BRD §6.2 "editable"). Left open,
+listed in the audit. *Overrule by:* adding the field to `hydration_drink` and the
+custom-drink form.
+
 ### Weighing
 
 **Meter fraction**:
