@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-16 (latest): the newest entry is the owner's approval of the Slice 8 rubric (1,009 / 1,200).
+Updated 2026-10-16 (latest): the newest entry is the re-score of all 12 phases (1,077 / 1,200).
+Updated 2026-10-16 (later): the owner's approval of the Slice 8 rubric.
 Updated 2026-10-16 (later still): regional dishes through the nutrition pipeline (Slice 8).
 Updated 2026-10-16 (later yet): Kitchen's Wikibooks recipes (T04 built).
 Updated 2026-10-16 (later still): the owner's answers to T02, T04, T25 and G1–G5.
@@ -32,6 +33,53 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-16 — Re-score of all 12 phases
+
+**Outcome.** On the evidence in the repository and in CI, the tracker stands at
+**1,077 of 1,200 (89.8 %)**, up from 964. Readiness is **held at 94** because
+one of its UI tests failed in CI and is not yet diagnosed; if that test is
+green on the re-run and stays green, Readiness takes its planned 98 and the
+total is **1,081 (90.1 %)**. Slice 12's figure rests on a split of its 33
+planned points that the handoff did not give; it is this session's estimate and
+the owner (or whoever keeps the tracker) can move it.
+
+### Method
+
+The handoff's own per-phase targets are the ceiling: a phase gets its "AI-only"
+or "with his inputs" figure only when every task the handoff tied to that rise
+has a passing test or driven UI step at head. Evidence is CI at `76ed79b`
+(run 38927873088: `swift test` green, 1,178 Swift Testing tests plus XCTest;
+app build green; **AlmanacUITests 101 of 102**) and the earlier entries below
+(iMac runs and revert-and-run checks of 16 Oct, not re-run here). Nothing on a
+device was counted.
+
+### The table
+
+| # | Phase | Was | Now | Why |
+|---|---|---:|---:|---|
+| 1 | Foundation | 100 | 100 | |
+| 2 | Readiness | 94 | **94** (98 pending) | A9 confirmed; recovery day built with core tests and a UI test (revert-checked 16 Oct); rows 7.10 and 7.11 pass in CI. **Held:** `ReadinessRecoveryDayUITests` failed at `76ed79b` (line 98, "the recovery-day switch did not move to 1"); it passed at `c10bc8d`, and nothing between touches the app or that test. Rule 4: no rise until diagnosed |
+| 3 | Hydration & Caffeine | 90 | 90 | The §6 / A1 / A5 audit is not done |
+| 4 | Training | 98 | 98 | |
+| 5 | Nutrition | 92 | **96** | A6 serving count (`DishServingTests`, `KitchenSeedPlanTests` fails without it); Kitchen UI 9/9 and the template UI test pass in CI; carbohydrate kept per source (`tools/nutrition/README.md` "Carbohydrate", `NutritionDictionaryContractTests`). 98 needs T07/T08 |
+| 6 | Fasting & Prayer | 88 | **96** | A1's four edge cases, revert-checked; A2 doc corrected; **T02 answered and built** (`FastsQuestionUITests` passes in CI). Cap 96 until a device run |
+| 7 | Body & Wellness | 85 | **95** | Lab seeds (free T3, reticulocytes, liver panel, vitamin D binding protein, urinalysis: `LabCatalogSeed.swift`, `CatalogCoverageTests`); unit conversion and re-test (`LabConversionAndRetestTests`); profile fields (`ProfileFieldsTests`); Bristol credit (`AttributionsUITests`, CI). **G3, G4, G5 answered; G5 built** (163 verified LOINC codes). Contradiction: years of training is stored as a level, not a count, by design (`ProfileVocabulary.swift`) |
+| 8 | Regional Food Data | 5 | **50** | Rubric approved (D2); entry below |
+| 9 | Digestion & Urination | 85 | **95** | Bristol credit; **G1 built** (draft advisory, not clinician-reviewed) and **G2 built** (ring out of v1); Digestion UI suites pass in CI |
+| 10 | Insights | 90 | **95** | G2 built; `testSettingsOffersNoDigestionRingInV1` passes in CI |
+| 11 | Notifications | 82 | **93** | A3 (all NotificationSettings UI tests pass in CI); A1's ownership and horizon tests, revert-checked; A8 reminder times with core and UI tests. Cap 95 until a device run |
+| 12 | Migration & Completion | 55 | **75** (estimate) | A10: document checksums before any write (failed first), de-duplication pinned; every earlier schema version upgrades to head (`testEveryEarlierVersionUpgradesToHead`, CI). Split used: A10 +12, migration chain +8. **Not earned:** scenario A4 driven on the simulator; App Intents (the three BRD §6.21 v1 actions exist in `WidgetIntents.swift`, but no test drives them); the device checklist is not owner-approved |
+| | **Total** | **964** | **1,077** | 1,077 ÷ 1,200 = 89.8 % |
+
+### What would move it, with evidence
+
+- Readiness +4: the recovery-day UI test diagnosed and green.
+- Slice 12 up to +13: scenario A4 as a driven UI test; a test that runs the
+  App Intents; the owner's restore on a phone (+4 above 88, to 92).
+- Hydration +2: the audit and its closed gaps.
+- Slice 8: dishes (each 25 ÷ D_full, and the first lifts the 50 cap to 65).
+- Device runs: +9 across phases 3, 11 and 12.
 
 ## 2026-10-16 — The owner approves the Slice 8 rubric (D2)
 
