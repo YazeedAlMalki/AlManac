@@ -63,11 +63,14 @@ final class NutritionModel: ObservableObject {
                 _ = try await Task.detached(priority: .utility) { () throws -> NutritionImportReport? in
                     let referenceDatabase = try Database(path: path)
                     let report = try NutritionReferenceBundle.installIfNeeded(into: referenceDatabase)
+                    // Kitchen's Wikibooks recipes are made of the reference's
+                    // foods, so they install after it, once per bundle.
+                    let recipes = try WikibooksRecipeBundle.installIfNeeded(into: referenceDatabase)
                     // Kitchen's ingredient table is derived from the catalog's
                     // names, so it is rebuilt whenever the catalog changes, and
                     // built once on a database that predates it (Migration 054).
                     let ingredients = IngredientTable(db: referenceDatabase)
-                    var needsBuild = report != nil
+                    var needsBuild = report != nil || recipes != nil
                     if !needsBuild { needsBuild = try ingredients.isEmpty() }
                     if needsBuild { try ingredients.rebuild() }
                     return report

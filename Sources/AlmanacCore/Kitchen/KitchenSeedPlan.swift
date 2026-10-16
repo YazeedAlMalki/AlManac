@@ -112,6 +112,13 @@ public struct KitchenSeedPlan: Sendable, Hashable {
         for ref in [Self.bowlRef, Self.satayRef] {
             try editor.update(ref, .servings(nil))
         }
+        // And an imported recipe whose page states no count goes back to
+        // asking, so the servings question can be answered again on the next
+        // run (`KitchenUITests.testAnImportedRecipeIsCreditedAndAsksForServings`).
+        try db.run("""
+            UPDATE nutrition_dish SET serving_count = NULL
+            WHERE food_ref IN (SELECT food_ref FROM kitchen_recipe_source WHERE stated_servings IS NULL);
+            """)
 
         let log = NutritionLogStore(db: db, zone: ZoneContext(timeModel.timeZone))
         for back in Self.oatsDaysBack {

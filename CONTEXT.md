@@ -649,6 +649,69 @@ checked and their documents cannot be. A bundle that has the column and a
 missing digest is refused as corrupt. *Overrule by:* returning an error instead
 of `return` in `BackupService.verifyDocumentChecksums` when the column is absent.
 
+### Kitchen recipes from Wikibooks (2026-10-16)
+
+The owner picked the Wikibooks Cookbook (T04). How it was built was left to
+the build; **none of these has been confirmed.**
+
+**Recipes with pork or alcohol are left out.** Eight recipes were dropped
+for an ingredient marked `pork` (bacon, ham, pork, pork sausage, lard,
+gelatine) or `alcohol` (wine, rum, beer). Almanac keeps Islamic fasts and
+prayer times, so a recipe list that offered them by default seemed wrong; it
+is a guess about the owner's wishes, not something he said. Vinegar and
+vanilla extract are kept. *Overrule by:* `python3 -m almanac_recipes build
+--allow-excluded`, or clearing the `exclude` column in
+`tools/recipes/ingredients.csv`.
+
+**An imported recipe is an `almanac:` dish, marked by its own source row.**
+So logging, serving counts, the ingredient table and the allergen check need
+no second path. Its `nutrition_food.licence_group` is `N`, because that column
+describes nutrition values, these are reduced on the device from licensed
+components, and the column admits only A, B and N. The recipe's own licence
+(CC BY-SA 4.0), title, link and revision are in `kitchen_recipe_source`
+(Migration 062). This does stretch `N`'s comment ("rows Almanac authors and
+owns outright"). *Overrule by:* a new `SourceIdentifier.Namespace` for
+imported recipes, which also means widening `requireNative` in
+`NutritionDishEditor`, the importer's `namespace <> 'almanac'` rule, and the
+`licence_group` CHECK.
+
+**Methods are not shipped; each recipe links to its page.** Only the name and
+the ingredient list, converted to grams, are in the bundle. Kitchen picks a
+recipe to log, not to cook from, and leaving the text out keeps the CC BY-SA
+material small. *Overrule by:* adding the procedure section to `build.py`'s
+output and a recipe page in `KitchenRecipesView.swift`.
+
+**A stated serving count is used; otherwise Kitchen asks.** A page's
+"Servings = 4" is the author's figure, not an estimate, so it sets the count
+on first install (70 of 298). For the rest, the 2026-10-06 rule stands: the
+first time one is chosen, "How many servings does this make?", starting at 2
+like the Saved meals control (1–50). "Not now" logs the whole recipe as one
+serving and asks again next time. A later install never overwrites a count
+the person set. *Overrule by:* `WikibooksRecipeBundle.install` (the
+`isNew, let servings` line) and `RecipeServingsQuestion` in
+`KitchenRecipesView.swift`.
+
+**How a line becomes grams.** Volumes and counts go through one USDA SR
+Legacy household measure per ingredient, chosen in `ingredients.csv` (onion:
+"1 cup, chopped", 160 g; egg: "large", 50 g). A range is its midpoint. A
+seasoning with no amount, a pinch or a dash is set aside, which leaves a
+negligible amount of energy out. Any other unreadable line drops the recipe.
+The conversions are typical weights, not the author's. *Overrule by:* the
+rows of `tools/recipes/ingredients.csv` and the rules in
+`tools/recipes/almanac_recipes/build.py`.
+
+**Imported recipes are Kitchen's, not Saved meals'.** Saved meals lists only
+the person's own dishes, and "All" in Kitchen lists the person's own recipes
+first, then the imported ones, all of them (no limit of 50). *Overrule by:*
+the `imported` filter in `SavedMeals.list(excluding:)`, `RecipeFinder.ownFirst`,
+and the `limit:` in `NutritionModel.browseRecipes`.
+
+**The credit is one line on every imported recipe, plus a link.** "From the
+Wikibooks Cookbook, CC BY-SA 4.0. Amounts converted to grams." under the
+recipe's name, a book button that opens its page, and the full statement of
+changes on the Attributions page. *Overrule by:* `ImportedRecipeSource.credit`
+and `RecipeRow` in `KitchenRecipesView.swift`.
+
 ### Weighing
 
 **Meter fraction**:

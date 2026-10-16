@@ -49,7 +49,11 @@ public struct SavedMeals: Sendable {
 
     /// Every saved meal, checked against `allergens`.
     public func list(excluding allergens: Set<FoodAllergen>) throws -> SavedMealResults {
-        let dishes = try NutritionDishEditor(db: db).dishes()
+        // An imported recipe is a dish too, but not one the person saved: it is
+        // Kitchen's, and listing three hundred of them here would bury the
+        // person's own meals.
+        let imported = Set(try WikibooksRecipeBundle.sources(in: db).keys)
+        let dishes = try NutritionDishEditor(db: db).dishes().filter { !imported.contains($0.ref) }
         let split = try DishAllergenCheck(db: db).partition(dishes, ref: \.ref, allergens: allergens)
         return SavedMealResults(meals: split.shown, hidden: split.hidden, allergens: allergens)
     }

@@ -114,7 +114,8 @@ public enum AlmanacMigrations {
         Migration058_NotificationRuleOffset.self,
         Migration059_FastsQuestion.self,
         Migration060_DigestionSymptoms.self,
-        Migration061_ExternalCodeDisplayName.self
+        Migration061_ExternalCodeDisplayName.self,
+        Migration062_KitchenRecipeSource.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with

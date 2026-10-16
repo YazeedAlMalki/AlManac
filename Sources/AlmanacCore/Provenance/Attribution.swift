@@ -99,7 +99,7 @@ public enum AttributionCatalog {
     /// matching `entries` row fails `AttributionAudit`.
     public static let bundledSourceIds: [String] = [
         "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd",
-        "bristol-stool-form-scale", "loinc"
+        "bristol-stool-form-scale", "loinc", "wikibooks-cookbook"
     ]
 
     public static let entries: [Attribution] = [
@@ -204,6 +204,25 @@ public enum AttributionCatalog {
                 + "Names and Codes (LOINC) Committee and is available at no cost under the license at "
                 + "http://loinc.org/license. LOINC® is a registered United States trademark of "
                 + "Regenstrief Institute, Inc."
+        ),
+        // Kitchen's recipes (`WikibooksRecipeBundle`), chosen by the owner on
+        // 2026-10-16 (T04). CC BY-SA 4.0: each recipe also carries its own
+        // page title and link (`kitchen_recipe_source`), and the adapted
+        // recipes, `Kitchen/Resources/wikibooks-recipes.json`, are released
+        // under the same licence.
+        Attribution(
+            sourceId: "wikibooks-cookbook",
+            title: "Wikibooks Cookbook recipes",
+            author: "Wikibooks contributors (each recipe's page history lists its authors)",
+            sourceURL: "https://en.wikibooks.org/wiki/Cookbook:Table_of_Contents",
+            licenses: [ccBySa40],
+            isModified: true,
+            modificationNote: "Ingredient amounts converted to grams, using USDA FoodData Central "
+                + "household weights for cups, spoons and counts, and each ingredient matched to a "
+                + "food in Almanac's nutrition data. Seasonings with no stated amount, and pinches "
+                + "and dashes, are left out. Methods are not included; each recipe links to its "
+                + "page. Recipes that could not be converted in full, or that use pork or alcohol, "
+                + "are not included. The adapted recipes are released under CC BY-SA 4.0."
         )
     ]
 

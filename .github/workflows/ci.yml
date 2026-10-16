@@ -66,6 +66,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The Wikibooks recipe reader and builder (tools/recipes). Synthetic
+      # pages only, so it needs no lake; macOS has the python3 it needs.
+      - name: Recipe tool tests
+        working-directory: tools/recipes
+        run: python3 -m unittest discover -s tests -t .
+
       # GitHub ships one major Xcode per macOS image and rotates the patch
       # release underneath it, so `macos-26` is the pin that actually holds: a
       # major bump is a real change and fails loudly, while a patch rotation

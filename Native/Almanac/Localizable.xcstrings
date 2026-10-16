@@ -3183,6 +3183,16 @@
         }
       }
     },
+    "Continue" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متابعة"
+          }
+        }
+      }
+    },
     "Correct circumference": {
       "localizations": {
         "ar": {
@@ -5303,6 +5313,16 @@
         }
       }
     },
+    "How many servings does this make?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كم حصة تكفي هذه الوصفة؟"
+          }
+        }
+      }
+    },
     "How much": {
       "localizations": {
         "ar": {
@@ -7373,6 +7393,16 @@
         }
       }
     },
+    "Not now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس الآن"
+          }
+        }
+      }
+    },
     "Not recorded": {
       "localizations": {
         "ar": {
@@ -7789,6 +7819,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "نقرة واحدة تسجّل الكمية المعتادة."
+          }
+        }
+      }
+    },
+    "Open %@ on Wikibooks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح %@ في ويكي الكتب"
           }
         }
       }
@@ -10779,6 +10819,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "تعذّر تطبيق الموقع الجديد. %@"
+          }
+        }
+      }
+    },
+    "The recipe's page does not say. Your answer is kept for next time." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صفحة الوصفة لا تذكر ذلك. نحفظ إجابتك للمرة القادمة."
           }
         }
       }

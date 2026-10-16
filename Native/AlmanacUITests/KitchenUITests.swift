@@ -283,6 +283,42 @@ final class KitchenUITests: XCTestCase {
         XCTAssertEqual(grams.value as? String, "100", "one counted serving was not pre-filled")
     }
 
+    // MARK: - Imported recipes
+
+    /// A Wikibooks recipe (owner, T04, 2026-10-16) is listed with its credit
+    /// and a link to its page, and, because its page states no serving count,
+    /// choosing it asks how many it makes before the logging form opens with
+    /// one serving. "Indian Rice" is 1,435.8 g in the shipped bundle.
+    func testAnImportedRecipeIsCreditedAndAsksForServings() throws {
+        try openRecipes()
+        app.buttons["All"].tap()
+        let field = app.textFields["Recipe name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10), "All offers no name search")
+        field.tap()
+        field.typeText("Indian Rice")
+
+        // The recipes install after the nutrition reference, on first launch.
+        let recipe = recipeButton("Indian Rice")
+        XCTAssertTrue(recipe.waitForExistence(timeout: 120),
+                      "the imported recipe is not listed: \(app.buttons.allElementsBoundByIndex.map(\.label))")
+        XCTAssertTrue(recipe.label.contains("Wikibooks Cookbook, CC BY-SA 4.0"),
+                      "the recipe carries no credit: \(recipe.label)")
+        XCTAssertTrue(anyElement("recipe-source-link-wikibooks-13950").exists, "no link to the recipe's page")
+
+        recipe.tap()
+        XCTAssertTrue(app.staticTexts["How many servings does this make?"].waitForExistence(timeout: 10),
+                      "choosing a recipe with no stated count did not ask")
+        XCTAssertTrue(app.staticTexts["Servings: 2"].exists, "the question does not start at 2")
+        XCTAssertEqual(app.staticTexts["recipe-servings-preview"].label, "Serving: 718 g")
+        app.buttons["recipe-servings-continue"].tap()
+
+        XCTAssertTrue(app.waitUntil(timeout: 10) { !app.navigationBars["Recipes"].exists },
+                      "answering did not hand the recipe on")
+        let grams = app.textFields["Amount, in grams"]
+        XCTAssertTrue(app.reveal(grams), "the logging form has no gram amount")
+        XCTAssertEqual(grams.value as? String, "718", "one of two servings was not pre-filled")
+    }
+
     // MARK: - Helpers
 
     /// The first element of any type carrying `identifier`.

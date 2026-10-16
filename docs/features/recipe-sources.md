@@ -1,8 +1,8 @@
 # Recipe sources a commercial app can use (T04, 2026-10-16)
 
 **Asked by the owner, 2026-10-16:** instead of TheMealDB, "look for an
-open-source alternative that I can use commercially". Nothing is built from
-this; it is the research the owner asked for, and the choice is his.
+open-source alternative that I can use commercially". **The owner picked the
+Wikibooks Cookbook the same day; it is built** (see "Built" at the end).
 
 **Rule applied:** a source counts only if its *own* licence or terms, read at
 the source, allow commercial use. A dataset someone else uploaded with a licence
@@ -72,3 +72,28 @@ already decided for imported recipes.
 Sources read: the Wikibooks footer and MediaWiki API; the Hugging Face dataset
 card; the TensorFlow Datasets catalog entry for RecipeNLG; the NHLBI cookbooks'
 front matter (via search); the Kaggle listings (via search).
+
+## Built (2026-10-16)
+
+The owner answered "Wikibooks Cookbook". What exists:
+
+- **`tools/recipes`** fetches every page in `Category:Recipes` (3,797) through
+  the MediaWiki API into the food-data lake, and builds
+  `Sources/AlmanacCore/Kitchen/Resources/wikibooks-recipes.json`: **298
+  recipes**, 70 with a stated serving count. Its README has the line-by-line
+  rule and the counts. Ingredient lines are matched through
+  `tools/recipes/ingredients.csv` (198 ingredients) and converted to grams
+  with USDA SR Legacy household measures.
+- **The app** installs the file after the nutrition reference
+  (`WikibooksRecipeBundle`, Migration 062). Each recipe becomes an `almanac:`
+  dish with a `kitchen_recipe_source` row (title, link, revision, licence).
+  Kitchen lists it with the credit line and a link to its page, and asks for a
+  serving count when the page gives none. Saved meals does not list it.
+- **Attributions:** the entry `wikibooks-cookbook`, CC BY-SA 4.0, with the
+  changes stated.
+- Decisions the owner did not make (pork and alcohol left out, no methods,
+  how lines become grams…) are in `CONTEXT.md`, "Kitchen recipes from
+  Wikibooks".
+
+Not done: Arabic recipe names (the pages are English), recipe images, and the
+procedure text.
