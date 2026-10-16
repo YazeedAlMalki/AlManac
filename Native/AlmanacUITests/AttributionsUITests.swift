@@ -58,15 +58,15 @@ final class AttributionsUITests: XCTestCase {
         app.buttons["Attributions"].tap()
         XCTAssertTrue(app.navigationBars["Attributions"].waitForExistence(timeout: 10))
 
-        // The nutrition notices make the source list longer, so the per-exercise
-        // author section is below the initial viewport.
+        // The nutrition notices and the Bristol scale's entry make the source
+        // list longer, so the per-exercise author section is well below the
+        // initial viewport. `reveal`, not a bare swipe loop: a swipe is not
+        // always a scroll, and a budget of plain swipes ran out on CI
+        // (PR #20) with the section still unrendered.
         let authorSection = app.staticTexts[
             "workout-guide exercise illustrations and exercise list — exercise authors"
         ]
-        for _ in 0..<30 where !authorSection.exists {
-            app.swipeUp()
-        }
-        XCTAssertTrue(authorSection.exists, "the per-exercise author section is missing")
+        XCTAssertTrue(app.reveal(authorSection, maxSwipes: 40), "the per-exercise author section is missing")
         XCTAssertTrue(app.staticTexts["Bryl Lim"].exists)
     }
 
