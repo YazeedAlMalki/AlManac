@@ -16,6 +16,24 @@ detail is a build decision and goes in `CONTEXT.md` with an *Overrule by:* line.
 | **G5** LOINC codes | Add verified LOINC codes, accepting LOINC's licence? | **Yes, add them** | The owner accepts the LOINC licence (free, attribution required). Verified codes are added to the lab catalog and LOINC is credited on the Attributions page. |
 | **T04** TheMealDB route | Don't ship / ask them / fetch live? | **"Look for an open-source alternative that I can use commercially"** | None of the three. A recipe dataset whose licence allows commercial use is to be found and reported before anything is built. TheMealDB is not used. **Researched 2026-10-16:** `docs/features/recipe-sources.md`. **Owner's pick, 2026-10-16: Wikibooks Cookbook. Built:** 298 recipes in Kitchen, credited (recipe-sources.md, "Built"). |
 
+## Later the same day: Slice 8
+
+Asked to approve the Slice 8 rubric (D2) and the regional-dish choices logged in
+`CONTEXT.md` ("Regional dishes in the nutrition pipeline"), the owner answered
+**"Approve all"**.
+
+| Item | Answer | What it means |
+|---|---|---|
+| **D2** Slice 8 rubric | Approved as written | Slice 8 is scored by it: licensing 20, native pipeline 25, tooling 15, in-app 15, content 25 × min(1, dishes ÷ D_full); at most 50 with no authored dish |
+| **D4** native licence group | Group N, as built | No change |
+| **D5** calorie factors | General 4/4/9/7, as built | No change |
+| **D6**, **D7** | As built | Nine calorie nutrients; branded foods out of v1 |
+| **D8** SFDA as a benchmark | Not used | The pipeline refuses it, as built |
+| The other regional-dish choices | Approved | Recipes only, 15 % / 20 % report thresholds, `borrowed` portions, transliteration in the English name, `regional-` ids, CSV only, no cross-source carbohydrate |
+
+**Still open from Slice 8:** D3, the number of dishes that counts as full
+coverage, and the reference material for the first batch.
+
 **Still open:** T07/T08, the Diet Profile build, waits on the Diet Profile
 Addendum v1.0. It is not in this repository. A file named
 `almanac-diet-profile-addendum.md` (v1.0 draft, 2026-09-25, "awaiting owner

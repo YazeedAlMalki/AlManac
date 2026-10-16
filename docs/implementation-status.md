@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-16 (latest): the newest entry is regional dishes through the nutrition pipeline (Slice 8).
+Updated 2026-10-16 (latest): the newest entry is the owner's approval of the Slice 8 rubric (1,009 / 1,200).
+Updated 2026-10-16 (later still): regional dishes through the nutrition pipeline (Slice 8).
 Updated 2026-10-16 (later yet): Kitchen's Wikibooks recipes (T04 built).
 Updated 2026-10-16 (later still): the owner's answers to T02, T04, T25 and G1–G5.
 Updated 2026-10-16 (later): the newest entry is the AI handoff of 2026-10-16 (A1–A11).
@@ -31,6 +32,28 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-16 — The owner approves the Slice 8 rubric (D2)
+
+**Outcome.** The owner answered "Approve all": the Slice 8 rubric (D2) and the
+regional-dish choices are confirmed (`docs/features/owner-decisions-2026-10-16.md`,
+"Later the same day"). Slice 8 now counts at **50**, the cap with no authored
+dish, so the tracker moves from 964 to **1,009 of 1,200 (84.1 %)**.
+
+| Phase | Before | Now | Formula |
+|---|---:|---:|---|
+| 8 Regional Food Data | 5 | **50** | 20 + 25 + 15 + 5 + 25 × min(1, 0 ÷ D_full) = 65, capped at 50 with 0 dishes |
+| The other eleven | 959 | 959 | not re-scored (no Swift or UI run in this container) |
+| **Total** | **964** | **1,009** | 1,009 ÷ 1,200 = 84.1 % |
+
+Evidence: the B1 table in the entry below; `tools/nutrition` 115 tests here and
+in CI; CI run 38924264402 green for build, nutrition tests and `swift test`.
+
+**What moves Slice 8 next:** only content. D3 (D_full) and the first batch of
+dishes. Each dish adds 25 ÷ D_full, and the cap lifts with the first one, so
+the remaining 15 already built count from then on: at D_full = 50, ten dishes
+put Slice 8 at 65 + 5 = 70. The dish screen's provenance line (in-app, 10
+points) is the one built gap, and needs the iMac.
 
 ## 2026-10-16 — Regional dishes through the nutrition pipeline (Slice 8, B1 to B4)
 

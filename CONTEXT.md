@@ -187,7 +187,7 @@ are under "Digestion and urination" and "Body and wellness" below.
 
 More were settled on 2026-10-16 while putting regional dishes through the
 nutrition pipeline (Slice 8, B2 to B4); they are under "Regional dishes in the
-nutrition pipeline" below. None is confirmed.
+nutrition pipeline" below. **Confirmed by the owner on 2026-10-16** ("Approve all").
 
 Four more were settled on 2026-10-16 while building the recovery day a person
 declares (§9.6); they are under "Readiness: the declared recovery day" below.
@@ -718,8 +718,12 @@ and `RecipeRow` in `KitchenRecipesView.swift`.
 
 ### Regional dishes in the nutrition pipeline (2026-10-16)
 
-Settled while building B2 to B4 of the 2026-10-16 "handoff to 90%". The owner
-has not answered D2 to D8. **None of these has been confirmed.**
+Settled while building B2 to B4 of the 2026-10-16 "handoff to 90%".
+**Confirmed by the owner on 2026-10-16**: asked to approve the Slice 8 rubric
+and these choices, he answered "Approve all". That settles D2 (the rubric as
+written), D4 (group N), D5 (4/4/9/7) and D8 (SFDA not used, even as a
+benchmark), and keeps D6 and D7 as built. D3 (how many dishes count as full
+coverage) is still open. The *Overrule by:* lines stay, to show where each one lives.
 
 **A regional dish is a recipe of reference foods, never typed-in values.** Each
 dish lists USDA, CIQUAL, CoFID or AFCD foods by weight, and its values are that
