@@ -26,8 +26,8 @@ body-composition and custom measurements and accepts manual values.
 | Context tags: history and editing | **Confirmed built** (2026-09-27, `BodyCompositionWellnessUITests`). **Their use as correlation confounders (BRD §6.8) belongs to Slice 10, Insights**, and is not part of this slice |
 | Labs: remaining analytes | **Seeded**, each cited — `laboratory-catalog-coverage.md` 0.4 |
 | Lab unit conversion and re-test suggestion | **Built in core**, not on a screen — `laboratory.md` §8a–8b |
-| Progress photos (gate G3) | **Owner gate open.** Still deferred (2026-09-16); not built |
-| Lab import-job failure row (gate G4) | **Owner gate open.** Already built as "yes, a row" before this pass; not changed |
+| Progress photos (gate G3) | **Closed 2026-10-16: still later** (owner). Deferred, as on 2026-09-16; not built |
+| Lab import-job failure row (gate G4) | **Closed 2026-10-16: yes, keep a record** (owner). Built in `d21d9a9`; not changed |
 | Verified LOINC codes (gate G5) | **Owner gate open.** None seeded |
 | The two failing UI tests | **Pass** on a wiped simulator (2026-10-15). The discontinue test had found a real bug — the only plan, once discontinued, was hidden behind the empty state — fixed in `SupplementView` |
 
