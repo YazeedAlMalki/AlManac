@@ -186,6 +186,11 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testTodayShowsTheActivityRingsCalendar() {
+        // On a small phone the "Which fasts do you keep?" card (T02) puts the
+        // Rhythm heading below the fold on a fresh install, so scroll to it.
+        for _ in 0..<6 where !app.staticTexts["Rhythm"].waitForExistence(timeout: 2) {
+            app.swipeUp()
+        }
         XCTAssertTrue(app.staticTexts["Rhythm"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.datePickers.firstMatch.exists, "the free-date picker was superseded")
 
