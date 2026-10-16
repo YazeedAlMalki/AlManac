@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-16 (latest): the newest entry is Kitchen's Wikibooks recipes (T04 built).
+Updated 2026-10-16 (latest): the newest entry is regional dishes through the nutrition pipeline (Slice 8).
+Updated 2026-10-16 (later yet): Kitchen's Wikibooks recipes (T04 built).
 Updated 2026-10-16 (later still): the owner's answers to T02, T04, T25 and G1–G5.
 Updated 2026-10-16 (later): the newest entry is the AI handoff of 2026-10-16 (A1–A11).
 Updated 2026-10-16: the newest entry is the recovery day a person declares
@@ -30,6 +31,124 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-16 — Regional dishes through the nutrition pipeline (Slice 8, B1 to B4)
+
+**Outcome.** Regional dishes now have a way into the shipped food database:
+the owner (or the AI, from his material) fills three CSV sheets, and the
+pipeline turns each dish into an Almanac food with an Arabic name, a
+household measure and calories checked two ways. **0 dishes are authored**, so
+nothing new ships yet. By the proposed rubric Slice 8 is **33 before this work
+and 50 after** (the cap with no dishes), not 5 and not 40, and **none of it
+counts until the owner approves the rubric (D2)**. Run in a Linux cloud
+container: Python only. Swift and the UI suite were not run here; CI runs them
+on the push (`73f51b7`), results below.
+
+### B1 — the baseline, from the code
+
+| Part (points) | Before | After | Evidence |
+|---|---:|---:|---|
+| Licensing and boundary (20) | 20 | 20 | Built before this work. Licence group on every food, value and portion row (`model.validate`); the bundle fails before writing on any group outside A, B, N (`licence.assert_shippable`, the tables' `CHECK`, `_verify_written`); native rows are group N (`dictionary/licence_groups.csv`); the app re-asserts it (`NutritionBundleImportTests.testARestrictedRowFailsTheImportAndChangesNothing`, `testNativeRowsShipAsGroupN`). B2 needed no change |
+| Native-row pipeline (25) | 5 | 25 | Before: only a device-authored dish was reduced (`NutritionDishEditor.reduce`, `calculated_recipe`); the pipeline's native namespace was "Nothing yet". After: `sources/almanac.py` |
+| Authoring and QA tooling (15) | 3 | 15 | Before: one dish at a time on the phone, no report. After: CSV bulk import and `processed/native-report.md` |
+| In-app regional foods (15) | 5 | 5 | Arabic search over a bundled `almanac:` row is built and tested (`testSearchMatchesEveryLanguageFoldedAndReturnsEachFoodOnce`); the transliteration rides in the English name, so the same search finds it. **Not built:** the dish screen does not show provenance (`NutritionFood.sourceRecord` is read by the core, shown by no view); no Attributions change, since no derived value ships yet. Needs the iMac (Swift UI and a UI test) |
+| Content (25) | 0 | 0 | 0 dishes; 25 × min(1, 0 ÷ D_full) |
+| **Total** | **33** | **65 → 50** | capped at 50 with no authored dish in the bundle |
+
+### B2 to B4 — what was built (`c1720d2`)
+
+- `tools/nutrition/native/{dishes,components,portions}.csv`, headers only.
+- `sources/almanac.py`: a dish is `almanac:regional-{id}`, food group
+  `regional`, group N. Values are its components (USDA, CIQUAL, CoFID, AFCD
+  canonical foods) reduced per 100 g of `yield_g`, by the same rule as
+  `NutritionDishEditor.reduce`; every value `calculated_recipe`. Cooked or raw
+  is required; the retention assumption goes to the manifest. The benchmark is
+  named in `source_record`. `all` runs it after the other sources.
+- Stops the stage: bad or repeated id, no English name, bad state, no
+  components, non-positive weights, a component or benchmark that is not a
+  shippable canonical food (SFDA refused even as a benchmark).
+- Reports, does not stop: no Arabic name, no household measure, cooked with no
+  yield, general Atwater against the components' energy (15 %) and against the
+  benchmark (20 %), names shared by two dishes (folded for case, harakat and
+  Arabic letter variants).
+- With no dishes, no `almanac` source enters the bundle, so today's shipped
+  bundle would build exactly as before.
+- CI now runs `tools/nutrition`'s tests (`aa5de15`).
+
+### What ran (here)
+
+| Run | Result |
+|---|---|
+| `tools/nutrition` tests before the change | 102, 6 skipped (need the real lake), OK |
+| After, system Python and a clean venv with only `openpyxl` + `lxml` (the CI step) | **115, 6 skipped, OK** (13 new in `test_almanac.py`) |
+| Revert-and-run, `sources/almanac.py` | 8 mutations (yield ignored, trace as unknown, not-analysed skipped, licence guard removed, Arabic check removed, qualifier `measured`, duplicate id allowed, plus one equivalent mutation discarded): each of the 8 fails a test. The first run caught a vacuous test (not-analysed never reached the sum), fixed before the commit |
+| `tools/recipes` tests | 12, OK |
+
+**Not run here:** `swift test`, any UI test, the real lake (`all`, `qa`).
+download.swift.org is refused in this container; a Swift 6.0.3 image was
+fetched, and running it was declined by the session's permission check.
+Swift results are CI's, below.
+
+### Also in this push
+
+- `MigrationFixtureTests.testEveryEarlierVersionUpgradesToHead` (`215d4ce`):
+  an empty database at each earlier version upgrades to head with no broken
+  foreign key. Result: CI's, below.
+- `docs/device-checklist.md` (`73f51b7`): the owner's three iPhone checks
+  (water to Health and back, a reminder on time, a restore), one page, the
+  app's own labels. The restore check uses food, because water also lives in
+  Apple Health and can come back after a restore.
+
+### CI at `73f51b7`
+
+- `73f51b7`: the new "Nutrition pipeline tests" step **failed** on macOS, on
+  `test_fixture.test_committed_fixture_is_current`, which had never run in CI.
+  Cause: macOS's SQLite dumps a REAL as `4.3021032504780115` where 3.45 writes
+  `4.30210325047801145e+00`, the same double. Fixed in the test (`ee49c33`): it
+  now compares both databases' schemas and rows. A changed value still fails it
+  (checked); the two spellings compare equal (checked). 115 pass here.
+- `ee49c33`: **running** when this was written; the result is added on the next entry.
+
+### Score
+
+The tracker's figure is the plain average of 12 phases. This session re-scored
+only Slice 8, and only by the rubric that awaits D2:
+
+`(964 − 5 + 50) / 1,200 = 1,009 / 1,200 = 84.1 %`, **if D2 is approved as written**;
+964 / 1,200 = 80.3 % until then.
+
+The other phases were **not re-scored**: that needs the full suite and the UI
+suite, which this container cannot run. The entries below this one record iMac
+runs (16 Oct) for most of the planned AI-only rises (A1 to A11, G1, G2, G5, T02
+built), but those runs are not this session's.
+
+### Contradictions with the handoff
+
+- The handoff is older than the branch: A1 to A11, G1 to G5, T02, T04 and T25
+  were already done and pushed. A5's commits were on origin.
+- D4 is settled in the code (group N exists). D5 is the code's rule already
+  (`GeneralAtwater`). D6 and D7 stand as built (nine calorie nutrients; branded
+  foods out). Logged as unconfirmed, not changed.
+- `processing-design-v0.1.md`, `calorie-database-build-prep-2026-09-13.md` and
+  `food-lake-addendum-2026-09-12.md` are not in the repository (the README
+  points at `~/ALManac-food-data`), so they were not read.
+- The carbohydrate basis is kept per source (Diet Profile OI-6): four
+  canonical nutrients, `tools/nutrition/README.md` "Carbohydrate". Confirmed by
+  reading.
+
+### Unconfirmed decisions logged
+
+`CONTEXT.md`, "Regional dishes in the nutrition pipeline": recipes only, no
+typed-in values; group N (D4); 4/4/9/7 (D5); 15 % and 20 % thresholds; SFDA
+refused as a benchmark (D8); household measures `borrowed`; transliteration
+in the English name; `regional-` ids and tag; CSV only; carbohydrate not
+harmonised across sources. Each has an *Overrule by:* line.
+
+### What the owner can do next
+
+1. Approve, amend or reject the Slice 8 rubric (D2) and pick D_full (D3).
+2. Send reference material for the first dishes (D3); the AI fills the sheets.
+3. Run `docs/device-checklist.md`.
 
 ## 2026-10-16 — Kitchen's recipes from the Wikibooks Cookbook (T04 built)
 
