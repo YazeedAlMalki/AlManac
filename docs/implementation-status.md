@@ -107,7 +107,13 @@ Swift results are CI's, below.
   `4.30210325047801145e+00`, the same double. Fixed in the test (`ee49c33`): it
   now compares both databases' schemas and rows. A changed value still fails it
   (checked); the two spellings compare equal (checked). 115 pass here.
-- `ee49c33`: **running** when this was written; the result is added on the next entry.
+- `7ae965b` (`ee49c33`'s code plus this entry), run 38924264402:
+  **xcodebuild (app + widget) green**, including "Nutrition pipeline tests"
+  (115, macOS) and "Untranslated strings"; **`swift test` green**: "Test run
+  with 1178 tests passed", and the XCTest half, which holds
+  `testEveryEarlierVersionUpgradesToHead`, passed (the job fails on any XCTest
+  failure; its count was not copied out). AlmanacUITests: still running at
+  15:55 UTC; this change touches no app code.
 
 ### Score
 
