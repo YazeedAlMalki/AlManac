@@ -7533,6 +7533,16 @@
         }
       }
     },
+    "Not yet in Apple Health": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يصل إلى تطبيق الصحة بعد"
+          }
+        }
+      }
+    },
     "Note": {
       "localizations": {
         "ar": {

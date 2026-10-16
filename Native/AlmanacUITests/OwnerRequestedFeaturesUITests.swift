@@ -339,6 +339,10 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
         // 2026-09-27 change, so it is what catches the section being restored.
         XCTAssertFalse(app.staticTexts["From drinks"].exists,
                        "the separate drink-calorie line was superseded and must not come back")
+        // The simulator has not allowed Almanac to write to Health, so no entry
+        // may claim to be waiting for it (§5.5's status shows only once it can).
+        XCTAssertFalse(app.descendants(matching: .any)["hydration.pending-health"].exists,
+                       "an entry is marked as waiting for Apple Health although Almanac cannot write there")
 
         // The drink's calories are part of the day's *one* energy total, on
         // Today, rather than a second figure here. So the assertion has to go

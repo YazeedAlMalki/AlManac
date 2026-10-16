@@ -70,7 +70,17 @@ struct AlmanacApp: App {
                     // Await both syncs before refreshing: sleep, vitals and water
                     // all feed the homepage, and a fire-and-forget hydration
                     // sync would leave the tracking calendar one refresh behind.
-                    // Both syncs are no-ops until HealthKit is connected.
+                    // Both syncs are no-ops until HealthKit is connected. A person
+                    // who connected in an earlier session is reconnected here,
+                    // with no sheet: HealthKit says truthfully whether Almanac
+                    // may write water, and only that answer is taken as "connected".
+                    if !hydrationModel.isHealthKitConfigured {
+                        let provider = HealthKitProvider()
+                        if provider.canWrite(.water) {
+                            hydrationModel.configureHealthKit(provider: provider, writer: provider)
+                            healthModel.configure(provider: provider)
+                        }
+                    }
                     Task {
                         await hydrationModel.syncOnForeground()
                         await healthModel.syncNow()

@@ -79,6 +79,15 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     /// `WorkoutSessionHealthBridge` — so no case is left out.
     static let readableDomains: [HealthDomain] = HealthDomain.allCases
 
+    /// Whether the person let Almanac write this type. HealthKit answers this
+    /// truthfully for writing (it hides only read permission), so it is a fact,
+    /// not a guess.
+    func canWrite(_ domain: HealthDomain) -> Bool {
+        guard HKHealthStore.isHealthDataAvailable(), Self.writableDomains.contains(domain),
+              let type = Self.quantities[domain]?.type else { return false }
+        return store.authorizationStatus(for: type) == .sharingAuthorized
+    }
+
     func requestAuthorisation(for domains: [HealthDomain]) async throws {
         let read = Set(domains.compactMap(Self.sampleType(for:)))
         guard !read.isEmpty else { return }

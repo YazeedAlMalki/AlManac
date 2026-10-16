@@ -16,6 +16,11 @@ cannot prove.
 4. Back in Health, tap **Add Data**, enter 300 mL, **Add**. Open Almanac and
    look at today's water.
    **Pass:** the 300 mL shows once, not twice.
+5. Close Almanac fully (swipe it away) and open it again. Do not open Settings.
+   Log **+250** once more, then look in Health as in step 3.
+   **Pass:** the new 250 mL is there, without tapping Connect again. An entry
+   still on its way says "Not yet in Apple Health" under it in Almanac's
+   Hydration screen, and the line goes once it arrives.
 
 ## 2. A reminder arrives on time (phase 11)
 

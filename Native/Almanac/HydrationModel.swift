@@ -97,6 +97,17 @@ final class HydrationModel: ObservableObject {
     /// Wires the concrete iOS `HealthKitProvider` in. Left unconfigured, sync
     /// methods below are no-ops — hydration logging itself never depends on
     /// HealthKit being authorised.
+    /// Whether water logged here is meant to reach Apple Health at all. Until
+    /// it is, an entry not yet in Health is the expected state, not news.
+    var writesWaterToHealth: Bool {
+        (healthWriter as? HealthKitProvider)?.canWrite(.water) ?? false
+    }
+
+    /// Whether this launch has a HealthKit provider yet. Only "Connect to
+    /// Health" used to set one, so after a relaunch nothing synced, and a
+    /// failed write was never retried, until the person tapped it again.
+    var isHealthKitConfigured: Bool { healthWriter != nil }
+
     func configureHealthKit(provider: any HealthProvider, writer: any HealthWriter) {
         healthProvider = provider
         healthWriter = writer

@@ -809,6 +809,26 @@ and "Use the typical value" removes it. Calories, sodium and sugar stay the
 catalog's: §6.2 asks only for editable caffeine presets. Drinks already logged
 keep the caffeine they were logged with. *Overrule by:* `HydrationLoggingService.setCaffeinePreset`.
 
+### Apple Health status on water entries (2026-10-16)
+
+Asked for by the owner ("show the not yet in Apple Health status"); the detail
+was left to the build. **None of these has been confirmed.**
+
+**"Not yet in Apple Health" shows only once Almanac may write water there.** On
+an entry the person logged in Almanac that HealthKit has not received yet. For
+someone who never connected Health, nothing is shown: every entry would carry
+it, and it would be noise. *Overrule by:* the `model.writesWaterToHealth`
+condition in `HydrationDashboardView`.
+
+**A person who connected before is reconnected at launch, with no sheet.** Found
+while building the status: HealthKit was hooked up only by tapping "Connect to
+Health", so after any relaunch no water synced and a failed write was never
+retried. Now, if HealthKit says Almanac may write water, the app reconnects on
+becoming active. Water's write permission is the test, because HealthKit hides
+read permission; someone who allowed reads but refused water writes still
+reconnects by tapping Connect. *Overrule by:* the `canWrite(.water)` block in
+`AlmanacApp`'s scene-phase handler.
+
 ### Weighing
 
 **Meter fraction**:

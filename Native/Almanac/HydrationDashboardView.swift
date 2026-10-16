@@ -69,6 +69,16 @@ struct HydrationDashboardView: View {
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                             if let note = entry.note { Text(note).font(.caption).foregroundStyle(.secondary) }
+                            // §5.5: a clear status while an app-created entry is
+                            // not yet in HealthKit. Only once Almanac may write
+                            // water there, or every entry of someone who never
+                            // connected Health would carry it. The write is
+                            // retried on every sync (`HydrationWriteback`).
+                            if model.writesWaterToHealth, entry.sourceSystem == "manual", !entry.healthKitSynced {
+                                Label("Not yet in Apple Health", systemImage: "arrow.triangle.2.circlepath")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                    .accessibilityIdentifier("hydration.pending-health")
+                            }
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 2) {
