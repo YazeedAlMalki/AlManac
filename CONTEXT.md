@@ -185,6 +185,10 @@ is confirmed.
 More were settled on 2026-10-15 while taking Slices 7 and 9 toward done; they
 are under "Digestion and urination" and "Body and wellness" below.
 
+More were settled on 2026-10-16 while putting regional dishes through the
+nutrition pipeline (Slice 8, B2 to B4); they are under "Regional dishes in the
+nutrition pipeline" below. None is confirmed.
+
 Four more were settled on 2026-10-16 while building the recovery day a person
 declares (§9.6); they are under "Readiness: the declared recovery day" below.
 
@@ -711,6 +715,60 @@ Wikibooks Cookbook, CC BY-SA 4.0. Amounts converted to grams." under the
 recipe's name, a book button that opens its page, and the full statement of
 changes on the Attributions page. *Overrule by:* `ImportedRecipeSource.credit`
 and `RecipeRow` in `KitchenRecipesView.swift`.
+
+### Regional dishes in the nutrition pipeline (2026-10-16)
+
+Settled while building B2 to B4 of the 2026-10-16 "handoff to 90%". The owner
+has not answered D2 to D8. **None of these has been confirmed.**
+
+**A regional dish is a recipe of reference foods, never typed-in values.** Each
+dish lists USDA, CIQUAL, CoFID or AFCD foods by weight, and its values are that
+recipe reduced per 100 g (`calculated_recipe`). A figure copied from a cookbook
+or a label has nowhere to go. *Overrule by:* adding a values file to
+`tools/nutrition/native/` and reading it in `sources/almanac.py`.
+
+**Native rows use the existing group N (D4).** `licence_groups.csv` already had
+"N, Almanac-native, shippable"; no new group was made and Group A was not
+stretched. *Overrule by:* the `almanac` row of `dictionary/sources.csv`.
+
+**The cross-check uses general Atwater, 4/4/9/7 (D5).** It is the factor set
+AlmanacCore already uses for every calorie figure (`GeneralAtwater`); per-food
+specific factors stay a v2 item. *Overrule by:* `qa.general_atwater` and
+`GeneralAtwater.swift` together.
+
+**The report flags 15 % and 20 %.** General Atwater more than 15 % from the
+components' own summed energy, or more than 20 % from the benchmark, is
+reported; neither stops the build. *Overrule by:* `ENERGY_TOLERANCE` and
+`BENCHMARK_TOLERANCE` in `sources/almanac.py`.
+
+**SFDA is refused even as a benchmark (D8).** A component or benchmark from a
+group that may not ship stops the stage. *Overrule by:* the `elif
+dictionary.group_of(namespace) not in shippable` branch in `_reference_values`.
+
+**Household measures are `borrowed`.** "1 plate of kabsa = 350 g" is a typical
+weight taken from reference material, not weighed for this dish. *Overrule
+by:* the `Portion(...)` line in `canonicalise`.
+
+**The transliteration rides in the English name, in brackets.** "Chicken kabsa
+(kabsat dajaj)". The name table admits one name per ISO 639 language and has no
+code for Arabic in Latin letters; this way search finds it with no app change.
+*Overrule by:* a script-tagged name row, which widens `model._LANGUAGE`.
+
+**Ids and the regional tag.** A dish is `almanac:regional-{dish_id}`, food group
+`regional`, so it cannot collide with Kitchen's `wikibooks-` recipes or a
+person's own dishes. *Overrule by:* `LOCAL_PREFIX` and `FOOD_GROUP`.
+
+**CSV only.** The owner saves a sheet as CSV; no spreadsheet reader was added.
+*Overrule by:* reading the sheets with `xlsx.py`, which the pipeline already has.
+
+**Carbohydrate is not harmonised across sources.** A dish mixing a USDA food
+(carbohydrate by difference) with a CIQUAL food (available carbohydrate) gets no
+general-Atwater figure, and the report says to draw the components from one
+source. *Overrule by:* a total-carbohydrate term in `reduce`.
+
+**Unchanged and recorded here, not decided:** the canonical nutrient set stays
+the nine calorie nutrients (D6), and branded foods stay out (D7: USDA Branded
+is extracted, not canonicalised).
 
 ### Weighing
 
