@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-16 (latest): the newest entry is the owner's answers to T02, T04, T25 and G1–G5.
+Updated 2026-10-16 (latest): the newest entry is Kitchen's Wikibooks recipes (T04 built).
+Updated 2026-10-16 (later still): the owner's answers to T02, T04, T25 and G1–G5.
 Updated 2026-10-16 (later): the newest entry is the AI handoff of 2026-10-16 (A1–A11).
 Updated 2026-10-16: the newest entry is the recovery day a person declares
 (§9.6), readiness ticket 03. Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done; the
@@ -29,6 +30,60 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-16 — Kitchen's recipes from the Wikibooks Cookbook (T04 built)
+
+**Outcome.** Kitchen ships **298 recipes** from the Wikibooks Cookbook, the
+source the owner picked. Each one shows a credit line and a link to its page.
+70 state their servings; for the rest Kitchen asks "How many servings does
+this make?" the first time one is chosen. Commit `322a200`.
+
+**What was built.** `tools/recipes` (fetch through the MediaWiki API into the
+food-data lake, review, build; 198-row ingredient table; USDA SR Legacy
+household measures for cups, spoons and counts); the bundle
+`Sources/AlmanacCore/Kitchen/Resources/wikibooks-recipes.json`; Migration
+**062** (`kitchen_recipe_source`, `kitchen_recipe_import`);
+`WikibooksRecipeBundle`, run by `NutritionModel` after the nutrition reference;
+the Kitchen screen changes; the Attributions entry `wikibooks-cookbook`; a CI
+step for the tool's tests. Details: `docs/features/kitchen.md` §8,
+`tools/recipes/README.md`.
+
+**Why 298 of 3,797.** A recipe is dropped whole if any line cannot be made into
+a food and grams: 3,365 had such a line (the largest single cause is an
+unmeasured oil line, in 133), 116 had no ingredient list, 10 had fewer than two
+ingredients, 8 used pork or alcohol. More rows in `ingredients.csv` grow the
+count.
+
+**Decisions not made by the owner** (`CONTEXT.md`, "Kitchen recipes from
+Wikibooks"): pork and alcohol recipes left out; imported recipes are
+`almanac:` dishes with licence group `N` and their licence in their own row;
+no methods shipped, a link instead; stated servings used; the person's own
+recipes listed first; Saved meals excludes imported recipes; how lines become
+grams.
+
+**Verified.**
+- Core: 1,178 + 391 tests, 1 skipped, 0 failures.
+- `ImportedRecipesTests`: 6 tests. One installs the shipped bundle on the
+  shipped reference: every recipe installs, every ingredient resolves, and a
+  second run does nothing.
+- Revert-and-run: five fixes reverted one at a time (the Saved meals filter,
+  keeping the person's count, own recipes first, the seed's reset, removing
+  dropped recipes). Each made a test fail.
+- `tools/recipes/tests`: 12 pass.
+- `KitchenUITests`: 9/9 on a fresh simulator install, including the new
+  `testAnImportedRecipeIsCreditedAndAsksForServings`.
+- `check_catalog --strict`: 1,208 keys, 0 without Arabic.
+
+**Seen once, not explained.** On the first fresh-install run, two Kitchen
+tests saw the imported recipes without their credit line and ahead of the
+person's own. A probe on a copy of that same database, and two later runs
+(one of them on a fresh install), showed the correct list. Recorded here in
+case it comes back. That run also lost three tests to test-runner restarts.
+
+**Not done.** Arabic recipe names (the pages are English), recipe images, the
+method text. A Kitchen screen opened while the first-launch install is still
+running shows only the person's own recipes until it is reopened. Not run on
+a device.
 
 ## 2026-10-16 — The owner's answers to T02, T04, T25 and G1–G5
 
