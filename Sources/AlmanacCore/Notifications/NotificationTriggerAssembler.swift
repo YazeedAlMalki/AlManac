@@ -48,10 +48,21 @@ public struct NotificationTriggerAssembler: @unchecked Sendable {
     /// §14.2 — empty when `day` has no shift occurrence, or one with no
     /// recorded wake/sleep-window instants (the ordinary case for a user
     /// without a shift schedule at all — spec §6.11).
+    /// On a scheduled religious fast day with prayer times for it and the
+    /// next day, the same reminders move into the night (§6.13); without those
+    /// times the ordinary schedule stands and the dry-fast suppression drops
+    /// the daytime ones, as before.
     public func waterReminderTimes(for day: LogicalDay, intervalMinutes: Double = 90) throws -> [Date] {
         guard let occurrence = try shifts.occurrence(for: day.value),
               let wake = occurrence.expectedWakeTime,
               let sleepStart = occurrence.expectedSleepWindowStart else { return [] }
+        if try religiousFasts.isFastDay(day.value),
+           let maghrib = try time("maghrib", on: day),
+           let next = timeModel.day(after: day), let nextFajr = try time("fajr", on: next) {
+            return NotificationTriggerTimeComputer.nightWaterReminderTimes(
+                maghrib: maghrib, nextFajr: nextFajr, expectedWakeTime: wake,
+                expectedSleepWindowStart: sleepStart, intervalMinutes: intervalMinutes)
+        }
         return NotificationTriggerTimeComputer.waterReminderTimes(
             expectedWakeTime: wake, expectedSleepWindowStart: sleepStart, intervalMinutes: intervalMinutes)
     }

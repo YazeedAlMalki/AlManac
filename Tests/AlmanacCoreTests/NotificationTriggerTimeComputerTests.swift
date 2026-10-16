@@ -42,6 +42,48 @@ struct NotificationTriggerTimeComputerTests {
         }
     }
 
+    // MARK: - Ramadan night (§6.13)
+
+    @Test("On a fast day a day sleeper's nine reminders fit between Maghrib and two hours before sleep")
+    func nightWaterDaySleeper() {
+        let wake = base                                     // "07:00"
+        let maghrib = wake.addingTimeInterval(11 * 3600)    // "18:00"
+        let sleepStart = wake.addingTimeInterval(16 * 3600) // "23:00" -> stop by "21:00"
+        let nextFajr = wake.addingTimeInterval(21.5 * 3600) // "04:30"
+        let times = NotificationTriggerTimeComputer.nightWaterReminderTimes(
+            maghrib: maghrib, nextFajr: nextFajr, expectedWakeTime: wake,
+            expectedSleepWindowStart: sleepStart, intervalMinutes: 90)
+
+        #expect(times.count == 9, "the same count an ordinary day gets")
+        #expect(times.allSatisfy { $0 > maghrib && $0 < sleepStart.addingTimeInterval(-2 * 3600) })
+        #expect(times.first == maghrib.addingTimeInterval(18 * 60), "3 hours over 10 gaps: every 18 minutes")
+    }
+
+    @Test("A night-shift worker keeps reminders through the night, and none after Fajr")
+    func nightWaterNightShift() {
+        let wake = base                                      // "15:00"
+        let maghrib = wake.addingTimeInterval(3 * 3600)      // "18:00"
+        let nextFajr = wake.addingTimeInterval(13.5 * 3600)  // "04:30"
+        let sleepStart = wake.addingTimeInterval(17 * 3600)  // "08:00", after the fast has begun
+        let times = NotificationTriggerTimeComputer.nightWaterReminderTimes(
+            maghrib: maghrib, nextFajr: nextFajr, expectedWakeTime: wake,
+            expectedSleepWindowStart: sleepStart, intervalMinutes: 90)
+
+        #expect(times.count == 10)
+        #expect(times.allSatisfy { $0 > maghrib && $0 < nextFajr })
+        #expect(times.last! > maghrib.addingTimeInterval(9 * 3600), "reaches into the small hours")
+    }
+
+    @Test("No room between Maghrib and the cut-off means no night reminders")
+    func nightWaterNoRoom() {
+        let wake = base
+        let maghrib = wake.addingTimeInterval(11 * 3600)
+        let times = NotificationTriggerTimeComputer.nightWaterReminderTimes(
+            maghrib: maghrib, nextFajr: maghrib.addingTimeInterval(10 * 3600), expectedWakeTime: wake,
+            expectedSleepWindowStart: maghrib.addingTimeInterval(3600), intervalMinutes: 90)
+        #expect(times.isEmpty)
+    }
+
     @Test("A trimmed window shorter than one interval produces no reminders")
     func waterShortDay() {
         let wake = base

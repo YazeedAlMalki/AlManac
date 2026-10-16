@@ -829,6 +829,29 @@ read permission; someone who allowed reads but refused water writes still
 reconnects by tapping Connect. *Overrule by:* the `canWrite(.water)` block in
 `AlmanacApp`'s scene-phase handler.
 
+### Ramadan night hydration (2026-10-16)
+
+Asked for by the owner ("build the Ramadan night hydration"); BRD §6.13 gives
+the rule ("hydration target compressed to night with shift-aware cadence") but
+not the cadence. **None of these has been confirmed.**
+
+**The day's reminders, same count, spread over the night.** On a fast day the
+water reminders an ordinary day would get (wake to two hours before sleep, at
+the set interval) are spread evenly between Maghrib and the earlier of two
+hours before intended sleep and the next Fajr. The daily target itself is not
+changed: it is drunk in fewer hours, so the reminders come closer together.
+*Overrule by:* `NotificationTriggerTimeComputer.nightWaterReminderTimes`.
+
+**Every religious fast day, not only Ramadan.** Mondays and Thursdays and the
+White Days are the same dry fast, so they get the same night schedule.
+*Overrule by:* a Ramadan check beside `religiousFasts.isFastDay` in
+`NotificationTriggerAssembler.waterReminderTimes`.
+
+**Shift-aware through the sleep window.** A night-shift worker whose sleep starts
+after Fajr keeps reminders until Fajr; someone sleeping at 23:00 stops at 21:00.
+Without prayer times for the day and the next, the ordinary schedule stands and
+the dry-fast suppression removes the daytime reminders, as before.
+
 ### Weighing
 
 **Meter fraction**:
