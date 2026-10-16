@@ -72,6 +72,15 @@ jobs:
         working-directory: tools/recipes
         run: python3 -m unittest discover -s tests -t .
 
+      # The nutrition pipeline (tools/nutrition), native regional dishes included.
+      # Synthetic lakes only; the real-lake tests skip without the lake.
+      - name: Nutrition pipeline tests
+        working-directory: tools/nutrition
+        run: |
+          python3 -m venv "$RUNNER_TEMP/nutrition"
+          "$RUNNER_TEMP/nutrition/bin/pip" install --quiet openpyxl lxml
+          "$RUNNER_TEMP/nutrition/bin/python" -m unittest discover -s tests -t .
+
       # GitHub ships one major Xcode per macOS image and rotates the patch
       # release underneath it, so `macos-26` is the pin that actually holds: a
       # major bump is a real change and fails loudly, while a patch rotation
