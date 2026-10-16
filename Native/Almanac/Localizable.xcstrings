@@ -9813,16 +9813,6 @@
         }
       }
     },
-    "Show digestion ring": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "إظهار حلقة الهضم"
-          }
-        }
-      }
-    },
     "Side": {
       "localizations": {
         "ar": {
@@ -10639,16 +10629,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "لا يمكن أن يكون المقام صفرًا."
-          }
-        }
-      }
-    },
-    "The digestion display is separate. Its daily fill rule remains undefined, so no completion state is inferred.": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "عرض الهضم منفصل. لم تُحدَّد بعدُ قاعدة امتلائه اليومية، لذا لا يُستنتَج أي اكتمال."
           }
         }
       }

@@ -14,7 +14,6 @@ struct SettingsView: View {
     @State private var reminderIntervalMinutes = 60
     @State private var reminderStartHour = 7
     @State private var reminderEndHour = 22
-    @State private var digestionRingEnabled = false
     @State private var bodyMeasurementTrackSides = false
     @State private var didLoadSettings = false
     @State private var healthKitStatus: String?
@@ -112,15 +111,6 @@ struct SettingsView: View {
                     }
                 }
             }
-            Section("Activity rings") {
-                Toggle("Show digestion ring", isOn: Binding(
-                    get: { digestionRingEnabled },
-                    set: setDigestionRingEnabled
-                ))
-                Text("The digestion display is separate. Its daily fill rule remains undefined, so no completion state is inferred.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
         .scrollContentBackground(.hidden)
         .background(AlmanacPalette.canvas)
@@ -134,7 +124,6 @@ struct SettingsView: View {
             if let db = labModel.db {
                 do { bodyMeasurementTrackSides = try ProfileStore(db: db).profile().bodyMeasurementTrackSides }
                 catch { self.error = error.localizedDescription }
-                digestionRingEnabled = (try? ActivityRingSettingsStore(db: db).isDigestionEnabled()) ?? false
             }
             if let settings = model.hydrationSettings {
                 remindersEnabled = settings.remindersEnabled
@@ -151,17 +140,6 @@ struct SettingsView: View {
         return Locale.current.localizedString(forLanguageCode: code) ?? code
     }
 
-    private func setDigestionRingEnabled(_ enabled: Bool) {
-        digestionRingEnabled = enabled
-        do {
-            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
-            try ActivityRingSettingsStore(db: db).setDigestionEnabled(enabled)
-            trackingModel.refresh()
-        } catch {
-            digestionRingEnabled = !enabled
-            self.error = String(describing: error)
-        }
-    }
 
     private func connectHealthKit() {
         Task {

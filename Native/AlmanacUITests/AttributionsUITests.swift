@@ -250,42 +250,16 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Edit \(selectedDay)"].waitForExistence(timeout: 5))
     }
 
-    func testSettingsCanToggleTheDigestionActivityRing() {
+    /// The owner's G2 answer (2026-10-16): no digestion ring in v1, so Settings
+    /// offers no switch for it. Checked at the foot of Settings, where the
+    /// "Activity rings" section stood, after the last section is on screen.
+    func testSettingsOffersNoDigestionRingInV1() {
         openSettings()
-        scrollTo("Activity rings")
-        let toggle = app.switches["Show digestion ring"]
-        // A section or row added above can leave the switch below the custom
-        // bottom bar, where it exists but cannot be tapped. `reveal` scrolls
-        // until it is genuinely in the window rather than swiping a fixed
-        // number of times: how far down this switch sits depends on the data in
-        // the Form, so it is two screens down on a virgin simulator and
-        // already visible on a populated one.
-        XCTAssertTrue(app.reveal(toggle), "the digestion-ring switch must be reachable")
-        let original = toggle.value as? String
-        toggle.tapSwitchControl()
-
-        // Waited for by polling rather than by `expectation`, so a failure can
-        // report *why*: "the switch did not change" has two very different
-        // causes — the tap missed, or the write was rejected and the row
-        // reverted itself — and they need different fixes. `expectation` would
-        // collapse both into "Exceeded timeout".
-        XCTAssertTrue(
-            app.waitUntil(timeout: 5) { (toggle.value as? String) != original },
-            """
-            toggling the digestion ring changed nothing
-            from \(original ?? "nil") to \(toggle.value as? String ?? "nil")
-            frame \(toggle.frame)
-            problems on screen: \(app.staticTexts.allElementsBoundByIndex
-                .map(\.label).filter { $0.contains("Could not") || $0.contains("unavailable") })
-            """)
-
-        // Restore, so the suite leaves the setting as it found it. A suite that
-        // silently leaves a setting flipped makes the next run's result depend
-        // on run order.
-        toggle.tapSwitchControl()
-        XCTAssertTrue(
-            app.waitUntil(timeout: 5) { (toggle.value as? String) == original },
-            "the digestion-ring switch did not return to \(original ?? "nil")")
+        let backup = app.buttons["Backup & restore"]
+        XCTAssertTrue(app.reveal(backup), "Settings' Data section is not reachable")
+        for _ in 0..<3 { app.swipeUp() }
+        XCTAssertFalse(app.switches["Show digestion ring"].exists, "Settings still offers the digestion ring")
+        XCTAssertFalse(app.staticTexts["Activity rings"].exists, "Settings still has an Activity rings section")
     }
 
     func testMoreDestinationsOpen() {

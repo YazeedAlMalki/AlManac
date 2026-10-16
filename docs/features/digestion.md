@@ -20,7 +20,7 @@ Both gates were blank on 2026-10-15.
 | Urine colour → hydration target | `UrineColourHydrationFeedback.swift`, hydration screen | done 2026-10-15 — §8 |
 | Bristol scale attribution | `AttributionCatalog` (`bristol-stool-form-scale`) | done 2026-10-15 — §5 |
 | Three-level medical advisory | — | **not built: owner gate G1 open** — see §3 |
-| Digestion ring fill rule | — | **not built: owner gate G2 open** — see §4 |
+| Digestion ring | — | **removed from v1 (owner, G2, 2026-10-16)** — see §4 |
 
 ## 2. The screen
 
@@ -77,8 +77,15 @@ interpret a nil.
 
 ## 4. The digestion ring's fill rule is explicitly undecided
 
-**Owner gate G2 (2026-10-15): blank.** The choice is "a named rule" or "remove
-the ring from v1". Neither was chosen, so the ring is unchanged.
+**Owner gate G2 — closed 2026-10-16: the ring is removed from v1** (owner,
+`docs/features/owner-decisions-2026-10-16.md`). `ActivityRingCalendar.digestionRingInV1`
+is false, so every day reports the ring `.disabled` whatever is stored; the
+Settings switch and the calendar's digestion row are gone. The stored setting
+and its column are kept, so bringing the ring back is that flag and the switch,
+not a migration. Tests: `ActivityRingCalendarTests.testDigestionRingSettingPersistsWithoutInventingAFillRule`,
+`AttributionsUITests.testSettingsOffersNoDigestionRingInV1`.
+
+What stood here before the answer:
 
 BRD §350: *"Fill condition explicitly undecided and not gated on anything. There
 is no universal daily bowel-movement target, since normal ranges vary by
