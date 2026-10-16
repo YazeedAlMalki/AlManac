@@ -222,6 +222,40 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
     /// `catalog_water` first, and water is 0 kcal, so water is legitimately
     /// absent from a calorie total. Picking the first row and then asserting one
     /// would have been a test that could only ever fail.
+    /// BRD §6.2: a drink's caffeine is part of the one entry. The logger states
+    /// it for the amount chosen, before anything is logged, and scales it with
+    /// the amount. Cancelled at the end, so nothing is written.
+    func testTheDrinkLoggerStatesCaffeineForTheAmountChosen() {
+        openModule("Hydration")
+        XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))
+        let log = app.buttons["Log a drink"]
+        XCTAssertTrue(app.reveal(log), "logging a drink must be reachable from Hydration")
+        log.tap()
+        XCTAssertTrue(app.navigationBars["Log a drink"].waitForExistence(timeout: 10))
+
+        // 240 mL, 95 mg in `CatalogDrinks`.
+        let coffee = app.element("drink-row-catalog_coffee_black")
+        XCTAssertTrue(app.reveal(coffee), "the drink catalogue did not offer Black Coffee")
+        coffee.tap()
+
+        let label = app.staticTexts["Caffeine"]
+        XCTAssertTrue(app.reveal(label), "the logger does not state the drink's caffeine")
+        XCTAssertTrue(app.staticTexts["95 mg"].exists, "a full serving of black coffee should read 95 mg")
+
+        // Half the serving, half the caffeine.
+        let amount = app.textFields["Custom amount, in mL"]
+        XCTAssertTrue(app.reveal(amount))
+        amount.tap()
+        amount.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "120")
+        XCTAssertTrue(app.reveal(label))
+        XCTAssertTrue(app.staticTexts["47.5 mg"].waitForExistence(timeout: 5),
+                      "120 mL should state half the caffeine; shown: "
+                      + "\(app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.hasSuffix("mg") })")
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Log a drink"].waitForNonExistence(timeout: 10))
+    }
+
     func testLoggingADrinkShowsItOnTheDashboardWithCalories() {
         openModule("Hydration")
         XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))

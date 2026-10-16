@@ -167,6 +167,9 @@ struct HydrationLoggingView: View {
                 if let sugar = drink.sugarGrams, sugar > 0 {
                     figure(String(localized: "Sugar"), String(localized: "\(AlmanacNumber.compact(sugar * scale)) g"))
                 }
+                if drink.caffeineMilligrams > 0 {
+                    figure(String(localized: "Caffeine"), String(localized: "\(AlmanacNumber.compact(drink.caffeineMilligrams * scale)) mg"))
+                }
             } header: {
                 Text("This amount")
             } footer: {

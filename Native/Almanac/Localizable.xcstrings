@@ -2793,6 +2793,16 @@
         }
       }
     },
+    "Caffeine": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكافيين"
+          }
+        }
+      }
+    },
     "Calculation": {
       "localizations": {
         "ar": {
