@@ -800,10 +800,14 @@ already chose. *Overrule by:* a fallback sleep time in `HydrationLoggingService.
 
 **A custom drink's caffeine is optional and starts at 0.** "Caffeine (mg,
 optional)" on the new-drink form (Migration 064); left blank it is 0, and every
-custom drink saved before reads 0, which is what was recorded for it. Catalog
-presets still cannot be edited (BRD §6.2 "editable"); adding your own drink is
-the way to a different figure. *Overrule by:* `caffeine_mg`'s default in
-Migration 064, or per-drink overrides of `CatalogDrinks`.
+custom drink saved before reads 0, which is what was recorded for it. *Overrule by:* `caffeine_mg`'s default in Migration 064.
+
+**A catalog drink's caffeine is editable; its other figures are not.** "Change
+caffeine" on the logging screen sets the person's own figure per serving
+(Migration 065, `drink_caffeine_preset`), shown as "Caffeine (your figure)",
+and "Use the typical value" removes it. Calories, sodium and sugar stay the
+catalog's: §6.2 asks only for editable caffeine presets. Drinks already logged
+keep the caffeine they were logged with. *Overrule by:* `HydrationLoggingService.setCaffeinePreset`.
 
 ### Weighing
 

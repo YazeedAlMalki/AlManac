@@ -2813,6 +2813,26 @@
         }
       }
     },
+    "Caffeine (your figure)": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكافيين (رقمك)"
+          }
+        }
+      }
+    },
+    "Caffeine per serving": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الكافيين في الحصة"
+          }
+        }
+      }
+    },
     "Calculation": {
       "localizations": {
         "ar": {
@@ -2879,6 +2899,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "بالسنتيمتر فقط. يمكن مزامنة محيط الخصر مع تطبيق الصحة؛ أما بقية المواضع فيدويّة."
+          }
+        }
+      }
+    },
+    "Change caffeine": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تغيير الكافيين"
           }
         }
       }
@@ -4409,6 +4439,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "أدخل كمية أكبر من صفر."
+          }
+        }
+      }
+    },
+    "Enter caffeine in mg, 0 or more.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل الكافيين بالملغ، صفرًا أو أكثر."
           }
         }
       }
@@ -11441,6 +11481,16 @@
         }
       }
     },
+    "Typical value for %lld mL: %@ mg.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "القيمة النموذجية لـ %lld مل: %@ ملغ."
+          }
+        }
+      }
+    },
     "Typical value, not measured": {
       "localizations": {
         "ar": {
@@ -11677,6 +11727,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "اتبع التقويم لهذا اليوم"
+          }
+        }
+      }
+    },
+    "Use the typical value": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدام القيمة النموذجية"
           }
         }
       }
@@ -12377,6 +12437,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "آخر %lld يومًا"
+          }
+        }
+      }
+    },
+    "mg": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ملغ"
           }
         }
       }

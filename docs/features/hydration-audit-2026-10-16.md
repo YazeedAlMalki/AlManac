@@ -17,7 +17,7 @@ are built and tested in the core. That breaks A1's latte step and three of
 |---|---|---|---|---|
 | 1 | Water logged against a daily target | §6.2 | **Built** | `HydrationStoreTests`, `HydrationFeatureTests`; Quick Log +250/500/750; Settings daily goal; UI `testLoggingADrinkShowsItOnTheDashboardWithCalories` (CI) |
 | 2 | One drink entry fills hydration, caffeine and nutrition (a latte) | §6.2, A1 | **Built 2026-10-16** (see below); was Partial | Hydration and calories: `HydrationLoggingService.logDrink` attaches scaled calories, sodium and sugar to the hydration row (`HydrationFeatureTests`). **Caffeine: no.** `Drink` has no caffeine field, and nothing in `Native/` writes `caffeine_log` |
-| 3 | Caffeine presets per drink type, editable | §6.2 | **Partial 2026-10-16**: catalog presets and a custom drink's own caffeine; catalog presets not editable | `CatalogDrinks.all` (coffee, tea, colas, energy drinks) carries no caffeine; a custom drink cannot record any |
+| 3 | Caffeine presets per drink type, editable | §6.2 | **Built 2026-10-16**: catalog presets, editable per drink (Migration 065), and a custom drink's own caffeine (Migration 064) | `CatalogDrinks.all` (coffee, tea, colas, energy drinks) carries no caffeine; a custom drink cannot record any |
 | 4 | Caffeine as a variable: mg and time | §6.2 | **Built 2026-10-16**; was Core only | `CaffeineLogStore` with `CaffeineLogStoreTests`; unreachable from the app |
 | 5 | Caffeine judged against intended sleep, not the clock (8 AM is late for a 10 AM sleeper) | §6.2, §6.11 | **Built 2026-10-16**; was Core only | `ShiftScheduleStore.intendedSleepTimestamp` and `CaffeineLogStore`'s context, `ShiftAwareCaffeineContextTests` (night shift → `very_late`); unreachable, same cause as 4 |
 | 6 | Water written to Apple Health; a failed write stays and is retried | §5.5, A6 | **Built** | `HydrationSyncTests.testWritebackPushesUnsyncedManualEntriesOnly`, `testAFailedPushLeavesTheRowPendingAndItIsRetriedNext`. Device: UNRUN (`docs/device-checklist.md`, check 1) |
@@ -54,8 +54,9 @@ deleting the drink carries its caffeine. Tests: `DrinkCaffeineTests` (9).
 Choices: `CONTEXT.md`, "Caffeine from logged drinks". The logging screen states
 a drink's caffeine for the amount chosen (UI test
 `testTheDrinkLoggerStatesCaffeineForTheAmountChosen`), and a custom drink can
-carry caffeine (Migration 064, two more `DrinkCaffeineTests`). Still open: editing
-a catalog preset.
+carry caffeine (Migration 064). A catalog drink's caffeine can be set to the
+person's own figure and put back (Migration 065; UI test
+`testACatalogDrinksCaffeineCanBeChangedAndPutBack`). `DrinkCaffeineTests`: 13.
 
 ## Score
 

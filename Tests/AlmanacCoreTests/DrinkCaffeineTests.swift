@@ -97,6 +97,35 @@ final class DrinkCaffeineTests: XCTestCase {
         XCTAssertTrue(try caffeine(db).isEmpty)
     }
 
+    // MARK: - The person's own figure for a catalog drink
+
+    func testACatalogDrinksCaffeineCanBeSetAndPutBack() throws {
+        let db = try makeDB()
+        let coffee = { try self.service(db).allDrinks().first { $0.id == "catalog_coffee_black" } }
+
+        try service(db).setCaffeinePreset(drinkID: "catalog_coffee_black", milligrams: 140)
+        XCTAssertEqual(try coffee()?.caffeineMilligrams, 140)
+        XCTAssertEqual(try coffee()?.caloriesKcal, CatalogDrinks.byID("catalog_coffee_black")?.caloriesKcal,
+                       "only caffeine is the person's; the other figures stay the catalog's")
+
+        try service(db).logDrink(try XCTUnwrap(coffee()), volume: Milliliters(120), at: at("07:00"))
+        XCTAssertEqual(try caffeine(db).map(\.caffeineMg), [70])
+
+        try service(db).setCaffeinePreset(drinkID: "catalog_coffee_black", milligrams: nil)
+        XCTAssertEqual(try coffee()?.caffeineMilligrams, 95)
+    }
+
+    func testAPresetIsRefusedForAnUnknownDrinkOrAnImpossibleAmount() throws {
+        let db = try makeDB()
+        XCTAssertThrowsError(try service(db).setCaffeinePreset(drinkID: "no-such-drink", milligrams: 10)) {
+            XCTAssertEqual($0 as? CaffeinePresetError, .notACatalogDrink("no-such-drink"))
+        }
+        XCTAssertThrowsError(try service(db).setCaffeinePreset(drinkID: "catalog_tea_black", milligrams: -5)) {
+            XCTAssertEqual($0 as? CaffeinePresetError, .invalidAmount(-5))
+        }
+        XCTAssertEqual(try service(db).allDrinks().first { $0.id == "catalog_tea_black" }?.caffeineMilligrams, 47)
+    }
+
     // MARK: - Judged against intended sleep
 
     /// The BRD's own example: 8 AM coffee is late for a night-shift worker

@@ -65,6 +65,15 @@ public struct Drink: Sendable, Hashable, Identifiable {
         self.valueQualifier = valueQualifier
         self.createdAt = createdAt
     }
+
+    /// The same drink with another caffeine figure: a person's own preset
+    /// for a catalog drink (Migration 065).
+    public func withCaffeine(_ milligrams: Double) -> Drink {
+        Drink(id: id, name: name, liquidType: liquidType, volumeMilliliters: volumeMilliliters,
+              caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams, sugarGrams: sugarGrams,
+              caffeineMilligrams: milligrams, isCustom: isCustom, valueQualifier: valueQualifier,
+              createdAt: createdAt)
+    }
 }
 
 /// Standard catalog of common beverages. Ships with the app — no per-install

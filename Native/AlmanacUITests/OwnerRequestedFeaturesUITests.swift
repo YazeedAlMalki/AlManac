@@ -256,6 +256,43 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Log a drink"].waitForNonExistence(timeout: 10))
     }
 
+    /// BRD §6.2 "editable": a catalog drink's caffeine can be set to the
+    /// person's own figure and put back. Restores the typical value at the end
+    /// and cancels, so the simulator is left as it was.
+    func testACatalogDrinksCaffeineCanBeChangedAndPutBack() {
+        openModule("Hydration")
+        XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))
+        let log = app.buttons["Log a drink"]
+        XCTAssertTrue(app.reveal(log))
+        log.tap()
+        let coffee = app.element("drink-row-catalog_coffee_black")
+        XCTAssertTrue(app.reveal(coffee))
+        coffee.tap()
+
+        let change = app.buttons["drink-change-caffeine"]
+        XCTAssertTrue(app.reveal(change), "a catalog coffee offers no way to change its caffeine")
+        change.tap()
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the caffeine box did not open")
+        field.tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "140")
+        app.alerts.buttons["Save"].tap()
+
+        XCTAssertTrue(app.reveal(app.staticTexts["Caffeine (your figure)"]),
+                      "the changed figure is not marked as the person's")
+        XCTAssertTrue(app.staticTexts["140 mg"].exists)
+
+        XCTAssertTrue(app.reveal(change))
+        change.tap()
+        XCTAssertTrue(app.alerts.buttons["Use the typical value"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Use the typical value"].tap()
+        XCTAssertTrue(app.reveal(app.staticTexts["Caffeine"]))
+        XCTAssertTrue(app.staticTexts["95 mg"].exists, "putting the typical value back did not restore 95 mg")
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Log a drink"].waitForNonExistence(timeout: 10))
+    }
+
     func testLoggingADrinkShowsItOnTheDashboardWithCalories() {
         openModule("Hydration")
         XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))

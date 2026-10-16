@@ -184,6 +184,13 @@ final class HydrationModel: ObservableObject {
         return result.warnings
     }
 
+    /// The person's own caffeine figure for a catalog drink, or nil for the
+    /// typical one again.
+    func setCaffeinePreset(drinkID: String, milligrams: Double?) throws {
+        try loggingService().setCaffeinePreset(drinkID: drinkID, milligrams: milligrams)
+        objectWillChange.send()
+    }
+
     /// Saves a user-authored drink. The service tags it `.userEntered`
     /// itself, so a custom drink can never be presented as a catalog estimate.
     @discardableResult

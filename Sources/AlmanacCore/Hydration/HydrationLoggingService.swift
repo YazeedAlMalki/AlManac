@@ -133,7 +133,29 @@ public struct HydrationLoggingService: Sendable {
     /// Every drink this app knows about: the built-in catalog plus whatever
     /// custom drinks the user has saved.
     public func allDrinks() throws -> [Drink] {
-        try CatalogDrinks.all + customDrinks()
+        let presets = try Dictionary(uniqueKeysWithValues: store.db.query(
+            "SELECT drink_id, caffeine_mg FROM drink_caffeine_preset;"
+        ).compactMap { row in row.string("drink_id").flatMap { id in row.double("caffeine_mg").map { (id, $0) } } })
+        let custom = try customDrinks()
+        return CatalogDrinks.all.map { drink in
+            presets[drink.id].map { drink.withCaffeine($0) } ?? drink
+        } + custom
+    }
+
+    /// The person's own caffeine figure, per serving, for a catalog drink
+    /// (Migration 065); nil returns it to the typical value. A custom drink's
+    /// caffeine is edited with the drink itself.
+    public func setCaffeinePreset(drinkID: String, milligrams: Double?) throws {
+        guard CatalogDrinks.byID(drinkID) != nil else { throw CaffeinePresetError.notACatalogDrink(drinkID) }
+        guard let milligrams else {
+            try store.db.run("DELETE FROM drink_caffeine_preset WHERE drink_id = ?;", [.text(drinkID)])
+            return
+        }
+        guard milligrams.isFinite, milligrams >= 0 else { throw CaffeinePresetError.invalidAmount(milligrams) }
+        try store.db.run("""
+        INSERT INTO drink_caffeine_preset (drink_id, caffeine_mg, updated_at) VALUES (?, ?, ?)
+        ON CONFLICT(drink_id) DO UPDATE SET caffeine_mg = excluded.caffeine_mg, updated_at = excluded.updated_at;
+        """, [.text(drinkID), .real(milligrams), .text(iso(Date()))])
     }
 
     /// Looks a short window back for another entry of the *same* drink, to
@@ -149,6 +171,11 @@ public struct HydrationLoggingService: Sendable {
         else { return nil }
         return Int(date.timeIntervalSince(matchStart))
     }
+}
+
+public enum CaffeinePresetError: Error, Equatable {
+    case notACatalogDrink(String)
+    case invalidAmount(Double)
 }
 
 public struct DrinkLoggingResult: Sendable, Hashable {
