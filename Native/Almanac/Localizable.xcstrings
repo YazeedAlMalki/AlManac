@@ -2253,6 +2253,16 @@
         }
       }
     },
+    "Almanac records what you saw. Where an entry may need attention it says so, in draft wording a clinician has not reviewed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يسجّل Almanac ما رأيته. وحين قد يحتاج إدخال إلى انتباه يذكر ذلك، بصياغة مبدئية لم يراجعها طبيب."
+          }
+        }
+      }
+    },
     "Almanac’s database is not open. Restart the app to try again.": {
       "localizations": {
         "ar": {
@@ -3909,6 +3919,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "المسافة (م)"
+          }
+        }
+      }
+    },
+    "Dizziness or weakness" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دوخة أو ضعف"
           }
         }
       }
@@ -9789,6 +9809,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "سبعة أنواع، من كتل صلبة منفصلة إلى سائل بالكامل."
+          }
+        }
+      }
+    },
+    "Severe pain" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ألم شديد"
           }
         }
       }

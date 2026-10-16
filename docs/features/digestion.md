@@ -19,7 +19,7 @@ Both gates were blank on 2026-10-15.
 | History, counts, chart | `DigestionHistory.swift`, `Native/Almanac/DigestionHistoryView.swift` | done 2026-10-15 — §7 |
 | Urine colour → hydration target | `UrineColourHydrationFeedback.swift`, hydration screen | done 2026-10-15 — §8 |
 | Bristol scale attribution | `AttributionCatalog` (`bristol-stool-form-scale`) | done 2026-10-15 — §5 |
-| Three-level medical advisory | — | **not built: owner gate G1 open** — see §3 |
+| Three-level medical advisory | `DigestionAdvisory` | **built 2026-10-16 with draft wording, not clinician-reviewed** (owner, G1) — see §3 |
 | Digestion ring | — | **removed from v1 (owner, G2, 2026-10-16)** — see §4 |
 
 ## 2. The screen
@@ -46,9 +46,42 @@ chip *is* relying on colour alone — it is invisible to a VoiceOver user, and
 
 ## 3. No advisory, and the BRD says why
 
-**Owner gate G1 (2026-10-15): blank.** The choice is "build now, with draft
-wording marked *not clinician-reviewed*" or "remove from v1". Neither was
-chosen, so nothing below changed.
+**Owner gate G1 — closed 2026-10-16: built, with draft wording** (owner,
+`docs/features/owner-decisions-2026-10-16.md`). **Not clinician-reviewed.** The
+BRD's condition stands: clinician review before App Store release.
+
+`DigestionAdvisory.assess` (`Sources/AlmanacCore/Digestion/DigestionAdvisory.swift`)
+reads one bowel-movement entry and the person's other entries in the seven
+logical days ending on its day, and returns a level and the reasons. The rules
+are this build's reading of the BRD's triggers, not a clinician's:
+
+| Level | Raised by |
+|---|---|
+| 3 — Seek urgent medical attention | a large amount of blood; blood with very loose stool (Bristol 6–7); blood or black stool with dizziness or weakness; severe pain with blood or black stool |
+| 2 — Consider contacting a healthcare professional | black stool; red stool with no blood recorded; a small amount of blood; blood more than once in 7 days; severe pain; dizziness or weakness; very loose stool on 3+ days in 7; pale stool on 2+ days in 7 |
+| 1 — For your information | one streak of blood; one pale stool; hard stool (Bristol 1–2) on 3+ days in 7 |
+
+Each reason is one calm sentence saying what was recorded, naming the common
+harmless explanation where there is one (iron tablets for black, beetroot for
+red, straining for a streak). Every advisory carries "Draft wording, not
+reviewed by a clinician. Almanac does not diagnose." It is **worked out when
+read and never stored**: `clinicianEscalationLevel` stays empty, kept for a
+classifier a clinician has approved.
+
+Two inputs the BRD names had no field, so the logger now asks them (Migration
+060, nullable, "not stated" distinct from "no"): **severe pain** and
+**dizziness or weakness**.
+
+**Where it shows:** on the logging screen, under the entry just saved. An entry
+that raises one keeps the sheet open on it ("Done" closes it); the urgent level
+is also an alert at once. An ordinary entry raises nothing and the sheet closes
+as before. **Not shown yet:** in Digestion history, whose footer still says it
+does not interpret.
+
+Tests: `DigestionAdvisoryTests` (7), and
+`DigestionQuickEntryUITests.testALargeAmountOfBloodRaisesTheUrgentAdvisory`.
+
+What stood here before the answer:
 
 BRD §6.3 asks for a three-level non-diagnostic advisory (informational /
 contact a professional / seek urgent attention) and then says its wording

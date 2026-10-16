@@ -87,10 +87,16 @@ public struct BowelMovementDraft: Sendable {
     public var gas: Bool?
     public var urgency: Int?
     public var notes: String?
+    /// BRD §6.3 escalation inputs (Migration 060). Nil is "not stated".
+    public var severePain: Bool?
+    public var dizzinessOrWeakness: Bool?
 
     public init(timestamp: Date, bristolType: BristolType, color: String? = nil,
                 bloodPresent: Bool = false, bloodAmount: String? = nil,
-                gas: Bool? = nil, urgency: Int? = nil, notes: String? = nil) {
+                gas: Bool? = nil, urgency: Int? = nil, notes: String? = nil,
+                severePain: Bool? = nil, dizzinessOrWeakness: Bool? = nil) {
+        self.severePain = severePain
+        self.dizzinessOrWeakness = dizzinessOrWeakness
         self.timestamp = timestamp
         self.bristolType = bristolType
         self.color = color
@@ -118,6 +124,9 @@ public struct BowelMovementEntry: Sendable, Hashable, Identifiable {
     /// computes it — see Migration032's doc comment.
     public let clinicianEscalationLevel: String?
     public let createdAt: Date
+    /// Nil is "not stated" (Migration 060).
+    public var severePain: Bool? = nil
+    public var dizzinessOrWeakness: Bool? = nil
 }
 
 /// Bowel-movement logging and querying over `bowel_movement`.
@@ -145,8 +154,9 @@ public struct DigestionStore: @unchecked Sendable {
     public func log(_ draft: BowelMovementDraft, logicalDay: String) throws -> Int64 {
         try db.run("""
         INSERT INTO bowel_movement
-            (logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            (logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, createdAt,
+             severePain, dizzinessOrWeakness)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """, [
             .text(logicalDay),
             .text(iso(draft.timestamp)),
@@ -157,21 +167,23 @@ public struct DigestionStore: @unchecked Sendable {
             draft.gas.map { SQLValue.integer($0 ? 1 : 0) } ?? .null,
             draft.urgency.map { SQLValue.integer(Int64($0)) } ?? .null,
             draft.notes.map { SQLValue.text($0) } ?? .null,
-            .text(iso(clock.now))
+            .text(iso(clock.now)),
+            draft.severePain.map { SQLValue.integer($0 ? 1 : 0) } ?? .null,
+            draft.dizzinessOrWeakness.map { SQLValue.integer($0 ? 1 : 0) } ?? .null
         ])
         return try db.query("SELECT last_insert_rowid() AS id;").first?.int("id") ?? 0
     }
 
     public func entry(id: Int64) throws -> BowelMovementEntry? {
         try db.query("""
-        SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt
+        SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt, severePain, dizzinessOrWeakness
         FROM bowel_movement WHERE id = ?;
         """, [.integer(id)]).first.flatMap(rowToEntry)
     }
 
     public func logs(for logicalDay: String) throws -> [BowelMovementEntry] {
         try db.query("""
-        SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt
+        SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt, severePain, dizzinessOrWeakness
         FROM bowel_movement WHERE logicalDay = ? ORDER BY timestamp;
         """, [.text(logicalDay)]).compactMap(rowToEntry)
     }
@@ -184,7 +196,7 @@ public struct DigestionStore: @unchecked Sendable {
     /// screen, and a history list reads downward.
     public func logs(from: String, to: String) throws -> [BowelMovementEntry] {
         try db.query("""
-        SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt
+        SELECT id, logicalDay, timestamp, bristolType, color, bloodPresent, bloodAmount, gas, urgency, notes, clinicianEscalationLevel, createdAt, severePain, dizzinessOrWeakness
         FROM bowel_movement WHERE logicalDay >= ? AND logicalDay < ?
         ORDER BY timestamp DESC;
         """, [.text(from), .text(to)]).compactMap(rowToEntry)
@@ -220,7 +232,9 @@ public struct DigestionStore: @unchecked Sendable {
             urgency: row.int("urgency").map(Int.init),
             notes: row.string("notes"),
             clinicianEscalationLevel: row.string("clinicianEscalationLevel"),
-            createdAt: row.string("createdAt").flatMap(date(from:)) ?? Date()
+            createdAt: row.string("createdAt").flatMap(date(from:)) ?? Date(),
+            severePain: row.isNull("severePain") ? nil : (row.int("severePain") == 1),
+            dizzinessOrWeakness: row.isNull("dizzinessOrWeakness") ? nil : (row.int("dizzinessOrWeakness") == 1)
         )
     }
 }

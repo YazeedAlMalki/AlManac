@@ -26,10 +26,9 @@ private enum BristolType: Int, CaseIterable {
 /// renders, that the Bristol scale is a *scale* (seven named rows, not a wheel
 /// of bare numbers), and that saving writes something a later read can find.
 ///
-/// **The screen deliberately says nothing about whether an entry is concerning.**
-/// BRD §6.3's advisory wording is held for clinician review, so there is no
-/// escalation copy here to assert on, and asserting its absence is the one
-/// assertion worth making.
+/// **The advisory (owner, G1, 2026-10-16)** is draft wording, labelled as not
+/// clinician-reviewed. An ordinary entry raises none and the sheet closes; one
+/// that does keeps the sheet open on it, and the urgent level is an alert.
 final class DigestionQuickEntryUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -127,7 +126,10 @@ final class DigestionQuickEntryUITests: XCTestCase {
     /// is empty" is not a premise this can rely on.
     func testLoggingABowelMovementShowsItInTodaysList() {
         openDigestion()
-        let type = 6
+        // Type 5, which raises no advisory however often it is logged: type 6
+        // on three days of a reused simulator would raise "persistent" and keep
+        // the sheet open (owner, G1, 2026-10-16).
+        let type = 5
         openBristolScale()
         app.buttons["bristol-type-\(type)"].tap()
         // The choice has to be visible on the row that was tapped, or a tap
@@ -168,6 +170,41 @@ final class DigestionQuickEntryUITests: XCTestCase {
         }
         XCTAssertTrue(found.exists, "the entry was not added to today's list; visible: "
                       + "\(app.staticTexts.allElementsBoundByIndex.map(\.label))")
+    }
+
+    /// A large amount of blood is BRD §6.3's plainest urgent trigger: saving it
+    /// raises an alert at once, and the sheet stays open on the advisory, which
+    /// says its wording has not been reviewed by a clinician.
+    func testALargeAmountOfBloodRaisesTheUrgentAdvisory() {
+        openDigestion()
+        let blood = app.element("digestion-blood")
+        XCTAssertTrue(app.reveal(blood), "the blood flag is not offered")
+        blood.tapSwitchControl()
+        let amount = app.element("digestion-blood-amount")
+        XCTAssertTrue(amount.waitForExistence(timeout: 3))
+        amount.tap()
+        let large = app.buttons["Large amount"]
+        XCTAssertTrue(large.waitForExistence(timeout: 3), "no \"Large amount\" choice")
+        large.tap()
+
+        app.navigationBars["Log digestion"].buttons["Save"].tap()
+
+        let alert = app.alerts["Seek urgent medical attention"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5), "a large amount of blood raised no urgent alert")
+        XCTAssertTrue(alert.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "not reviewed by a clinician"))
+                        .firstMatch.exists, "the alert does not say its wording is unreviewed")
+        alert.buttons["OK"].tap()
+
+        XCTAssertTrue(app.navigationBars["Log digestion"].exists, "the sheet closed on an entry that raised an advisory")
+        let note = app.descendants(matching: .any).matching(identifier: "digestion-advisory").firstMatch
+        for _ in 0..<8 where !note.exists { app.swipeUp() }
+        XCTAssertTrue(note.exists, "the advisory is not shown under the saved entry")
+        XCTAssertTrue(note.label.contains("Seek urgent medical attention"), note.label)
+        XCTAssertTrue(note.label.contains("not reviewed by a clinician"), note.label)
+
+        app.navigationBars["Log digestion"].buttons["Done"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { !self.app.navigationBars["Log digestion"].exists },
+                      "Done did not close the sheet")
     }
 
     // MARK: - Helpers
