@@ -1,5 +1,6 @@
 # Almanac implementation status
 
+Updated 2026-10-16 (latest): the newest entry is the owner's answers to T02, T04, T25 and G1–G5.
 Updated 2026-10-16 (later): the newest entry is the AI handoff of 2026-10-16 (A1–A11).
 Updated 2026-10-16: the newest entry is the recovery day a person declares
 (§9.6), readiness ticket 03. Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done; the
@@ -28,6 +29,34 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-16 — The owner's answers to T02, T04, T25 and G1–G5
+
+**Outcome.** The owner answered eight open items in the session
+(`docs/features/owner-decisions-2026-10-16.md`). Three closed with no build
+(T25 keep in PR #20; G3 photos later; G4 keep the failed-import record). Four
+were built: G2 the digestion ring is out of v1; T02 Today asks which fasts are
+kept (Migration 059); G1 a three-level digestion advisory in draft wording,
+not clinician-reviewed, with two new logger questions (Migration 060); G5 163
+verified LOINC codes with their LOINC names (Migration 061) and LOINC credited.
+T04 was researched, not built (`docs/features/recipe-sources.md`): Wikibooks
+Cookbook (CC BY-SA) is the one source confirmed; the owner picks.
+
+| Run | Result |
+|---|---|
+| `swift test`, all of the above | **1,172 Swift Testing in 127 suites + 391 XCTest (1 skipped), 0 failures** |
+| UI, wiped app: `FastsQuestionUITests`, `ReadinessRecoveryDayUITests`, `AttributionsUITests.testSettingsOffersNoDigestionRingInV1` | **3 of 3 passed** (the fasts test after removing a card-level identifier that hid its switches) |
+| UI, wiped app: `DigestionQuickEntryUITests` + `DigestionHistoryUITests` | **10 of 10 passed**, including the new urgent-advisory test |
+| `check_catalog.py --strict` | 0 strings without Arabic |
+
+Each LOINC code was checked against the NLM LOINC lookup; the check caught one
+wrong draft code (56536-6, thyroglobulin antibodies) and it was dropped.
+
+**Not run:** the rest of the UI suite after these changes (CI runs it on the
+push), `AttributionsUITests` beyond the one test (the LOINC entry's display),
+and anything on a device. **Still open:** T07/T08 (the Diet Profile Addendum is
+not in the repository), the owner's T04 pick, native-speaker review of the new
+Arabic, and clinician review of the advisory before release.
 
 ## 2026-10-16 — The AI handoff of 2026-10-16 (A1–A11)
 
