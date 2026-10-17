@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-16 (latest): the newest entry is the re-score of all 12 phases (1,077 / 1,200).
+Updated 2026-10-17 (latest): A4 driven, caffeine and night hydration merged (1,086 / 1,200).
+Updated 2026-10-16 (later): the re-score of all 12 phases (1,077 / 1,200).
 Updated 2026-10-16 (later): the owner's approval of the Slice 8 rubric.
 Updated 2026-10-16 (later still): regional dishes through the nutrition pipeline (Slice 8).
 Updated 2026-10-16 (later yet): Kitchen's Wikibooks recipes (T04 built).
@@ -33,6 +34,52 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-17 — A4 driven, recovery-day test green, caffeine and night hydration merged
+
+**Outcome.** The tracker stands at **1,086 of 1,200 (90.5 %)**: over 90 %.
+Readiness takes its planned 98, and Slice 12 rises to 80 on the phone-migration
+test. Hydration's caffeine and night-reminder work is merged and passed every
+check but one unrelated UI test, so Hydration is **held at 90** until the run
+on the merged head (`9da790f` plus this entry) reports.
+
+### What ran (CI)
+
+| Run | Head | Result |
+|---|---|---|
+| 38969848901, attempt 1 | `e55b51e` (main branch) | core and app green; **UI suite passed** (PhoneMigration and ReadinessRecoveryDay included); the separate Arabic screenshot pass afterwards failed |
+| 38969848901, attempt 2 (re-run by the owner) | `e55b51e` | **all green**, Arabic pass included |
+| 38974645011 | `9da790f` (caffeine branch) | core green (13 `DrinkCaffeineTests`, Migrations 063 to 065, the night-reminder tests); app build and "Untranslated strings" green; **UI 104 of 105**: both caffeine UI tests, the pending-Health assertion, PhoneMigration and ReadinessRecoveryDay passed; `AllergenFilterUITests.testAToggledAllergenIsStillThereAfterReopening` failed at line 246, "no Profile row in Modules", after 179 s |
+
+**The allergen failure is not explained.** It passed in both attempts at
+`e55b51e`, and the caffeine branch changes nothing on Modules or Profile. It is
+the suite's first test alphabetically, on a fresh simulator, where the
+first-launch reference install runs. That is a guess, not a cause. The run on
+the merged head is its one re-run; if it fails again it is treated as real.
+
+**The recovery-day failure of `76ed79b` did not recur**: the test has passed in
+three runs since with no change to it or the app's Today screen. Not
+root-caused; recorded here in case it returns.
+
+### Re-score
+
+| # | Phase | Was | Now | Why |
+|---|---|---:|---:|---|
+| 2 | Readiness | 94 | **98** | `ReadinessRecoveryDayUITests` passed in runs 38969848901 (twice) and 38974645011; the earlier failure did not recur |
+| 3 | Hydration | 90 | **90** (92 pending) | Caffeine from drinks, custom and editable caffeine, the caffeine line on the logger, "Not yet in Apple Health", Health reconnected at launch, and Ramadan night reminders are built and tested (`docs/features/hydration-audit-2026-10-16.md`). Held for one run: the merged head's UI suite has not reported |
+| 12 | Migration & Completion | 75 | **80** (estimate) | Scenario A4 driven: `PhoneMigrationUITests` passed three times; 6 of A4's 10 steps pass, 4 are device only (`docs/acceptance-checklist.md` §9). Split used: +5 of the 8 this session estimated for A4, in proportion to the steps driven. App Intents still not driven by a test |
+| | others | | unchanged | |
+| | **Total** | **1,077** | **1,086** | 1,086 ÷ 1,200 = 90.5 % (1,088 with Hydration's 92) |
+
+### Also merged into this branch (`9eb4b4f`..`9da790f`)
+
+Caffeine recorded with each drink and judged against intended sleep
+(Migration 063); caffeine on custom drinks (064) and the person's own figure
+for a catalog drink (065); the caffeine line on the drink logger; "Not yet in
+Apple Health" on water entries; Apple Health reconnected at launch for someone
+who connected before (it was hooked up only by tapping Connect, so nothing
+synced after a relaunch); water reminders spread across the night on a fast
+day. Choices in `CONTEXT.md`, each with an *Overrule by:* line.
 
 ## 2026-10-16 — Re-score of all 12 phases
 
