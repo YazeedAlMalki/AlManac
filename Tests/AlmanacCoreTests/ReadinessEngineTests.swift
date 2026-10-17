@@ -196,6 +196,79 @@ final class ReadinessEngineTests: XCTestCase {
                        "both held; the first one decided the wording")
     }
 
+    // MARK: - §9.6 manually selected recovery day (2026-10-16)
+
+    /// The rule that had never fired: a declared recovery day replaces the
+    /// recommendation wholesale, and taking it back restores the band sentence.
+    func testAManualRecoveryDayReplacesTheRecommendation() {
+        let declared = ReadinessEngine.evaluate(
+            state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline,
+            context: ReadinessContext(manualRecoveryDay: true))
+        let cleared = ReadinessEngine.evaluate(
+            state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline,
+            context: ReadinessContext(manualRecoveryDay: false))
+
+        XCTAssertEqual(declared.recommendation, "Recovery day: rest as planned.")
+        XCTAssertEqual(declared.precedenceApplied, [.manualRecovery])
+        XCTAssertEqual(cleared.recommendation, ReadinessFormula.bandText(for: cleared.score!),
+                       "clearing it restores the band's own text")
+        XCTAssertTrue(cleared.precedenceApplied.isEmpty)
+    }
+
+    /// §9.6 precedence is about the recommendation. The number, its colour, its
+    /// confidence and the headline built from them are the same either way.
+    func testAManualRecoveryDayChangesNothingButTheRecommendation() {
+        let declared = ReadinessEngine.evaluate(
+            state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline,
+            context: ReadinessContext(manualRecoveryDay: true))
+        let plain = ReadinessEngine.evaluate(
+            state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline)
+
+        XCTAssertEqual(declared.score, plain.score)
+        XCTAssertEqual(declared.color, plain.color)
+        XCTAssertEqual(declared.confidence, plain.confidence)
+        XCTAssertEqual(declared.missingInputs, plain.missingInputs)
+        XCTAssertEqual(declared.textDescription, plain.textDescription)
+        XCTAssertEqual(declared.inputSnapshot, plain.inputSnapshot)
+        XCTAssertFalse(declared.textDescription!.contains("Planned rest day"),
+                       "the person's own override is not a planned rest day")
+    }
+
+    func testAnActiveInjuryOutranksAManualRecoveryDay() {
+        let outcome = ReadinessEngine.evaluate(
+            state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline,
+            context: ReadinessContext(activeInjuryBodyArea: "left shoulder", injuryAffectsTraining: true,
+                                      manualRecoveryDay: true))
+        XCTAssertTrue(outcome.recommendation!.hasPrefix("Active injury (left shoulder)"))
+        XCTAssertEqual(outcome.precedenceApplied, [.injuryRestriction, .manualRecovery],
+                       "both held; the injury decided the wording")
+    }
+
+    func testAManualRecoveryDayOutranksPlannedRestAndDeload() {
+        let outcome = ReadinessEngine.evaluate(
+            state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline,
+            context: ReadinessContext(manualRecoveryDay: true, plannedRestDay: true, plannedDeloadDay: true))
+        XCTAssertEqual(outcome.recommendation, "Recovery day: rest as planned.")
+        XCTAssertEqual(outcome.precedenceApplied, [.manualRecovery, .restDay, .deload])
+    }
+
+    /// Not baseline-derived and not score-derived, so it still speaks on a day
+    /// with no score and on a day whose band sentence is withheld.
+    func testAManualRecoveryDayNeedsNoScoreAndNoBaseline() {
+        let unscored = ReadinessEngine.evaluate(
+            state: .provisional, inputs: ReadinessInputs(), baseline: baseline,
+            context: ReadinessContext(manualRecoveryDay: true))
+        XCTAssertNil(unscored.score)
+        XCTAssertEqual(unscored.recommendation, "Recovery day: rest as planned.")
+
+        let none = ReadinessBaseline(context: .general, restingHeartRate: nil, hrv: nil, validDayCount: 28)
+        let withheld = ReadinessEngine.evaluate(
+            state: .provisional, inputs: perfectInputs(), baseline: none,
+            context: ReadinessContext(manualRecoveryDay: true))
+        XCTAssertEqual(withheld.recommendation, "Recovery day: rest as planned.")
+        XCTAssertEqual(withheld.textDescription, ReadinessEngine.noPersonalBaselineText)
+    }
+
     func testInjuryPrependsWithoutSuppressingTheScore() {
         let outcome = ReadinessEngine.evaluate(
             state: .final, inputs: perfectInputs(mood: 9, soreness: 2), baseline: baseline,

@@ -1,9 +1,11 @@
 # Digestion & Urination — BRD §6.3
 
-**Status:** the stores have been complete and tested since 2026-09-16
-(`DigestionStore`, `UrinationStore`, Migration032) with **zero** `Native/` call
-sites. A quick-entry surface is now built and reachable from Quick Log
-(2026-09-28). The read side — history, trends, charts — is not built.
+**Status (2026-10-15):** logging (2026-09-28) and the read side are built:
+history, counts and a per-day chart at Modules → Records → Digestion; urine
+colour feedback on the hydration target; the Bristol scale credited on the
+Attributions page. **Two items wait on the owner and are not built:** the
+medical advisory (gate G1, §3) and the digestion ring's fill rule (gate G2, §4).
+Both gates were blank on 2026-10-15.
 
 ## 1. What exists
 
@@ -14,9 +16,11 @@ sites. A quick-entry surface is now built and reachable from Quick Log
 | Range reads, deletes | both stores | added 2026-09-28 with the screen |
 | Bristol and grade display vocabularies | both stores | added 2026-09-28 |
 | Quick entry from Quick Log | `Native/Almanac/DigestionQuickEntryView.swift` | done 2026-09-28 |
-| History, trends, charts | — | **not built** |
-| Three-level medical advisory | — | **not built, deliberately** — see §3 |
-| Digestion ring fill rule | — | **not built, deliberately** — see §4 |
+| History, counts, chart | `DigestionHistory.swift`, `Native/Almanac/DigestionHistoryView.swift` | done 2026-10-15 — §7 |
+| Urine colour → hydration target | `UrineColourHydrationFeedback.swift`, hydration screen | done 2026-10-15 — §8 |
+| Bristol scale attribution | `AttributionCatalog` (`bristol-stool-form-scale`) | done 2026-10-15 — §5 |
+| Three-level medical advisory | `DigestionAdvisory` | **built 2026-10-16 with draft wording, not clinician-reviewed** (owner, G1) — see §3 |
+| Digestion ring | — | **removed from v1 (owner, G2, 2026-10-16)** — see §4 |
 
 ## 2. The screen
 
@@ -41,6 +45,43 @@ chip *is* relying on colour alone — it is invisible to a VoiceOver user, and
 "brown" and "pale yellow" are near-identical on screen at picker sizes.
 
 ## 3. No advisory, and the BRD says why
+
+**Owner gate G1 — closed 2026-10-16: built, with draft wording** (owner,
+`docs/features/owner-decisions-2026-10-16.md`). **Not clinician-reviewed.** The
+BRD's condition stands: clinician review before App Store release.
+
+`DigestionAdvisory.assess` (`Sources/AlmanacCore/Digestion/DigestionAdvisory.swift`)
+reads one bowel-movement entry and the person's other entries in the seven
+logical days ending on its day, and returns a level and the reasons. The rules
+are this build's reading of the BRD's triggers, not a clinician's:
+
+| Level | Raised by |
+|---|---|
+| 3 — Seek urgent medical attention | a large amount of blood; blood with very loose stool (Bristol 6–7); blood or black stool with dizziness or weakness; severe pain with blood or black stool |
+| 2 — Consider contacting a healthcare professional | black stool; red stool with no blood recorded; a small amount of blood; blood more than once in 7 days; severe pain; dizziness or weakness; very loose stool on 3+ days in 7; pale stool on 2+ days in 7 |
+| 1 — For your information | one streak of blood; one pale stool; hard stool (Bristol 1–2) on 3+ days in 7 |
+
+Each reason is one calm sentence saying what was recorded, naming the common
+harmless explanation where there is one (iron tablets for black, beetroot for
+red, straining for a streak). Every advisory carries "Draft wording, not
+reviewed by a clinician. Almanac does not diagnose." It is **worked out when
+read and never stored**: `clinicianEscalationLevel` stays empty, kept for a
+classifier a clinician has approved.
+
+Two inputs the BRD names had no field, so the logger now asks them (Migration
+060, nullable, "not stated" distinct from "no"): **severe pain** and
+**dizziness or weakness**.
+
+**Where it shows:** on the logging screen, under the entry just saved. An entry
+that raises one keeps the sheet open on it ("Done" closes it); the urgent level
+is also an alert at once. An ordinary entry raises nothing and the sheet closes
+as before. **Not shown yet:** in Digestion history, whose footer still says it
+does not interpret.
+
+Tests: `DigestionAdvisoryTests` (7), and
+`DigestionQuickEntryUITests.testALargeAmountOfBloodRaisesTheUrgentAdvisory`.
+
+What stood here before the answer:
 
 BRD §6.3 asks for a three-level non-diagnostic advisory (informational /
 contact a professional / seek urgent attention) and then says its wording
@@ -69,6 +110,16 @@ interpret a nil.
 
 ## 4. The digestion ring's fill rule is explicitly undecided
 
+**Owner gate G2 — closed 2026-10-16: the ring is removed from v1** (owner,
+`docs/features/owner-decisions-2026-10-16.md`). `ActivityRingCalendar.digestionRingInV1`
+is false, so every day reports the ring `.disabled` whatever is stored; the
+Settings switch and the calendar's digestion row are gone. The stored setting
+and its column are kept, so bringing the ring back is that flag and the switch,
+not a migration. Tests: `ActivityRingCalendarTests.testDigestionRingSettingPersistsWithoutInventingAFillRule`,
+`AttributionsUITests.testSettingsOffersNoDigestionRingInV1`.
+
+What stood here before the answer:
+
 BRD §350: *"Fill condition explicitly undecided and not gated on anything. There
 is no universal daily bowel-movement target, since normal ranges vary by
 individual; the ring needs its own definition later and does not block this
@@ -83,9 +134,11 @@ invented here**, and defining one needs a product decision, not a migration.
 
 - **`BristolType.displayName` / `.summary` / `.accessibilityLabel`** — the seven
   standard names after Heaton & Lewis (1997), with a one-clause summary each and
-  a label carrying the number *and* the name. **Attribution is an open item**: the
-  Attributions screen has not been extended to credit the scale, and these are
-  reproduced published wording.
+  a label carrying the number *and* the name. **Credited 2026-10-15** on the
+  Attributions page: Lewis SJ, Heaton KW, *Stool form scale as a useful guide to
+  intestinal transit time*, Scand J Gastroenterol 1997;32(9):920–924. No
+  licence for reproducing the wording was identified, and the entry says "No
+  licence identified" rather than naming one (logged in `CONTEXT.md`).
 - **`StoolColor`** — BRD §6.3's own six (`brown, pale, yellow, green, black,
   red`), as a closed enum rather than the column's free `String?`. They are the
   values an escalation rule would key on, and a query over a spelling nobody
@@ -118,3 +171,53 @@ list.
 **The UI suite needs a wiped data container** — `xcrun simctl uninstall <udid>
 com.almanac.personal` — because the tests share one installed app and the
 database persists between them.
+
+## 7. History (2026-10-15)
+
+Modules → Records → Digestion. A range control (7, 30, 90 days), then:
+
+- totals for the range ("N bowel movements · N urinations");
+- a bar per day for each kind, one neutral colour each, with the counts in
+  the bars' accessibility values;
+- counts **by Bristol type** — all seven, in scale order, zeros included, each
+  row reading "Type 4, Smooth, soft sausage";
+- counts **by colour** — only colours that occur; "Colour not recorded" for
+  entries without one, and a hand-written spelling kept as written;
+- counts **by urine grade** — all eight, each reading "Colour grade 8 of 8,
+  Grade 8 — dark brown";
+- each day's entries, newest day first.
+
+Nothing is ranked, flagged or coloured by meaning. The footer repeats "Almanac
+records what you saw and does not interpret it." Every count row carries its
+number and its words, never a colour alone (BRD §6.20).
+
+`DigestionHistoryReader.history(endingOn:days:)` is the one read: two range
+queries, one pass. `LogicalDayRange` builds the range by calendar arithmetic on
+the day labels, so a range across a daylight-saving change is still N days.
+
+## 8. Urine colour and the water target (2026-10-15)
+
+BRD §6.3: "Dark color despite target → raise target (suspended during
+religious dry fasts)." On the hydration screen, when the day's **latest** urine
+reading is grade 6, 7 or 8 **and** the day's intake has reached the goal, a
+card offers "Raise target to N mL", N being the goal plus 250 mL. On a religious
+fast day the card says instead that urine colour does not change the target on
+a fast day. The wording is a draft and carries "not clinician-reviewed".
+
+The thresholds are build decisions, logged unconfirmed in `CONTEXT.md` with how
+to overrule them. The raise is offered, never applied silently.
+
+## 9. Tests (2026-10-15)
+
+- `DigestionHistoryTests` (10): range arithmetic across month and year ends,
+  the day list, out-of-range entries, Bristol / colour / grade counts, the
+  per-day series, and that nothing writes the escalation column.
+- `UrineColourHydrationFeedbackTests` (9): dark despite the target raises one
+  step; not before the target; only the latest reading counts; grade 5 is not
+  dark and 6 is; no reading; suspended on a fast day; other days ignored; no
+  target; the wording is labelled draft.
+- `AttributionTests.bristolScaleIsCredited`.
+- `DigestionHistoryUITests` (2), **passed** on a wiped iPhone 16e
+  (2026-10-15): the screen offers its three ranges and says it does not
+  interpret; logging a Type 4 through Quick Log raises the Type 4 count by one,
+  and every count row carries its number and its name.

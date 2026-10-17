@@ -49,6 +49,7 @@ struct NotificationSettingsView: View {
                         }
                     }
                     .accessibilityIdentifier("notification-rule-\(rule.type.rawValue)")
+                    if rule.isEnabled { adjustment(for: rule) }
                 }
             } header: {
                 Text("Reminders")
@@ -85,6 +86,91 @@ struct NotificationSettingsView: View {
         .task {
             reload()
             await model.reconcileNotifications()
+        }
+    }
+
+    // MARK: - Times (2026-10-16)
+
+    /// When a reminder fires, for the four types whose time a person can move.
+    /// Suhoor and iftar move by a distance from their prayer, because the
+    /// prayers move every day; readiness and bedtime take a clock time that is
+    /// used only on a day with no sleep or shift time to go by.
+    @ViewBuilder
+    private func adjustment(for rule: NotificationRule) -> some View {
+        switch rule.type {
+        case .suhoor:
+            let lead = rule.offsetMinutes ?? NotificationRule.defaultSuhoorLeadMinutes
+            Stepper(value: Binding(get: { lead }, set: { setOffset($0, for: .suhoor) }),
+                    in: NotificationRule.offsetRange(for: .suhoor) ?? 5...90, step: 5) {
+                Text("Minutes before Fajr: \(lead)")
+                    .font(AlmanacTypography.font(.body))
+            }
+            .accessibilityIdentifier("notification-offset-suhoor")
+        case .iftar:
+            let delay = rule.offsetMinutes ?? NotificationRule.defaultIftarDelayMinutes
+            Stepper(value: Binding(get: { delay }, set: { setOffset($0, for: .iftar) }),
+                    in: NotificationRule.offsetRange(for: .iftar) ?? 0...60, step: 5) {
+                Text("Minutes after Maghrib: \(delay)")
+                    .font(AlmanacTypography.font(.body))
+            }
+            .accessibilityIdentifier("notification-offset-iftar")
+        case .readiness, .bedtime:
+            Toggle(isOn: Binding(
+                get: { rule.scheduledMinuteOfDay != nil },
+                set: { on in setMinute(on ? Self.firstMinute(for: rule.type) : nil, for: rule.type) }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Set a time")
+                        .font(AlmanacTypography.font(.body))
+                    Text("Used only on a day with no sleep or shift time to go by.")
+                        .font(AlmanacTypography.font(.caption))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                }
+            }
+            .accessibilityIdentifier("notification-time-toggle-\(rule.type.rawValue)")
+            if let minute = rule.scheduledMinuteOfDay {
+                DatePicker("Time", selection: Binding(
+                    get: { Self.date(minute) },
+                    set: { setMinute(Self.minute(of: $0), for: rule.type) }
+                ), displayedComponents: .hourAndMinute)
+                .accessibilityIdentifier("notification-time-\(rule.type.rawValue)")
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    /// Turned on with no time yet, a readiness time starts at 07:00 and a
+    /// bedtime at 22:30 — a start for the picker, not a recommendation.
+    static func firstMinute(for type: NotificationType) -> Int {
+        type == .bedtime ? 22 * 60 + 30 : 7 * 60
+    }
+
+    private static func date(_ minute: Int) -> Date {
+        Calendar.current.date(bySettingHour: minute / 60, minute: minute % 60, second: 0, of: Date()) ?? Date()
+    }
+
+    private static func minute(of date: Date) -> Int {
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+    }
+
+    private func setOffset(_ minutes: Int, for type: NotificationType) {
+        write { try model.setOffsetMinutes(minutes, for: type) }
+    }
+
+    private func setMinute(_ minute: Int?, for type: NotificationType) {
+        write { try model.setScheduledMinuteOfDay(minute, for: type) }
+    }
+
+    private func write(_ change: () throws -> Void) {
+        do {
+            try change()
+            reload()
+            Task { await model.reconcileNotifications() }
+        } catch {
+            self.error = error.localizedDescription
+            reload()
         }
     }
 
@@ -144,8 +230,8 @@ struct NotificationSettingsView: View {
         case .meal: return String(localized: "At the times you set, never during a confirmed fast.")
         case .bedtime: return String(localized: "Before your expected sleep window, not during a night shift.")
         case .supplement: return String(localized: "At each plan's own time, from the supplement screen.")
-        case .suhoor: return String(localized: "Twenty minutes before Fajr, on religious fast days.")
-        case .iftar: return String(localized: "At Maghrib, on religious fast days.")
+        case .suhoor: return String(localized: "Before Fajr, on religious fast days.")
+        case .iftar: return String(localized: "At Maghrib or after it, on religious fast days.")
         case .contextualSnack: return String(localized: "When a long gap opens before a planned workout.")
         case .contextualHydration: return String(localized: "About an hour before a meal you usually eat.")
         case .prayer: return String(localized: "At each prayer you choose in Prayer. Maghrib on a fast day is the iftar reminder.")

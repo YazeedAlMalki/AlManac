@@ -15,6 +15,39 @@ and progress photos remain future work.
 The native app now has a first Measurements surface under More: it lists recent
 body-composition and custom measurements and accepts manual values.
 
+### Slice 7 toward done (2026-10-15)
+
+| Item | State |
+|---|---|
+| Body measurements: manual entry, correct and delete a row, a year's history and chart per metric | **Built.** `BodyCompositionMeasurementStore.correct` / `.delete` (manual rows only), `BodyMetricHistoryView` from Body composition → History |
+| Weight lives only in `body_composition_measurement` (§3) | **Confirmed.** `VitalsRecordHealthBridge.metricMap` has no `bodyMass`; pinned by `VitalsRecordHealthBridgeTests.bodyMassIsNotAVital` |
+| Owner-definable circumference points, charted | **Built.** `CircumferencePointCatalog`, Migration 056. Body circumferences → Points and charts: hide any of the seven built-ins, add your own (cm), each point opens a year's chart, a line per side |
+| Supplements: plan, daily adherence, reminders | **Built.** The plan editor now sets a reminder time; it reaches `NotificationPlanner` (pinned by four new planner tests); saving or discontinuing a plan re-plans notifications. Delivery on a device is **UNRUN** |
+| Context tags: history and editing | **Confirmed built** (2026-09-27, `BodyCompositionWellnessUITests`). **Their use as correlation confounders (BRD §6.8) belongs to Slice 10, Insights**, and is not part of this slice |
+| Labs: remaining analytes | **Seeded**, each cited — `laboratory-catalog-coverage.md` 0.4 |
+| Lab unit conversion and re-test suggestion | **Built in core**, not on a screen — `laboratory.md` §8a–8b |
+| Progress photos (gate G3) | **Closed 2026-10-16: still later** (owner). Deferred, as on 2026-09-16; not built |
+| Lab import-job failure row (gate G4) | **Closed 2026-10-16: yes, keep a record** (owner). Built in `d21d9a9`; not changed |
+| Verified LOINC codes (gate G5) | **Closed 2026-10-16: yes** (owner). 163 verified codes seeded; see `docs/features/laboratory-catalog-coverage.md` |
+| The two failing UI tests | **Pass** on a wiped simulator (2026-10-15). The discontinue test had found a real bug — the only plan, once discontinued, was hidden behind the empty state — fixed in `SupplementView` |
+
+Decisions taken without the owner are in `CONTEXT.md`, "Body and wellness
+(2026-10-15)".
+
+**Correcting and deleting.** Only a reading the person typed. A correction keeps
+the metric, the instant and the source, and changes the value and conditions; a
+copy already sent to Health is not changed. A deletion sets `deletedAt` (every
+read already filters on it) and clears `pendingHealthKitWrite`, so a reading
+deleted before it was sent is never sent.
+
+**Circumference points.** The seven built-ins stay because they carry what a
+free-text point does not: sides for arm and thigh, the waist's Health sync, and
+a typo guard. "Replacing the fixed seven" was read as "the list is no longer
+fixed": any built-in can be hidden, and owner points are added beside them.
+Hiding keeps the readings. Moving the seven into
+`custom_measurement_definition` would be a data migration with a decision about
+existing sided rows, and is logged as the way to overrule this.
+
 ### Supplements and context tags, built (2026-09-27)
 
 The two surfaces Slice 7 called "not built" and that had complete, tested stores
@@ -59,11 +92,10 @@ single-purpose methods, so an edit form can never silently clear a reminder by
 omitting it; `SupplementLogStore.setTaken`, `.delete` and an all-plans
 `entries(from:to:)`; `ContextEventStore.events(from:to:)` and `.updateNotes`.
 
-**Still not done:** editing or deleting a body-composition measurement row
+**Still not done (as of 2026-09-27; see the 2026-10-15 table above for what
+changed since):** editing or deleting a body-composition measurement row
 anywhere, progress photos (owner-deferred 2026-09-16), historical exploration
-and charting for any body metric, and supplement reminders — which need Slice
-11's scheduler. The `supplement` row in the spec's Appendix B is ready for it
-and nothing schedules notifications yet.
+and charting for any body metric, and supplement reminders.
 
 ### Tests
 

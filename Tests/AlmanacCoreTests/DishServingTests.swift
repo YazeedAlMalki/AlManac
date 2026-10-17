@@ -48,6 +48,21 @@ struct DishServingTests {
         #expect(try editor.oneServingGrams(of: stew) == 240)
     }
 
+    @Test("The serving-count control's edit: a count sets it, none clears it")
+    func servingsEdit() throws {
+        let stew = try recipe("stew", grams: [200, 100])
+        #expect(DishEdit.servings(3).servingCount == .set(3))
+        #expect(DishEdit.servings(nil).servingCount == .clear)
+
+        #expect(try editor.update(stew, .servings(3)))
+        #expect(try editor.oneServingGrams(of: stew) == 100)
+        #expect(try editor.update(stew, .servings(nil)))
+        #expect(try editor.dish(stew)?.servingCount == nil)
+        #expect(try editor.oneServingGrams(of: stew) == 300)
+        // Clearing what is already clear changes nothing, and says so.
+        #expect(try editor.update(stew, .servings(nil)) == false)
+    }
+
     @Test("A food with no recipe and no yield has no serving weight, not zero")
     func labelFoodHasNone() throws {
         let label = try editor.create(localID: "bar", nameText: "Protein bar")

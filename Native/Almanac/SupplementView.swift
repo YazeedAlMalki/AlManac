@@ -19,6 +19,9 @@ import Foundation
 struct SupplementView: View {
     let db: Database
     @ObservedObject var trackingModel: TrackingCalendarModel
+    /// Re-plans notifications after a plan's reminder changes. Optional so a
+    /// preview or a test host can show the screen without one.
+    var notificationModel: NotificationModel? = nil
 
     @State private var plans: [SupplementPlan] = []
     @State private var todayEntries: [SupplementLogEntry] = []
@@ -27,6 +30,8 @@ struct SupplementView: View {
     @State private var addingPlan = false
     @State private var error: String?
     @State private var readProblem: String?
+    /// Set when a reminder was turned on but notifications are not allowed.
+    @State private var reminderProblem: String?
 
     private let timeModel = TimeModel(timeZone: .current)
 
@@ -40,13 +45,22 @@ struct SupplementView: View {
             if let readProblem {
                 Section { AlmanacProblemNote(text: readProblem) }
             }
+            if let reminderProblem {
+                Section {
+                    AlmanacProblemNote(text: reminderProblem)
+                        .accessibilityIdentifier("supplement-reminder-problem")
+                }
+            }
 
             Section {
                 AlmanacCard(prominent: true) { adherenceSummary }
             }
 
             Section {
-                if plans.filter(\.isActive).isEmpty {
+                // Keyed to "no plans at all", not "no active plans": a person
+                // whose only plan is discontinued still has that plan and its
+                // history, and the old check hid it behind an empty state.
+                if plans.isEmpty {
                     Text("No supplement plans yet. Add one to start tracking adherence.")
                         .font(AlmanacTypography.font(.body))
                         .foregroundStyle(AlmanacPalette.textSecondary)
@@ -77,12 +91,32 @@ struct SupplementView: View {
         .navigationTitle("Supplements")
         .task { reload() }
         .sheet(isPresented: $addingPlan) {
-            SupplementPlanEditor(db: db, plan: nil) { reload() }
+            SupplementPlanEditor(db: db, plan: nil) { saved(reminderTurnedOn: $0) }
         }
         .sheet(item: $editingPlan) { plan in
-            SupplementPlanEditor(db: db, plan: plan) { reload() }
+            SupplementPlanEditor(db: db, plan: plan) { saved(reminderTurnedOn: $0) }
         }
         .editorError($error)
+    }
+
+    /// Re-plans notifications. When this save turned a reminder on, that tap
+    /// is the deliberate action the system prompt may follow, so it asks for
+    /// permission (the OS only shows the prompt while it is undetermined) and
+    /// says so plainly if notifications are not allowed — otherwise the plan
+    /// would read "Reminder at 21:00" with nothing ever queued.
+    private func saved(reminderTurnedOn: Bool = false) {
+        reload()
+        guard let notificationModel else { return }
+        Task {
+            if reminderTurnedOn {
+                let granted = (try? await notificationModel.requestAuthorizationAndSchedule()) ?? false
+                reminderProblem = granted
+                    ? nil
+                    : String(localized: "Notifications are off for Almanac, so this reminder will not arrive. Allow them in the Settings app.")
+            } else {
+                await notificationModel.reconcileNotifications()
+            }
+        }
     }
 
     // MARK: - Adherence
@@ -218,7 +252,7 @@ struct SupplementView: View {
                     Text("·")
                     Text("Discontinued")
                 }
-                if plan.reminderEnabled {
+                if plan.reminderEnabled && plan.isActive {
                     Text("·")
                     Text("Reminder at \(reminderTime(plan))")
                 }
@@ -246,7 +280,9 @@ struct SupplementView: View {
     private func deactivate(_ plan: SupplementPlan) {
         do {
             try SupplementPlanStore(db: db).deactivate(id: plan.id)
-            reload()
+            // A discontinued plan's reminder is no longer planned; re-plan so
+            // a request already queued with the OS is withdrawn.
+            saved()
         } catch {
             self.error = String(describing: error)
         }

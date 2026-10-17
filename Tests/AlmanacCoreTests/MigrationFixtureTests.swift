@@ -75,6 +75,24 @@ final class MigrationFixtureTests: XCTestCase {
         XCTAssertEqual(try foreignKeyViolations(db), 0, "no orphaned references after the upgrade")
     }
 
+    // MARK: - Every earlier version upgrades to head
+
+    /// An install can be left at any version, not only the two fixtures above.
+    /// Empty databases only: this proves each pending chain runs and leaves no
+    /// broken reference, not that a particular row survives it.
+    func testEveryEarlierVersionUpgradesToHead() throws {
+        for version in contiguousMigrationVersions(1, through: head - 1) {
+            let db = try Database.inMemory()
+            try MigrationRunner(migrations: prefix(version)).migrate(db)
+            let applied = try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
+            XCTAssertEqual(Set(applied), Set(contiguousMigrationVersions(version + 1, through: head)),
+                           "from v\(version)")
+            XCTAssertEqual(try appliedVersions(db), contiguousMigrationVersions(1, through: head),
+                           "from v\(version)")
+            XCTAssertEqual(try foreignKeyViolations(db), 0, "from v\(version)")
+        }
+    }
+
     // MARK: - v015 fixture: hydration exists with drink columns
 
     func testV015DatabaseUpgradesToHeadPreservingHydrationRows() throws {

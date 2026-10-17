@@ -137,6 +137,53 @@ final class RestoreHealthReconcileTests: XCTestCase {
         XCTAssertNotNil(restoredEcho.string("deleted_at"),
                         "the shared restore seam must de-duplicate, not just swap the database")
     }
+
+    /// BRD §6.18 / A4: "no duplicate workouts/measurements post-resync". On a
+    /// new phone the HealthKit anchors start again, so the first sync after a
+    /// restore re-reads samples the restored database already holds. Each
+    /// store keyed on the sample's identifier must take them as the same rows.
+    func testResyncAfterRestoreDuplicatesNoSampleSharingAnIdentifier() throws {
+        let dir = NSTemporaryDirectory() + "almanac-resync-\(UUID().uuidString)"
+        try FileManager.default.createDirectory(at: URL(fileURLWithPath: dir), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+        let at = Date(timeIntervalSince1970: 1_772_000_100)
+        let clock = FixedClock(Date(timeIntervalSince1970: 1_772_000_000))
+        let samples = HealthChangeSet(added: [
+            HealthSample(externalID: "hk-mass-1", domain: .bodyMass, start: at, end: at, value: 72.4, unit: "kg"),
+            HealthSample(externalID: "hk-water-1", domain: .water, start: at, end: at, value: 300, unit: "ml"),
+            HealthSample(externalID: "hk-waist-1", domain: .waistCircumference, start: at, end: at, value: 81, unit: "cm"),
+            HealthSample(externalID: "hk-hrv-1", domain: .hrv, start: at, end: at, value: 48, unit: "ms")
+        ], deletedExternalIDs: [], nextAnchor: nil)
+
+        func applyAll(_ db: Database) throws {
+            _ = try HealthSampleStore(db: db, healthDomain: .bodyMass, clock: clock).apply(samples, in: db)
+            _ = try HydrationStore(db: db, clock: clock).apply(samples, in: db)
+            _ = try BodyMeasurementHealthBridge().apply(samples, in: db)
+            _ = try VitalsRecordHealthBridge(db: db, clock: clock).apply(samples, in: db)
+        }
+        func counts(_ db: Database) throws -> [Int64] {
+            try ["SELECT COUNT(*) AS n FROM health_sample WHERE external_id = 'hk-mass-1';",
+                 "SELECT COUNT(*) AS n FROM hydration_log WHERE external_id = 'hk-water-1' AND deleted_at IS NULL;",
+                 "SELECT COUNT(*) AS n FROM body_measurement WHERE source_identifier = 'hk-waist-1';",
+                 "SELECT COUNT(*) AS n FROM vitals_record WHERE healthKitUUID = 'hk-hrv-1';"]
+                .map { try db.query($0).first?.int("n") ?? -1 }
+        }
+
+        let source = try Database(path: dir + "/src.sqlite")
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(source)
+        try applyAll(source)
+        XCTAssertEqual(try counts(source), [1, 1, 1, 1], "the fixture did not land one row per store")
+        try BackupService(db: source, clock: clock).writeBundle(to: dir + "/b.almanac-backup", documentsRoot: nil)
+
+        let target = try Database(path: dir + "/tgt.sqlite")
+        try MigrationRunner(migrations: AlmanacMigrations.all).migrate(target)
+        try BackupService(db: target).restoreBundle(at: dir + "/b.almanac-backup")
+        XCTAssertEqual(try counts(target), [1, 1, 1, 1], "the restore itself lost or doubled a row")
+
+        // The first sync on the new phone reads the same samples again.
+        try applyAll(target)
+        XCTAssertEqual(try counts(target), [1, 1, 1, 1], "a re-read after restore duplicated a sample")
+    }
 }
 
 private extension FixedClock {
@@ -145,4 +192,5 @@ private extension FixedClock {
         f.formatOptions = [.withInternetDateTime]
         return f.string(from: now)
     }
+
 }

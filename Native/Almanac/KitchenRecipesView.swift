@@ -24,6 +24,11 @@ struct KitchenRecipesView: View {
     @State private var results = RecipeResults()
     @State private var pantryIsEmpty = true
     @State private var showingPantry = false
+    /// An imported recipe with no serving count, waiting on the question.
+    @State private var askingServings: RecipeMatch?
+    /// The answer, handed on once the question has closed: closing the picker
+    /// from inside the question's own dismissal would close both at once.
+    @State private var answered: (match: RecipeMatch, servings: Int?)?
     @State private var error: String?
 
     var body: some View {
@@ -47,25 +52,42 @@ struct KitchenRecipesView: View {
                     Section { AlmanacProblemNote(text: note) }
                 }
 
-                Section {
-                    if results.recipes.isEmpty {
-                        Text(emptyText).foregroundStyle(.secondary)
-                    } else {
-                        ForEach(results.recipes, id: \.recipe) { match in
-                            Button { choose(match) } label: { RecipeRow(match: match) }
-                        }
-                    }
-                }
-
                 // Hidden by default and reachable: collapsed, and each one opens
                 // on its own page under its warning (`HiddenDishesSection`, the
-                // same entry Saved meals shows).
+                // same entry Saved meals shows). Above the recipes, not below:
+                // with the Wikibooks recipes the list runs to some three hundred
+                // rows, and an entry under them would never be seen.
                 HiddenDishesSection(rows: results.withheld.map(hiddenRow),
                                     disclaimer: results.disclaimer) { row in
                     if let match = results.withheld.first(where: { $0.recipe == row.ref }) {
                         choose(match)
                     }
                 }
+
+                Section {
+                    if results.recipes.isEmpty {
+                        Text(emptyText).foregroundStyle(.secondary)
+                    } else {
+                        ForEach(results.recipes, id: \.recipe) { match in
+                            HStack(spacing: 8) {
+                                Button { choose(match) } label: { RecipeRow(match: match) }
+                                    .buttonStyle(.plain)
+                                // CC BY-SA asks for a link to the work with the
+                                // credit: the page itself, one tap away.
+                                if let url = match.source?.pageURL {
+                                    Link(destination: url) {
+                                        Image(systemName: "book")
+                                            .foregroundStyle(AlmanacPalette.accent)
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .accessibilityLabel("Open \(match.name) on Wikibooks")
+                                    .accessibilityIdentifier("recipe-source-link-\(match.recipe.localID)")
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
             .navigationTitle("Recipes")
             .navigationBarTitleDisplayMode(.inline)
@@ -75,6 +97,15 @@ struct KitchenRecipesView: View {
             }
             .sheet(isPresented: $showingPantry, onDismiss: load) {
                 KitchenPantryView(model: model)
+            }
+            .sheet(item: $askingServings, onDismiss: {
+                if let answered { hand(answered.match, servings: answered.servings) }
+                answered = nil
+            }) { match in
+                RecipeServingsQuestion(match: match) { count in
+                    if let count { try model.setServingCount(count, for: match.recipe) }
+                    answered = (match, count)
+                }
             }
             .task(id: mode) { load() }
             .onChange(of: query) { load() }
@@ -117,10 +148,23 @@ struct KitchenRecipesView: View {
     }
 
     private func choose(_ match: RecipeMatch) {
-        // One serving (owner, 2026-10-06), still editable in the form: the
-        // finished weight over the serving count, or the whole dish when no
-        // count is set (`RecipeMatch.oneServingGrams`).
-        onSelect(match.recipe, match.name, match.oneServingGrams)
+        // An imported recipe whose page gave no serving count is the whole pot
+        // until someone says how many it makes, so Kitchen asks the first time
+        // (`CONTEXT.md`, Kitchen 2026-10-06). The answer is kept on the dish.
+        if match.source != nil, match.servingCount == nil {
+            askingServings = match
+            return
+        }
+        hand(match, servings: match.servingCount)
+    }
+
+    /// One serving (owner, 2026-10-06), still editable in the form: the
+    /// finished weight over the serving count, or the whole dish when no count
+    /// is set (`RecipeMatch.oneServingGrams`).
+    private func hand(_ match: RecipeMatch, servings: Int?) {
+        let whole = match.yieldGrams ?? match.ingredients.reduce(0) { $0 + $1.grams }
+        let grams = whole > 0 ? whole / Double(servings ?? 1) : nil
+        onSelect(match.recipe, match.name, grams)
         dismiss()
     }
 }
@@ -144,6 +188,11 @@ private struct RecipeRow: View {
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(match.missing.isEmpty ? AlmanacPalette.good : AlmanacPalette.textSecondary)
                     .lineLimit(2)
+                if let source = match.source {
+                    Text(source.credit)
+                        .font(AlmanacTypography.font(.caption))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                }
             }
             Spacer(minLength: 8)
             IngredientTally(onHand: match.onHandCount, total: match.ingredients.count)
@@ -308,6 +357,70 @@ private struct KitchenPantryView: View {
         do {
             for index in offsets { try model.removeFromPantry(items[index].ref) }
             load()
+        } catch {
+            self.error = String(describing: error)
+        }
+    }
+}
+
+extension RecipeMatch: @retroactive Identifiable {
+    public var id: SourceIdentifier { recipe }
+}
+
+/// "How many servings does this make?" — asked once, the first time an
+/// imported recipe with no stated count is chosen. "Not now" logs the whole
+/// recipe as one serving and asks again next time; a count is kept on the dish
+/// and is what Saved meals' "Servings" would show for it.
+private struct RecipeServingsQuestion: View {
+    let match: RecipeMatch
+    let onAnswer: (Int?) throws -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var count = DishServingCountSheet.firstCount
+    @State private var error: String?
+
+    private var wholeGrams: Double {
+        match.yieldGrams ?? match.ingredients.reduce(0) { $0 + $1.grams }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Stepper(value: $count, in: 1...50) {
+                        Text("Servings: \(count)")
+                    }
+                    .accessibilityIdentifier("recipe-servings-stepper")
+                    if wholeGrams > 0 {
+                        Text("Serving: \(Int((wholeGrams / Double(count)).rounded())) g")
+                            .accessibilityIdentifier("recipe-servings-preview")
+                    }
+                } header: {
+                    Text("How many servings does this make?")
+                } footer: {
+                    Text("The recipe's page does not say. Your answer is kept for next time.")
+                }
+            }
+            .navigationTitle(match.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Not now") { answer(nil) }
+                        .accessibilityIdentifier("recipe-servings-not-now")
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Continue") { answer(count) }
+                        .accessibilityIdentifier("recipe-servings-continue")
+                }
+            }
+            .editorError($error)
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func answer(_ count: Int?) {
+        do {
+            try onAnswer(count)
+            dismiss()
         } catch {
             self.error = String(describing: error)
         }

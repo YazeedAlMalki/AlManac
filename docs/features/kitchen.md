@@ -2,8 +2,9 @@
 
 **Status:** core and screens built 2026-10-05; made merge-ready 2026-10-06
 (Migration 051 — renumbered from 050, see §5 — `Sources/AlmanacCore/Kitchen/`,
-`Native/Almanac/KitchenRecipesView.swift`). No recipe data ships: Kitchen
-works over the person's own dishes until an import is licensed (§4).
+`Native/Almanac/KitchenRecipesView.swift`). **2026-10-16: 298 recipes from the
+Wikibooks Cookbook ship** (owner's T04 pick; §8). Before that, no recipe data
+shipped and Kitchen worked over the person's own dishes only (§4).
 
 ## 1. What exists
 
@@ -66,7 +67,9 @@ See §6, step 2.
 
 ## 4. Not done, and why
 
-- **No recipe import.** The standalone module ingested 793 TheMealDB recipes.
+- ~~**No recipe import.**~~ **Superseded 2026-10-16:** the owner chose the
+  Wikibooks Cookbook over TheMealDB, and it is imported (§8). The rest of this
+  item is the history. The standalone module ingested 793 TheMealDB recipes.
   That data is not here, and shipping it is an R-FOOD question first. **2026-10-06:**
   the owner chose to import TheMealDB if its terms permit bundling; they could not
   be read from that session's network, so the gate stays shut and nothing was
@@ -170,8 +173,14 @@ nothing is pre-filled.
 Choosing a recipe **and choosing a saved meal** pre-fill one serving, still
 editable. Saved meals used to pre-fill the whole stated yield; it is the same
 row, so it now takes the same default. The pre-filled figure is rounded rather
-than truncated. `DishEdit.servingCount` sets a count; **no screen sets one yet**,
-because no screen edits a dish at all.
+than truncated. `DishEdit.servingCount` sets a count. ~~No screen sets one
+yet.~~ **2026-10-16:** Saved meals sets it: swipe a meal, "Servings", and a
+sheet turns a count on (starting at 2, 1–50) and shows what one serving becomes.
+No migration was needed; the column is 052's. Still no screen edits the rest of
+a dish. Tests: `DishServingTests.servingsEdit`,
+`KitchenSeedPlanTests.applyClearsServingCounts`, and
+`KitchenUITests.testAServingCountSetOnASavedMealIsWhatItPreFills`. Decisions
+in `CONTEXT.md`, "The 2026-10-16 handoff".
 
 Imported recipes (when there is an import — §4): TheMealDB's records are
 believed to carry no serving count; that was not checkable from this session
@@ -295,3 +304,28 @@ text, rather than the caption-sized problem note.
 - **Arabic — redefined 2026-10-07 by the owner: the whole app gets Arabic**, not
   Kitchen alone. That is the BRD's deferred "Arabic UI" brought into scope;
   tracked separately from Kitchen.
+
+## 8. 2026-10-16 — recipes from the Wikibooks Cookbook
+
+The owner's T04 answer was to find an open recipe source he can use
+commercially. Of the options researched (`recipe-sources.md`), he picked the
+Wikibooks Cookbook (CC BY-SA 4.0).
+
+| Piece | Where |
+|---|---|
+| Import tool | `tools/recipes` (fetch, review, build; README has the rule and the counts) |
+| Bundle | `Sources/AlmanacCore/Kitchen/Resources/wikibooks-recipes.json`, 298 recipes |
+| Install | `WikibooksRecipeBundle.installIfNeeded`, run by `NutritionModel` after the reference; once per bundle SHA-256 |
+| Provenance | Migration **062**: `kitchen_recipe_source` (title, link, revision, licence, stated servings), `kitchen_recipe_import` |
+| Screen | `KitchenRecipesView`: credit line and a link per imported recipe; "How many servings does this make?" when the page gives none |
+| Credit | Attributions entry `wikibooks-cookbook` |
+
+An imported recipe is an `almanac:` dish, so matching, the allergen check,
+one-serving pre-fill and logging are unchanged. Saved meals leaves imported
+recipes out; "All" lists the person's own recipes first. Decisions are in
+`CONTEXT.md`, "Kitchen recipes from Wikibooks".
+
+Tests: `ImportedRecipesTests` (6, including the shipped bundle on the shipped
+reference: every recipe installs, every ingredient resolves, a second run does
+nothing), `tools/recipes/tests` (12), and
+`KitchenUITests.testAnImportedRecipeIsCreditedAndAsksForServings`.

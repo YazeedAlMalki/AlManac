@@ -222,6 +222,77 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
     /// `catalog_water` first, and water is 0 kcal, so water is legitimately
     /// absent from a calorie total. Picking the first row and then asserting one
     /// would have been a test that could only ever fail.
+    /// BRD §6.2: a drink's caffeine is part of the one entry. The logger states
+    /// it for the amount chosen, before anything is logged, and scales it with
+    /// the amount. Cancelled at the end, so nothing is written.
+    func testTheDrinkLoggerStatesCaffeineForTheAmountChosen() {
+        openModule("Hydration")
+        XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))
+        let log = app.buttons["Log a drink"]
+        XCTAssertTrue(app.reveal(log), "logging a drink must be reachable from Hydration")
+        log.tap()
+        XCTAssertTrue(app.navigationBars["Log a drink"].waitForExistence(timeout: 10))
+
+        // 240 mL, 95 mg in `CatalogDrinks`.
+        let coffee = app.element("drink-row-catalog_coffee_black")
+        XCTAssertTrue(app.reveal(coffee), "the drink catalogue did not offer Black Coffee")
+        coffee.tap()
+
+        let label = app.staticTexts["Caffeine"]
+        XCTAssertTrue(app.reveal(label), "the logger does not state the drink's caffeine")
+        XCTAssertTrue(app.staticTexts["95 mg"].exists, "a full serving of black coffee should read 95 mg")
+
+        // Half the serving, half the caffeine.
+        let amount = app.textFields["Custom amount, in mL"]
+        XCTAssertTrue(app.reveal(amount))
+        amount.tap()
+        amount.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "120")
+        XCTAssertTrue(app.reveal(label))
+        XCTAssertTrue(app.staticTexts["47.5 mg"].waitForExistence(timeout: 5),
+                      "120 mL should state half the caffeine; shown: "
+                      + "\(app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.hasSuffix("mg") })")
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Log a drink"].waitForNonExistence(timeout: 10))
+    }
+
+    /// BRD §6.2 "editable": a catalog drink's caffeine can be set to the
+    /// person's own figure and put back. Restores the typical value at the end
+    /// and cancels, so the simulator is left as it was.
+    func testACatalogDrinksCaffeineCanBeChangedAndPutBack() {
+        openModule("Hydration")
+        XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))
+        let log = app.buttons["Log a drink"]
+        XCTAssertTrue(app.reveal(log))
+        log.tap()
+        let coffee = app.element("drink-row-catalog_coffee_black")
+        XCTAssertTrue(app.reveal(coffee))
+        coffee.tap()
+
+        let change = app.buttons["drink-change-caffeine"]
+        XCTAssertTrue(app.reveal(change), "a catalog coffee offers no way to change its caffeine")
+        change.tap()
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the caffeine box did not open")
+        field.tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "140")
+        app.alerts.buttons["Save"].tap()
+
+        XCTAssertTrue(app.reveal(app.staticTexts["Caffeine (your figure)"]),
+                      "the changed figure is not marked as the person's")
+        XCTAssertTrue(app.staticTexts["140 mg"].exists)
+
+        XCTAssertTrue(app.reveal(change))
+        change.tap()
+        XCTAssertTrue(app.alerts.buttons["Use the typical value"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Use the typical value"].tap()
+        XCTAssertTrue(app.reveal(app.staticTexts["Caffeine"]))
+        XCTAssertTrue(app.staticTexts["95 mg"].exists, "putting the typical value back did not restore 95 mg")
+
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Log a drink"].waitForNonExistence(timeout: 10))
+    }
+
     func testLoggingADrinkShowsItOnTheDashboardWithCalories() {
         openModule("Hydration")
         XCTAssertTrue(app.navigationBars["Hydration"].waitForExistence(timeout: 10))
@@ -268,6 +339,10 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
         // 2026-09-27 change, so it is what catches the section being restored.
         XCTAssertFalse(app.staticTexts["From drinks"].exists,
                        "the separate drink-calorie line was superseded and must not come back")
+        // The simulator has not allowed Almanac to write to Health, so no entry
+        // may claim to be waiting for it (§5.5's status shows only once it can).
+        XCTAssertFalse(app.descendants(matching: .any)["hydration.pending-health"].exists,
+                       "an entry is marked as waiting for Apple Health although Almanac cannot write there")
 
         // The drink's calories are part of the day's *one* energy total, on
         // Today, rather than a second figure here. So the assertion has to go
@@ -333,6 +408,43 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    // MARK: - Health access per feature (BRD §5.5, owner 2026-10-17)
+
+    /// Settings offers Health access one feature at a time, and all at once.
+    /// Not tapped: the simulator cannot answer HealthKit's sheet.
+    func testHealthAccessIsOfferedPerFeatureAndAllAtOnce() {
+        openSettings()
+        for id in ["all", "water", "sleep", "activity", "heart", "body"] {
+            XCTAssertTrue(app.reveal(app.buttons["health-connect-\(id)"]), "no health-connect-\(id) in Settings")
+        }
+    }
+
+    // MARK: - App Intents (BRD §6.21)
+
+    /// The water widget's button runs `LogWaterIntent.perform()`. The app is
+    /// relaunched to run that same intent once against its database, and
+    /// Hydration's total must go up by exactly one glass. A total, not a row:
+    /// the simulator's database carries earlier runs' water.
+    func testTheWaterWidgetsIntentLogsOneGlass() {
+        let total = app.staticTexts["hydration-today-total"]
+        openModule("Hydration")
+        XCTAssertTrue(total.waitForExistence(timeout: 10), "Hydration shows no total")
+        let before = Self.milliliters(total.label)
+
+        app.terminate()
+        app.launchArguments.append("-AlmanacRunLogWaterIntent")
+        app.launch()
+        openModule("Hydration")
+        XCTAssertTrue(total.waitForExistence(timeout: 10), "Hydration shows no total after the intent")
+        // The intent is async and finishes after launch; the screen follows it.
+        let added = NSPredicate { _, _ in Self.milliliters(total.label) == before + 250 }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: added, object: nil)], timeout: 10),
+                       .completed, "\(before) mL became '\(total.label)', not \(before + 250) mL")
+    }
+
+    /// "1,250 mL" → 1250.
+    private static func milliliters(_ label: String) -> Int { Int(label.filter(\.isNumber)) ?? -1 }
 
     private func openModule(_ name: String) {
         let modules = app.buttons["Modules"]
