@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-17 (latest): A4 driven, caffeine and night hydration merged (1,086 / 1,200).
+Updated 2026-10-17 (latest): the merged head's CI; Hydration held at 90 (1,086 / 1,200).
+Updated 2026-10-17 (earlier): A4 driven, caffeine and night hydration merged (1,086 / 1,200).
 Updated 2026-10-16 (later): the re-score of all 12 phases (1,077 / 1,200).
 Updated 2026-10-16 (later): the owner's approval of the Slice 8 rubric.
 Updated 2026-10-16 (later still): regional dishes through the nutrition pipeline (Slice 8).
@@ -34,6 +35,46 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-17 — the merged head's CI: Hydration held at 90
+
+**Outcome.** The total stays **1,086 of 1,200 (90.5 %)**. Hydration does not go
+to 92 yet. Commit `3c86b00` passed every check in one of its two CI runs, but
+failed two UI tests in the other. Those failures are outside Hydration, but the
+condition for raising it was a green merged head.
+
+| Run | Event | Result |
+|---|---|---|
+| 39000825067 | pull request | all green, incl. AllergenFilterUITests (its re-run) and every caffeine and night-hydration test |
+| 39000822026 | push | 2 UI failures: `NotificationSettingsUITests.testTurningEverythingOffAsksFirst` ("Settings is not offered", 196 s); `TrainingProgramUITests.testStartWorkoutOpensTheProgramPicker` (the Training screen did not open after tapping its row, 22 s) |
+
+**What is known.** All three failures since the caffeine work came on the
+first navigation after a fresh launch. Each tapped the Modules tab and then
+failed on a row: AllergenFilter (run 38974645011), NotificationSettings and
+TrainingProgram. Each of these tests passed on the same commit in another run.
+The caffeine work changes no Modules or navigation code. History over 200 runs: `testTurningEverythingOffAsksFirst` failed 13 times
+before (from 2026-09-29), and AllergenFilter's toggle test 7 times. Before the caffeine
+work, 3 of 86 completed UI jobs had a Modules-navigation failure. Since it, 2 of 3
+did. That is too few runs to call it a regression, and too many to call it
+nothing.
+
+**What is not known.** Whether the Modules tab tap was lost or the row tap
+was. None of the three tests checked that Modules opened before looking for
+a row. The result bundle could not be downloaded from this session (the
+proxy refuses the artifact host).
+
+**Done.** `openModulesTab()` (`UIScrollSupport.swift`) taps the tab and asserts
+the Modules bar appears, naming the bars on screen if not. The three tests use
+it, and the Training test's row tap now reports which bars it saw. No test is
+loosened: each assertion they had is still made, and one more is added. The
+next failure will say which tap did not take.
+
+**Score formula.** Unchanged from the entry below: the sum of the 12 phase scores
+is 1,086, and 1,086 ÷ 1,200 = 90.5 %. Hydration 90 → 92 (1,088) once a merged head is green on
+both runs, or once these failures are diagnosed and shown not to touch it.
+Notifications, Training and Slice 8 are not raised or lowered: their tests
+pass in the other run, and the failing step is the shared navigation, not the
+feature.
 
 ## 2026-10-17 — A4 driven, recovery-day test green, caffeine and night hydration merged
 
