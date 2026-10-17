@@ -900,6 +900,46 @@ HealthKit section of `SettingsView`.
 from duplicating rows. *Overrule by:* `restoreBundle` and
 `testRestoreReplacesTargetContentsWithSnapshot`.
 
+### The first regional dishes (D3, 2026-10-17)
+
+The owner: only free, commercially usable data; SFDA and TheMealDB out; "just
+shoot" on the rest. So these are build calls. **Not confirmed.**
+
+**Full coverage is 30 dishes (D_full).** Enough for the Gulf staples, the common
+Levantine mezze, two breakfasts and two sweets; Slice 8's content line is
+25 × dishes ÷ 30. *Overrule by:* the D_full figure in `docs/implementation-status.md`.
+
+**The first 15** (`tools/nutrition/native/`): hummus, mutabbal, tabbouleh,
+fattoush, foul medames, falafel, red lentil soup, chicken kabsa, mujaddara,
+shakshuka, jareesh, saleeg, harees, shish tawook, luqaimat. Typical home
+recipes written for Almanac (a list of ingredients and weights is not anyone's
+copyright); every value is calculated from the ingredients, never typed in.
+
+**Every ingredient is a CIQUAL food.** The four sources state carbohydrate on
+different bases, and a dish gets a nutrient only when every ingredient has it,
+so one source per dish keeps all six. CIQUAL covers every ingredient but three:
+no sumac (left out of fattoush), no date syrup (honey in luqaimat, and the name
+says so), no short-grain or crushed wheat (basmati and durum wholewheat stand
+in). Cooked ingredients are weighed cooked where CIQUAL has them; otherwise the
+finished weight (`yield_g`) carries the water taken up or lost, stated per dish
+in `notes`. *Overrule by:* `native/*.csv`, then `rebuild_from_bundle.py` (or
+`all` on the lake).
+
+**Checked:** every dish is within 15 % of its own ingredients' energy; falafel is
+263 kcal per 100 g against CIQUAL's take-away 268; tabbouleh 126 against
+CoFID's 119. Hummus (253) and mutabbal (113) are over 20 % below their
+benchmarks, which are oil-heavy shop versions; kept.
+
+**Built without the lake.** The cloud session has no `~/ALManac-food-data`, so
+the four sources' canonical rows were recovered from the shipped bundle and the
+real stages run on them. With no dishes that reproduced the shipped bundle row
+for row; with them, the only change is the 15 dishes and the `almanac` source
+row. `tool_revision` in `bundle_meta` reads `45d4e81…+dirty` for that reason.
+
+**The person's own dishes are those with a `nutrition_dish` row**, not every
+`almanac:` food, or the 15 would have appeared in "my dishes" as editable.
+*Overrule by:* `NutritionDishEditor.dishes()`.
+
 ### Weighing
 
 **Meter fraction**:

@@ -36,7 +36,7 @@ final class NutritionBundleImportTests: XCTestCase {
         let db = try migrated()
 
         let report = try XCTUnwrap(NutritionReferenceBundle.installIfNeeded(into: db))
-        XCTAssertEqual(report.namespaces, [.afcd, .ciqual, .cofid, .usda])
+        XCTAssertEqual(report.namespaces, [.afcd, .almanac, .ciqual, .cofid, .usda])
         XCTAssertGreaterThan(report.foodCount, 1_000)
         let catalog = NutritionCatalog(db: db)
         XCTAssertFalse(try catalog.search("apple").isEmpty)
@@ -49,8 +49,8 @@ final class NutritionBundleImportTests: XCTestCase {
 
     /// A dish can be authored on the database a device actually has.
     ///
-    /// The shipped bundle carries no `almanac` source row (its namespaces are the
-    /// four above), and `nutrition_food.namespace` references `nutrition_source`.
+    /// The shipped bundle carried no `almanac` source row until its regional
+    /// dishes (2026-10-17), and `nutrition_food.namespace` references `nutrition_source`.
     /// `NutritionDishTests` seeds the row by hand, with a comment saying the
     /// bundle always carries it — which was true of the test fixture and false of
     /// the shipped file. So every `create` on a device failed its foreign key,
@@ -69,6 +69,20 @@ final class NutritionBundleImportTests: XCTestCase {
         // importer never deletes the `almanac` source.
         XCTAssertNil(try NutritionReferenceBundle.installIfNeeded(into: db))
         XCTAssertEqual(try editor.components(of: dish).map(\.ref), [ref("usda:2346403")])
+    }
+
+    /// Slice 8: the shipped regional dishes are findable in English, in Arabic
+    /// and by transliteration, and are not listed as the person's own dishes.
+    func testTheShippedRegionalDishesAreSearchableAndNotThePersonsOwn() throws {
+        let db = try migrated()
+        _ = try XCTUnwrap(NutritionReferenceBundle.installIfNeeded(into: db))
+        let catalog = NutritionCatalog(db: db)
+        let kabsa = ref("almanac:regional-chicken-kabsa")
+        for query in ["kabsa", "كبسة", "kabsat"] {
+            XCTAssertTrue(try catalog.search(query).map(\.ref).contains(kabsa), query)
+        }
+        XCTAssertNotNil(try catalog.energy(for: kabsa, basis: .per100g))
+        XCTAssertEqual(try NutritionDishEditor(db: db).dishes(), [])
     }
 
     func testEveryBundledFoodIsReadableThroughTheCatalog() throws {
