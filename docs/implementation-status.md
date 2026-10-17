@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-17 (latest): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
+Updated 2026-10-17 (latest): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
+Updated 2026-10-17 (earlier yet): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
 Updated 2026-10-17 (earlier still): the merged head's CI; Hydration held at 90 (1,086 / 1,200).
 Updated 2026-10-17 (earlier): A4 driven, caffeine and night hydration merged (1,086 / 1,200).
 Updated 2026-10-16 (later): the re-score of all 12 phases (1,077 / 1,200).
@@ -36,6 +37,41 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-17 — the other session's work scored; Readiness back to 94
+
+**Outcome.** The tracker stands at **1,122 of 1,200 (93.5 %)**. Slice 8 rises
+with the first 15 regional dishes and the food source line. Slice 12 rises by
+the one App Intent a test now runs. Readiness drops back to 94: its recovery-day
+UI test failed again.
+
+`da1da96` merges `claude/owner-calls-2026-10-17` (another session's work:
+45d4e81, 876a803, ab74cc0, 7270017, b38933c). Pull-request run 39016050844 was
+all green. Push run 39016047198 failed one test and passed the rest, the
+Arabic pass included.
+
+| # | Phase | Was | Now | Formula and evidence |
+|---|---|---:|---:|---|
+| 2 | Readiness | 98 | **94** | `ReadinessRecoveryDayUITests` failed again at line 98 ("the recovery-day switch did not move to 1"), the same as at `76ed79b`. A second failure makes it a known failing test, so the +4 is withdrawn until it is diagnosed. Its passes were 4 of 6 runs |
+| 8 | Regional Food Data | 50 | **87** | 20 + 25 + 15 + **15** + 25 × min(1, 15 ÷ 30) = 87.5, rounded down. In-app 5 → 15: each food search row names its source in its Attributions entry's words (7270017; `AttributionTests.foodSourceNameMatchesItsCredit`, `AllergenFilterUITests.testEachFoodSaysWhereItCameFrom`). Content: 15 dishes ship and are searchable (876a803; `NutritionBundleImportTests.testTheShippedRegionalDishesAreSearchableAndNotThePersonsOwn`; pipeline tests 109) |
+| 12 | Migration & Completion | 80 | **81** | One of the three §6.21 App Intents is run by a test (`testTheWaterWidgetsIntentLogsOneGlass`). The planned +5 for "a test that runs the App Intents" × 1 ÷ 3 = 1.7, rounded down. `StartFastIntent` and `EndFastIntent` are not driven |
+| 3 | Hydration | 92 | 92 | Audit rows 14 and 16 are now closed (App Intent driven; Health access per feature, 45d4e81). No points were planned beyond 92, so none are added |
+| | others | | unchanged | |
+| | **Total** | **1,088** | **1,122** | 1,088 − 4 + 37 + 1 = 1,122; 1,122 ÷ 1,200 = 93.5 % |
+
+**Calls I made in scoring, none confirmed by the owner** (each also in
+`CONTEXT.md`, "Scoring the 2026-10-17 merge"):
+- D_full = 30 was the other session's build call. The owner has not set it. At D_full = 50, Slice 8 would be 82.
+- The provenance points were meant for "the dish screen's provenance line". The source is shown on the search row, not on a dish screen. I counted it, because the gap was "shown by no view".
+- App Intents are scored as 1 of 3, not the other session's +5.
+
+**Recovery-day test.** The log shows one synthesised tap on the switch and then
+6 s at value 0. Just before the tap, XCTest had to re-find Today's list three
+times. My best reading is that the tap was synthesised from a frame that then
+moved. That is unproven. The test now waits for the switch's frame to settle
+before tapping, as the Training test does. If it still fails, the message
+names the value, the frame, any alert and the card's text. No assertion is
+removed.
 
 ## 2026-10-17 — `5893597` green on both runs: Hydration 92
 

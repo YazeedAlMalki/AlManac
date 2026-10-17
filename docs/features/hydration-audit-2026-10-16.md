@@ -28,9 +28,9 @@ are built and tested in the core. That breaks A1's latte step and three of
 | 11 | Drinks between Maghrib and Fajr belong to the night window | §6.13 | **Built** | `FastingAwareHydrationLogTests` |
 | 12 | Hydration ring fills when the target is hit | §6.16 | **Built** | `ActivityRingCalendarTests` |
 | 13 | Dark urine despite the target → offer to raise it; not during a dry fast | §6.3, A1 | **Built** | `UrineColourHydrationFeedbackTests` |
-| 14 | One-tap water logging as an App Intent | §6.21 | **Built, not driven** | `LogWaterIntent` in `Native/AlmanacWidgets/WidgetIntents.swift`; no test runs it |
+| 14 | One-tap water logging as an App Intent | §6.21 | **Built and driven 2026-10-17** | `LogWaterIntent` in `Native/AlmanacWidgets/WidgetIntents.swift`, run by `OwnerRequestedFeaturesUITests.testTheWaterWidgetsIntentLogsOneGlass` (ab74cc0; CI 39016050844, 39016047198) |
 | 15 | A contextual pre-lunch water suggestion | A1 | **Core** | `contextual_hydration` in `NotificationPlannerTests`, `NotificationTriggerAssemblerTests`; delivery is device only |
-| 16 | Permissions asked when a feature is first used, not all at once | §5.5, A5 | **Built, CI pending** (owner, 2026-10-17: per feature, plus all at once) | Settings → one "Connect …" per feature (`HealthPermissionGroup`) and "Connect all to Health"; `testPermissionGroupsCoverEveryDomainOnce` (core), `testHealthAccessIsOfferedPerFeatureAndAllAtOnce` (UI). The Health sheet itself is a device check |
+| 16 | Permissions asked when a feature is first used, not all at once | §5.5, A5 | **Built**, CI green 2026-10-17 (39016050844, 39016047198) (owner, 2026-10-17: per feature, plus all at once) | Settings → one "Connect …" per feature (`HealthPermissionGroup`) and "Connect all to Health"; `testPermissionGroupsCoverEveryDomainOnce` (core), `testHealthAccessIsOfferedPerFeatureAndAllAtOnce` (UI). The Health sheet itself is a device check |
 | 17 | Missing HRV shown as unavailable, never zero; readiness lists missing inputs | A5 | **Built** | `ReadinessEngineTests.testMissingHRVRedistributesRatherThanScoringZero`, `testBaselineWithoutAMetricMakesThatInputMissing`; `ReadinessBaselineServiceTests` "A missing baseline is reported as missing"; `ProblemChannelUITests` (CI) |
 
 ## Gaps, and what closing each needs

@@ -940,6 +940,23 @@ row. `tool_revision` in `bundle_meta` reads `45d4e81…+dirty` for that reason.
 `almanac:` food, or the 15 would have appeared in "my dishes" as editable.
 *Overrule by:* `NutritionDishEditor.dishes()`.
 
+### Scoring the 2026-10-17 merge
+
+Three calls made in scoring `da1da96` (`docs/implementation-status.md`, "the
+other session's work scored"). **None of these has been confirmed.**
+
+- **D_full = 30 is used for Slice 8's content line**, as set in "The first
+  regional dishes" above. 15 dishes → 12.5 of 25. *Overrule by:* naming D_full;
+  at 50, Slice 8 is 82, not 87.
+- **The search row's source line counts as the provenance line.** The handoff
+  named "the dish screen's provenance line" (10 in-app points). The gap was
+  that no view showed a food's source; the search row now does, and the dish
+  screen still does not. *Overrule by:* "provenance means the dish screen",
+  and Slice 8 drops 10, to 77.
+- **App Intents score 1 of 3.** Only `LogWaterIntent` is run by a test, so
+  +5 × 1 ÷ 3, rounded down to +1, not +5. *Overrule by:* "one intent driven
+  is enough", and Slice 12 rises to 85.
+
 ### Weighing
 
 **Meter fraction**:
