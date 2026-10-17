@@ -657,13 +657,12 @@ final class TrainingProgramUITests: XCTestCase {
                                 || app.reveal(training),
                           "Training is missing from Modules")
         } else {
-            let modules = app.buttons["Modules"].firstMatch
-            XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
-            modules.tap()
+            app.openModulesTab()
             XCTAssertTrue(app.reveal(training), "Training is missing from Modules")
         }
         training.tap()
-        XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 5),
+                      "Training did not open: \(app.navigationBars.allElementsBoundByIndex.map(\.identifier))")
 
         let startWorkout = app.buttons["training-programs-link"]
         XCTAssertTrue(app.reveal(startWorkout), "Start workout is missing from the Training screen")

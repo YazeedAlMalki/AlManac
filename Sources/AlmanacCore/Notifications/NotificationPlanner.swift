@@ -146,7 +146,8 @@ public struct NotificationPlanner: @unchecked Sendable {
     }
 
     private func appendReadiness(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
-        guard try rules.isEnabled(.readiness), let fireAt = try triggers.readinessTrigger(for: day) else { return }
+        guard try rules.isEnabled(.readiness),
+              let fireAt = try triggers.readinessTrigger(for: day) ?? fallbackTime(.readiness, on: day) else { return }
         candidates.append(PlannedNotification(
             identifier: "almanac.readiness.\(day.value)",
             type: .readiness, fireAt: fireAt,
@@ -178,28 +179,37 @@ public struct NotificationPlanner: @unchecked Sendable {
     }
 
     private func appendBedtime(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
-        guard try rules.isEnabled(.bedtime), let fireAt = try triggers.bedtimeTrigger(for: day) else { return }
+        // §14.2: "Falls back to user-set time" — only when there is no sleep
+        // window to go by, never in place of one.
+        guard try rules.isEnabled(.bedtime),
+              let fireAt = try triggers.bedtimeTrigger(for: day) ?? fallbackTime(.bedtime, on: day) else { return }
         candidates.append(PlannedNotification(
             identifier: "almanac.bedtime.\(day.value)", type: .bedtime, fireAt: fireAt,
             title: NotificationText.bedtimeTitle, body: NotificationText.bedtimeBody))
     }
 
     private func appendSuhoor(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
-        guard try rules.isEnabled(.suhoor), let fireAt = try triggers.suhoorTrigger(for: day) else { return }
+        let rule = try rules.rule(for: .suhoor)
+        let lead = rule.offsetMinutes ?? NotificationRule.defaultSuhoorLeadMinutes
+        guard rule.isEnabled, let fireAt = try triggers.suhoorTrigger(for: day, leadMinutes: lead) else { return }
         // §14.2's body names Fajr's time, so it needs Fajr itself rather than
-        // the 20-minutes-before instant the trigger already resolved.
-        let fajr = fireAt.addingTimeInterval(20 * 60)
+        // the minutes-before instant the trigger already resolved.
+        let fajr = fireAt.addingTimeInterval(Double(lead) * 60)
         candidates.append(PlannedNotification(
             identifier: "almanac.suhoor.\(day.value)", type: .suhoor, fireAt: fireAt,
-            title: NotificationText.suhoorTitle(fajrText: timeText(fajr)),
+            title: NotificationText.suhoorTitle(fajrText: timeText(fajr), minutesRemaining: lead),
             body: NotificationText.suhoorBody(fajrText: timeText(fajr))))
     }
 
     private func appendIftar(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
-        guard try rules.isEnabled(.iftar), let fireAt = try triggers.iftarTrigger(for: day) else { return }
+        let rule = try rules.rule(for: .iftar)
+        let delay = rule.offsetMinutes ?? NotificationRule.defaultIftarDelayMinutes
+        guard rule.isEnabled, let fireAt = try triggers.iftarTrigger(for: day, delayMinutes: delay) else { return }
+        let maghrib = fireAt.addingTimeInterval(-Double(delay) * 60)
         candidates.append(PlannedNotification(
             identifier: "almanac.iftar.\(day.value)", type: .iftar, fireAt: fireAt,
-            title: NotificationText.iftarTitle, body: NotificationText.iftarBody))
+            title: NotificationText.iftarTitle,
+            body: delay == 0 ? NotificationText.iftarBody : NotificationText.iftarBody(maghribText: timeText(maghrib))))
     }
 
     /// One alert per chosen prayer, at its cached time. On a fast day with the
@@ -280,6 +290,20 @@ public struct NotificationPlanner: @unchecked Sendable {
             cursor = next
         }
         return days
+    }
+
+    /// A type's own clock time on `day`, for the types where it is a
+    /// fallback (readiness, bedtime). A time before the 04:00 boundary belongs
+    /// to the end of the logical day, so a 00:30 bedtime is the night after
+    /// the day's evening, not the night before its morning.
+    private func fallbackTime(_ type: NotificationType, on day: LogicalDay) throws -> Date? {
+        guard let minute = try rules.rule(for: type).scheduledMinuteOfDay,
+              let bounds = timeModel.bounds(of: day) else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeModel.timeZone
+        let boundaryMinute = timeModel.boundary.offsetHours * 60
+        let date = minute < boundaryMinute ? bounds.end : bounds.start
+        return calendar.date(bySettingHour: minute / 60, minute: minute % 60, second: 0, of: date)
     }
 
     private func timeText(_ instant: Date) -> String {

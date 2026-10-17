@@ -122,6 +122,33 @@ struct NotificationTriggerAssemblerTests {
             expectedWakeTime: wake, expectedSleepWindowStart: sleepStart))
     }
 
+    @Test("On a fast day with prayer times, water reminders move into the night")
+    func waterOnAFastDayMovesToTheNight() throws {
+        let scheduleId = try ShiftScheduleStore(db: db).createSchedule(ShiftScheduleDraft(name: "Days"))
+        let wake = riyadh(7), sleepStart = riyadh(23), maghrib = riyadh(18)
+        let nextFajr = riyadh(4, 30, day: "2025-09-19")
+        try ShiftScheduleStore(db: db).logOccurrence(ShiftOccurrenceDraft(
+            scheduleId: scheduleId, date: day.value, shiftType: .day,
+            expectedSleepWindowStart: sleepStart, expectedWakeTime: wake))
+        try ReligiousFastScheduleStore(db: db).createSchedule(
+            scheduleType: "ramadan", startGregorianDate: day.value, endGregorianDate: day.value)
+        try PrayerTimeCacheStore(db: db).upsert(
+            date: day.value, times: allSixTimes(fajr: riyadh(4, 29), maghrib: maghrib),
+            latitude: 24.7136, longitude: 46.6753, calculationMethod: "umm_al_qura")
+
+        // Without the next day's Fajr the night has no end: the ordinary schedule stands.
+        #expect(try assembler.waterReminderTimes(for: day) == NotificationTriggerTimeComputer.waterReminderTimes(
+            expectedWakeTime: wake, expectedSleepWindowStart: sleepStart))
+
+        try PrayerTimeCacheStore(db: db).upsert(
+            date: "2025-09-19", times: allSixTimes(fajr: nextFajr, maghrib: riyadh(18, day: "2025-09-19")),
+            latitude: 24.7136, longitude: 46.6753, calculationMethod: "umm_al_qura")
+        let times = try assembler.waterReminderTimes(for: day)
+        #expect(times == NotificationTriggerTimeComputer.nightWaterReminderTimes(
+            maghrib: maghrib, nextFajr: nextFajr, expectedWakeTime: wake, expectedSleepWindowStart: sleepStart))
+        #expect(!times.isEmpty && times.allSatisfy { $0 > maghrib })
+    }
+
     @Test("Water reminders are empty with no shift occurrence logged at all")
     func waterWithoutShiftOccurrence() throws {
         #expect(try assembler.waterReminderTimes(for: day).isEmpty)

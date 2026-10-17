@@ -26,6 +26,23 @@ public enum HealthDomain: String, Codable, Sendable, CaseIterable, Hashable {
     case bodyFatPercentage, leanBodyMass, waistCircumference
 }
 
+/// The features Apple Health access is asked for one at a time (BRD §5.5's
+/// contextual requests; owner, 2026-10-17), each with the domains it needs.
+/// Settings also offers every group in one sheet.
+public enum HealthPermissionGroup: String, CaseIterable, Sendable {
+    case water, sleep, activity, heart, body
+
+    public var domains: [HealthDomain] {
+        switch self {
+        case .water: return [.water]
+        case .sleep: return [.sleep]
+        case .activity: return [.workouts, .steps, .activeEnergy, .restingEnergy]
+        case .heart: return [.heartRate, .hrv]
+        case .body: return [.bodyMass, .bodyFatPercentage, .leanBodyMass, .waistCircumference]
+        }
+    }
+}
+
 public struct HealthSample: Sendable, Hashable {
     public let externalID: String
     public let domain: HealthDomain

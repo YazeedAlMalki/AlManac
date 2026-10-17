@@ -34,7 +34,9 @@ extension NutritionModel {
 
     func browseRecipes(_ text: String) throws -> RecipeResults {
         guard let db else { return RecipeResults() }
-        return try RecipeFinder(db: db).browse(text, excluding: try allergens(db))
+        // Every recipe, not the finder's default fifty: with the Wikibooks
+        // recipes there are some three hundred, and "All" should mean all.
+        return try RecipeFinder(db: db).browse(text, excluding: try allergens(db), limit: 1_000)
     }
 
     func pantryItems() throws -> [PantryItem] {

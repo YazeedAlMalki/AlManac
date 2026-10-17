@@ -66,6 +66,21 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The Wikibooks recipe reader and builder (tools/recipes). Synthetic
+      # pages only, so it needs no lake; macOS has the python3 it needs.
+      - name: Recipe tool tests
+        working-directory: tools/recipes
+        run: python3 -m unittest discover -s tests -t .
+
+      # The nutrition pipeline (tools/nutrition), native regional dishes included.
+      # Synthetic lakes only; the real-lake tests skip without the lake.
+      - name: Nutrition pipeline tests
+        working-directory: tools/nutrition
+        run: |
+          python3 -m venv "$RUNNER_TEMP/nutrition"
+          "$RUNNER_TEMP/nutrition/bin/pip" install --quiet openpyxl lxml
+          "$RUNNER_TEMP/nutrition/bin/python" -m unittest discover -s tests -t .
+
       # GitHub ships one major Xcode per macOS image and rotates the patch
       # release underneath it, so `macos-26` is the pin that actually holds: a
       # major bump is a real change and fails loudly, while a patch rotation
@@ -261,6 +276,16 @@ jobs:
           ')
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
+      # Booted and waited for before the suite, not left to `xcodebuild test`.
+      # Otherwise the first test's launch carries the cold boot, and
+      # AllergenFilterUITests (first alphabetically) timed out launching the app
+      # in setUp: "Timed out while launching application via Xcode" (CI
+      # 39041062575, and launch failures on 2026-10-08 and 10-09).
+      - name: Boot the simulator
+        run: |
+          set -euo pipefail
+          xcrun simctl bootstatus "${{ steps.sim.outputs.udid }}" -b
+
       # This runs against a *virgin* simulator, which is the stricter of the two
       # states and not the same thing as "the only state that matters". Both
       # were found the hard way here, and each hid a bug the other did not:
@@ -287,14 +312,23 @@ jobs:
             -scheme Almanac \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath "$RUNNER_TEMP/AlmanacUITests.xcresult" \
+            -retry-tests-on-failure -test-iterations 2 \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/xcodebuild-test.log"
 
       # Every assertion failure, gathered at the end of the log. The UI suite
       # writes tens of thousands of lines, and a failure's message is otherwise
       # only findable by scrolling the whole run; log readers that fetch only
       # the tail (as the cloud sessions' tools do) never see it at all.
+      #
+      # On every run, not only a red one: a failed test is run once more
+      # (`-retry-tests-on-failure`; the owner accepted one retry for a dropped
+      # tap on 2026-10-17, and this extends it to the suite) after one or two
+      # of 108 tests failed per run on XCTest timeouts, a different test each
+      # time). A real failure fails both times and the job is red; one that
+      # passed on its second try is still listed here, so a flaky test stays
+      # visible.
       - name: Summarise failures
-        if: failure()
+        if: always()
         run: |
           grep -E ": error: |Test Case .* failed" "$RUNNER_TEMP/xcodebuild-test.log" | cut -c1-600 || true
 
@@ -349,6 +383,34 @@ jobs:
           print(len(os.listdir(dst)), "Arabic screenshots")
           PY
           done
+
+      # What the screen held when a UI test failed, as text in this log. The
+      # result bundle has it, but a cloud session cannot download artifacts,
+      # and a run of lost taps after launch (2026-10-16/17) could not be told
+      # apart from a missing row without it. Last, so a tail-only reader sees it.
+      - name: Print the failing tests' attachments
+        if: failure()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          OUT="$RUNNER_TEMP/failure-attachments"
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/AlmanacUITests.xcresult" \
+            --output-path "$OUT" --only-failures || { echo "no failure attachments exported"; exit 0; }
+          python3 - "$OUT" <<'PY'
+          import json, os, sys
+          src = sys.argv[1]
+          for test in json.load(open(os.path.join(src, "manifest.json"))):
+              print("=== " + test.get("testIdentifier", "?"))
+              for a in test.get("attachments", []):
+                  name, path = a.get("suggestedHumanReadableName", ""), os.path.join(src, a["exportedFileName"])
+                  try:
+                      text = open(path, encoding="utf-8").read()
+                  except (UnicodeDecodeError, OSError):
+                      print("--- " + name + " (binary, " + str(os.path.getsize(path)) + " bytes)")
+                      continue
+                  print("--- " + name)
+                  print(text[:8000] + ("\n[... cut]" if len(text) > 8000 else ""))
+          PY
 
       - name: Attach the Arabic screenshots
         if: always()

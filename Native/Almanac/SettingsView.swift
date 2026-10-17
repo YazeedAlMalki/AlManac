@@ -14,7 +14,6 @@ struct SettingsView: View {
     @State private var reminderIntervalMinutes = 60
     @State private var reminderStartHour = 7
     @State private var reminderEndHour = 22
-    @State private var digestionRingEnabled = false
     @State private var bodyMeasurementTrackSides = false
     @State private var didLoadSettings = false
     @State private var healthKitStatus: String?
@@ -54,7 +53,14 @@ struct SettingsView: View {
                     }
             }
             Section("HealthKit") {
-                Button("Connect to Health", action: connectHealthKit)
+                // One feature at a time (BRD §5.5), or everything in one sheet.
+                // HealthKit's sheet lists only what has not been asked before.
+                Button("Connect all to Health") { connectHealthKit(HealthKitProvider.readableDomains) }
+                    .accessibilityIdentifier("health-connect-all")
+                ForEach(HealthPermissionGroup.allCases, id: \.self) { group in
+                    Button(Self.connectTitle(group)) { connectHealthKit(group.domains) }
+                        .accessibilityIdentifier("health-connect-\(group.rawValue)")
+                }
                 if let healthKitStatus {
                     Text(healthKitStatus).font(.caption).foregroundStyle(.secondary)
                 }
@@ -112,15 +118,6 @@ struct SettingsView: View {
                     }
                 }
             }
-            Section("Activity rings") {
-                Toggle("Show digestion ring", isOn: Binding(
-                    get: { digestionRingEnabled },
-                    set: setDigestionRingEnabled
-                ))
-                Text("The digestion display is separate. Its daily fill rule remains undefined, so no completion state is inferred.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
         .scrollContentBackground(.hidden)
         .background(AlmanacPalette.canvas)
@@ -134,7 +131,6 @@ struct SettingsView: View {
             if let db = labModel.db {
                 do { bodyMeasurementTrackSides = try ProfileStore(db: db).profile().bodyMeasurementTrackSides }
                 catch { self.error = error.localizedDescription }
-                digestionRingEnabled = (try? ActivityRingSettingsStore(db: db).isDigestionEnabled()) ?? false
             }
             if let settings = model.hydrationSettings {
                 remindersEnabled = settings.remindersEnabled
@@ -151,28 +147,28 @@ struct SettingsView: View {
         return Locale.current.localizedString(forLanguageCode: code) ?? code
     }
 
-    private func setDigestionRingEnabled(_ enabled: Bool) {
-        digestionRingEnabled = enabled
-        do {
-            guard let db = labModel.db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
-            try ActivityRingSettingsStore(db: db).setDigestionEnabled(enabled)
-            trackingModel.refresh()
-        } catch {
-            digestionRingEnabled = !enabled
-            self.error = String(describing: error)
+
+    private static func connectTitle(_ group: HealthPermissionGroup) -> LocalizedStringKey {
+        switch group {
+        case .water: return "Connect water"
+        case .sleep: return "Connect sleep"
+        case .activity: return "Connect workouts and activity"
+        case .heart: return "Connect heart rate and HRV"
+        case .body: return "Connect body measurements"
         }
     }
 
-    private func connectHealthKit() {
+    private func connectHealthKit(_ domains: [HealthDomain]) {
         Task {
             do {
-                // One provider, one authorisation sheet: the same concrete
-                // object serves the hydration read/write pair and the read-only
-                // domains, so the user answers once.
+                // One provider: the same concrete object serves the hydration
+                // read/write pair and the read-only domains. Syncing a domain
+                // that was never granted reads nothing, so every sync runs.
                 let provider = HealthKitProvider()
                 model.configureHealthKit(provider: provider, writer: provider)
                 healthModel.configure(provider: provider)
-                try await provider.requestAuthorisation(for: HealthKitProvider.readableDomains)
+                try await provider.requestAuthorisation(for: domains)
+                UserDefaults.standard.set(true, forKey: HealthKitProvider.connectedKey)
                 // Water's own sync and write-back stay with HydrationModel.
                 await model.syncInbound()
                 await model.drainOutbound()

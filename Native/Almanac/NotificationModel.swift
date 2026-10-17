@@ -115,6 +115,19 @@ final class NotificationModel: ObservableObject {
         try NotificationRuleStore(db: db).setEnabled(enabled, for: type)
     }
 
+    /// A readiness or bedtime clock time, used on a day with no sleep or shift
+    /// time to go by; nil clears it.
+    func setScheduledMinuteOfDay(_ minute: Int?, for type: NotificationType) throws {
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
+        try NotificationRuleStore(db: db).setScheduledMinuteOfDay(minute, for: type)
+    }
+
+    /// Suhoor's minutes before Fajr, or iftar's minutes after Maghrib.
+    func setOffsetMinutes(_ minutes: Int?, for type: NotificationType) throws {
+        guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
+        try NotificationRuleStore(db: db).setOffsetMinutes(minutes, for: type)
+    }
+
     func rules() throws -> [NotificationRule] {
         guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
         return try NotificationRuleStore(db: db).allRules()

@@ -1,6 +1,19 @@
 # Almanac implementation status
 
-Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
+Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
+Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
+Updated 2026-10-17 (earlier yet): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
+Updated 2026-10-17 (earlier still): the merged head's CI; Hydration held at 90 (1,086 / 1,200).
+Updated 2026-10-17 (earlier): A4 driven, caffeine and night hydration merged (1,086 / 1,200).
+Updated 2026-10-16 (later): the re-score of all 12 phases (1,077 / 1,200).
+Updated 2026-10-16 (later): the owner's approval of the Slice 8 rubric.
+Updated 2026-10-16 (later still): regional dishes through the nutrition pipeline (Slice 8).
+Updated 2026-10-16 (later yet): Kitchen's Wikibooks recipes (T04 built).
+Updated 2026-10-16 (later still): the owner's answers to T02, T04, T25 and G1–G5.
+Updated 2026-10-16 (later): the newest entry is the AI handoff of 2026-10-16 (A1–A11).
+Updated 2026-10-16: the newest entry is the recovery day a person declares
+(§9.6), readiness ticket 03. Updated 2026-10-15: the newest entry is Slices 7 and 9 toward done; the
+simulator runtime was re-downloaded and the three UI suites pass. Updated 2026-10-07: the newest entry is the cloud session's 2026-10-06 handoff
 work (workout templates, the readiness withhold, the Vitals log), merging
 through PR #6; the fasting entry is second. Updated 2026-10-06. **Fasting and prayer times work end to end in the running
 app** — religious fasting had never run on a phone (no fast day was ever
@@ -25,6 +38,784 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-17 — Readiness back to 98: the owner accepts the retried tap
+
+**Outcome.** The tracker stands at **1,126 of 1,200 (93.8 %)**. Readiness goes
+from 94 back to **98**.
+
+`ReadinessRecoveryDayUITests` failed twice with one dropped tap on the switch.
+9448b1f (another agent) made the test settle the switch, wait 2 s, and tap once
+more if the value has not moved. The owner accepted that as the fix on
+2026-10-17 ("Yes I accept"). The test still fails if the app snaps the switch
+back, because the second tap fails the same way. Since then it has passed on
+every run: 24fb12c push, 7445aee push, and 7445aee pull request (attempt 2).
+
+| # | Phase | Was | Now | Formula |
+|---|---|---:|---:|---|
+| 2 | Readiness | 94 | **98** | Recovery-day UI test green with the retry the owner accepted |
+| | **Total** | **1,122** | **1,126** | 1,126 ÷ 1,200 = 93.8 % |
+
+**Not explained:** why a settled switch sometimes drops a tap. The same thing
+was seen once on a local simulator.
+
+**The pull-request failure on 7445aee** (attempt 1, 39041062575) was not a
+dropped tap. `AllergenFilterUITests`, which runs first, timed out *launching
+the app* in `setUp`. The "Print the failing tests' attachments" step showed
+it. CI now boots the simulator and waits for the boot before the suite starts
+(`.github/workflows/ci.yml`, "Boot the simulator").
+
+## 2026-10-17 — the other session's work scored; Readiness back to 94
+
+**Outcome.** The tracker stands at **1,122 of 1,200 (93.5 %)**. Slice 8 rises
+with the first 15 regional dishes and the food source line. Slice 12 rises by
+the one App Intent a test now runs. Readiness drops back to 94: its recovery-day
+UI test failed again.
+
+`da1da96` merges `claude/owner-calls-2026-10-17` (another session's work:
+45d4e81, 876a803, ab74cc0, 7270017, b38933c). Pull-request run 39016050844 was
+all green. Push run 39016047198 failed one test and passed the rest, the
+Arabic pass included.
+
+| # | Phase | Was | Now | Formula and evidence |
+|---|---|---:|---:|---|
+| 2 | Readiness | 98 | **94** | `ReadinessRecoveryDayUITests` failed again at line 98 ("the recovery-day switch did not move to 1"), the same as at `76ed79b`. A second failure makes it a known failing test, so the +4 is withdrawn until it is diagnosed. Its passes were 4 of 6 runs |
+| 8 | Regional Food Data | 50 | **87** | 20 + 25 + 15 + **15** + 25 × min(1, 15 ÷ 30) = 87.5, rounded down. In-app 5 → 15: each food search row names its source in its Attributions entry's words (7270017; `AttributionTests.foodSourceNameMatchesItsCredit`, `AllergenFilterUITests.testEachFoodSaysWhereItCameFrom`). Content: 15 dishes ship and are searchable (876a803; `NutritionBundleImportTests.testTheShippedRegionalDishesAreSearchableAndNotThePersonsOwn`; pipeline tests 109) |
+| 12 | Migration & Completion | 80 | **81** | One of the three §6.21 App Intents is run by a test (`testTheWaterWidgetsIntentLogsOneGlass`). The planned +5 for "a test that runs the App Intents" × 1 ÷ 3 = 1.7, rounded down. `StartFastIntent` and `EndFastIntent` are not driven |
+| 3 | Hydration | 92 | 92 | Audit rows 14 and 16 are now closed (App Intent driven; Health access per feature, 45d4e81). No points were planned beyond 92, so none are added |
+| | others | | unchanged | |
+| | **Total** | **1,088** | **1,122** | 1,088 − 4 + 37 + 1 = 1,122; 1,122 ÷ 1,200 = 93.5 % |
+
+**Calls I made in scoring, none confirmed by the owner** (each also in
+`CONTEXT.md`, "Scoring the 2026-10-17 merge"):
+- D_full = 30 was the other session's build call. The owner has not set it. At D_full = 50, Slice 8 would be 82.
+- The provenance points were meant for "the dish screen's provenance line". The source is shown on the search row, not on a dish screen. I counted it, because the gap was "shown by no view".
+- App Intents are scored as 1 of 3, not the other session's +5.
+
+**Recovery-day test.** The log shows one synthesised tap on the switch and then
+6 s at value 0. Just before the tap, XCTest had to re-find Today's list three
+times. My best reading is that the tap was synthesised from a frame that then
+moved. That is unproven. The test now waits for the switch's frame to settle
+before tapping, as the Training test does. If it still fails, the message
+names the value, the frame, any alert and the card's text. No assertion is
+removed.
+
+## 2026-10-17 — `5893597` green on both runs: Hydration 92
+
+**Outcome.** The tracker stands at **1,088 of 1,200 (90.7 %)**. Hydration goes
+from 90 to **92**. The entry below set that condition: a merged head green on
+both its push run and its pull-request run. `5893597` met it: run 39008793383
+(push) and run 39008796757 (pull request) passed every job. That includes the
+whole UI suite, the Arabic pass, and every caffeine and night-hydration test.
+
+| # | Phase | Was | Now | Evidence |
+|---|---|---:|---:|---|
+| 3 | Hydration & Caffeine | 90 | **92** | `DrinkCaffeineTests` (13), the night-reminder core tests (4), and the two caffeine UI tests plus the "Not yet in Apple Health" UI test passed on both runs. Audit rows 2–5, 7 and 10 are closed (`docs/features/hydration-audit-2026-10-16.md`). Rows 14 and 16 are open on this branch |
+| | others | | unchanged | |
+| | **Total** | **1,086** | **1,088** | 1,088 ÷ 1,200 = 90.7 % |
+
+**Modules navigation.** The three tests that failed after a fresh launch passed
+on both runs: AllergenFilter, NotificationSettings and TrainingProgram, which now
+check through `openModulesTab()` that Modules opened. No failure has come back,
+so there is still no root cause. If one returns, its message says which tap
+did not take.
+
+## 2026-10-17 — the merged head's CI: Hydration held at 90
+
+**Outcome.** The total stays **1,086 of 1,200 (90.5 %)**. Hydration does not go
+to 92 yet. Commit `3c86b00` passed every check in one of its two CI runs, but
+failed two UI tests in the other. Those failures are outside Hydration, but the
+condition for raising it was a green merged head.
+
+| Run | Event | Result |
+|---|---|---|
+| 39000825067 | pull request | all green, incl. AllergenFilterUITests (its re-run) and every caffeine and night-hydration test |
+| 39000822026 | push | 2 UI failures: `NotificationSettingsUITests.testTurningEverythingOffAsksFirst` ("Settings is not offered", 196 s); `TrainingProgramUITests.testStartWorkoutOpensTheProgramPicker` (the Training screen did not open after tapping its row, 22 s) |
+
+**What is known.** All three failures since the caffeine work came on the
+first navigation after a fresh launch. Each tapped the Modules tab and then
+failed on a row: AllergenFilter (run 38974645011), NotificationSettings and
+TrainingProgram. Each of these tests passed on the same commit in another run.
+The caffeine work changes no Modules or navigation code. History over 200 runs: `testTurningEverythingOffAsksFirst` failed 13 times
+before (from 2026-09-29), and AllergenFilter's toggle test 7 times. Before the caffeine
+work, 3 of 86 completed UI jobs had a Modules-navigation failure. Since it, 2 of 3
+did. That is too few runs to call it a regression, and too many to call it
+nothing.
+
+**What is not known.** Whether the Modules tab tap was lost or the row tap
+was. None of the three tests checked that Modules opened before looking for
+a row. The result bundle could not be downloaded from this session (the
+proxy refuses the artifact host).
+
+**Done.** `openModulesTab()` (`UIScrollSupport.swift`) taps the tab and asserts
+the Modules bar appears, naming the bars on screen if not. The three tests use
+it, and the Training test's row tap now reports which bars it saw. No test is
+loosened: each assertion they had is still made, and one more is added. The
+next failure will say which tap did not take.
+
+**Score formula.** Unchanged from the entry below: the sum of the 12 phase scores
+is 1,086, and 1,086 ÷ 1,200 = 90.5 %. Hydration 90 → 92 (1,088) once a merged head is green on
+both runs, or once these failures are diagnosed and shown not to touch it.
+Notifications, Training and Slice 8 are not raised or lowered: their tests
+pass in the other run, and the failing step is the shared navigation, not the
+feature.
+
+## 2026-10-17 — A4 driven, recovery-day test green, caffeine and night hydration merged
+
+**Outcome.** The tracker stands at **1,086 of 1,200 (90.5 %)**: over 90 %.
+Readiness takes its planned 98, and Slice 12 rises to 80 on the phone-migration
+test. Hydration's caffeine and night-reminder work is merged and passed every
+check but one unrelated UI test, so Hydration is **held at 90** until the run
+on the merged head (`9da790f` plus this entry) reports.
+
+### What ran (CI)
+
+| Run | Head | Result |
+|---|---|---|
+| 38969848901, attempt 1 | `e55b51e` (main branch) | core and app green; **UI suite passed** (PhoneMigration and ReadinessRecoveryDay included); the separate Arabic screenshot pass afterwards failed |
+| 38969848901, attempt 2 (re-run by the owner) | `e55b51e` | **all green**, Arabic pass included |
+| 38974645011 | `9da790f` (caffeine branch) | core green (13 `DrinkCaffeineTests`, Migrations 063 to 065, the night-reminder tests); app build and "Untranslated strings" green; **UI 104 of 105**: both caffeine UI tests, the pending-Health assertion, PhoneMigration and ReadinessRecoveryDay passed; `AllergenFilterUITests.testAToggledAllergenIsStillThereAfterReopening` failed at line 246, "no Profile row in Modules", after 179 s |
+
+**The allergen failure is not explained.** It passed in both attempts at
+`e55b51e`, and the caffeine branch changes nothing on Modules or Profile. It is
+the suite's first test alphabetically, on a fresh simulator, where the
+first-launch reference install runs. That is a guess, not a cause. The run on
+the merged head is its one re-run; if it fails again it is treated as real.
+
+**The recovery-day failure of `76ed79b` did not recur**: the test has passed in
+three runs since with no change to it or the app's Today screen. Not
+root-caused; recorded here in case it returns.
+
+### Re-score
+
+| # | Phase | Was | Now | Why |
+|---|---|---:|---:|---|
+| 2 | Readiness | 94 | **98** | `ReadinessRecoveryDayUITests` passed in runs 38969848901 (twice) and 38974645011; the earlier failure did not recur |
+| 3 | Hydration | 90 | **90** (92 pending) | Caffeine from drinks, custom and editable caffeine, the caffeine line on the logger, "Not yet in Apple Health", Health reconnected at launch, and Ramadan night reminders are built and tested (`docs/features/hydration-audit-2026-10-16.md`). Held for one run: the merged head's UI suite has not reported |
+| 12 | Migration & Completion | 75 | **80** (estimate) | Scenario A4 driven: `PhoneMigrationUITests` passed three times; 6 of A4's 10 steps pass, 4 are device only (`docs/acceptance-checklist.md` §9). Split used: +5 of the 8 this session estimated for A4, in proportion to the steps driven. App Intents still not driven by a test |
+| | others | | unchanged | |
+| | **Total** | **1,077** | **1,086** | 1,086 ÷ 1,200 = 90.5 % (1,088 with Hydration's 92) |
+
+### Also merged into this branch (`9eb4b4f`..`9da790f`)
+
+Caffeine recorded with each drink and judged against intended sleep
+(Migration 063); caffeine on custom drinks (064) and the person's own figure
+for a catalog drink (065); the caffeine line on the drink logger; "Not yet in
+Apple Health" on water entries; Apple Health reconnected at launch for someone
+who connected before (it was hooked up only by tapping Connect, so nothing
+synced after a relaunch); water reminders spread across the night on a fast
+day. Choices in `CONTEXT.md`, each with an *Overrule by:* line.
+
+## 2026-10-16 — Re-score of all 12 phases
+
+**Outcome.** On the evidence in the repository and in CI, the tracker stands at
+**1,077 of 1,200 (89.8 %)**, up from 964. Readiness is **held at 94** because
+one of its UI tests failed in CI and is not yet diagnosed; if that test is
+green on the re-run and stays green, Readiness takes its planned 98 and the
+total is **1,081 (90.1 %)**. Slice 12's figure rests on a split of its 33
+planned points that the handoff did not give; it is this session's estimate and
+the owner (or whoever keeps the tracker) can move it.
+
+### Method
+
+The handoff's own per-phase targets are the ceiling: a phase gets its "AI-only"
+or "with his inputs" figure only when every task the handoff tied to that rise
+has a passing test or driven UI step at head. Evidence is CI at `76ed79b`
+(run 38927873088: `swift test` green, 1,178 Swift Testing tests plus XCTest;
+app build green; **AlmanacUITests 101 of 102**) and the earlier entries below
+(iMac runs and revert-and-run checks of 16 Oct, not re-run here). Nothing on a
+device was counted.
+
+### The table
+
+| # | Phase | Was | Now | Why |
+|---|---|---:|---:|---|
+| 1 | Foundation | 100 | 100 | |
+| 2 | Readiness | 94 | **94** (98 pending) | A9 confirmed; recovery day built with core tests and a UI test (revert-checked 16 Oct); rows 7.10 and 7.11 pass in CI. **Held:** `ReadinessRecoveryDayUITests` failed at `76ed79b` (line 98, "the recovery-day switch did not move to 1"); it passed at `c10bc8d`, and nothing between touches the app or that test. Rule 4: no rise until diagnosed |
+| 3 | Hydration & Caffeine | 90 | 90 | The §6 / A1 / A5 audit is not done |
+| 4 | Training | 98 | 98 | |
+| 5 | Nutrition | 92 | **96** | A6 serving count (`DishServingTests`, `KitchenSeedPlanTests` fails without it); Kitchen UI 9/9 and the template UI test pass in CI; carbohydrate kept per source (`tools/nutrition/README.md` "Carbohydrate", `NutritionDictionaryContractTests`). 98 needs T07/T08 |
+| 6 | Fasting & Prayer | 88 | **96** | A1's four edge cases, revert-checked; A2 doc corrected; **T02 answered and built** (`FastsQuestionUITests` passes in CI). Cap 96 until a device run |
+| 7 | Body & Wellness | 85 | **95** | Lab seeds (free T3, reticulocytes, liver panel, vitamin D binding protein, urinalysis: `LabCatalogSeed.swift`, `CatalogCoverageTests`); unit conversion and re-test (`LabConversionAndRetestTests`); profile fields (`ProfileFieldsTests`); Bristol credit (`AttributionsUITests`, CI). **G3, G4, G5 answered; G5 built** (163 verified LOINC codes). Contradiction: years of training is stored as a level, not a count, by design (`ProfileVocabulary.swift`) |
+| 8 | Regional Food Data | 5 | **50** | Rubric approved (D2); entry below |
+| 9 | Digestion & Urination | 85 | **95** | Bristol credit; **G1 built** (draft advisory, not clinician-reviewed) and **G2 built** (ring out of v1); Digestion UI suites pass in CI |
+| 10 | Insights | 90 | **95** | G2 built; `testSettingsOffersNoDigestionRingInV1` passes in CI |
+| 11 | Notifications | 82 | **93** | A3 (all NotificationSettings UI tests pass in CI); A1's ownership and horizon tests, revert-checked; A8 reminder times with core and UI tests. Cap 95 until a device run |
+| 12 | Migration & Completion | 55 | **75** (estimate) | A10: document checksums before any write (failed first), de-duplication pinned; every earlier schema version upgrades to head (`testEveryEarlierVersionUpgradesToHead`, CI). Split used: A10 +12, migration chain +8. **Not earned:** scenario A4 driven on the simulator; App Intents (the three BRD §6.21 v1 actions exist in `WidgetIntents.swift`, but no test drives them); the device checklist is not owner-approved |
+| | **Total** | **964** | **1,077** | 1,077 ÷ 1,200 = 89.8 % |
+
+### What would move it, with evidence
+
+- Readiness +4: the recovery-day UI test diagnosed and green.
+- Slice 12 up to +13: scenario A4 as a driven UI test; a test that runs the
+  App Intents; the owner's restore on a phone (+4 above 88, to 92).
+- Hydration +2: the audit and its closed gaps.
+- Slice 8: dishes (each 25 ÷ D_full, and the first lifts the 50 cap to 65).
+- Device runs: +9 across phases 3, 11 and 12.
+
+## 2026-10-16 — The owner approves the Slice 8 rubric (D2)
+
+**Outcome.** The owner answered "Approve all": the Slice 8 rubric (D2) and the
+regional-dish choices are confirmed (`docs/features/owner-decisions-2026-10-16.md`,
+"Later the same day"). Slice 8 now counts at **50**, the cap with no authored
+dish, so the tracker moves from 964 to **1,009 of 1,200 (84.1 %)**.
+
+| Phase | Before | Now | Formula |
+|---|---:|---:|---|
+| 8 Regional Food Data | 5 | **50** | 20 + 25 + 15 + 5 + 25 × min(1, 0 ÷ D_full) = 65, capped at 50 with 0 dishes |
+| The other eleven | 959 | 959 | not re-scored (no Swift or UI run in this container) |
+| **Total** | **964** | **1,009** | 1,009 ÷ 1,200 = 84.1 % |
+
+Evidence: the B1 table in the entry below; `tools/nutrition` 115 tests here and
+in CI; CI run 38924264402 green for build, nutrition tests and `swift test`.
+
+**What moves Slice 8 next:** only content. D3 (D_full) and the first batch of
+dishes. Each dish adds 25 ÷ D_full, and the cap lifts with the first one, so
+the remaining 15 already built count from then on: at D_full = 50, ten dishes
+put Slice 8 at 65 + 5 = 70. The dish screen's provenance line (in-app, 10
+points) is the one built gap, and needs the iMac.
+
+## 2026-10-16 — Regional dishes through the nutrition pipeline (Slice 8, B1 to B4)
+
+**Outcome.** Regional dishes now have a way into the shipped food database:
+the owner (or the AI, from his material) fills three CSV sheets, and the
+pipeline turns each dish into an Almanac food with an Arabic name, a
+household measure and calories checked two ways. **0 dishes are authored**, so
+nothing new ships yet. By the proposed rubric Slice 8 is **33 before this work
+and 50 after** (the cap with no dishes), not 5 and not 40, and **none of it
+counts until the owner approves the rubric (D2)**. Run in a Linux cloud
+container: Python only. Swift and the UI suite were not run here; CI runs them
+on the push (`73f51b7`), results below.
+
+### B1 — the baseline, from the code
+
+| Part (points) | Before | After | Evidence |
+|---|---:|---:|---|
+| Licensing and boundary (20) | 20 | 20 | Built before this work. Licence group on every food, value and portion row (`model.validate`); the bundle fails before writing on any group outside A, B, N (`licence.assert_shippable`, the tables' `CHECK`, `_verify_written`); native rows are group N (`dictionary/licence_groups.csv`); the app re-asserts it (`NutritionBundleImportTests.testARestrictedRowFailsTheImportAndChangesNothing`, `testNativeRowsShipAsGroupN`). B2 needed no change |
+| Native-row pipeline (25) | 5 | 25 | Before: only a device-authored dish was reduced (`NutritionDishEditor.reduce`, `calculated_recipe`); the pipeline's native namespace was "Nothing yet". After: `sources/almanac.py` |
+| Authoring and QA tooling (15) | 3 | 15 | Before: one dish at a time on the phone, no report. After: CSV bulk import and `processed/native-report.md` |
+| In-app regional foods (15) | 5 | 5 | Arabic search over a bundled `almanac:` row is built and tested (`testSearchMatchesEveryLanguageFoldedAndReturnsEachFoodOnce`); the transliteration rides in the English name, so the same search finds it. **Not built:** the dish screen does not show provenance (`NutritionFood.sourceRecord` is read by the core, shown by no view); no Attributions change, since no derived value ships yet. Needs the iMac (Swift UI and a UI test) |
+| Content (25) | 0 | 0 | 0 dishes; 25 × min(1, 0 ÷ D_full) |
+| **Total** | **33** | **65 → 50** | capped at 50 with no authored dish in the bundle |
+
+### B2 to B4 — what was built (`c1720d2`)
+
+- `tools/nutrition/native/{dishes,components,portions}.csv`, headers only.
+- `sources/almanac.py`: a dish is `almanac:regional-{id}`, food group
+  `regional`, group N. Values are its components (USDA, CIQUAL, CoFID, AFCD
+  canonical foods) reduced per 100 g of `yield_g`, by the same rule as
+  `NutritionDishEditor.reduce`; every value `calculated_recipe`. Cooked or raw
+  is required; the retention assumption goes to the manifest. The benchmark is
+  named in `source_record`. `all` runs it after the other sources.
+- Stops the stage: bad or repeated id, no English name, bad state, no
+  components, non-positive weights, a component or benchmark that is not a
+  shippable canonical food (SFDA refused even as a benchmark).
+- Reports, does not stop: no Arabic name, no household measure, cooked with no
+  yield, general Atwater against the components' energy (15 %) and against the
+  benchmark (20 %), names shared by two dishes (folded for case, harakat and
+  Arabic letter variants).
+- With no dishes, no `almanac` source enters the bundle, so today's shipped
+  bundle would build exactly as before.
+- CI now runs `tools/nutrition`'s tests (`aa5de15`).
+
+### What ran (here)
+
+| Run | Result |
+|---|---|
+| `tools/nutrition` tests before the change | 102, 6 skipped (need the real lake), OK |
+| After, system Python and a clean venv with only `openpyxl` + `lxml` (the CI step) | **115, 6 skipped, OK** (13 new in `test_almanac.py`) |
+| Revert-and-run, `sources/almanac.py` | 8 mutations (yield ignored, trace as unknown, not-analysed skipped, licence guard removed, Arabic check removed, qualifier `measured`, duplicate id allowed, plus one equivalent mutation discarded): each of the 8 fails a test. The first run caught a vacuous test (not-analysed never reached the sum), fixed before the commit |
+| `tools/recipes` tests | 12, OK |
+
+**Not run here:** `swift test`, any UI test, the real lake (`all`, `qa`).
+download.swift.org is refused in this container; a Swift 6.0.3 image was
+fetched, and running it was declined by the session's permission check.
+Swift results are CI's, below.
+
+### Also in this push
+
+- `MigrationFixtureTests.testEveryEarlierVersionUpgradesToHead` (`215d4ce`):
+  an empty database at each earlier version upgrades to head with no broken
+  foreign key. Result: CI's, below.
+- `docs/device-checklist.md` (`73f51b7`): the owner's three iPhone checks
+  (water to Health and back, a reminder on time, a restore), one page, the
+  app's own labels. The restore check uses food, because water also lives in
+  Apple Health and can come back after a restore.
+
+### CI at `73f51b7`
+
+- `73f51b7`: the new "Nutrition pipeline tests" step **failed** on macOS, on
+  `test_fixture.test_committed_fixture_is_current`, which had never run in CI.
+  Cause: macOS's SQLite dumps a REAL as `4.3021032504780115` where 3.45 writes
+  `4.30210325047801145e+00`, the same double. Fixed in the test (`ee49c33`): it
+  now compares both databases' schemas and rows. A changed value still fails it
+  (checked); the two spellings compare equal (checked). 115 pass here.
+- `7ae965b` (`ee49c33`'s code plus this entry), run 38924264402:
+  **xcodebuild (app + widget) green**, including "Nutrition pipeline tests"
+  (115, macOS) and "Untranslated strings"; **`swift test` green**: "Test run
+  with 1178 tests passed", and the XCTest half, which holds
+  `testEveryEarlierVersionUpgradesToHead`, passed (the job fails on any XCTest
+  failure; its count was not copied out). AlmanacUITests: still running at
+  15:55 UTC; this change touches no app code.
+
+### Score
+
+The tracker's figure is the plain average of 12 phases. This session re-scored
+only Slice 8, and only by the rubric that awaits D2:
+
+`(964 − 5 + 50) / 1,200 = 1,009 / 1,200 = 84.1 %`, **if D2 is approved as written**;
+964 / 1,200 = 80.3 % until then.
+
+The other phases were **not re-scored**: that needs the full suite and the UI
+suite, which this container cannot run. The entries below this one record iMac
+runs (16 Oct) for most of the planned AI-only rises (A1 to A11, G1, G2, G5, T02
+built), but those runs are not this session's.
+
+### Contradictions with the handoff
+
+- The handoff is older than the branch: A1 to A11, G1 to G5, T02, T04 and T25
+  were already done and pushed. A5's commits were on origin.
+- D4 is settled in the code (group N exists). D5 is the code's rule already
+  (`GeneralAtwater`). D6 and D7 stand as built (nine calorie nutrients; branded
+  foods out). Logged as unconfirmed, not changed.
+- `processing-design-v0.1.md`, `calorie-database-build-prep-2026-09-13.md` and
+  `food-lake-addendum-2026-09-12.md` are not in the repository (the README
+  points at `~/ALManac-food-data`), so they were not read.
+- The carbohydrate basis is kept per source (Diet Profile OI-6): four
+  canonical nutrients, `tools/nutrition/README.md` "Carbohydrate". Confirmed by
+  reading.
+
+### Unconfirmed decisions logged
+
+`CONTEXT.md`, "Regional dishes in the nutrition pipeline": recipes only, no
+typed-in values; group N (D4); 4/4/9/7 (D5); 15 % and 20 % thresholds; SFDA
+refused as a benchmark (D8); household measures `borrowed`; transliteration
+in the English name; `regional-` ids and tag; CSV only; carbohydrate not
+harmonised across sources. Each has an *Overrule by:* line.
+
+### What the owner can do next
+
+1. Approve, amend or reject the Slice 8 rubric (D2) and pick D_full (D3).
+2. Send reference material for the first dishes (D3); the AI fills the sheets.
+3. Run `docs/device-checklist.md`.
+
+## 2026-10-16 — Kitchen's recipes from the Wikibooks Cookbook (T04 built)
+
+**Outcome.** Kitchen ships **298 recipes** from the Wikibooks Cookbook, the
+source the owner picked. Each one shows a credit line and a link to its page.
+70 state their servings; for the rest Kitchen asks "How many servings does
+this make?" the first time one is chosen. Commit `322a200`.
+
+**What was built.** `tools/recipes` (fetch through the MediaWiki API into the
+food-data lake, review, build; 198-row ingredient table; USDA SR Legacy
+household measures for cups, spoons and counts); the bundle
+`Sources/AlmanacCore/Kitchen/Resources/wikibooks-recipes.json`; Migration
+**062** (`kitchen_recipe_source`, `kitchen_recipe_import`);
+`WikibooksRecipeBundle`, run by `NutritionModel` after the nutrition reference;
+the Kitchen screen changes; the Attributions entry `wikibooks-cookbook`; a CI
+step for the tool's tests. Details: `docs/features/kitchen.md` §8,
+`tools/recipes/README.md`.
+
+**Why 298 of 3,797.** A recipe is dropped whole if any line cannot be made into
+a food and grams: 3,365 had such a line (the largest single cause is an
+unmeasured oil line, in 133), 116 had no ingredient list, 10 had fewer than two
+ingredients, 8 used pork or alcohol. More rows in `ingredients.csv` grow the
+count.
+
+**Decisions not made by the owner** (`CONTEXT.md`, "Kitchen recipes from
+Wikibooks"): pork and alcohol recipes left out; imported recipes are
+`almanac:` dishes with licence group `N` and their licence in their own row;
+no methods shipped, a link instead; stated servings used; the person's own
+recipes listed first; Saved meals excludes imported recipes; how lines become
+grams.
+
+**Verified.**
+- Core: 1,178 + 391 tests, 1 skipped, 0 failures.
+- `ImportedRecipesTests`: 6 tests. One installs the shipped bundle on the
+  shipped reference: every recipe installs, every ingredient resolves, and a
+  second run does nothing.
+- Revert-and-run: five fixes reverted one at a time (the Saved meals filter,
+  keeping the person's count, own recipes first, the seed's reset, removing
+  dropped recipes). Each made a test fail.
+- `tools/recipes/tests`: 12 pass.
+- `KitchenUITests`: 9/9 on a fresh simulator install, including the new
+  `testAnImportedRecipeIsCreditedAndAsksForServings`.
+- `check_catalog --strict`: 1,208 keys, 0 without Arabic.
+
+**Seen once, not explained.** On the first fresh-install run, two Kitchen
+tests saw the imported recipes without their credit line and ahead of the
+person's own. A probe on a copy of that same database, and two later runs
+(one of them on a fresh install), showed the correct list. Recorded here in
+case it comes back. That run also lost three tests to test-runner restarts.
+
+**Not done.** Arabic recipe names (the pages are English), recipe images, the
+method text. A Kitchen screen opened while the first-launch install is still
+running shows only the person's own recipes until it is reopened. Not run on
+a device.
+
+## 2026-10-16 — The owner's answers to T02, T04, T25 and G1–G5
+
+**Outcome.** The owner answered eight open items in the session
+(`docs/features/owner-decisions-2026-10-16.md`). Three closed with no build
+(T25 keep in PR #20; G3 photos later; G4 keep the failed-import record). Four
+were built: G2 the digestion ring is out of v1; T02 Today asks which fasts are
+kept (Migration 059); G1 a three-level digestion advisory in draft wording,
+not clinician-reviewed, with two new logger questions (Migration 060); G5 163
+verified LOINC codes with their LOINC names (Migration 061) and LOINC credited.
+T04 was researched, not built (`docs/features/recipe-sources.md`): Wikibooks
+Cookbook (CC BY-SA) is the one source confirmed; the owner picks.
+
+| Run | Result |
+|---|---|
+| `swift test`, all of the above | **1,172 Swift Testing in 127 suites + 391 XCTest (1 skipped), 0 failures** |
+| UI, wiped app: `FastsQuestionUITests`, `ReadinessRecoveryDayUITests`, `AttributionsUITests.testSettingsOffersNoDigestionRingInV1` | **3 of 3 passed** (the fasts test after removing a card-level identifier that hid its switches) |
+| UI, wiped app: `DigestionQuickEntryUITests` + `DigestionHistoryUITests` | **10 of 10 passed**, including the new urgent-advisory test |
+| `check_catalog.py --strict` | 0 strings without Arabic |
+
+Each LOINC code was checked against the NLM LOINC lookup; the check caught one
+wrong draft code (56536-6, thyroglobulin antibodies) and it was dropped.
+
+**Not run:** the rest of the UI suite after these changes (CI runs it on the
+push), `AttributionsUITests` beyond the one test (the LOINC entry's display),
+and anything on a device. **Still open:** T07/T08 (the Diet Profile Addendum is
+not in the repository), the owner's T04 pick, native-speaker review of the new
+Arabic, and clinician review of the advisory before release.
+
+## 2026-10-16 — The AI handoff of 2026-10-16 (A1–A11)
+
+**Outcome.** One real fasting bug found and fixed (a fast left open for two or
+more days was never closed). Backups now refuse a damaged document. Dish
+serving counts and reminder times for readiness, bedtime, suhoor and iftar can
+be set from the app. The whole UI suite passed on the iMac (97 of 97) and in CI
+(96 of 96), so the "four or five known UI failures" no longer exist. The branch
+is pushed. Blocked items (T02, T04, T07/T08, T25, G1–G5) were not touched.
+
+### What ran
+
+| Run | Result |
+|---|---|
+| `swift test` at `8763a96`, before any change | **1,150 Swift Testing in 126 suites + 387 XCTest (1 skipped), 0 failures**. Matches the handoff |
+| `swift test` with every change below | **1,164 in 126 suites + 390 XCTest (1 skipped), 0 failures** |
+| Full UI suite, suite by suite, app data wiped before each, iPhone 16e iOS 26.3.1, at the A1 change | **97 of 97 passed**, 19 suites, about 100 minutes. Per suite: BodyCompositionWellness 6/6, Attributions 12/12, BodyCircumference 1/1, NotificationSettings 5/5, AllergenFilter 4/4, BodyCompositionGrid 5/5, CrossTabNavigation 4/4, DigestionHistory 2/2, DigestionQuickEntry 7/7, Insights 5/5, Kitchen 7/7, OwnerRequestedFeatures 5/5, ProblemChannel 3/3, ReadinessRecoveryDay 1/1, ShiftsAndRhythm 6/6, Timeline 3/3, TrainingHistory 6/6, TrainingProgram 13/13, Arabic 2/2 |
+| CI on PR #20 at `4fc8641` (run 38813190034) | **all three jobs green**. AlmanacUITests: **96 tests, 0 failures**, 82 min, fresh simulator. "Untranslated strings" passed |
+| CI at `5d5cbed` (this work, pushed) | core and app + widget, "Untranslated strings" included: **green**. UI job still running when this was written |
+| After A6 and A8: `KitchenUITests.testAServingCountSetOnASavedMealIsWhatItPreFills` and `testChoosingARecipeHandsItToTheLoggingForm` | **both passed** |
+| After A8: all of `NotificationSettingsUITests`, app wiped | **6 of 6 passed**, after two test fixes (below) |
+| `check_catalog.py --strict` on an app build with `SWIFT_EMIT_LOC_STRINGS=YES` | 1,203 keys, **0 without Arabic** |
+
+`UIScrollSupport.swift:174`, the harness error recorded earlier, **did not
+occur** in any of the 19 suite logs.
+
+### A1 — fasting edge cases and notification fixes (P0)
+
+| Case | Test | Passes | Fails with the fix reverted |
+|---|---|---|---|
+| (a) first `ensureDay` before Fajr makes no session | `ReligiousFastingDerivationTests.beforeFajrIsSuhoor` (and `preFajrSessionFromOlderBuildIsRemoved`) | yes | yes |
+| (b) first call at/after Maghrib creates the session and ends it | `firstOpenAfterMaghribRecordsAKeptFast` | yes | yes |
+| (c) overdue sessions from **prior days**, not only today's, are closed | `olderOpenFastIsClosedAtItsOwnMaghrib`, `olderOpenFastIsNotEndedByTheNextFast` (new) | yes | yes. **This was a bug:** `refresh` covered only yesterday and today. Fixed in `FastingCoordinator.refresh` |
+| (d) a fresh install has a real path that creates a schedule | `ramadanIsCreatedAutomatically`; the app path is `FastingModel.configure` → `ensureToday` → `refresh` at launch | yes | yes |
+| Scheduler ownership uses `hasPrefix(ownedPrefix)` | `NotificationPlannerTests.ownershipIsByPrefix` (new). The rule moved to `NotificationPlan.isOwned` so it can be tested; the scheduler calls it | yes | yes |
+| Planner drops candidates outside `(now, now + horizon]` | `earlierTodayIsDropped`, `beyondTheHorizonIsDropped` (new) | yes | yes. With the filter removed, the three **older** horizon tests still passed; they did not guard it |
+
+"Reverted" means the fix's line was put back to its broken form and the two
+suites re-run (scripted, then restored). **T02** (the owner approves the
+schedule setup flow) still blocks final sign-off.
+
+### A2 — prayer-time claims (P1)
+
+`docs/features/fasting.md` was wrong, and contradicted its own §6: the 30-day
+cache, the 50 km check, `PrayerSettingsStore` (`b941ab4`) and the 230-city list
+(`9bf1811`, 2026-09-19) are all built. The 19 Sep snapshot was right. The stale
+line is struck and corrected, with files and tests named.
+
+### A3 — UI failures (P1)
+
+None left to diagnose: every suite passed (table above), including the two
+`BodyCompositionWellnessUITests` and the `AttributionsUITests` tests the 6 Oct
+handoff listed. **No fifth failure exists.** No test was weakened.
+
+### A4 — PR #20 CI (P1)
+
+Checked with `gh`. The `e1d2159` Arabic fix worked: "Untranslated strings"
+passed at `4fc8641`, and all three jobs were green. Nothing needed fixing.
+
+### A5 — push (P1)
+
+Pushed `4fc8641..5d5cbed` (the two recovery-day commits plus this work's six),
+no force. `git status -sb` showed the branch level with origin. The docs commit
+for this entry is pushed after it.
+
+### A6 — serving count (P2)
+
+**Contradiction with the handoff:** there is no dish editor to add the control
+to; no screen edits a dish. The count is a "Servings" swipe action on Saved
+meals, opening a sheet (count from 2, range 1–50, shows the resulting serving).
+No migration: the column is 052's. The Kitchen UI seed now resets serving counts.
+Tests: `DishServingTests.servingsEdit`, `KitchenSeedPlanTests.applyClearsServingCounts`
+(fails without the seed change), and the UI test above.
+
+### A7 — BRD Arabic amendment (P2)
+
+Amendment 1 appended to `docs/brd-v1_6.md`, with a pointer under the changelog;
+the approved v1.6 text is unchanged. It records that all Arabic is a **draft**,
+not reviewed by a native speaker. That review is the owner's to arrange.
+
+### A8 — reminder times (P2)
+
+Suhoor and iftar **are** derived from prayer times (Fajr − 20 min, Maghrib), so
+their setting is an **offset**: 5–90 minutes before Fajr, 0–60 after Maghrib
+(Migration **058**, `notification_rule.offsetMinutes`). Readiness and bedtime
+take a clock time in `scheduledTimeHHMM`, used only as a **fallback** when no
+sleep or shift time exists (§14.2's bedtime wording). Five planner tests, two
+store tests, one UI test. Delivery on a device: **UNRUN**.
+
+**A8 broke a UI test, and it is fixed in the test.** The new stepper and time
+rows made `testEveryNotificationTypeHasASwitch` fail twice in a row ("no switch
+for supplement", then "for suhoor"): the shared `reveal` helper swipes from
+mid-screen, the list did not move, and the lower switches were never rendered.
+The test now also drags along the list's leading edge, where only labels sit,
+and still requires every switch on screen. **Not verified:** whether a
+person's own swipe that starts on a stepper scrolls; on the simulator a
+synthesized one did not appear to. Worth a look on the phone. The new suhoor
+test first failed on its own lookup (SwiftUI names the stepper's buttons
+`notification-offset-suhoor-Increment`), fixed in the test.
+
+### A9 — readiness calibration (P2)
+
+`calibrationStopsAtTwentyOne`, `calibrationIsNotAWindow`,
+`shiftChangeDoesNotResetCalibration`: all pass. `calibrationDay = nil` at 28
+valid days **is intended**: §9.7 calibrates the first 21 valid days, and
+`ReadinessBaselineService` returns nil past 21. No behaviour change.
+
+### A10 — restore checksums and de-duplication (P2)
+
+**Contradiction with the handoff:** the database payload's checksum was already
+validated (since 2026-09-23); the **documents** were not. Fixed: per-document
+SHA-256, checked before anything is written; `testTamperedDocumentIsRejectedBeforeAnythingIsWritten`
+failed first (a damaged document was restored and the live database swapped).
+Older bundles without document digests still restore.
+**De-duplication was already in place** for health_sample, hydration_log,
+body_measurement and vitals_record (all keyed on the sample identifier); the
+new `testResyncAfterRestoreDuplicatesNoSampleSharingAnIdentifier` passed on
+the existing code and now pins it. Workouts and sleep were not covered by it.
+
+**Phase 12 "re-deriving fasting windows on restore":** the spec's step 6d
+(rebuild night-window assignments) is **already built**: `restoreBundle` runs
+`NightNutritionWindowAssigner`. Re-deriving the sessions themselves is not in
+the spec, so it was not built. **Found, not changed:** spec step 7a says to
+clear all `sync_anchor` rows on restore; the code restores them and
+`testRestoreReplacesTargetContentsWithSnapshot` requires that. Owner or spec call.
+
+### A11 — docs
+
+The checklist's run table, the README (58 migrations, the test counts, UI
+timing) and a dated on-hold line in `docs/features/nutrition.md` §7. The
+"627 / 68 / 7 of 17" the handoff named had already been replaced on 2026-10-06.
+
+### Not run
+
+- Notification delivery on a device, the widget, a real GPS fix.
+- The full UI suite **after** the A6 and A8 app changes: only the affected suites
+  (Kitchen, NotificationSettings) were re-run locally. CI's run at `5d5cbed` covers the rest.
+- Native-speaker review of any Arabic.
+
+### Unconfirmed decisions logged
+
+All in `CONTEXT.md`, "The 2026-10-16 handoff", each with an *Overrule by:* line:
+closing an overdue fast at its own Maghrib (religious only); servings on Saved
+meals; first count 2, range 1–50; the seed resetting counts; suhoor/iftar as an
+offset with their ranges; the iftar wording after Maghrib; readiness/bedtime
+time as a fallback with 07:00 / 22:30 starts; old bundles accepted without
+document digests.
+
+## 2026-10-16 — A recovery day the person declares (§9.6)
+
+Readiness ticket 03, the one remaining readiness gap that needed no owner
+ruling. **Branch** `claude/eager-mcnulty-7c3b4a`, from
+`claude/slices-7-9-completion` at `a4c5891` rather than from master, because
+that branch already holds Migration 056 and this work needed the next number.
+
+**The gap.** §9.6's second precedence rule, "Manually selected recovery day
+(user set via UI)", had its flag (`ReadinessContext.manualRecoveryDay`) and its
+wording in `ReadinessEngine` from the start, and nothing ever set the flag. It
+was the only §9.6 rule that had never fired, and no test exercised it.
+
+### What changed
+
+1. **Migration 057**, `recovery_day_declaration`: one row per declared logical
+   day, keyed on the day as `mood_log` and `soreness_log` are.
+2. **`RecoveryDayStore`** (core): declare, clear, set, read. The caller names
+   the day, so a back-dated declaration lands on the day it names.
+3. **`ReadinessModel`** reads today's declaration into the context, and
+   `setRecoveryDay` writes it and refreshes, so today's stored record follows.
+4. **Today** has a "Recovery day" switch under the "For this cycle" card. It
+   writes as it moves, so it can be moved back while the screen is open. Arabic
+   for its two strings is in the app catalog.
+5. **Docs:** `docs/features/readiness.md` has a section for it, and its row is
+   gone from "Not built, and why". Four choices made without the owner are in
+   `CONTEXT.md`, "Readiness: the declared recovery day (2026-10-16)".
+
+Score, colour, confidence, headline and snapshot are unchanged by it; only the
+recommendation is replaced. An active injury still decides the wording.
+
+### Verification
+
+| Run | Result |
+|---|---|
+| `swift test` on `a4c5891`, before any change | **1,143 Swift Testing tests in 125 suites + 382 XCTest (1 skipped)** — matches the figure recorded for that head on 2026-10-15 |
+| `swift test` on this branch | **1,150 in 126 suites + 387 XCTest (1 skipped), 0 failures** |
+| `ReadinessRecoveryDayUITests` (1, new), iPhone 16e, iOS 26.3.1 | **passed** (51 s), and again (54 s) starting from a day left declared |
+| The same test with `manualRecoveryDay` forced to `false` in `ReadinessModel` | **failed**, at "declaring a recovery day did not change the recommendation (now: Moderate recovery — train at reduced intensity)", and nowhere earlier |
+| `check_catalog.py --strict` on that build | the two new strings have Arabic; the 38 keys still without it are the 2026-10-15 screens' |
+
+The before run was taken from an export of `a4c5891` holding only
+`Package.swift`, `Sources` and `Tests`. Its 15 XCTest failures were all
+`NutritionBundleImportTests` and `NutritionDictionaryContractTests`, which read
+fixtures under `tools/` that the export left out; they are not counted as a
+baseline failure. The 7 + 5 new tests: `RecoveryDayStoreTests` (7) and five in
+`ReadinessEngineTests`. `BodyMeasurementTests.migrationUpgrade`'s literal list
+gained 57, as its comment asks.
+
+The UI test plants three prior days at rhr 52 / hrv 55 and today's pair at
+51 / 53, so there is a real band sentence to compare against. It reads that
+sentence off the screen rather than naming a band, because the simulator's
+database is shared and other suites' history moves the baseline. It turns the
+switch off before it reads anything and again at the end.
+
+**Not run:** the rest of the UI suite. Nothing outside Today's dashboard and
+`ReadinessModel` changed, and the Training Program reads the score, which this
+does not move.
+
+## 2026-10-15 — Slices 7 and 9 toward done
+
+**Second pass, same day (owner's go-ahead).** The damaged iOS 26.3 runtime was
+deleted (`xcrun simctl runtime delete`) and re-downloaded
+(`xcodebuild -downloadPlatform iOS`, iOS 26.3.1, 23D8133, 10.5 GB). The app's
+data was wiped (`xcrun simctl uninstall 71088226-… com.almanac.personal`) before
+each run, and the three suites were run by name on the iPhone 16e:
+
+| Run | Result |
+|---|---|
+| First run | 2 passed, 2 failed: the discontinue test (a real app bug, below) and one new digestion test (a test bug, below) |
+| Final run, after both fixes | **4 of 4 passed** — `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence`, `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible`, both `DigestionHistoryUITests` |
+
+- **The discontinue test found a real bug.** The plan list showed only when
+  some plan was active, so discontinuing your only plan hid it behind "No
+  supplement plans yet." Fixed in `SupplementView` (`41e36de`). That is why it
+  failed on CI's fresh simulator and passed on populated ones.
+- **The circumference test passed unchanged.** Its recorded snapshot error was
+  already fixed by `9c82961` (2026-10-07); it had not run cleanly since.
+- **The new digestion test had a lookup bug**, fixed in `f94660d`.
+
+**Score after the second pass.** Slice 9: **5 of 6**. Slice 7: **7 of 8**. The
+one open item in each is an owner gate group (G1/G2; G3/G4/G5).
+
+**Arabic, 2026-10-16.** PR #20's `xcodebuild (app + widget)` job failed at
+its "Untranslated strings" step: 38 app-side strings from this branch had no
+Arabic. All 38 are now in `Native/Almanac/Localizable.xcstrings`, using the
+catalog's existing terms (موضع for a circumference point, تطبيق الصحة,
+بريستول). The two single-count strings ("%lld bowel movements", "%lld
+urinations") carry plural forms in both languages, so English also reads "1
+bowel movement". Draft translations, not reviewed by a native speaker.
+
+### First pass (before the runtime was replaced)
+
+**Branch** `claude/slices-7-9-completion`, from master `c4b5f0a`. Done on the
+owner's iMac (Xcode 26.3, x86_64).
+
+**Score.** Slice 9 (digestion and urination): **4 of 6** checklist items done.
+Slice 7 (body and wellness): **6 of 8** done. Every open item is either an owner
+gate left blank or a UI run that could not happen (below). Neither slice can
+pass 6/6 or 8/8 until the five gates are answered.
+
+### What ran, and what it showed
+
+| Run | Result |
+|---|---|
+| `swift test` on master `c4b5f0a`, before any change | **1,079 Swift Testing tests in 120 suites + 382 XCTest (1 skipped), 0 failures** |
+| `swift test` on the branch head | **1,143 in 125 suites + 382 XCTest (1 skipped), 0 failures** |
+| `xcodebuild build-for-testing` (app, widget, UI tests) with every change | **TEST BUILD SUCCEEDED** |
+| `DigestionHistoryUITests` (2, new) | **UNRUN** — see below |
+| `BodyCircumferenceUITests.testSidedLoggingWarningAndPersistence` | **UNRUN** — see below |
+| `BodyCompositionWellnessUITests.testDiscontinuingAPlanKeepsItVisible` | **UNRUN** — see below |
+
+**Why no UI test ran.** The iOS 26.3 simulator runtime image mounted on this
+Mac is damaged: reading files from it fails with "Input/output error", and
+`diskutil verifyVolume` on it exits 134. Inside a simulator,
+`installcoordinationd` cannot be launched (exit 78, `posix_spawn … Input/output
+error`), so installing, uninstalling or listing apps hangs. That is why the
+first `xcrun simctl uninstall … com.almanac.personal` never returned, on the
+iPhone 16e that had been working, before anything else was touched. Restarting
+the simulator service, rebooting the device and switching to a fresh iPhone 17
+did not help. **Fixing it needs a Mac restart or deleting and re-downloading
+the iOS 26.3 simulator runtime**, which is the owner's call. The two
+failing UI tests were therefore **not diagnosed and not changed**. Their
+recorded error (`UIScrollSupport.swift:174`) points at code that
+`UIScrollSupport` already rewrote on 2026-10-07 to read one snapshot; whether
+that fixed them is unknown until they run.
+
+### What changed
+
+Slice 9:
+1. **History** — `DigestionHistory` + `DigestionHistoryReader` (core) and
+   Modules → Records → Digestion (`DigestionHistoryView`): 7/30/90 days, counts
+   by Bristol type, colour name and urine grade, a bar per day, a day list.
+   Nothing interpreted. `DigestionHistoryTests` (10).
+2. **Colour and grade carry text** — every count and entry row uses the
+   number-and-name labels; colours with no record read "Colour not recorded".
+   Pinned by `DigestionHistoryTests.colourCounts` and the existing label tests.
+3. **Urine colour → water target** — `UrineColourHydrationFeedback`, shown on
+   the hydration screen as an offered raise, suspended on religious fast days.
+   `UrineColourHydrationFeedbackTests` (9).
+4. **Bristol attribution** — `AttributionCatalog` entry, "No licence
+   identified". `AttributionTests.bristolScaleIsCredited`.
+
+Slice 7:
+1. **Body measurements** — correct and delete manual rows; a year's chart per
+   metric. Weight stays out of `vitals_record`, now pinned by
+   `VitalsRecordHealthBridgeTests.bodyMassIsNotAVital`. 6 new store tests.
+2. **Circumference points** — `CircumferencePointCatalog`, Migration **056**
+   (highest on master was 055): hide built-ins, add your own, a chart per point.
+   `CircumferencePointCatalogTests` (9).
+3. **Supplement reminders** — settable in the plan editor
+   (`SupplementReminderSetting`), re-planned on save and on discontinue. 5 new
+   planner tests, including the supplement suppression row at planner level.
+4. **Context tags** — confirmed built; correlation use belongs to Slice 10
+   (`docs/features/body-composition.md`).
+5. **Labs** — 22 analytes and 2 panels seeded with citations
+   (`laboratory-catalog-coverage.md` 0.4). `LabCatalogRemainingCoverageTests`
+   (11); the vitamin count pins moved 24→25 and 20→21 because free 25-OH D is a
+   vitamin D form.
+6. **Unit conversion and re-test** — `LabUnitConversion`,
+   `LabRetestSuggestion`; rules in `laboratory.md` §8a–8b, logged unconfirmed.
+   `LabConversionAndRetestTests` (13). Not on a screen. The "6 Oct handoff" that
+   queued this was not found in the repository; the rule follows
+   `laboratory.md` §8 instead.
+
+Also: `docs/features/laboratory-catalog-coverage.md` said import-job records
+were "not built"; they were built in `d21d9a9`, and a failed import already
+leaves a row. The doc now says so. Gate G4 is still open.
+
+### Owner gates — all five were blank
+
+| Gate | Item it blocks | State |
+|---|---|---|
+| G1 medical advisory | Slice 9 item 5 | open, nothing built |
+| G2 digestion ring fill rule | Slice 9 item 5 | open, nothing built |
+| G3 progress photos | Slice 7 item 7 | open, still deferred |
+| G4 failed import leaves a job row | Slice 7 item 7 | open; the code already says "yes" |
+| G5 verified LOINC codes | Slice 7 item 7 | open, none seeded |
+
+### Not run
+
+- Any UI test (simulator runtime damaged, above).
+- Supplement notification arrival on a device.
+- The new screens were compiled, not looked at: no screenshot was possible.
+- The new screens in Arabic: their strings were translated on 2026-10-16
+  (above), but no one has looked at them on a phone set to Arabic.
+
+Decisions taken without the owner: `CONTEXT.md`, "Digestion and urination
+(2026-10-15)" and "Body and wellness (2026-10-15)".
 
 ## 2026-10-06 — handoff work from a cloud session: Kitchen merge-ready and built out, readiness withhold, Vitals log
 

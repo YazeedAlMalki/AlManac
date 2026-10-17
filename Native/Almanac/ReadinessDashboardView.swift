@@ -8,11 +8,13 @@ struct ReadinessDashboardView: View {
     @ObservedObject var hydrationModel: HydrationModel
     @ObservedObject var nutritionModel: NutritionModel
     @ObservedObject var trackingModel: TrackingCalendarModel
+    @ObservedObject var fastingModel: FastingModel
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.tabCoordinator) private var tabs
     @State private var checkingIn = false
+    @State private var recoveryDayError: String?
 
     /// The action for a row that opens a feature.
     ///
@@ -30,8 +32,12 @@ struct ReadinessDashboardView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: AlmanacMetrics.sectionGap) {
                     masthead
+                    if fastingModel.needsFastsQuestion {
+                        FastsQuestionCard(model: fastingModel)
+                    }
                     readinessCard
                     recommendation
+                    recoveryDay
 
                     Button {
                         checkingIn = true
@@ -72,6 +78,7 @@ struct ReadinessDashboardView: View {
                     trackingModel.refresh()
                 }
             }
+            .editorError($recoveryDayError)
             .almanacScreen()
         }
     }
@@ -213,8 +220,44 @@ struct ReadinessDashboardView: View {
                         .font(AlmanacTypography.font(.body))
                         .foregroundStyle(AlmanacPalette.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("readiness-recommendation")
                 }
             }
+        }
+    }
+
+    /// §9.6's "manually selected recovery day (user set via UI)".
+    ///
+    /// A switch that writes the moment it moves, not a choice confirmed with
+    /// Save, so it stays changeable for as long as the screen is open — the
+    /// readiness switch on a training session behaves the same way. It sits
+    /// right under the recommendation because that is the only thing it
+    /// changes; the score above is untouched by it.
+    ///
+    /// Worded as the person's own call. §9.6 keeps a recovery day apart from a
+    /// planned rest day by who planned it, so this never says "rest day".
+    private var recoveryDay: some View {
+        AlmanacCard {
+            Toggle(isOn: Binding(
+                get: { model.isRecoveryDay },
+                set: { declared in
+                    do { try model.setRecoveryDay(declared) } catch {
+                        recoveryDayError = String(describing: error)
+                    }
+                }
+            )) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Recovery day")
+                        .font(AlmanacTypography.font(.bodyMedium))
+                        .foregroundStyle(AlmanacPalette.textPrimary)
+                    Text("Your own call for today. It changes the advice, not the score.")
+                        .font(AlmanacTypography.font(.caption))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .tint(AlmanacPalette.accent)
+            .accessibilityIdentifier("recovery-day-toggle")
         }
     }
 

@@ -271,6 +271,83 @@ final class BackupBundleTests: XCTestCase {
                        "a corrupt bundle must not touch the live database")
     }
 
+    /// BRD §6.18 / A4: "corrupt … detected & refused". A document — a lab PDF,
+    /// a photo — damaged inside the bundle must fail validation before the
+    /// live database or any live document is touched, not be restored as is.
+    func testTamperedDocumentIsRejectedBeforeAnythingIsWritten() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/snapshot.almanac-backup"
+        let targetPath = dir + "/tgt.sqlite"
+        let sourceDocs = URL(fileURLWithPath: dir + "/src-docs", isDirectory: true)
+        let targetDocs = URL(fileURLWithPath: dir + "/tgt-docs", isDirectory: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        try writeDoc(sourceDocs, "a.txt", "new a")
+        try writeDoc(sourceDocs, "labs/b.pdf", "new b")
+        let source = try makeDB(sourcePath, anchors: [("hrv", [4, 2])])
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: sourceDocs, note: nil)
+        do {
+            let tampered = try Database(path: bundlePath)
+            try tampered.run("UPDATE bundle_files SET bytes = x'deadbeef' WHERE relative_path = 'labs/b.pdf';")
+        }
+
+        try FileManager.default.createDirectory(at: targetDocs, withIntermediateDirectories: true)
+        try writeDoc(targetDocs, "a.txt", "old a")
+        let target = try makeDB(targetPath, anchors: [("steps", [9])])
+        let service = BackupService(db: target)
+
+        do {
+            _ = try service.readBundleInfo(at: bundlePath)
+            XCTFail("listing must report a damaged document, not offer the bundle for restore")
+        } catch BackupService.BackupError.corruptBundle(let reason) {
+            XCTAssertTrue(reason.contains("labs/b.pdf"), "the damaged document is not named: \(reason)")
+        }
+        do {
+            try service.restoreBundle(at: bundlePath, documentsRoot: targetDocs)
+            XCTFail("restore must reject a document that fails its checksum")
+        } catch BackupService.BackupError.corruptBundle(let reason) {
+            XCTAssertTrue(reason.contains("checksum"), "unexpected reason: \(reason)")
+        }
+
+        XCTAssertEqual(try String(contentsOf: targetDocs.appendingPathComponent("a.txt"), encoding: .utf8),
+                       "old a", "a live document was overwritten by a bundle that failed validation")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: targetDocs.appendingPathComponent("labs").path),
+                       "a document directory was created by a bundle that failed validation")
+        XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9],
+                       "a corrupt bundle must not touch the live database")
+    }
+
+    /// A bundle written before documents carried a checksum still restores:
+    /// its database is checked as before, and its documents cannot be.
+    func testBundleWithoutDocumentChecksumsStillRestores() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/old.almanac-backup"
+        let sourceDocs = URL(fileURLWithPath: dir + "/src-docs", isDirectory: true)
+        let targetDocs = URL(fileURLWithPath: dir + "/tgt-docs", isDirectory: true)
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        try writeDoc(sourceDocs, "a.txt", "from an older bundle")
+        let source = try makeDB(sourcePath, anchors: [("hrv", [4, 2])])
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: sourceDocs, note: nil)
+        do {
+            // The shape every bundle had before 2026-10-16.
+            let old = try Database(path: bundlePath)
+            try old.execute("""
+            CREATE TABLE files_v1 (relative_path TEXT PRIMARY KEY, bytes BLOB NOT NULL);
+            INSERT INTO files_v1 SELECT relative_path, bytes FROM bundle_files;
+            DROP TABLE bundle_files;
+            ALTER TABLE files_v1 RENAME TO bundle_files;
+            """)
+        }
+
+        let target = try makeDB(dir + "/tgt.sqlite")
+        try BackupService(db: target).restoreBundle(at: bundlePath, documentsRoot: targetDocs)
+        XCTAssertEqual(try String(contentsOf: targetDocs.appendingPathComponent("a.txt"), encoding: .utf8),
+                       "from an older bundle")
+    }
+
     func testValidButNonAlmanacDatabaseIsRejectedBeforeDocumentsCommit() throws {
         let dir = try tempDir()
         let sourcePath = dir + "/src.sqlite"

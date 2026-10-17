@@ -55,7 +55,10 @@ final class BodyCircumferenceUITests: XCTestCase {
         XCTAssertTrue(toggleAfterRelaunch.waitForExistence(timeout: 5))
         XCTAssertEqual(toggleAfterRelaunch.value as? String, "1", "Side preference must persist across launch")
         tapSwitch(toggleAfterRelaunch) // Exercise the reversible toggle-off stub.
-        XCTAssertEqual(toggleAfterRelaunch.value as? String, "0")
+        // Waited for, not read at once: just after a launch the redraw can trail
+        // the tap, and an immediate read saw "1" (CI 2026-10-17, df94ead).
+        XCTAssertTrue(app.waitUntil(timeout: 5) { toggleAfterRelaunch.value as? String == "0" },
+                      "the side switch did not turn off: \(String(describing: toggleAfterRelaunch.value))")
         app.navigationBars["Settings"].buttons.firstMatch.tap()
         openCircumferences(app)
         XCTAssertTrue(app.staticTexts[noteText].waitForExistence(timeout: 5))
@@ -75,8 +78,20 @@ final class BodyCircumferenceUITests: XCTestCase {
         app.navigationBars["Body circumferences"].buttons.firstMatch.tap()
     }
 
+    /// Flips the switch and waits for its value to change. CI dropped this
+    /// tap twice (lines 17 and 58, on runs where the rest passed), so a tap
+    /// whose value has not moved within 2 s is retried once on the settled
+    /// switch. A switch the app itself snaps back fails the same way twice,
+    /// and the test's own value assertions still report it.
     private func tapSwitch(_ toggle: XCUIElement) {
+        let app = XCUIApplication()
+        let before = toggle.value as? String
         toggle.tapSwitchControl()
+        if !app.waitUntil(timeout: 2, { toggle.value as? String != before }) {
+            _ = app.waitUntilSettled(toggle)
+            toggle.tapSwitchControl()
+            _ = app.waitUntil(timeout: 3) { toggle.value as? String != before }
+        }
     }
 
     private func openSettings(_ app: XCUIApplication) {

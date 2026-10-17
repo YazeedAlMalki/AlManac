@@ -19,8 +19,8 @@ specification is [`docs/almanac-tech-spec-v1_0.md`](docs/almanac-tech-spec-v1_0.
 | Foundation (Technical Spec §4) | Here |
 |---|---|
 | Database | `Database`, `SQLiteError`; SQLite vendored under `Sources/CSQLite` |
-| Migration runner | `Migration`, `MigrationRunner`; **54 migrations** |
-| Domain schema | **Built** — ~76 tables, transcribed from §5 across migrations 002–045 |
+| Migration runner | `Migration`, `MigrationRunner`; **58 migrations** (2026-10-16; the newest is 058, `notification_rule_offset`) |
+| Domain schema | **Built** — transcribed from §5 across migrations 002–045; later migrations add the app's own tables and columns |
 | TimeModel / `logicalDay()` | Built; the §7.1 **04:00** boundary is the default, still injectable |
 | Readiness cycles | Built — `ReadinessCycleStore`, and the §8.4 linking services |
 | HealthKit | `HealthProvider` protocol + `FakeHealthProvider` in core; the concrete provider is the one file under `Native/` that imports HealthKit |
@@ -63,7 +63,7 @@ about the user's blood results that nobody made.
 ## Building
 
     swift build
-    swift test          # 606 tests, 75 suites
+    swift test          # 1,164 Swift Testing tests in 126 suites + 390 XCTest (2026-10-16)
 
 On a Mac, the app and widget:
 
@@ -72,8 +72,9 @@ On a Mac, the app and widget:
     xcodebuild test  -project Native/Almanac.xcodeproj -scheme Almanac \
       -destination 'platform=iOS Simulator,name=<device>'
 
-The UI test suite takes roughly 30–50 minutes on a simulator; `swift test` is
-the fast gate and is what to run while iterating.
+The UI test suite has 99 test methods (2026-10-16). CI ran 96 of them in 82
+minutes on 2026-10-15; `swift test` is the fast gate and is what to run while
+iterating.
 
 ## SQLite
 

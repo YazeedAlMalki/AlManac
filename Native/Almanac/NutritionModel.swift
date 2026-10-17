@@ -63,11 +63,14 @@ final class NutritionModel: ObservableObject {
                 _ = try await Task.detached(priority: .utility) { () throws -> NutritionImportReport? in
                     let referenceDatabase = try Database(path: path)
                     let report = try NutritionReferenceBundle.installIfNeeded(into: referenceDatabase)
+                    // Kitchen's Wikibooks recipes are made of the reference's
+                    // foods, so they install after it, once per bundle.
+                    let recipes = try WikibooksRecipeBundle.installIfNeeded(into: referenceDatabase)
                     // Kitchen's ingredient table is derived from the catalog's
                     // names, so it is rebuilt whenever the catalog changes, and
                     // built once on a database that predates it (Migration 054).
                     let ingredients = IngredientTable(db: referenceDatabase)
-                    var needsBuild = report != nil
+                    var needsBuild = report != nil || recipes != nil
                     if !needsBuild { needsBuild = try ingredients.isEmpty() }
                     if needsBuild { try ingredients.rebuild() }
                     return report
@@ -140,6 +143,13 @@ final class NutritionModel: ObservableObject {
     /// pre-fills, as a chosen recipe does. Nil when the dish has no weight.
     func oneServingGrams(_ ref: SourceIdentifier) -> Double? {
         try? dishEditor?.oneServingGrams(of: ref)
+    }
+
+    /// How many servings a saved dish makes, or nil for none — the whole dish
+    /// is then one serving (owner, 2026-10-06).
+    func setServingCount(_ count: Int?, for ref: SourceIdentifier) throws {
+        guard let dishEditor else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
+        try dishEditor.update(ref, .servings(count))
     }
 
     func savedMeals() throws -> SavedMealResults {

@@ -52,6 +52,20 @@ struct KitchenSeedPlanTests {
         #expect(try ProfileStore(db: db).allergenSet().isEmpty)
     }
 
+    @Test("Re-applying takes back a serving count set since, so the bowl is one 200 g serving again")
+    func applyClearsServingCounts() throws {
+        let plan = try #require(KitchenSeedPlan(spec: "recipes,noallergens"))
+        try plan.apply(into: db)
+        let editor = NutritionDishEditor(db: db)
+        #expect(try editor.update(KitchenSeedPlan.bowlRef, .servings(2)))
+        #expect(try editor.oneServingGrams(of: KitchenSeedPlan.bowlRef) == 100)
+
+        try plan.apply(into: db)
+
+        #expect(try editor.dish(KitchenSeedPlan.bowlRef)?.servingCount == nil)
+        #expect(try editor.oneServingGrams(of: KitchenSeedPlan.bowlRef) == 200)
+    }
+
     @Test("The oats are offered for the pantry, on three past days, however often it is applied")
     func pantrySuggestion() throws {
         let zone = TimeZone(identifier: "Asia/Riyadh")!

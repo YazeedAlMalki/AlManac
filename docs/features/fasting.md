@@ -42,6 +42,23 @@ Three defects that derivation removes:
 - **The calendar date, not the logical day.** Riyadh's Fajr is 03:35 in June,
   before the 04:00 boundary, so the fast was looked for under the previous day.
 
+**Which fasts do you keep? (owner, T02, 2026-10-16: "ask me first").** Today
+shows a card asking about Ramadan, Mondays and Thursdays and the White Days until
+it is answered; Ramadan starts on, the other two off. Saving sets all three
+switches (`FastingCoordinator.answerFastsQuestion`) and records the answer in
+`fasts_question` (Migration 059), so it is not asked again, and a restored backup
+does not ask again either. The same switches stay on the Fasting screen. Until
+it is answered the defaults stand, so Ramadan is still observed. Tests:
+`ReligiousFastingDerivationTests.fastsQuestion`,
+`FastsQuestionUITests.testTodayAsksWhichFastsAndDoesNotAskAgain`.
+
+**A fast left open for two or more days stayed open for good** (found
+2026-10-16). `refresh` re-derived only yesterday and today, so a fast begun on a
+day the app was then not opened for two days was never closed, or was ended at
+the next fast day's Fajr when it yielded. `refresh` now closes it first, at its
+own Maghrib. Tests: `olderOpenFastIsClosedAtItsOwnMaghrib`,
+`olderOpenFastIsNotEndedByTheNextFast`.
+
 **Logging never reached the rules.** `FastingAwareNutritionLog` and
 `FastingAwareHydrationLog` existed and nothing called them; a logged lunch never
 ended a fast. Every write path now goes through them — food logging and delete,
@@ -141,10 +158,17 @@ column names), with `PrayerCalculationMethod` mapping §5.22's
 Asr within a minute. 5 tests
 (`Tests/AlmanacCoreTests/AdhanCalculatorTests.swift`).
 
-Not built: `PrayerTimeStore`/the 30-day cache, >50 km travel invalidation,
-the bundled 200+-city manual-override JSON, and `PrayerSettingsStore` — all
-of §12 beyond the calculation itself. `AdhanCalculator` is a pure function
-today; nothing calls or persists it yet.
+~~Not built: `PrayerTimeStore`/the 30-day cache, >50 km travel invalidation,
+the bundled 200+-city manual-override JSON, and `PrayerSettingsStore`.~~
+**Corrected 2026-10-16:** that line was true on 2026-09-17 and stale since.
+All four are built, as §6 step 2 below says:
+`Sources/AlmanacCore/Prayer/PrayerSettingsStore.swift` and
+`PrayerTimeCacheStore.swift` (Migration 024, `b941ab4`), the 30-day cache and
+the 50 km haversine check in `PrayerTimeEngine.swift` (`ensureCache`,
+`applyLocationUpdate`), and the city list in
+`Prayer/Resources/manual-cities.json` (230 cities, `9bf1811`, 2026-09-19) read
+by `ManualCityCatalog.swift`. Tests: `PrayerSettingsStoreTests`,
+`PrayerTimeCacheStoreTests`, `PrayerTimeEngineTests`, `ManualCityCatalogTests`.
 
 **Hijri calendar source:** use Foundation's built-in
 `Calendar(identifier: .islamicUmmAlQura)` for Ramadan-month and White-Days

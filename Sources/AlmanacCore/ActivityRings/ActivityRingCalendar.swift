@@ -136,7 +136,8 @@ public struct ActivityRingCalendar: Sendable {
             if totals[day] != nil { nutritionLogged.insert(day) }
         }
 
-        let digestionEnabled = try ActivityRingSettingsStore(db: db).isDigestionEnabled()
+        let digestionEnabled = try Self.digestionRingInV1
+            && ActivityRingSettingsStore(db: db).isDigestionEnabled()
         let parts = calendar.dateComponents([.year, .month], from: interval.start)
         let monthID = String(format: "%04d-%02d", parts.year ?? 0, parts.month ?? 0)
         let days = try logicalDays.map { day in
@@ -156,6 +157,15 @@ public struct ActivityRingCalendar: Sendable {
         }
         return ActivityRingMonth(id: monthID, days: days)
     }
+}
+
+extension ActivityRingCalendar {
+    /// The owner's G2 answer (2026-10-16): the digestion ring is not in v1.
+    /// BRD §6.16 leaves its fill rule undecided and there is no universal daily
+    /// target, so the ring is off whatever the stored setting says. The setting
+    /// and its column are kept, so turning the ring back on later is this flag
+    /// and the Settings switch, not a migration.
+    public static let digestionRingInV1 = false
 }
 
 /// The singleton display preference for optional rings. It is persisted so

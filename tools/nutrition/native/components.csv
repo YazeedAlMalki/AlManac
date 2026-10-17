@@ -1,0 +1,122 @@
+dish_id,food_ref,grams,note
+hummus,ciqual:20507,400,chickpeas cooked
+hummus,ciqual:15203,90,tahini
+hummus,ciqual:2028,45,lemon juice
+hummus,ciqual:11000,6,garlic
+hummus,ciqual:17270,20,olive oil
+hummus,ciqual:11082,4,salt
+mutabbal,ciqual:20300,400,aubergine roasted
+mutabbal,ciqual:15203,60,tahini
+mutabbal,ciqual:19593,40,yogurt
+mutabbal,ciqual:2028,30,lemon juice
+mutabbal,ciqual:11000,5,garlic
+mutabbal,ciqual:17270,10,olive oil
+mutabbal,ciqual:11082,4,salt
+tabbouleh,ciqual:11014,150,parsley
+tabbouleh,ciqual:9691,60,bulgur cooked
+tabbouleh,ciqual:20276,150,tomato
+tabbouleh,ciqual:20034,30,onion
+tabbouleh,ciqual:11027,15,mint
+tabbouleh,ciqual:2028,50,lemon juice
+tabbouleh,ciqual:17270,45,olive oil
+tabbouleh,ciqual:11082,3,salt
+fattoush,ciqual:20031,150,lettuce
+fattoush,ciqual:20276,150,tomato
+fattoush,ciqual:20019,150,cucumber
+fattoush,ciqual:20045,50,radish
+fattoush,ciqual:20085,50,green pepper
+fattoush,ciqual:11014,20,parsley
+fattoush,ciqual:11027,10,mint
+fattoush,ciqual:20034,30,onion
+fattoush,ciqual:7180,60,pita toasted
+fattoush,ciqual:17270,40,olive oil
+fattoush,ciqual:2028,30,lemon juice
+fattoush,ciqual:11082,3,salt
+foul-medames,ciqual:20500,400,broad beans cooked
+foul-medames,ciqual:17270,30,olive oil
+foul-medames,ciqual:2028,30,lemon juice
+foul-medames,ciqual:11000,6,garlic
+foul-medames,ciqual:11042,3,cumin
+foul-medames,ciqual:20276,56,tomato
+foul-medames,ciqual:11082,4,salt
+falafel,ciqual:20516,200,chickpeas dried
+falafel,ciqual:20034,60,onion
+falafel,ciqual:11014,30,parsley
+falafel,ciqual:11094,20,coriander leaves
+falafel,ciqual:11000,10,garlic
+falafel,ciqual:11042,4,cumin
+falafel,ciqual:11026,3,coriander seed
+falafel,ciqual:11082,5,salt
+falafel,ciqual:17440,50,frying oil absorbed
+lentil-soup,ciqual:20535,250,red lentils dried
+lentil-soup,ciqual:20034,120,onion
+lentil-soup,ciqual:20009,100,carrot
+lentil-soup,ciqual:17270,30,olive oil
+lentil-soup,ciqual:11042,5,cumin
+lentil-soup,ciqual:11089,2,turmeric
+lentil-soup,ciqual:2028,20,lemon juice
+lentil-soup,ciqual:11082,8,salt
+chicken-kabsa,ciqual:36031,600,chicken cooked
+chicken-kabsa,ciqual:9125,1500,basmati cooked
+chicken-kabsa,ciqual:20034,200,onion
+chicken-kabsa,ciqual:20276,250,tomato
+chicken-kabsa,ciqual:20068,30,tomato paste
+chicken-kabsa,ciqual:20009,100,carrot
+chicken-kabsa,ciqual:17001,50,oil
+chicken-kabsa,ciqual:13046,20,raisins
+chicken-kabsa,ciqual:11000,10,garlic
+chicken-kabsa,ciqual:11075,2,cardamom
+chicken-kabsa,ciqual:11015,2,black pepper
+chicken-kabsa,ciqual:11025,2,cinnamon
+chicken-kabsa,ciqual:11052,1,cloves
+chicken-kabsa,ciqual:11042,2,cumin
+chicken-kabsa,ciqual:11082,10,salt
+mujaddara,ciqual:20587,400,green lentils cooked
+mujaddara,ciqual:9125,300,basmati cooked
+mujaddara,ciqual:20034,300,onion
+mujaddara,ciqual:17270,60,olive oil
+mujaddara,ciqual:11042,3,cumin
+mujaddara,ciqual:11082,6,salt
+shakshuka,ciqual:22000,240,eggs
+shakshuka,ciqual:20276,400,tomato
+shakshuka,ciqual:20034,100,onion
+shakshuka,ciqual:20085,100,green pepper
+shakshuka,ciqual:17270,25,olive oil
+shakshuka,ciqual:11000,6,garlic
+shakshuka,ciqual:11042,3,cumin
+shakshuka,ciqual:11049,3,paprika
+shakshuka,ciqual:11082,4,salt
+jareesh,ciqual:9060,300,wheat
+jareesh,ciqual:36031,250,chicken cooked
+jareesh,ciqual:20034,120,onion
+jareesh,ciqual:19593,200,yogurt
+jareesh,ciqual:19023,200,milk
+jareesh,ciqual:16400,30,butter
+jareesh,ciqual:11042,3,cumin
+jareesh,ciqual:11015,2,black pepper
+jareesh,ciqual:11082,8,salt
+saleeg,ciqual:9119,400,rice raw
+saleeg,ciqual:36031,500,chicken cooked
+saleeg,ciqual:19023,500,milk
+saleeg,ciqual:16400,40,butter
+saleeg,ciqual:20034,60,onion
+saleeg,ciqual:11075,2,cardamom
+saleeg,ciqual:11082,8,salt
+harees,ciqual:9060,400,wheat
+harees,ciqual:21523,400,lamb cooked
+harees,ciqual:16400,40,butter
+harees,ciqual:11075,2,cardamom
+harees,ciqual:11082,8,salt
+shish-tawook,ciqual:36018,500,chicken breast grilled
+shish-tawook,ciqual:19593,40,yogurt
+shish-tawook,ciqual:2028,15,lemon juice
+shish-tawook,ciqual:11000,10,garlic
+shish-tawook,ciqual:17270,15,olive oil
+shish-tawook,ciqual:11049,3,paprika
+shish-tawook,ciqual:11082,5,salt
+luqaimat,ciqual:9436,250,wheat flour
+luqaimat,ciqual:31016,15,sugar
+luqaimat,ciqual:11075,2,cardamom
+luqaimat,ciqual:11082,1,salt
+luqaimat,ciqual:17440,80,frying oil absorbed
+luqaimat,ciqual:31008,120,honey

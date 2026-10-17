@@ -85,11 +85,21 @@ public enum AttributionCatalog {
         url: "https://unlicense.org/")
     public static let mit = LicenseReference(name: "MIT",
         url: "https://opensource.org/license/mit")
+    public static let loincLicense = LicenseReference(name: "LOINC License",
+        url: "https://loinc.org/license")
+    /// For a source credited without a licence anyone has identified. Its link
+    /// is the work itself, because there is no licence page to link to. Used
+    /// rather than borrowing an open licence the source never granted; the
+    /// open question is logged in `CONTEXT.md`.
+    public static func licenceNotIdentified(workURL: String) -> LicenseReference {
+        LicenseReference(name: "No licence identified", url: workURL)
+    }
 
     /// Sources the build ships. Append-only; adding an id here without a
     /// matching `entries` row fails `AttributionAudit`.
     public static let bundledSourceIds: [String] = [
-        "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd"
+        "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd",
+        "bristol-stool-form-scale", "loinc", "wikibooks-cookbook"
     ]
 
     public static let entries: [Attribution] = [
@@ -162,6 +172,57 @@ public enum AttributionCatalog {
                 + "to kcal.",
             sourceNotice: "Food Standards Australia New Zealand. Australian Food Composition Database, "
                 + "Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work."
+        ),
+        // The seven type names in the digestion screens are the scale's
+        // published wording (`BristolType.displayName`), so the scale is a
+        // bundled source. No licence for it has been identified; the entry
+        // says so rather than naming one. Open item in CONTEXT.md.
+        Attribution(
+            sourceId: "bristol-stool-form-scale",
+            title: "Bristol Stool Form Scale",
+            author: "S. J. Lewis and K. W. Heaton, University of Bristol",
+            sourceURL: "https://doi.org/10.3109/00365529709011203",
+            licenses: [licenceNotIdentified(workURL: "https://doi.org/10.3109/00365529709011203")],
+            isModified: true,
+            modificationNote: "The seven type names are shown as published; the one-line summary under "
+                + "each is shortened from the published descriptions.",
+            sourceNotice: "Lewis SJ, Heaton KW. Stool form scale as a useful guide to intestinal "
+                + "transit time. Scandinavian Journal of Gastroenterology. 1997;32(9):920–924."
+        ),
+        // The LOINC codes the lab catalog matches on (`LabLOINCSeed`). The owner
+        // accepted the LOINC licence on 2026-10-16 (G5). The notice is the one
+        // the licence requires of a product that incorporates LOINC content,
+        // verbatim from https://loinc.org/kb/license/.
+        Attribution(
+            sourceId: "loinc",
+            title: "LOINC codes and names for laboratory tests",
+            author: "Regenstrief Institute, Inc. and the LOINC Committee",
+            sourceURL: "https://loinc.org",
+            licenses: [loincLicense],
+            sourceNotice: "This material contains content from LOINC (http://loinc.org). LOINC is "
+                + "copyright © Regenstrief Institute, Inc. and the Logical Observation Identifiers "
+                + "Names and Codes (LOINC) Committee and is available at no cost under the license at "
+                + "http://loinc.org/license. LOINC® is a registered United States trademark of "
+                + "Regenstrief Institute, Inc."
+        ),
+        // Kitchen's recipes (`WikibooksRecipeBundle`), chosen by the owner on
+        // 2026-10-16 (T04). CC BY-SA 4.0: each recipe also carries its own
+        // page title and link (`kitchen_recipe_source`), and the adapted
+        // recipes, `Kitchen/Resources/wikibooks-recipes.json`, are released
+        // under the same licence.
+        Attribution(
+            sourceId: "wikibooks-cookbook",
+            title: "Wikibooks Cookbook recipes",
+            author: "Wikibooks contributors (each recipe's page history lists its authors)",
+            sourceURL: "https://en.wikibooks.org/wiki/Cookbook:Table_of_Contents",
+            licenses: [ccBySa40],
+            isModified: true,
+            modificationNote: "Ingredient amounts converted to grams, using USDA FoodData Central "
+                + "household weights for cups, spoons and counts, and each ingredient matched to a "
+                + "food in Almanac's nutrition data. Seasonings with no stated amount, and pinches "
+                + "and dashes, are left out. Methods are not included; each recipe links to its "
+                + "page. Recipes that could not be converted in full, or that use pork or alcohol, "
+                + "are not included. The adapted recipes are released under CC BY-SA 4.0."
         )
     ]
 

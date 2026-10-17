@@ -1,0 +1,16 @@
+dish_id,name_en,name_ar,transliteration,state,yield_g,retention,benchmark_ref,notes
+hummus,Hummus with tahini,حمص بالطحينة,hummus bi tahina,raw,,,cofid:13-556,Chickpeas weighed cooked; no cooking after blending
+mutabbal,Mutabbal (aubergine and tahini dip),متبل باذنجان,mutabbal,raw,,,ciqual:25624,Aubergine weighed roasted; benchmark is a French aubergine caviar
+tabbouleh,Tabbouleh,تبولة,tabbouleh,raw,,,cofid:15-885,Bulgur weighed cooked as a stand-in for fine bulgur soaked
+fattoush,Fattoush,فتوش,fattoush,raw,,,,No sumac in a shippable source; left out
+foul-medames,Foul medames (stewed fava beans),فول مدمس,ful medames,cooked,529,,,Broad beans weighed cooked; yield is the components' sum
+falafel,Falafel,فلافل,falafel,cooked,490,,ciqual:25571,Dried chickpeas soaked (220 g water taken up) then fried; about 20 % of the wet mix lost in frying; 50 g oil absorbed
+lentil-soup,Red lentil soup,شوربة عدس,shorbat adas,cooked,1600,,,About 1.4 L water added and 300 g lost to simmering
+chicken-kabsa,Chicken kabsa,كبسة دجاج,kabsat dajaj,cooked,2779,,,Chicken and rice weighed cooked; vegetables weighed raw and their cooking loss ignored
+mujaddara,Mujaddara (lentils and rice with fried onions),مجدرة,mujaddara,cooked,870,,,Lentils and rice weighed cooked; onions weighed raw and lose about 200 g frying
+shakshuka,Shakshuka,شكشوكة,shakshuka,cooked,760,,,Vegetables weighed raw; about 20 % of their weight simmered off
+jareesh,Jareesh (cracked wheat with chicken and yogurt),جريش,jareesh,cooked,2000,,,Durum wholewheat stands in for crushed wheat; about 1.2 L water added and 300 g lost to simmering
+saleeg,Saleeg (rice in milk and broth with chicken),سليق,saleeg,cooked,2300,,,Basmati stands in for the short-grain rice; about 1 L broth added and 200 g lost to simmering
+harees,Harees (wheat and lamb porridge),هريس,harees,cooked,2000,,,Durum wholewheat stands in for harees wheat; about 2 L water added and 800 g lost to long simmering
+shish-tawook,Shish tawook (grilled chicken skewers),شيش طاووق,shish tawook,cooked,588,,,Chicken weighed grilled; only the marinade that stays on is counted
+luqaimat,Luqaimat with honey,لقيمات بالعسل,luqaimat,cooked,620,,,Honey stands in for date syrup (none in a shippable source); about half the batter water lost and 80 g oil absorbed in frying

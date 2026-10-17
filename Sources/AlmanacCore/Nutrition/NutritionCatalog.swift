@@ -108,6 +108,14 @@ public struct NutritionFood: Sendable, Hashable {
     /// ISO 639 language code -> name.
     public let names: [String: String]
     public let primaryName: String
+
+    /// Who published the food, in the words of its Attributions entry, so the
+    /// screen and the credits page name a source the same way. Almanac's own
+    /// rows (the regional dishes) have no entry: they are Almanac's.
+    public var sourceName: String {
+        ref.namespace == .almanac ? "Almanac"
+            : AttributionCatalog.entry(for: ref.namespace.rawValue)?.title ?? ref.namespace.rawValue
+    }
 }
 
 /// Read access to the imported reference foods. A seam over SQL, not an ORM.

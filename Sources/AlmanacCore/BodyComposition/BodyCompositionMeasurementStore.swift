@@ -124,6 +124,41 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
         return id
     }
 
+    /// Corrects a reading the person typed. The metric, the instant and the
+    /// source stay; only the value and the conditions it was taken under move.
+    ///
+    /// Only `manual` rows: an imported reading belongs to Apple Health or the
+    /// device that sent it (BRD §5.6), and a correction made here would be
+    /// overwritten by the next sync anyway. Same rule as `BodyMeasurementStore`.
+    ///
+    /// A row already written to Health keeps its Health copy as it was — the
+    /// writeback inserts samples and does not edit them — so the correction is
+    /// Almanac's record only. A row still queued goes out corrected.
+    public func correct(id: Int64, value: Double, conditions: String) throws {
+        guard value.isFinite, value > 0 else { throw BodyCompositionMeasurementStoreError.invalidValue }
+        try requireManual(id)
+        try db.run("""
+        UPDATE body_composition_measurement SET value = ?, conditions = ? WHERE id = ?;
+        """, [.real(value), .text(conditions), .integer(id)])
+    }
+
+    /// Removes a reading the person typed, by setting `deletedAt` — the column
+    /// every read already filters on — and taking it off the Health queue, so a
+    /// reading deleted before it was sent is never sent.
+    public func delete(id: Int64) throws {
+        try requireManual(id)
+        try db.run("""
+        UPDATE body_composition_measurement SET deletedAt = ?, pendingHealthKitWrite = 0
+        WHERE id = ? AND deletedAt IS NULL;
+        """, [.text(nowText), .integer(id)])
+    }
+
+    private func requireManual(_ id: Int64) throws {
+        guard let row = try measurement(id: id), row.source == "manual" else {
+            throw BodyCompositionMeasurementStoreError.notManual
+        }
+    }
+
     // MARK: - Read
 
     public func measurement(id: Int64) throws -> BodyCompositionMeasurement? {
@@ -268,6 +303,10 @@ public struct BodyCompositionMeasurementStore: @unchecked Sendable {
     }
 }
 
-public enum BodyCompositionMeasurementStoreError: Error, Sendable {
+public enum BodyCompositionMeasurementStoreError: Error, Sendable, Equatable {
     case insertFailed
+    /// Only readings the person typed can be corrected or deleted here.
+    case notManual
+    /// A correction must be a finite, positive number.
+    case invalidValue
 }

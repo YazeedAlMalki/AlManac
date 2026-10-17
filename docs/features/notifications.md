@@ -37,6 +37,19 @@ during a fast or a shift, and the user asked to be told it. On a fast day with
 iftar on, Maghrib's alert is left to iftar, which fires at the same instant.
 Identifier `almanac.prayer.<name>.<day>`.
 
+## Added 2026-10-15 — supplement reminders can be set
+
+The planner had planned supplement reminders since 2026-09-29, but no screen
+could set one: `SupplementPlanStore.setReminder` had no caller. The plan editor
+now has "Remind me" and a time, written through `SupplementReminderSetting`,
+which also turns the `supplement` type on (it is seeded off; otherwise a
+reminder set on a plan would never fire — unconfirmed, `CONTEXT.md`). Saving or
+discontinuing a plan runs `reconcileNotifications()`. Appendix B's supplement
+row (only post-shift sleep suppresses) is pinned at the matrix and, from this
+date, at the planner too (`supplementSendsThroughOtherAxes`), alongside
+`editorReminderIsPlanned`, `editorReminderOff`, `discontinuedPlanIsNotPlanned`
+and `invalidReminderTime`. **Arrival on a device is UNRUN.**
+
 ## What the feature is
 
 Ten notification types — §14.2's nine plus `prayer` — all local (`UNUserNotificationCenter`, no
@@ -210,10 +223,16 @@ ones a user might have been relying on.
   time and says it is computed at log time and app launch, so it is delivered
   immediately by `deliverNow`. It still goes through the matrix.
 - **Suppression columns are read-only** — see above.
-- **No per-type user-set times for readiness, water, bedtime, suhoor, iftar.** The
-  storage exists (`scheduledTimeHHMM`); the settings screen exposes switches and
-  the existing water interval only. Time-adjustment for the other types is a
-  follow-up, and until then those types have no time for a user to have set.
+- ~~No per-type user-set times for readiness, water, bedtime, suhoor, iftar.~~
+  **Built 2026-10-16 for readiness, bedtime, suhoor and iftar** (water keeps its
+  interval). Suhoor and iftar are derived from prayer times, so a person moves
+  their *distance* from the prayer: 5–90 minutes before Fajr, 0–60 after
+  Maghrib (Migration 058, `notification_rule.offsetMinutes`). Readiness and
+  bedtime take a clock time in `scheduledTimeHHMM`, used only on a day with no
+  sleep or shift time to go by (§14.2: bedtime "falls back to user-set time").
+  The controls appear under each switch on the Reminders screen while it is
+  on. Unconfirmed decisions are in `CONTEXT.md`, "The 2026-10-16 handoff".
+  Whether the reminder then arrives at that minute on a device is **UNRUN**.
 - **Nothing verifies a notification actually arrived.** That is a device-only
   step and is listed unrun in `docs/acceptance-checklist.md`.
 

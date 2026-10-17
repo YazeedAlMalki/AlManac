@@ -17,12 +17,15 @@ import Foundation
 ///   db_sha256 TEXT NOT NULL         -- digest over the bundle_db payload
 /// )
 /// bundle_db (bytes BLOB NOT NULL)                 -- one consistent db file
-/// bundle_files (relative_path TEXT PRIMARY KEY, bytes BLOB NOT NULL)
+/// bundle_files (relative_path TEXT PRIMARY KEY, bytes BLOB NOT NULL,
+///               sha256 TEXT)            -- digest over bytes (2026-10-16)
 /// ```
 ///
 /// A restore refuses to run when the bundle's `schema_version` differs from
 /// the live database's head, and refuses to mutate anything until the
-/// database payload has matched its recorded digest. Documents are staged
+/// database payload and every document have matched their recorded digests.
+/// A bundle written before documents carried a digest (no `sha256` column)
+/// is still accepted, with its database checked and its documents not. Documents are staged
 /// first, then committed with rollback before the database is swapped, so a
 /// document-write failure cannot leave a partial set of files. Files on disk
 /// that are not in the bundle are deliberately left alone — after a restore
@@ -106,7 +109,7 @@ public extension BackupService {
                 db_sha256 TEXT NOT NULL
             );
             CREATE TABLE bundle_db (bytes BLOB NOT NULL);
-            CREATE TABLE bundle_files (relative_path TEXT PRIMARY KEY, bytes BLOB NOT NULL);
+            CREATE TABLE bundle_files (relative_path TEXT PRIMARY KEY, bytes BLOB NOT NULL, sha256 TEXT);
             """)
         } catch {
             throw BackupError.cannotOpenDestination(path)
@@ -121,8 +124,8 @@ public extension BackupService {
             try container.run("INSERT INTO bundle_db (bytes) VALUES (?);", [.blob(dbBytes)])
             for file in files {
                 try container.run(
-                    "INSERT INTO bundle_files (relative_path, bytes) VALUES (?, ?);",
-                    [.text(file.relativePath), .blob(file.bytes)])
+                    "INSERT INTO bundle_files (relative_path, bytes, sha256) VALUES (?, ?, ?);",
+                    [.text(file.relativePath), .blob(file.bytes), .text(SHA256File.hex(of: file.bytes))])
             }
         }
         // The shared file must be complete on its own: checkpoint the WAL into
@@ -424,8 +427,8 @@ public extension BackupService {
         let documentCount: Int
     }
 
-    /// Opens a bundle and validates its structure, its declared schema row and
-    /// the database payload's checksum. Throws before returning on any
+    /// Opens a bundle and validates its structure, its declared schema row,
+    /// the database payload's checksum and each document's. Throws before returning on any
     /// failure; the returned handle stays open for the caller to read files
     /// from.
     private func openValidBundle(at path: String) throws -> (Database, BundleMeta, [UInt8]) {
@@ -449,10 +452,31 @@ public extension BackupService {
         guard SHA256File.hex(of: dbBytes) == dbSHA256 else {
             throw BackupError.corruptBundle(reason: "database payload failed its checksum")
         }
+        try verifyDocumentChecksums(container)
         let documentCount = (try? container.query("SELECT COUNT(*) AS n FROM bundle_files;").first?.int("n")) ?? 0
         let meta = BundleMeta(createdAt: createdAt, schemaVersion: schemaVersion,
                               note: row.string("note"), documentCount: Int(documentCount))
         return (container, meta, dbBytes)
+    }
+
+    /// Every document against its recorded digest, one row at a time so a
+    /// bundle of photos is not held in memory at once. A bundle with no
+    /// `sha256` column predates document digests and is let through; in one
+    /// that has the column, a missing digest is as corrupt as a wrong one.
+    private func verifyDocumentChecksums(_ container: Database) throws {
+        let columns = (try? container.query("PRAGMA table_info(bundle_files);"))?.compactMap { $0.string("name") } ?? []
+        guard columns.contains("sha256") else { return }
+        let paths = try container.query("SELECT relative_path FROM bundle_files ORDER BY relative_path;")
+            .compactMap { $0.string("relative_path") }
+        for relativePath in paths {
+            guard let row = try container.query("SELECT bytes, sha256 FROM bundle_files WHERE relative_path = ?;",
+                                                [.text(relativePath)]).first,
+                  case .blob(let bytes)? = row["bytes"],
+                  let recorded = row.string("sha256"),
+                  SHA256File.hex(of: bytes) == recorded else {
+                throw BackupError.corruptBundle(reason: "document failed its checksum: \(relativePath)")
+            }
+        }
     }
 
     private func extractDBPayload(_ container: Database, path: String) throws -> [UInt8] {

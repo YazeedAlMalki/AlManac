@@ -56,7 +56,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"bundle {report['path']} ({', '.join(report['namespaces'])}): "
                   f"{report['rows_checked']} rows passed the licence assertion; sha256 {report['sha256']}")
         else:
-            for namespace, module in sources.items():
+            # almanac reduces recipes of the others' canonical foods, so it goes last.
+            for namespace, module in sorted(sources.items(), key=lambda item: item[0] == "almanac"):
                 module.extract(lake)
                 print(f"canonical {namespace}: {_summary(module.canonicalise(lake, dictionary))}")
             print(f"union: {_summary(bundle.union(lake, dictionary))}")

@@ -9,10 +9,13 @@ import Foundation
 public struct HydrationLoggingService: Sendable {
     private let store: HydrationStore
     private let settingsStore: HydrationSettingsStore
+    private let timeModel: TimeModel
 
-    public init(store: HydrationStore, settingsStore: HydrationSettingsStore) {
+    public init(store: HydrationStore, settingsStore: HydrationSettingsStore,
+                timeModel: TimeModel = TimeModel(timeZone: .current)) {
         self.store = store
         self.settingsStore = settingsStore
+        self.timeModel = timeModel
     }
 
     private func iso(_ date: Date) -> String {
@@ -22,7 +25,7 @@ public struct HydrationLoggingService: Sendable {
     }
 
     /// Logs `drink`. `volume` overrides the drink's default serving size —
-    /// every scalable figure (sodium, calories, sugar) is scaled to match,
+    /// every scalable figure (sodium, calories, sugar, caffeine) is scaled to match,
     /// so logging half a can never credits a full can's nutrition.
     @discardableResult
     public func logDrink(_ drink: Drink, volume: Milliliters? = nil, at date: Date = Date(),
@@ -32,11 +35,26 @@ public struct HydrationLoggingService: Sendable {
         let scaledSodium = drink.sodiumMilligrams * scale
         let scaledCalories = drink.caloriesKcal * scale
         let scaledSugar = drink.sugarGrams.map { $0 * scale }
+        let scaledCaffeine = drink.caffeineMilligrams * scale
 
         let attachment = DrinkAttachment(drinkID: drink.id, drinkName: drink.name,
                                           caloriesKcal: scaledCalories, sodiumMg: scaledSodium,
                                           sugarG: scaledSugar, qualifier: drink.valueQualifier)
-        let id = try store.log(HydrationLogDraft(amount: amount, loggedAt: date, note: note, drink: attachment))
+        // One entry, every part of it (BRD §6.2): the water and the caffeine
+        // are written together or not at all. The caffeine is judged against
+        // the day's intended sleep from the shift schedule, not the clock;
+        // with no schedule for the day it is recorded unclassified.
+        let id = try store.db.transaction { () throws -> String in
+            let id = try store.log(HydrationLogDraft(amount: amount, loggedAt: date, note: note, drink: attachment))
+            if scaledCaffeine > 0 {
+                let day = timeModel.logicalDay(date).value
+                try CaffeineLogStore(db: store.db).log(CaffeineLogDraft(
+                    timestamp: date, drinkType: drink.id, caffeineMg: scaledCaffeine,
+                    intendedSleepTimestamp: try ShiftScheduleStore(db: store.db).intendedSleepTimestamp(for: day),
+                    hydrationLogId: id), logicalDay: day)
+            }
+            return id
+        }
 
         let settings = try settingsStore.getOrCreate()
         var warnings: [DrinkLoggingWarning] = []
@@ -72,24 +90,28 @@ public struct HydrationLoggingService: Sendable {
     @discardableResult
     public func saveCustomDrink(name: String, liquidType: LiquidType, volumeMilliliters: Double,
                                  caloriesKcal: Double, sodiumMilligrams: Double,
-                                 sugarGrams: Double? = nil) throws -> Drink {
+                                 sugarGrams: Double? = nil, caffeineMilligrams: Double = 0) throws -> Drink {
         let drink = Drink(name: name, liquidType: liquidType, volumeMilliliters: volumeMilliliters,
                            caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams,
-                           sugarGrams: sugarGrams, isCustom: true, valueQualifier: .userEntered)
+                           sugarGrams: sugarGrams, caffeineMilligrams: caffeineMilligrams,
+                           isCustom: true, valueQualifier: .userEntered)
         try store.db.run("""
-        INSERT INTO hydration_drink (id, name, liquid_type, volume_ml, calories_kcal, sodium_mg, sugar_g, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO hydration_drink (id, name, liquid_type, volume_ml, calories_kcal, sodium_mg, sugar_g, created_at,
+                                     caffeine_mg)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             name          = excluded.name,
             liquid_type   = excluded.liquid_type,
             volume_ml     = excluded.volume_ml,
             calories_kcal = excluded.calories_kcal,
             sodium_mg     = excluded.sodium_mg,
-            sugar_g       = excluded.sugar_g;
+            sugar_g       = excluded.sugar_g,
+            caffeine_mg   = excluded.caffeine_mg;
         """, [
             .text(drink.id), .text(drink.name), .text(drink.liquidType.rawValue),
             .real(drink.volumeMilliliters), .real(drink.caloriesKcal), .real(drink.sodiumMilligrams),
-            drink.sugarGrams.map { SQLValue.real($0) } ?? .null, .text(iso(drink.createdAt))
+            drink.sugarGrams.map { SQLValue.real($0) } ?? .null, .text(iso(drink.createdAt)),
+            .real(drink.caffeineMilligrams)
         ])
         return drink
     }
@@ -104,14 +126,36 @@ public struct HydrationLoggingService: Sendable {
             else { return nil }
             return Drink(id: id, name: name, liquidType: liquidType, volumeMilliliters: volume,
                          caloriesKcal: calories, sodiumMilligrams: sodium, sugarGrams: row.double("sugar_g"),
-                         isCustom: true, valueQualifier: .userEntered, createdAt: createdAt)
+                         caffeineMilligrams: row.double("caffeine_mg") ?? 0, isCustom: true, valueQualifier: .userEntered, createdAt: createdAt)
         }
     }
 
     /// Every drink this app knows about: the built-in catalog plus whatever
     /// custom drinks the user has saved.
     public func allDrinks() throws -> [Drink] {
-        try CatalogDrinks.all + customDrinks()
+        let presets = try Dictionary(uniqueKeysWithValues: store.db.query(
+            "SELECT drink_id, caffeine_mg FROM drink_caffeine_preset;"
+        ).compactMap { row in row.string("drink_id").flatMap { id in row.double("caffeine_mg").map { (id, $0) } } })
+        let custom = try customDrinks()
+        return CatalogDrinks.all.map { drink in
+            presets[drink.id].map { drink.withCaffeine($0) } ?? drink
+        } + custom
+    }
+
+    /// The person's own caffeine figure, per serving, for a catalog drink
+    /// (Migration 065); nil returns it to the typical value. A custom drink's
+    /// caffeine is edited with the drink itself.
+    public func setCaffeinePreset(drinkID: String, milligrams: Double?) throws {
+        guard CatalogDrinks.byID(drinkID) != nil else { throw CaffeinePresetError.notACatalogDrink(drinkID) }
+        guard let milligrams else {
+            try store.db.run("DELETE FROM drink_caffeine_preset WHERE drink_id = ?;", [.text(drinkID)])
+            return
+        }
+        guard milligrams.isFinite, milligrams >= 0 else { throw CaffeinePresetError.invalidAmount(milligrams) }
+        try store.db.run("""
+        INSERT INTO drink_caffeine_preset (drink_id, caffeine_mg, updated_at) VALUES (?, ?, ?)
+        ON CONFLICT(drink_id) DO UPDATE SET caffeine_mg = excluded.caffeine_mg, updated_at = excluded.updated_at;
+        """, [.text(drinkID), .real(milligrams), .text(iso(Date()))])
     }
 
     /// Looks a short window back for another entry of the *same* drink, to
@@ -127,6 +171,11 @@ public struct HydrationLoggingService: Sendable {
         else { return nil }
         return Int(date.timeIntervalSince(matchStart))
     }
+}
+
+public enum CaffeinePresetError: Error, Equatable {
+    case notACatalogDrink(String)
+    case invalidAmount(Double)
 }
 
 public struct DrinkLoggingResult: Sendable, Hashable {
