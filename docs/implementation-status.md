@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-17 (latest): the merged head's CI; Hydration held at 90 (1,086 / 1,200).
+Updated 2026-10-17 (latest): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
+Updated 2026-10-17 (earlier still): the merged head's CI; Hydration held at 90 (1,086 / 1,200).
 Updated 2026-10-17 (earlier): A4 driven, caffeine and night hydration merged (1,086 / 1,200).
 Updated 2026-10-16 (later): the re-score of all 12 phases (1,077 / 1,200).
 Updated 2026-10-16 (later): the owner's approval of the Slice 8 rubric.
@@ -35,6 +36,26 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-17 — `5893597` green on both runs: Hydration 92
+
+**Outcome.** The tracker stands at **1,088 of 1,200 (90.7 %)**. Hydration goes
+from 90 to **92**. The entry below set that condition: a merged head green on
+both its push run and its pull-request run. `5893597` met it: run 39008793383
+(push) and run 39008796757 (pull request) passed every job. That includes the
+whole UI suite, the Arabic pass, and every caffeine and night-hydration test.
+
+| # | Phase | Was | Now | Evidence |
+|---|---|---:|---:|---|
+| 3 | Hydration & Caffeine | 90 | **92** | `DrinkCaffeineTests` (13), the night-reminder core tests (4), and the two caffeine UI tests plus the "Not yet in Apple Health" UI test passed on both runs. Audit rows 2–5, 7 and 10 are closed (`docs/features/hydration-audit-2026-10-16.md`). Rows 14 and 16 are open on this branch |
+| | others | | unchanged | |
+| | **Total** | **1,086** | **1,088** | 1,088 ÷ 1,200 = 90.7 % |
+
+**Modules navigation.** The three tests that failed after a fresh launch passed
+on both runs: AllergenFilter, NotificationSettings and TrainingProgram, which now
+check through `openModulesTab()` that Modules opened. No failure has come back,
+so there is still no root cause. If one returns, its message says which tap
+did not take.
 
 ## 2026-10-17 — the merged head's CI: Hydration held at 90
 
