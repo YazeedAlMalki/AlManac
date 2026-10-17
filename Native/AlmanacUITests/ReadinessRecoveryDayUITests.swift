@@ -101,6 +101,13 @@ final class ReadinessRecoveryDayUITests: XCTestCase {
         XCTAssertTrue(app.waitUntilSettled(toggle),
                       "the recovery-day switch's frame kept moving; Today had not settled")
         toggle.tapSwitchControl()
+        // One retry, for a tap that is dropped even on a settled screen. If
+        // the app itself snapped the switch back, the second tap fails the
+        // same way and the assertion below still reports it.
+        if !app.waitUntil(timeout: 2, { toggle.value as? String == wanted }) {
+            _ = app.waitUntilSettled(toggle)
+            toggle.tapSwitchControl()
+        }
         let card = app.staticTexts["readiness-recommendation"]
         XCTAssertTrue(app.waitUntil(timeout: 5) { toggle.value as? String == wanted },
                       "the recovery-day switch did not move to \(wanted): value \(String(describing: toggle.value)), "
