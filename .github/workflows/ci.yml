@@ -276,6 +276,16 @@ jobs:
           ')
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
+      # Booted and waited for before the suite, not left to `xcodebuild test`.
+      # Otherwise the first test's launch carries the cold boot, and
+      # AllergenFilterUITests (first alphabetically) timed out launching the app
+      # in setUp: "Timed out while launching application via Xcode" (CI
+      # 39041062575, and launch failures on 2026-10-08 and 10-09).
+      - name: Boot the simulator
+        run: |
+          set -euo pipefail
+          xcrun simctl bootstatus "${{ steps.sim.outputs.udid }}" -b
+
       # This runs against a *virgin* simulator, which is the stricter of the two
       # states and not the same thing as "the only state that matters". Both
       # were found the hard way here, and each hid a bug the other did not:
