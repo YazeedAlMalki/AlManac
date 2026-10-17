@@ -228,6 +228,20 @@ extension XCUIApplication {
                 stuckCount = 0
             }
         }
+        if isRevealed(element) { return true }
+
+        // ponytail: a flick can carry a row from just under the bottom bar to
+        // above the navigation bar in one go, and a one-way sweep never comes
+        // back for it: it spends its budget at the list's end and reports the
+        // row missing (CI 2026-10-17, health-connect-heart in Settings, 148 s).
+        // So sweep back with drags. A drag moves about half the list, less than
+        // the visible window, so the way back cannot skip a row. Only reached
+        // once the sweep has failed, so callers that pass are unchanged.
+        let back: RevealDirection = direction == .up ? .down : .up
+        for _ in 0..<maxSwipes where collectionViews.firstMatch.exists {
+            if isRevealed(element) { return true }
+            drag(collectionViews.firstMatch, direction: back)
+        }
         return isRevealed(element)
     }
 
