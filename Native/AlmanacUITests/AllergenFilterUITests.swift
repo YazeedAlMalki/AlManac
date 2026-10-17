@@ -164,8 +164,7 @@ final class AllergenFilterUITests: XCTestCase {
         try openFoodSearch()
         let field = app.searchFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no search field")
-        field.tap()
-        field.typeText(Self.allergenQuery)
+        type(Self.allergenQuery, into: field)
 
         XCTAssertTrue(app.waitUntil(timeout: 15) {
             app.staticTexts.allElementsBoundByIndex
@@ -189,8 +188,7 @@ final class AllergenFilterUITests: XCTestCase {
         try openFoodSearch()
         let field = app.searchFields.firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no search field")
-        field.tap()
-        field.typeText("rice")
+        type("rice", into: field)
 
         let sources = ["USDA FoodData Central", "ANSES-CIQUAL", "McCance and Widdowson",
                        "Australian Food Composition Database", "Almanac"]
@@ -202,6 +200,24 @@ final class AllergenFilterUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// Taps the field and types once it really has keyboard focus. CI's run
+    /// 39031519549 typed into a search field sitting at the bottom edge of the
+    /// screen before focus arrived ("Neither element nor any descendant has
+    /// keyboard focus"). So: tap, wait up to 2 s for focus, tap once more if
+    /// it has not come, then type. A field that never takes focus still fails
+    /// here, with that reason.
+    private func type(_ text: String, into field: XCUIElement) {
+        func focused() -> Bool { (field.value(forKey: "hasKeyboardFocus") as? Bool) ?? false }
+        field.tap()
+        if !app.waitUntil(timeout: 2, { focused() }) {
+            _ = app.waitUntilSettled(field)
+            field.tap()
+        }
+        XCTAssertTrue(app.waitUntil(timeout: 3, { focused() }),
+                      "the search field never took keyboard focus: frame \(field.frame)")
+        field.typeText(text)
+    }
 
     /// A toggle's state, without depending on how XCTest spells it.
     ///
