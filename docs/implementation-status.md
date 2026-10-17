@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-17 (latest): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
+Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
+Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
 Updated 2026-10-17 (earlier yet): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
 Updated 2026-10-17 (earlier still): the merged head's CI; Hydration held at 90 (1,086 / 1,200).
 Updated 2026-10-17 (earlier): A4 driven, caffeine and night hydration merged (1,086 / 1,200).
@@ -37,6 +38,32 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-17 — Readiness back to 98: the owner accepts the retried tap
+
+**Outcome.** The tracker stands at **1,126 of 1,200 (93.8 %)**. Readiness goes
+from 94 back to **98**.
+
+`ReadinessRecoveryDayUITests` failed twice with one dropped tap on the switch.
+9448b1f (another agent) made the test settle the switch, wait 2 s, and tap once
+more if the value has not moved. The owner accepted that as the fix on
+2026-10-17 ("Yes I accept"). The test still fails if the app snaps the switch
+back, because the second tap fails the same way. Since then it has passed on
+every run: 24fb12c push, 7445aee push, and 7445aee pull request (attempt 2).
+
+| # | Phase | Was | Now | Formula |
+|---|---|---:|---:|---|
+| 2 | Readiness | 94 | **98** | Recovery-day UI test green with the retry the owner accepted |
+| | **Total** | **1,122** | **1,126** | 1,126 ÷ 1,200 = 93.8 % |
+
+**Not explained:** why a settled switch sometimes drops a tap. The same thing
+was seen once on a local simulator.
+
+**The pull-request failure on 7445aee** (attempt 1, 39041062575) was not a
+dropped tap. `AllergenFilterUITests`, which runs first, timed out *launching
+the app* in `setUp`. The "Print the failing tests' attachments" step showed
+it. CI now boots the simulator and waits for the boot before the suite starts
+(`.github/workflows/ci.yml`, "Boot the simulator").
 
 ## 2026-10-17 — the other session's work scored; Readiness back to 94
 
