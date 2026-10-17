@@ -135,4 +135,18 @@ struct AttributionTests {
                 == "https://creativecommons.org/licenses/by-sa/4.0/")
         #expect(AttributionCatalog.licenseReference(forGroup: "not_a_licence") == nil)
     }
+
+    @Test("A food names its source as the Attributions page does, and Almanac's own as Almanac")
+    func foodSourceNameMatchesItsCredit() {
+        func food(_ namespace: SourceIdentifier.Namespace) -> NutritionFood {
+            NutritionFood(ref: SourceIdentifier(namespace: namespace, localID: "1"),
+                          licenceGroup: namespace.licenceGroup, foodGroupCode: "", foodGroupName: "",
+                          sourceRecord: "", names: [:], primaryName: "")
+        }
+        for namespace: SourceIdentifier.Namespace in [.usda, .ciqual, .cofid, .afcd] {
+            #expect(food(namespace).sourceName == AttributionCatalog.entry(for: namespace.rawValue)?.title)
+        }
+        #expect(food(.ciqual).sourceName == "ANSES-CIQUAL French food composition table 2025")
+        #expect(food(.almanac).sourceName == "Almanac")
+    }
 }

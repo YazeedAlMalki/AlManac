@@ -852,6 +852,19 @@ after Fajr keeps reminders until Fajr; someone sleeping at 23:00 stops at 21:00.
 Without prayer times for the day and the next, the ordinary schedule stands and
 the dry-fast suppression removes the daytime reminders, as before.
 
+### Food provenance on the search screen (2026-10-17)
+
+Slice 8, B5's "provenance" part. **Not confirmed.**
+
+**The source is named on each food search row, after its food group.** In the
+words of the source's Attributions entry ("ANSES-CIQUAL French food composition
+table 2025"), so the screen and the credits page agree; a regional dish
+(`almanac:` row) reads "Almanac". Not on a separate detail screen: there is
+none, and the row is where a person chooses the food. The publisher's own
+record key (`source_record`) is not shown, for the reason the withheld row
+gives for not showing a ref. *Overrule by:* `NutritionFood.sourceName` and the
+caption in `NutritionFoodSearchView.row(for:)`.
+
 ### Weighing
 
 **Meter fraction**:

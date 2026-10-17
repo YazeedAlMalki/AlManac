@@ -180,6 +180,27 @@ final class AllergenFilterUITests: XCTestCase {
         }
     }
 
+    // MARK: - Provenance
+
+    /// Every food row names where it came from (Slice 8, B5), in the same words
+    /// as its Attributions entry. A row inside a Button may surface as the
+    /// button's combined label rather than its own text, so both are read.
+    func testEachFoodSaysWhereItCameFrom() throws {
+        try openFoodSearch()
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no search field")
+        field.tap()
+        field.typeText("rice")
+
+        let sources = ["USDA FoodData Central", "ANSES-CIQUAL", "McCance and Widdowson",
+                       "Australian Food Composition Database", "Almanac"]
+        var labels: [String] = []
+        XCTAssertTrue(app.waitUntil(timeout: 15) {
+            labels = (app.buttons.allElementsBoundByIndex + app.staticTexts.allElementsBoundByIndex).map(\.label)
+            return labels.contains { label in label.contains(" · ") && sources.contains { label.contains($0) } }
+        }, "no food row named its source: \(labels)")
+    }
+
     // MARK: - Helpers
 
     /// A toggle's state, without depending on how XCTest spells it.
