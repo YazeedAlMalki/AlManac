@@ -957,6 +957,20 @@ other session's work scored"). **None of these has been confirmed.**
   +5 × 1 ÷ 3, rounded down to +1, not +5. *Overrule by:* "one intent driven
   is enough", and Slice 12 rises to 85.
 
+### Failed UI tests run once more (2026-10-17)
+
+The UI suite runs with `-retry-tests-on-failure -test-iterations 2`. Over
+2026-10-17, each run failed one or two of 108 tests on XCTest's own timeouts:
+"Timed out while acquiring background assertion", "Timed out while evaluating
+UI query", a launch timeout. It was a different test each time, and each test
+passed on the other run of the same commit. The owner accepted one retry for
+a dropped tap ("Yes I accept") and asked for the pull-request failure to be
+fixed. This extends that one retry to the whole suite. A real failure fails
+both tries and the job stays red. "Summarise failures" now runs on every run,
+so a test that passed only on its retry is still listed.
+**None of these has been confirmed** as a suite-wide rule.
+*Overrule by:* removing the flag from the "Test" step in `.github/workflows/ci.yml`.
+
 ### Weighing
 
 **Meter fraction**:
