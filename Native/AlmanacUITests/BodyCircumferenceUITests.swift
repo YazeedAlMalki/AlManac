@@ -55,7 +55,10 @@ final class BodyCircumferenceUITests: XCTestCase {
         XCTAssertTrue(toggleAfterRelaunch.waitForExistence(timeout: 5))
         XCTAssertEqual(toggleAfterRelaunch.value as? String, "1", "Side preference must persist across launch")
         tapSwitch(toggleAfterRelaunch) // Exercise the reversible toggle-off stub.
-        XCTAssertEqual(toggleAfterRelaunch.value as? String, "0")
+        // Waited for, not read at once: just after a launch the redraw can trail
+        // the tap, and an immediate read saw "1" (CI 2026-10-17, df94ead).
+        XCTAssertTrue(app.waitUntil(timeout: 5) { toggleAfterRelaunch.value as? String == "0" },
+                      "the side switch did not turn off: \(String(describing: toggleAfterRelaunch.value))")
         app.navigationBars["Settings"].buttons.firstMatch.tap()
         openCircumferences(app)
         XCTAssertTrue(app.staticTexts[noteText].waitForExistence(timeout: 5))
