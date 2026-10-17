@@ -409,6 +409,17 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
 
     // MARK: - Helpers
 
+    // MARK: - Health access per feature (BRD §5.5, owner 2026-10-17)
+
+    /// Settings offers Health access one feature at a time, and all at once.
+    /// Not tapped: the simulator cannot answer HealthKit's sheet.
+    func testHealthAccessIsOfferedPerFeatureAndAllAtOnce() {
+        openSettings()
+        for id in ["all", "water", "sleep", "activity", "heart", "body"] {
+            XCTAssertTrue(app.reveal(app.buttons["health-connect-\(id)"]), "no health-connect-\(id) in Settings")
+        }
+    }
+
     // MARK: - App Intents (BRD §6.21)
 
     /// The water widget's button runs `LogWaterIntent.perform()`. The app is

@@ -53,7 +53,14 @@ struct SettingsView: View {
                     }
             }
             Section("HealthKit") {
-                Button("Connect to Health", action: connectHealthKit)
+                // One feature at a time (BRD §5.5), or everything in one sheet.
+                // HealthKit's sheet lists only what has not been asked before.
+                Button("Connect all to Health") { connectHealthKit(HealthKitProvider.readableDomains) }
+                    .accessibilityIdentifier("health-connect-all")
+                ForEach(HealthPermissionGroup.allCases, id: \.self) { group in
+                    Button(Self.connectTitle(group)) { connectHealthKit(group.domains) }
+                        .accessibilityIdentifier("health-connect-\(group.rawValue)")
+                }
                 if let healthKitStatus {
                     Text(healthKitStatus).font(.caption).foregroundStyle(.secondary)
                 }
@@ -141,16 +148,27 @@ struct SettingsView: View {
     }
 
 
-    private func connectHealthKit() {
+    private static func connectTitle(_ group: HealthPermissionGroup) -> LocalizedStringKey {
+        switch group {
+        case .water: return "Connect water"
+        case .sleep: return "Connect sleep"
+        case .activity: return "Connect workouts and activity"
+        case .heart: return "Connect heart rate and HRV"
+        case .body: return "Connect body measurements"
+        }
+    }
+
+    private func connectHealthKit(_ domains: [HealthDomain]) {
         Task {
             do {
-                // One provider, one authorisation sheet: the same concrete
-                // object serves the hydration read/write pair and the read-only
-                // domains, so the user answers once.
+                // One provider: the same concrete object serves the hydration
+                // read/write pair and the read-only domains. Syncing a domain
+                // that was never granted reads nothing, so every sync runs.
                 let provider = HealthKitProvider()
                 model.configureHealthKit(provider: provider, writer: provider)
                 healthModel.configure(provider: provider)
-                try await provider.requestAuthorisation(for: HealthKitProvider.readableDomains)
+                try await provider.requestAuthorisation(for: domains)
+                UserDefaults.standard.set(true, forKey: HealthKitProvider.connectedKey)
                 // Water's own sync and write-back stay with HydrationModel.
                 await model.syncInbound()
                 await model.drainOutbound()

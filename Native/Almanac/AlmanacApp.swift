@@ -74,10 +74,15 @@ struct AlmanacApp: App {
                     // who connected in an earlier session is reconnected here,
                     // with no sheet: HealthKit says truthfully whether Almanac
                     // may write water, and only that answer is taken as "connected".
+                    // Access is asked per feature, so the read domains reconnect
+                    // for anyone who connected any of them, water or not; a
+                    // feature never connected reads nothing rather than failing.
                     if !hydrationModel.isHealthKitConfigured {
                         let provider = HealthKitProvider()
                         if provider.canWrite(.water) {
                             hydrationModel.configureHealthKit(provider: provider, writer: provider)
+                        }
+                        if provider.canWrite(.water) || UserDefaults.standard.bool(forKey: HealthKitProvider.connectedKey) {
                             healthModel.configure(provider: provider)
                         }
                     }

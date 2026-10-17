@@ -39,3 +39,13 @@ Addendum v1.0. It is not in this repository. A file named
 `almanac-diet-profile-addendum.md` (v1.0 draft, 2026-09-25, "awaiting owner
 approval") is in the owner's Downloads folder; the owner has been told and asked
 to confirm it is the one.
+
+## 2026-10-17
+
+| Item | Asked | Answer | What it means |
+|---|---|---|---|
+| Health permissions (hydration audit row 16) | Ask per feature? | **Yes, with an option to approve all** | Settings has one "Connect …" row per feature (water, sleep, workouts and activity, heart rate and HRV, body measurements) and "Connect all to Health". Built 2026-10-17 |
+| Fasting windows on restore | Should a restore work out past fasting windows again? | **Keep it** | As built: a restore re-assigns night-window meals (`NightNutritionWindowAssigner`); fasting sessions are restored as they were, not re-derived |
+| Data sources | | **SFDA's Arabic nutrition data and TheMealDB's dishes are not used; only data that is free and legal to use commercially** | Confirms D8 and T04. SFDA stays in licence group D, which the pipeline and `LicenceGroup` refuse; TheMealDB is in no code. Regional dishes are authored from shippable sources only |
+| Everything else | | **"Just shoot"** | Remaining build calls are made by the build and logged in `CONTEXT.md` with an *Overrule by:* line |
+

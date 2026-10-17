@@ -879,6 +879,27 @@ an architecture Shortcuts can use, so this was kept. *Overrule by:* removing
 `WI0000000000000000000001` from the app's sources in `project.pbxproj` (and the
 `#if DEBUG` hook in `AlmanacApp.appShell`, and the test with it).
 
+### Health access per feature (2026-10-17)
+
+The owner chose per feature, plus approve all. The grouping and where it is
+asked are build calls. **Not confirmed.**
+
+**Five features, asked from Settings.** Water; sleep; workouts and activity
+(workouts, steps, active and resting energy); heart rate and HRV; body
+measurements (weight, body fat, lean mass, waist). Asked from Settings rows
+rather than by a sheet popping up the first time a screen opens: a sheet nobody
+asked for interrupts, and the simulator cannot answer one, so it could not be
+tested. A feature never connected reads nothing instead of reporting a failed
+sync; once any feature is connected, the read domains reconnect on the next
+launch. *Overrule by:* `HealthPermissionGroup` in `HealthProvider.swift` and the
+HealthKit section of `SettingsView`.
+
+**Sync anchors survive a restore** (spec step 7a says clear them). "Just shoot",
+2026-10-17: kept as built. Clearing them re-reads all of Health's history, which
+§5.5 says never to do; de-duplication on sample ids already stops a re-read
+from duplicating rows. *Overrule by:* `restoreBundle` and
+`testRestoreReplacesTargetContentsWithSnapshot`.
+
 ### Weighing
 
 **Meter fraction**:

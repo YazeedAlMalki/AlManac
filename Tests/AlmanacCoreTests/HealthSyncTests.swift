@@ -151,4 +151,12 @@ final class HealthSyncTests: XCTestCase {
         XCTAssertEqual(try store.liveSampleCount(), 1)
         XCTAssertEqual(try service.currentAnchor(), [7])
     }
+
+    /// Connecting every feature one at a time must ask for exactly what
+    /// "Connect all" asks for: no domain left out, none asked for twice.
+    func testPermissionGroupsCoverEveryDomainOnce() {
+        let grouped = HealthPermissionGroup.allCases.flatMap(\.domains)
+        XCTAssertEqual(grouped.count, Set(grouped).count)
+        XCTAssertEqual(Set(grouped), Set(HealthDomain.allCases))
+    }
 }
