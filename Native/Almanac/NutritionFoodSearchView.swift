@@ -146,7 +146,9 @@ struct NutritionFoodSearchView: View {
                 VStack(alignment: .leading) {
                     Text(food.primaryName)
                         .foregroundStyle(.primary)
-                    Text(food.foodGroupName)
+                    // Provenance (Slice 8, B5): the source's Attributions title,
+                    // so a regional dish reads "Almanac" and a CIQUAL row says so.
+                    Text(food.foodGroupName + " · " + food.sourceName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

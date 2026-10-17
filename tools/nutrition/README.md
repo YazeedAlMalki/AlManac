@@ -15,7 +15,7 @@ references below (§n) point there.
 | ANSES-CIQUAL 2025 | `ciqual` | B | All 3,484 foods |
 | CoFID 2021 | `cofid` | B | All 2,887 rows of `1.3 Proximates` |
 | AFCD Release 3 | `afcd` | B | All 1,588 foods, per 100 g and (213 liquids) per 100 mL |
-| Almanac-native | `almanac` | N | Regional dishes authored in `native/*.csv` (0 so far); see "Almanac-native dishes" |
+| Almanac-native | `almanac` | N | Regional dishes authored in `native/*.csv` (15 so far); see "Almanac-native dishes" |
 
 Canonical nutrients are only what calorie calculation needs (energy, protein,
 fat, carbohydrate, fibre, alcohol). The dictionary splits some of these into
@@ -301,3 +301,8 @@ because the components share no total-carbohydrate basis; no benchmark, or
 more than 20 % from the benchmark's general-Atwater figure; a name (folded:
 case, harakat, Arabic letter variants) shared by two dishes. A benchmark is a
 comparison, never a source of values.
+
+Without the lake (a cloud session), `rebuild_from_bundle.py` recovers the four
+reference sources' canonical rows from the shipped bundle and runs the stages
+above on them. With `--no-dishes` it must reproduce the shipped bundle row for
+row; it did on 2026-10-17, before the first dishes went in.

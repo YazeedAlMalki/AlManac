@@ -22,7 +22,7 @@ stored) and Processing Design v0.1 in the food-data lake.
 | Read seam: food, values, bases, calories, search | `NutritionCatalog` |
 | Calorie calculation | `GeneralAtwater`, `EnergyEstimate` |
 
-The bundle holds 8,354 foods and 49,036 values from four sources:
+The bundle holds 8,369 foods and 49,126 values from four sources and Almanac's own regional dishes:
 
 | Source | Namespace | Group | Foods | Values |
 |---|---|---|---:|---:|
@@ -30,7 +30,7 @@ The bundle holds 8,354 foods and 49,036 values from four sources:
 | ANSES-CIQUAL 2025 | `ciqual` | B | 3,484 | 20,904 |
 | CoFID 2021 | `cofid` | B | 2,887 | 15,459 |
 | AFCD Release 3 | `afcd` | B | 1,588 | 10,806 |
-| Almanac-native | `almanac` | N | 0 — awaiting dish data | |
+| Almanac-native (regional dishes, recipes of CIQUAL foods) | `almanac` | N | 15 | 90 |
 
 ## 2. The value
 

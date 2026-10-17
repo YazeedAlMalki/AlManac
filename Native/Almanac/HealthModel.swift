@@ -55,14 +55,6 @@ final class HealthModel: ObservableObject {
         self.provider = provider
     }
 
-    /// Asks HealthKit for every read domain, plus water so the existing
-    /// hydration path keeps working. One sheet, one answer.
-    func connect() async throws {
-        guard let provider else { return }
-        try await provider.requestAuthorisation(for: Self.domains + [.water])
-        await syncNow()
-    }
-
     /// Pulls every read domain in. Each domain commits its rows and its own
     /// anchor together, and a domain that fails is skipped rather than allowed
     /// to stop the rest — it keeps its last good anchor and retries next time.
@@ -73,13 +65,20 @@ final class HealthModel: ObservableObject {
         problem = nil
 
         if let writer = provider as? any HealthWriter {
-            do { try await BodyMeasurementWriteback(db: db, writer: writer).drainOnce() }
-            catch {
-                problem = String(localized: "Waist could not be written to Health: \(error.localizedDescription)")
+            // Access is asked per feature: body measurements not connected yet
+            // wait in their queue rather than reporting a failed write.
+            let canWrite = { (domain: HealthDomain) in (writer as? HealthKitProvider)?.canWrite(domain) ?? true }
+            if canWrite(.waistCircumference) {
+                do { try await BodyMeasurementWriteback(db: db, writer: writer).drainOnce() }
+                catch {
+                    problem = String(localized: "Waist could not be written to Health: \(error.localizedDescription)")
+                }
             }
-            do { try await BodyCompositionWriteback(db: db, writer: writer).drainOnce() }
-            catch {
-                problem = String(localized: "Body measurements could not be written to Health: \(error.localizedDescription)")
+            if canWrite(.bodyMass) {
+                do { try await BodyCompositionWriteback(db: db, writer: writer).drainOnce() }
+                catch {
+                    problem = String(localized: "Body measurements could not be written to Health: \(error.localizedDescription)")
+                }
             }
         }
 

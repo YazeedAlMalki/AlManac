@@ -3193,6 +3193,66 @@
         }
       }
     },
+    "Connect all to Health": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ربط الكل بتطبيق الصحة"
+          }
+        }
+      }
+    },
+    "Connect body measurements": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ربط قياسات الجسم"
+          }
+        }
+      }
+    },
+    "Connect heart rate and HRV": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ربط نبض القلب وتقلّب النبض"
+          }
+        }
+      }
+    },
+    "Connect sleep": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ربط النوم"
+          }
+        }
+      }
+    },
+    "Connect water": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ربط الماء"
+          }
+        }
+      }
+    },
+    "Connect workouts and activity": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ربط التمارين والنشاط"
+          }
+        }
+      }
+    },
     "Connect to Health in Settings, then sync. Sleep, heart rate, steps and body composition will appear here.": {
       "localizations": {
         "ar": {

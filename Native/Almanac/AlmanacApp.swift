@@ -74,10 +74,15 @@ struct AlmanacApp: App {
                     // who connected in an earlier session is reconnected here,
                     // with no sheet: HealthKit says truthfully whether Almanac
                     // may write water, and only that answer is taken as "connected".
+                    // Access is asked per feature, so the read domains reconnect
+                    // for anyone who connected any of them, water or not; a
+                    // feature never connected reads nothing rather than failing.
                     if !hydrationModel.isHealthKitConfigured {
                         let provider = HealthKitProvider()
                         if provider.canWrite(.water) {
                             hydrationModel.configureHealthKit(provider: provider, writer: provider)
+                        }
+                        if provider.canWrite(.water) || UserDefaults.standard.bool(forKey: HealthKitProvider.connectedKey) {
                             healthModel.configure(provider: provider)
                         }
                     }
@@ -138,6 +143,17 @@ struct AlmanacApp: App {
             .onAppear {
                 readinessModel.configure(db: model.db)
                 hydrationModel.configure(db: model.db)
+                #if DEBUG
+                // A UI test runs the widget's own water intent, as a tap on the
+                // widget would, then reads the glass on Hydration (BRD §6.21).
+                // `WidgetIntents.swift` is compiled into the app for this.
+                if ProcessInfo.processInfo.arguments.contains("-AlmanacRunLogWaterIntent") {
+                    Task {
+                        do { _ = try await LogWaterIntent().perform() } catch { print("LogWaterIntent failed: \(error)") }
+                        hydrationModel.refresh()
+                    }
+                }
+                #endif
                 nutritionModel.configure(db: model.db)
                 trainingModel.configure(db: model.db)
                 programModel.configure(db: model.db)

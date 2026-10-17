@@ -30,7 +30,7 @@ are built and tested in the core. That breaks A1's latte step and three of
 | 13 | Dark urine despite the target → offer to raise it; not during a dry fast | §6.3, A1 | **Built** | `UrineColourHydrationFeedbackTests` |
 | 14 | One-tap water logging as an App Intent | §6.21 | **Built, not driven** | `LogWaterIntent` in `Native/AlmanacWidgets/WidgetIntents.swift`; no test runs it |
 | 15 | A contextual pre-lunch water suggestion | A1 | **Core** | `contextual_hydration` in `NotificationPlannerTests`, `NotificationTriggerAssemblerTests`; delivery is device only |
-| 16 | Permissions asked when a feature is first used, not all at once | §5.5, A5 | **Differs** | Settings → "Connect to Health" asks for every type in one sheet (`HealthModel.connect`: "One sheet, one answer"). Asked on a tap, not at launch, but not per feature |
+| 16 | Permissions asked when a feature is first used, not all at once | §5.5, A5 | **Built, CI pending** (owner, 2026-10-17: per feature, plus all at once) | Settings → one "Connect …" per feature (`HealthPermissionGroup`) and "Connect all to Health"; `testPermissionGroupsCoverEveryDomainOnce` (core), `testHealthAccessIsOfferedPerFeatureAndAllAtOnce` (UI). The Health sheet itself is a device check |
 | 17 | Missing HRV shown as unavailable, never zero; readiness lists missing inputs | A5 | **Built** | `ReadinessEngineTests.testMissingHRVRedistributesRatherThanScoringZero`, `testBaselineWithoutAMetricMakesThatInputMissing`; `ReadinessBaselineServiceTests` "A missing baseline is reported as missing"; `ProblemChannelUITests` (CI) |
 
 ## Gaps, and what closing each needs
@@ -41,7 +41,7 @@ are built and tested in the core. That breaks A1's latte step and three of
 | Caffeine presets editable; a custom drink's caffeine | 3 | No | A caffeine field on the custom-drink form and its table (migration); per-drink overrides of catalog presets |
 | ~~No "not yet in Apple Health" status~~ | 7 | Built 2026-10-16: only once Health may be written (`CONTEXT.md`) | Device check |
 | Ramadan night hydration | 10 | **Yes**: the night target and the reminder cadence across Maghrib → Fajr, and how a night shift changes it | Planner and target rules, core tests |
-| Health permissions per feature | 16 | **Yes**: the single sheet was a deliberate choice | Ask per domain when its screen first opens |
+| ~~Health permissions per feature~~ | 16 | Answered 2026-10-17: per feature, plus "all" | Built; device check of the sheet |
 | App Intent not driven | 14 | No | A test that runs `LogWaterIntent` against a database |
 
 ## Closed on 2026-10-16: caffeine from logged drinks

@@ -79,6 +79,10 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
     /// `WorkoutSessionHealthBridge` — so no case is left out.
     static let readableDomains: [HealthDomain] = HealthDomain.allCases
 
+    /// Set once the person taps any Connect button, so a later launch reconnects
+    /// the read domains even when water, the one write it can check, was not granted.
+    static let connectedKey = "almanac.health.connected"
+
     /// Whether the person let Almanac write this type. HealthKit answers this
     /// truthfully for writing (it hides only read permission), so it is a fact,
     /// not a guess.
@@ -106,6 +110,12 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
         return try await withCheckedThrowingContinuation { continuation in
             let query = HKAnchoredObjectQuery(type: type, predicate: nil, anchor: previousAnchor,
                                               limit: HKObjectQueryNoLimit) { _, samplesOrNil, deletedOrNil, newAnchor, error in
+                // A feature not connected yet (access is asked per feature) has
+                // nothing to read; it is not a failed sync.
+                if let error = error as? HKError, error.code == .errorAuthorizationNotDetermined {
+                    continuation.resume(returning: HealthChangeSet(added: [], deletedExternalIDs: [], nextAnchor: anchor))
+                    return
+                }
                 if let error {
                     continuation.resume(throwing: error)
                     return

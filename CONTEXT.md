@@ -852,6 +852,94 @@ after Fajr keeps reminders until Fajr; someone sleeping at 23:00 stops at 21:00.
 Without prayer times for the day and the next, the ordinary schedule stands and
 the dry-fast suppression removes the daytime reminders, as before.
 
+### Food provenance on the search screen (2026-10-17)
+
+Slice 8, B5's "provenance" part. **Not confirmed.**
+
+**The source is named on each food search row, after its food group.** In the
+words of the source's Attributions entry ("ANSES-CIQUAL French food composition
+table 2025"), so the screen and the credits page agree; a regional dish
+(`almanac:` row) reads "Almanac". Not on a separate detail screen: there is
+none, and the row is where a person chooses the food. The publisher's own
+record key (`source_record`) is not shown, for the reason the withheld row
+gives for not showing a ref. *Overrule by:* `NutritionFood.sourceName` and the
+caption in `NutritionFoodSearchView.row(for:)`.
+
+### The widget's water intent, driven by a test (2026-10-17)
+
+Hydration audit row 14, BRD §6.21. **Not confirmed.**
+
+**`WidgetIntents.swift` is compiled into the app as well as the widget.** A UI
+test cannot tap a widget, so a debug-only launch argument
+(`-AlmanacRunLogWaterIntent`) has the app run `LogWaterIntent().perform()` once,
+the same code the widget button runs, and the test reads the total go up 250 mL.
+Side effect: the app now carries the three intents, so iOS can offer "Log 250 ml
+of water", "Start fasting" and "End fast" in the Shortcuts app; §6.21 asks for
+an architecture Shortcuts can use, so this was kept. *Overrule by:* removing
+`WI0000000000000000000001` from the app's sources in `project.pbxproj` (and the
+`#if DEBUG` hook in `AlmanacApp.appShell`, and the test with it).
+
+### Health access per feature (2026-10-17)
+
+The owner chose per feature, plus approve all. The grouping and where it is
+asked are build calls. **Not confirmed.**
+
+**Five features, asked from Settings.** Water; sleep; workouts and activity
+(workouts, steps, active and resting energy); heart rate and HRV; body
+measurements (weight, body fat, lean mass, waist). Asked from Settings rows
+rather than by a sheet popping up the first time a screen opens: a sheet nobody
+asked for interrupts, and the simulator cannot answer one, so it could not be
+tested. A feature never connected reads nothing instead of reporting a failed
+sync; once any feature is connected, the read domains reconnect on the next
+launch. *Overrule by:* `HealthPermissionGroup` in `HealthProvider.swift` and the
+HealthKit section of `SettingsView`.
+
+**Sync anchors survive a restore** (spec step 7a says clear them). "Just shoot",
+2026-10-17: kept as built. Clearing them re-reads all of Health's history, which
+§5.5 says never to do; de-duplication on sample ids already stops a re-read
+from duplicating rows. *Overrule by:* `restoreBundle` and
+`testRestoreReplacesTargetContentsWithSnapshot`.
+
+### The first regional dishes (D3, 2026-10-17)
+
+The owner: only free, commercially usable data; SFDA and TheMealDB out; "just
+shoot" on the rest. So these are build calls. **Not confirmed.**
+
+**Full coverage is 30 dishes (D_full).** Enough for the Gulf staples, the common
+Levantine mezze, two breakfasts and two sweets; Slice 8's content line is
+25 × dishes ÷ 30. *Overrule by:* the D_full figure in `docs/implementation-status.md`.
+
+**The first 15** (`tools/nutrition/native/`): hummus, mutabbal, tabbouleh,
+fattoush, foul medames, falafel, red lentil soup, chicken kabsa, mujaddara,
+shakshuka, jareesh, saleeg, harees, shish tawook, luqaimat. Typical home
+recipes written for Almanac (a list of ingredients and weights is not anyone's
+copyright); every value is calculated from the ingredients, never typed in.
+
+**Every ingredient is a CIQUAL food.** The four sources state carbohydrate on
+different bases, and a dish gets a nutrient only when every ingredient has it,
+so one source per dish keeps all six. CIQUAL covers every ingredient but three:
+no sumac (left out of fattoush), no date syrup (honey in luqaimat, and the name
+says so), no short-grain or crushed wheat (basmati and durum wholewheat stand
+in). Cooked ingredients are weighed cooked where CIQUAL has them; otherwise the
+finished weight (`yield_g`) carries the water taken up or lost, stated per dish
+in `notes`. *Overrule by:* `native/*.csv`, then `rebuild_from_bundle.py` (or
+`all` on the lake).
+
+**Checked:** every dish is within 15 % of its own ingredients' energy; falafel is
+263 kcal per 100 g against CIQUAL's take-away 268; tabbouleh 126 against
+CoFID's 119. Hummus (253) and mutabbal (113) are over 20 % below their
+benchmarks, which are oil-heavy shop versions; kept.
+
+**Built without the lake.** The cloud session has no `~/ALManac-food-data`, so
+the four sources' canonical rows were recovered from the shipped bundle and the
+real stages run on them. With no dishes that reproduced the shipped bundle row
+for row; with them, the only change is the 15 dishes and the `almanac` source
+row. `tool_revision` in `bundle_meta` reads `45d4e81…+dirty` for that reason.
+
+**The person's own dishes are those with a `nutrition_dish` row**, not every
+`almanac:` food, or the 15 would have appeared in "my dishes" as editable.
+*Overrule by:* `NutritionDishEditor.dishes()`.
+
 ### Weighing
 
 **Meter fraction**:
