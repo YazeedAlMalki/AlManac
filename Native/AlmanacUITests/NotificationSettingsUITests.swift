@@ -147,9 +147,7 @@ final class NotificationSettingsUITests: XCTestCase {
     }
 
     private func openReminders() {
-        let modules = app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10))
-        modules.tap()
+        app.openModulesTab()
 
         let settings = app.buttons["Settings"]
         XCTAssertTrue(app.reveal(settings), "Settings is not offered")

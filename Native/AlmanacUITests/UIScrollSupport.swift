@@ -431,3 +431,23 @@ extension XCUIApplication {
     }
 }
 
+
+extension XCUIApplication {
+    /// Taps the Modules tab and waits for the Modules list.
+    ///
+    /// Three tests failed on 2026-10-16 and 17 (AllergenFilter, NotificationSettings,
+    /// TrainingProgram), each a few seconds after a fresh launch and each passing
+    /// on the same commit in the other run. All three tapped Modules and went on
+    /// without checking it opened, so they failed later, on a row that was not
+    /// there, with messages that blamed the row ("Settings is not offered", after
+    /// three minutes of swiping). Checking here names the step that failed: the
+    /// tab tap, or the row.
+    func openModulesTab(file: StaticString = #filePath, line: UInt = #line) {
+        let modules = buttons["tab-modules"].exists ? buttons["tab-modules"] : buttons["Modules"].firstMatch
+        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Modules tab", file: file, line: line)
+        modules.tap()
+        XCTAssertTrue(navigationBars["Modules"].waitForExistence(timeout: 5),
+                      "the Modules tab did not open; navigation bars: \(navigationBars.allElementsBoundByIndex.map(\.identifier))",
+                      file: file, line: line)
+    }
+}

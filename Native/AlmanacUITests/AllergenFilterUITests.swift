@@ -237,9 +237,7 @@ final class AllergenFilterUITests: XCTestCase {
     }
 
     private func openProfile() throws {
-        let modules = app.buttons["tab-modules"].exists ? app.buttons["tab-modules"] : app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Modules tab")
-        modules.tap()
+        app.openModulesTab()
 
         let row = app.buttons["Profile"]
         for _ in 0..<12 where !row.exists { app.swipeUp() }
