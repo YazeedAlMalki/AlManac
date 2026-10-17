@@ -94,8 +94,17 @@ final class ReadinessRecoveryDayUITests: XCTestCase {
         let wanted = on ? "1" : "0"
         guard toggle.value as? String != wanted else { return }
         XCTAssertTrue(app.reveal(toggle))
+        // Twice in CI (76ed79b, da1da96) one tap left the switch at 0 for the
+        // whole wait, on a Today screen whose list XCTest was still re-finding:
+        // a tap synthesised from a frame that then moved. Settle first, as the
+        // Training test does before its tap.
+        XCTAssertTrue(app.waitUntilSettled(toggle),
+                      "the recovery-day switch's frame kept moving; Today had not settled")
         toggle.tapSwitchControl()
+        let card = app.staticTexts["readiness-recommendation"]
         XCTAssertTrue(app.waitUntil(timeout: 5) { toggle.value as? String == wanted },
-                      "the recovery-day switch did not move to \(wanted)")
+                      "the recovery-day switch did not move to \(wanted): value \(String(describing: toggle.value)), "
+                      + "frame \(toggle.frame), alerts \(app.alerts.allElementsBoundByIndex.map(\.label)), "
+                      + "card \(card.exists ? card.label : "absent")")
     }
 }
