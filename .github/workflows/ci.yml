@@ -365,6 +365,34 @@ jobs:
           PY
           done
 
+      # What the screen held when a UI test failed, as text in this log. The
+      # result bundle has it, but a cloud session cannot download artifacts,
+      # and a run of lost taps after launch (2026-10-16/17) could not be told
+      # apart from a missing row without it. Last, so a tail-only reader sees it.
+      - name: Print the failing tests' attachments
+        if: failure()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          OUT="$RUNNER_TEMP/failure-attachments"
+          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/AlmanacUITests.xcresult" \
+            --output-path "$OUT" --only-failures || { echo "no failure attachments exported"; exit 0; }
+          python3 - "$OUT" <<'PY'
+          import json, os, sys
+          src = sys.argv[1]
+          for test in json.load(open(os.path.join(src, "manifest.json"))):
+              print("=== " + test.get("testIdentifier", "?"))
+              for a in test.get("attachments", []):
+                  name, path = a.get("suggestedHumanReadableName", ""), os.path.join(src, a["exportedFileName"])
+                  try:
+                      text = open(path, encoding="utf-8").read()
+                  except (UnicodeDecodeError, OSError):
+                      print("--- " + name + " (binary, " + str(os.path.getsize(path)) + " bytes)")
+                      continue
+                  print("--- " + name)
+                  print(text[:8000] + ("\n[... cut]" if len(text) > 8000 else ""))
+          PY
+
       - name: Attach the Arabic screenshots
         if: always()
         uses: actions/upload-artifact@v4
