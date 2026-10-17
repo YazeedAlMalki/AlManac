@@ -865,6 +865,20 @@ record key (`source_record`) is not shown, for the reason the withheld row
 gives for not showing a ref. *Overrule by:* `NutritionFood.sourceName` and the
 caption in `NutritionFoodSearchView.row(for:)`.
 
+### The widget's water intent, driven by a test (2026-10-17)
+
+Hydration audit row 14, BRD §6.21. **Not confirmed.**
+
+**`WidgetIntents.swift` is compiled into the app as well as the widget.** A UI
+test cannot tap a widget, so a debug-only launch argument
+(`-AlmanacRunLogWaterIntent`) has the app run `LogWaterIntent().perform()` once,
+the same code the widget button runs, and the test reads the total go up 250 mL.
+Side effect: the app now carries the three intents, so iOS can offer "Log 250 ml
+of water", "Start fasting" and "End fast" in the Shortcuts app; §6.21 asks for
+an architecture Shortcuts can use, so this was kept. *Overrule by:* removing
+`WI0000000000000000000001` from the app's sources in `project.pbxproj` (and the
+`#if DEBUG` hook in `AlmanacApp.appShell`, and the test with it).
+
 ### Weighing
 
 **Meter fraction**:

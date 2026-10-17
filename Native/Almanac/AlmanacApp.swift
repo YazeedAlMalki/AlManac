@@ -138,6 +138,17 @@ struct AlmanacApp: App {
             .onAppear {
                 readinessModel.configure(db: model.db)
                 hydrationModel.configure(db: model.db)
+                #if DEBUG
+                // A UI test runs the widget's own water intent, as a tap on the
+                // widget would, then reads the glass on Hydration (BRD §6.21).
+                // `WidgetIntents.swift` is compiled into the app for this.
+                if ProcessInfo.processInfo.arguments.contains("-AlmanacRunLogWaterIntent") {
+                    Task {
+                        do { _ = try await LogWaterIntent().perform() } catch { print("LogWaterIntent failed: \(error)") }
+                        hydrationModel.refresh()
+                    }
+                }
+                #endif
                 nutritionModel.configure(db: model.db)
                 trainingModel.configure(db: model.db)
                 programModel.configure(db: model.db)

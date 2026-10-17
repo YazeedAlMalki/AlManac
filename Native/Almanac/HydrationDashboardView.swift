@@ -27,6 +27,7 @@ struct HydrationDashboardView: View {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(Int(model.todayTotal.value)) mL").font(.largeTitle.bold())
+                        .accessibilityIdentifier("hydration-today-total")
                     Text("of \(Int(dailyGoal)) mL goal")
                         .font(.subheadline).foregroundStyle(.secondary)
                     ProgressView(value: min(model.todayTotal.value / max(dailyGoal, 1), 1))

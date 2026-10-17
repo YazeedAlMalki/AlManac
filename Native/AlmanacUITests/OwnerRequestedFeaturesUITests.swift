@@ -409,6 +409,32 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
 
     // MARK: - Helpers
 
+    // MARK: - App Intents (BRD §6.21)
+
+    /// The water widget's button runs `LogWaterIntent.perform()`. The app is
+    /// relaunched to run that same intent once against its database, and
+    /// Hydration's total must go up by exactly one glass. A total, not a row:
+    /// the simulator's database carries earlier runs' water.
+    func testTheWaterWidgetsIntentLogsOneGlass() {
+        let total = app.staticTexts["hydration-today-total"]
+        openModule("Hydration")
+        XCTAssertTrue(total.waitForExistence(timeout: 10), "Hydration shows no total")
+        let before = Self.milliliters(total.label)
+
+        app.terminate()
+        app.launchArguments.append("-AlmanacRunLogWaterIntent")
+        app.launch()
+        openModule("Hydration")
+        XCTAssertTrue(total.waitForExistence(timeout: 10), "Hydration shows no total after the intent")
+        // The intent is async and finishes after launch; the screen follows it.
+        let added = NSPredicate { _, _ in Self.milliliters(total.label) == before + 250 }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: added, object: nil)], timeout: 10),
+                       .completed, "\(before) mL became '\(total.label)', not \(before + 250) mL")
+    }
+
+    /// "1,250 mL" → 1250.
+    private static func milliliters(_ label: String) -> Int { Int(label.filter(\.isNumber)) ?? -1 }
+
     private func openModule(_ name: String) {
         let modules = app.buttons["Modules"]
         XCTAssertTrue(modules.waitForExistence(timeout: 15), "the Modules destination is missing")
