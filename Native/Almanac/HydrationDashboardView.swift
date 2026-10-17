@@ -27,12 +27,14 @@ struct HydrationDashboardView: View {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(Int(model.todayTotal.value)) mL").font(.largeTitle.bold())
+                        .accessibilityIdentifier("hydration-today-total")
                     Text("of \(Int(dailyGoal)) mL goal")
                         .font(.subheadline).foregroundStyle(.secondary)
                     ProgressView(value: min(model.todayTotal.value / max(dailyGoal, 1), 1))
                         .tint(AlmanacPalette.accent)
                 }.padding(.vertical, 4)
             }
+            colourFeedbackSection
             Section("Today") {
                 // `else if`, not two notes: if the log cannot be read at all,
                 // the state of the Health sync is not the thing worth the user's
@@ -68,6 +70,16 @@ struct HydrationDashboardView: View {
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                             if let note = entry.note { Text(note).font(.caption).foregroundStyle(.secondary) }
+                            // §5.5: a clear status while an app-created entry is
+                            // not yet in HealthKit. Only once Almanac may write
+                            // water there, or every entry of someone who never
+                            // connected Health would carry it. The write is
+                            // retried on every sync (`HydrationWriteback`).
+                            if model.writesWaterToHealth, entry.sourceSystem == "manual", !entry.healthKitSynced {
+                                Label("Not yet in Apple Health", systemImage: "arrow.triangle.2.circlepath")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                    .accessibilityIdentifier("hydration.pending-health")
+                            }
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 2) {
@@ -94,6 +106,35 @@ struct HydrationDashboardView: View {
         .sheet(isPresented: $logging) { HydrationLoggingView(model: model) }
         .task { model.refresh() }
         .editorError($error)
+    }
+
+    /// BRD §6.3's feedback from urine colour, offered rather than applied:
+    /// the target is the person's, so a raise is a button, not a silent edit.
+    /// Draft wording, and it says so.
+    @ViewBuilder
+    private var colourFeedbackSection: some View {
+        if let verdict = model.colourFeedback, let message = verdict.message {
+            Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(message)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("hydration.colour-feedback")
+                    if case let .raise(_, to, _) = verdict {
+                        Button("Raise target to \(Int(to)) mL") {
+                            do {
+                                try model.saveDailyGoal(milliliters: to)
+                                model.refresh()
+                            } catch {
+                                self.error = String(describing: error)
+                            }
+                        }
+                        .accessibilityIdentifier("hydration.colour-feedback.raise")
+                    }
+                }
+            } header: {
+                Text("Urine colour")
+            }
+        }
     }
 
     private func delete(at offsets: IndexSet) {

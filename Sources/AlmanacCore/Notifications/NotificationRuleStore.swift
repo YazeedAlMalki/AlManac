@@ -19,17 +19,38 @@ public struct NotificationRule: Sendable, Hashable, Identifiable {
     /// Interval-based types (water) get their cadence here rather than from
     /// their own type's settings table; nil falls back to that type's rule.
     public let intervalMinutes: Int?
+    /// Prayer-anchored types only (Migration 058): minutes before Fajr for
+    /// suhoor, minutes after Maghrib for iftar. Nil is §14.2's own distance.
+    public let offsetMinutes: Int?
     public let updatedAt: Date
 
     public var id: String { type.rawValue }
 
     public init(type: NotificationType, isEnabled: Bool, scheduledMinuteOfDay: Int? = nil,
-                intervalMinutes: Int? = nil, updatedAt: Date = Date()) {
+                intervalMinutes: Int? = nil, offsetMinutes: Int? = nil, updatedAt: Date = Date()) {
         self.type = type
         self.isEnabled = isEnabled
         self.scheduledMinuteOfDay = scheduledMinuteOfDay
         self.intervalMinutes = intervalMinutes
+        self.offsetMinutes = offsetMinutes
         self.updatedAt = updatedAt
+    }
+
+    /// The minutes the prayer-anchored reminders sit from their prayer when
+    /// nobody has set a distance: §14.2's 20 before Fajr, and Maghrib itself.
+    public static let defaultSuhoorLeadMinutes = 20
+    public static let defaultIftarDelayMinutes = 0
+
+    /// The distances a person may choose, per type; nil for a type that has no
+    /// distance to choose. Suhoor stops at 5 minutes because a reminder at
+    /// Fajr itself is too late to eat, and iftar stops at an hour because past
+    /// that it is not an iftar reminder.
+    public static func offsetRange(for type: NotificationType) -> ClosedRange<Int>? {
+        switch type {
+        case .suhoor: return 5...90
+        case .iftar: return 0...60
+        default: return nil
+        }
     }
 }
 
@@ -86,7 +107,7 @@ public struct NotificationRuleStore: @unchecked Sendable {
     /// `type`'s stored rule, or the §5.25 default when no row exists.
     public func rule(for type: NotificationType) throws -> NotificationRule {
         guard let row = try db.query("""
-            SELECT type, isEnabled, scheduledTimeHHMM, intervalMinutes, updatedAt
+            SELECT type, isEnabled, scheduledTimeHHMM, intervalMinutes, offsetMinutes, updatedAt
             FROM notification_rule WHERE type = ?;
             """, [.text(type.rawValue)]).first else {
             return Self.defaultRule(for: type)
@@ -96,6 +117,7 @@ public struct NotificationRuleStore: @unchecked Sendable {
             isEnabled: (row.int("isEnabled") ?? 0) != 0,
             scheduledMinuteOfDay: Self.minuteOfDay(row.string("scheduledTimeHHMM")),
             intervalMinutes: row.int("intervalMinutes").map(Int.init),
+            offsetMinutes: row.int("offsetMinutes").map(Int.init),
             updatedAt: row.string("updatedAt").flatMap(iso8601ToDate) ?? clock.now)
     }
 
@@ -126,21 +148,28 @@ public struct NotificationRuleStore: @unchecked Sendable {
         if let interval = rule.intervalMinutes, interval <= 0 {
             throw NotificationRuleStoreError.invalidInterval(interval)
         }
+        if let offset = rule.offsetMinutes {
+            guard let range = NotificationRule.offsetRange(for: rule.type), range.contains(offset) else {
+                throw NotificationRuleStoreError.invalidOffset(type: rule.type, minutes: offset)
+            }
+        }
         let now = nowText
         try db.run("""
         INSERT INTO notification_rule
-            (type, isEnabled, scheduledTimeHHMM, intervalMinutes, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?)
+            (type, isEnabled, scheduledTimeHHMM, intervalMinutes, offsetMinutes, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(type) DO UPDATE SET
             isEnabled = excluded.isEnabled,
             scheduledTimeHHMM = excluded.scheduledTimeHHMM,
             intervalMinutes = excluded.intervalMinutes,
+            offsetMinutes = excluded.offsetMinutes,
             updatedAt = excluded.updatedAt;
         """, [
             .text(rule.type.rawValue),
             .integer(rule.isEnabled ? 1 : 0),
             rule.scheduledMinuteOfDay.map { SQLValue.text(Self.hhmm($0)) } ?? .null,
             rule.intervalMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
+            rule.offsetMinutes.map { SQLValue.integer(Int64($0)) } ?? .null,
             .text(now),
             .text(now)
         ])
@@ -153,7 +182,28 @@ public struct NotificationRuleStore: @unchecked Sendable {
         let existing = try rule(for: type)
         try setRule(NotificationRule(type: type, isEnabled: enabled,
                                      scheduledMinuteOfDay: existing.scheduledMinuteOfDay,
-                                     intervalMinutes: existing.intervalMinutes))
+                                     intervalMinutes: existing.intervalMinutes,
+                                     offsetMinutes: existing.offsetMinutes))
+    }
+
+    /// Sets or clears only the type's own clock time, leaving the switch and
+    /// everything else alone. For readiness and bedtime it is a fallback: used
+    /// on a day with no sleep or shift time to go by, never instead of one.
+    public func setScheduledMinuteOfDay(_ minute: Int?, for type: NotificationType) throws {
+        let existing = try rule(for: type)
+        try setRule(NotificationRule(type: type, isEnabled: existing.isEnabled,
+                                     scheduledMinuteOfDay: minute,
+                                     intervalMinutes: existing.intervalMinutes,
+                                     offsetMinutes: existing.offsetMinutes))
+    }
+
+    /// Sets or clears only a prayer-anchored type's distance from its prayer.
+    public func setOffsetMinutes(_ minutes: Int?, for type: NotificationType) throws {
+        let existing = try rule(for: type)
+        try setRule(NotificationRule(type: type, isEnabled: existing.isEnabled,
+                                     scheduledMinuteOfDay: existing.scheduledMinuteOfDay,
+                                     intervalMinutes: existing.intervalMinutes,
+                                     offsetMinutes: minutes))
     }
 
     // MARK: - Private
@@ -181,4 +231,5 @@ public struct NotificationRuleStore: @unchecked Sendable {
 public enum NotificationRuleStoreError: Error, Sendable, Equatable {
     case invalidMinuteOfDay(Int)
     case invalidInterval(Int)
+    case invalidOffset(type: NotificationType, minutes: Int)
 }

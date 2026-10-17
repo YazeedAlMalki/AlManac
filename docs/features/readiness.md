@@ -2,8 +2,10 @@
 
 **Status:** the pipeline is closed as of 2026-09-29. Baseline pipeline, §9.7
 calibration counting and §9.8's three baselines are built and tested, and as of
-2026-10-04 a person without a watch can produce a score at all. Four things
-remain unbuilt, and each is a missing data model rather than a missing call.
+2026-10-04 a person without a watch can produce a score at all. As of
+2026-10-16 a person can declare a recovery day, so §9.6's second rule fires.
+Three things remain unbuilt, and each is a missing data model rather than a
+missing call.
 
 ## What is built
 
@@ -23,6 +25,7 @@ remain unbuilt, and each is a missing data model rather than a missing call.
 | §9.8 notices on screen | `ReadinessDashboardView` | UI |
 | §6.7 "manual fallback" for RHR and HRV | `VitalsRecordStore.recordManual`/`update`/`delete`, `VitalsView` | `VitalsManualEntryTests`, `ManualVitalsReadinessTests`, `TrainingProgramUITests` |
 | §9.1 missing-input redistribution, end to end | `ReadinessModel.refresh` | `ManualVitalsReadinessTests` |
+| §9.6 manually selected recovery day | `RecoveryDayStore`, `ReadinessModel.setRecoveryDay`, `ReadinessDashboardView` | `ReadinessEngineTests`, `RecoveryDayStoreTests`, `ReadinessRecoveryDayUITests` |
 
 ## Manual entry, and what it took to make a score reachable (2026-10-04)
 
@@ -218,6 +221,43 @@ pins it end to end on real stores. With the withhold switched off, the withhold,
 context and end-to-end tests fail (6 XCTest and 3 Swift Testing assertions); the
 two "unchanged" tests pass either way, as they should.
 
+## A recovery day the person declares (2026-10-16)
+
+§9.6 ranks "Manually selected recovery day (user set via UI)" second: below an
+active injury, above a planned rest day and a planned deload. The engine had the
+rule and its wording from the start; `ReadinessContext.manualRecoveryDay` was
+never set, so it was the only §9.6 rule that had never fired, and no test
+exercised it.
+
+**What records it.** `RecoveryDayStore` over `recovery_day_declaration`
+(Migration 057): one row per declared logical day, keyed on the day as the mood
+and soreness check-ins are. The caller names the day and the store never works
+one out from a timestamp, so a declaration made this morning about yesterday is
+yesterday's. Clearing deletes the row; the scored day's
+`readiness_record.precedenceApplied` already records whether the rule held.
+
+**What it changes.** Only the recommendation, which becomes "Recovery day: rest
+as planned." The score, its colour, its confidence, the headline and the §9.9
+snapshot are the same with and without it. It needs no score and no baseline,
+so it still speaks on a day with neither. An active injury still decides the
+wording when both hold; both are still listed in `precedenceApplied`.
+
+**Where it is set.** A switch on Today, under the "For this cycle" card,
+written the moment it moves (`ReadinessModel.setRecoveryDay`), so it can be
+moved back for as long as the screen is open — as the readiness switch on a
+training session can. It is labelled "Recovery day" and described as the
+person's own call; it never says "rest day", because §9.6 keeps the two apart by
+who planned them. It sets today only. A back-dated declaration is supported by
+the store, not by a screen, and does not rewrite that day's stored record (§9.9).
+
+**Tests:** `ReadinessEngineTests` — replaces the recommendation and clearing
+restores the band; nothing but the recommendation changes; injury outranks it;
+it outranks planned rest and deload; it needs no score or baseline.
+`RecoveryDayStoreTests` — one-day scope, back-dated attribution, the switch
+moved back and forth, and store to recommendation.
+`ReadinessRecoveryDayUITests` drives the switch on Today. Choices made without
+the owner are in `CONTEXT.md`.
+
 ## The two design decisions worth arguing about
 
 **Calibration counts from the first valid day, not from a rolling window.**
@@ -285,15 +325,16 @@ has never shipped.
 
 | §9 flag | Status | Why |
 |---|---|---|
-| `manualRecoveryDay` | always `false` | Nothing records a user-declared recovery day. |
 | `plannedRestDay` | always `false` | `PrescribedWorkoutStore` holds templates, not a dated plan. There is no "is this day a rest day" to read. |
 | `plannedDeloadDay` | always `false` | No deload-week data model exists anywhere in the repo. |
 | `avgSleepDurationMin`, `avgSoreness`, `avgMood` baseline columns | written as NULL | The service computes RHR and HRV, which are the two the formula actually scores against (`ReadinessFormula.rhrScore`/`hrvScore` take a baseline; sleep is scored by absolute band, mood/soreness by their own scales). Writing numbers nobody reads would be a second kind of claim. |
 
-The first three are the same gap: a training *plan* with dated sessions and
-load, which is a larger piece of work than wiring three booleans. Inventing a
+The first two are the same gap: a training *plan* with dated sessions and
+load, which is a larger piece of work than wiring two booleans. Inventing a
 plan model to turn them on would be building a feature nobody asked for in order
-to light up three flags.
+to light up two flags. (`manualRecoveryDay` was listed here with them until
+2026-10-16. It needed no plan, only a record of the person's own declaration,
+and is now built; see above.)
 
 ## Where it runs
 

@@ -71,6 +71,14 @@ public struct DishEdit: Sendable, Hashable {
 
     public init() {}
 
+    /// The edit a serving-count control makes: a count, or nil for none, which
+    /// puts the dish back to being one serving whole.
+    public static func servings(_ count: Int?) -> DishEdit {
+        var edit = DishEdit()
+        edit.servingCount = count.map { .set($0) } ?? .clear
+        return edit
+    }
+
     public var touchesAnything: Bool {
         nameText.isChange || yieldGrams.isChange || edibleProportion.isChange || servingCount.isChange
     }
@@ -269,10 +277,13 @@ public struct NutritionDishEditor: Sendable {
         }
     }
 
+    /// The dishes authored on this device. The bundle's own regional dishes
+    /// are `almanac:` too, but only a device-authored dish has a
+    /// `nutrition_dish` row, the same test the importer uses.
     public func dishes() throws -> [NativeDish] {
         var result: [NativeDish] = []
         for row in try db.query("""
-            SELECT food_ref FROM nutrition_food WHERE namespace = 'almanac' ORDER BY food_ref;
+            SELECT food_ref FROM nutrition_dish ORDER BY food_ref;
             """) {
             guard let ref = row.string("food_ref").flatMap(SourceIdentifier.init(parsing:)),
                   let held = try dish(ref) else { continue }

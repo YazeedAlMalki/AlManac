@@ -91,6 +91,30 @@ struct ReligiousFastingDerivationTests {
                 == ramadan.count)
     }
 
+    @Test("Which fasts do you keep: asked until answered, and the answer sets all three")
+    func fastsQuestion() throws {
+        let c = coordinator(at: at(12))
+        try c.refresh()
+        #expect(try c.needsFastsQuestion())
+        #expect(try schedules.isRamadanEnabled(), "until answered, Ramadan stays on")
+
+        try c.answerFastsQuestion(ramadan: false, mondaysAndThursdays: true, whiteDays: false)
+
+        #expect(try !c.needsFastsQuestion())
+        #expect(try !schedules.isRamadanEnabled())
+        #expect(try schedules.isRecurringEnabled(ReligiousFastScheduleStore.monThu))
+        #expect(try !schedules.isRecurringEnabled(ReligiousFastScheduleStore.whiteDays))
+        // Thursday the 17th is now a fast day by the answer alone.
+        #expect(try schedules.isFastDay(day))
+
+        // Answering again changes the switches; the question stays answered.
+        try c.answerFastsQuestion(ramadan: true, mondaysAndThursdays: false, whiteDays: true)
+        #expect(try !c.needsFastsQuestion())
+        #expect(try schedules.isRamadanEnabled())
+        #expect(try !schedules.isRecurringEnabled(ReligiousFastScheduleStore.monThu))
+        #expect(try schedules.isRecurringEnabled(ReligiousFastScheduleStore.whiteDays))
+    }
+
     @Test("A Ramadan day really is a fast day once the schedule exists")
     func ramadanDayIsAFastDay() throws {
         let range = try #require(ReligiousFastScheduleStore.ramadanRange(hijriYear: 1448))
@@ -265,6 +289,40 @@ struct ReligiousFastingDerivationTests {
         try coordinator(at: at(1, 30, on: "2026-09-18")).refresh()
 
         #expect(try religiousSession()?.endTimestamp == maghrib)
+    }
+
+    @Test("A fast left open for days is closed at its own Maghrib when the app next opens")
+    func olderOpenFastIsClosedAtItsOwnMaghrib() throws {
+        try schedules.setRecurringEnabled(ReligiousFastScheduleStore.monThu, enabled: true)
+        for date in ["2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20"] {
+            try cachePrayerTimes(date)
+        }
+        try coordinator(at: at(12)).refresh()
+        #expect(try religiousSession()?.isActive == true)
+
+        // Not opened again until Sunday the 20th, which is not a fast day: the
+        // pass over yesterday and today alone never reaches Thursday.
+        try coordinator(at: at(12, on: "2026-09-20")).refresh()
+
+        let session = try #require(try religiousSession())
+        #expect(session.isActive == false)
+        #expect(session.endTimestamp == maghrib)
+        #expect(try sessions.activeSession() == nil)
+    }
+
+    @Test("A fast left open for days is closed at its Maghrib, not at the next fast day's Fajr")
+    func olderOpenFastIsNotEndedByTheNextFast() throws {
+        try schedules.setRecurringEnabled(ReligiousFastScheduleStore.monThu, enabled: true)
+        for date in ["2026-09-16", "2026-09-17", "2026-09-18", "2026-09-20", "2026-09-21", "2026-09-22"] {
+            try cachePrayerTimes(date)
+        }
+        try coordinator(at: at(12)).refresh()
+
+        // Next opened on Monday the 21st, itself a fast day.
+        try coordinator(at: at(12, on: "2026-09-21")).refresh()
+
+        #expect(try religiousSession()?.endTimestamp == maghrib)
+        #expect(try religiousSession("2026-09-21")?.isActive == true)
     }
 
     @Test("Recalculated prayer times move the session's start")

@@ -24,6 +24,10 @@ final class HydrationModel: ObservableObject {
     /// write to, replacing the `@AppStorage` copy that used to drift
     /// independently of it.
     @Published private(set) var hydrationSettings: HydrationSettings?
+    /// BRD §6.3's "dark colour despite target → raise target", for today.
+    /// Nil when it could not be read; the dashboard then says nothing, because
+    /// a missing reading is not a reason to change anyone's target.
+    @Published private(set) var colourFeedback: UrineColourHydrationFeedback.Verdict?
 
     private var healthProvider: (any HealthProvider)?
     private var healthWriter: (any HealthWriter)?
@@ -93,6 +97,17 @@ final class HydrationModel: ObservableObject {
     /// Wires the concrete iOS `HealthKitProvider` in. Left unconfigured, sync
     /// methods below are no-ops — hydration logging itself never depends on
     /// HealthKit being authorised.
+    /// Whether water logged here is meant to reach Apple Health at all. Until
+    /// it is, an entry not yet in Health is the expected state, not news.
+    var writesWaterToHealth: Bool {
+        (healthWriter as? HealthKitProvider)?.canWrite(.water) ?? false
+    }
+
+    /// Whether this launch has a HealthKit provider yet. Only "Connect to
+    /// Health" used to set one, so after a relaunch nothing synced, and a
+    /// failed write was never retried, until the person tapped it again.
+    var isHealthKitConfigured: Bool { healthWriter != nil }
+
     func configureHealthKit(provider: any HealthProvider, writer: any HealthWriter) {
         healthProvider = provider
         healthWriter = writer
@@ -107,6 +122,12 @@ final class HydrationModel: ObservableObject {
             todayTotal = try store.total(from: range.start, to: range.end)
             todaysEntries = try store.logs(from: range.start, to: range.end)
             readProblem = nil
+            if let db {
+                colourFeedback = try? UrineColourHydrationFeedbackReader(db: db).feedback(
+                    on: today.value,
+                    intakeMilliliters: todayTotal.value,
+                    targetMilliliters: hydrationSettings?.dailyGoalMilliliters ?? 2000)
+            }
         } catch {
             // Do not crash the dashboard — but do not pretend either. This used
             // to carry only a comment saying it "will simply show stale figures
@@ -174,15 +195,23 @@ final class HydrationModel: ObservableObject {
         return result.warnings
     }
 
+    /// The person's own caffeine figure for a catalog drink, or nil for the
+    /// typical one again.
+    func setCaffeinePreset(drinkID: String, milligrams: Double?) throws {
+        try loggingService().setCaffeinePreset(drinkID: drinkID, milligrams: milligrams)
+        objectWillChange.send()
+    }
+
     /// Saves a user-authored drink. The service tags it `.userEntered`
     /// itself, so a custom drink can never be presented as a catalog estimate.
     @discardableResult
     func saveCustomDrink(name: String, liquidType: LiquidType, volumeMilliliters: Double,
                          caloriesKcal: Double, sodiumMilligrams: Double,
-                         sugarGrams: Double?) throws -> Drink {
+                         sugarGrams: Double?, caffeineMilligrams: Double) throws -> Drink {
         let drink = try loggingService().saveCustomDrink(
             name: name, liquidType: liquidType, volumeMilliliters: volumeMilliliters,
-            caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams, sugarGrams: sugarGrams)
+            caloriesKcal: caloriesKcal, sodiumMilligrams: sodiumMilligrams, sugarGrams: sugarGrams,
+            caffeineMilligrams: caffeineMilligrams)
         objectWillChange.send()
         return drink
     }

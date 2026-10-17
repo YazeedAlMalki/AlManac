@@ -32,7 +32,8 @@ final class NotificationSettingsUITests: XCTestCase {
         for type in ["readiness", "water", "meal", "bedtime", "supplement",
                      "suhoor", "iftar", "contextual_snack", "contextual_hydration", "prayer"] {
             let toggle = app.switches["notification-rule-\(type)"]
-            XCTAssertTrue(app.reveal(toggle), "no switch for \(type)")
+            XCTAssertTrue(bringOnScreen(toggle), "no switch for \(type); switches: "
+                          + "\(app.switches.allElementsBoundByIndex.map { "\($0.identifier)=\($0.label)" })")
         }
     }
 
@@ -87,12 +88,66 @@ final class NotificationSettingsUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Turn them all off"].exists, "the confirmation did not dismiss")
     }
 
+    /// BRD §6.14's "time-adjustable", for suhoor: its distance from Fajr moves
+    /// in 5-minute steps and is still there after a relaunch. Whether the
+    /// reminder then arrives 25 minutes before Fajr is device-only and unrun.
+    func testSuhoorDistanceFromFajrIsKeptAcrossALaunch() {
+        openReminders()
+        let suhoor = app.switches["notification-rule-suhoor"]
+        XCTAssertTrue(app.reveal(suhoor), "no suhoor switch")
+        if suhoor.value as? String == "0" { suhoor.tapSwitchControl() }
+        XCTAssertEqual(suhoor.value as? String, "1", "suhoor could not be turned on")
+
+        let stepper = app.steppers["notification-offset-suhoor"]
+        XCTAssertTrue(app.reveal(stepper), "suhoor, turned on, offers no distance from Fajr")
+        // Back to the spec's 20 first, whatever an earlier run left.
+        for _ in 0..<20 where !app.staticTexts["Minutes before Fajr: 20"].exists {
+            let label = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Minutes before Fajr")).firstMatch.label
+            let current = Int(label.split(separator: " ").last ?? "") ?? 20
+            stepper.buttons["notification-offset-suhoor-\(current > 20 ? "Decrement" : "Increment")"].tap()
+        }
+        XCTAssertTrue(app.staticTexts["Minutes before Fajr: 20"].exists, "suhoor does not start at §14.2's 20 minutes")
+
+        // SwiftUI names a stepper's buttons after its identifier.
+        stepper.buttons["notification-offset-suhoor-Increment"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.staticTexts["Minutes before Fajr: 25"].exists },
+                      "the distance did not move in a 5-minute step")
+
+        app.terminate()
+        app.launch()
+        openReminders()
+        let after = app.staticTexts["Minutes before Fajr: 25"]
+        XCTAssertTrue(app.reveal(after), "the distance did not survive a relaunch: "
+                      + "\(app.staticTexts.allElementsBoundByIndex.map(\.label).filter { $0.contains("Fajr") })")
+
+        // Leave the spec's distance behind for the next run.
+        app.steppers["notification-offset-suhoor"].buttons["notification-offset-suhoor-Decrement"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.staticTexts["Minutes before Fajr: 20"].exists })
+    }
+
     // MARK: - Helpers
 
+    /// `reveal`, then dragging along the list's leading edge. Since 2026-10-16
+    /// the switches that are on carry a stepper or a time row, and a swipe that
+    /// starts mid-screen can land on a stepper and move nothing; the row labels
+    /// at the leading edge hold no control. Up first, then back down, in case a
+    /// drag carried the switch past the top.
+    private func bringOnScreen(_ element: XCUIElement) -> Bool {
+        if app.reveal(element) { return true }
+        let list = app.collectionViews.firstMatch
+        for (from, to) in [(0.75, 0.35), (0.35, 0.75)] {
+            for _ in 0..<12 {
+                if app.isRevealed(element) { return true }
+                list.coordinate(withNormalizedOffset: CGVector(dx: 0.06, dy: from))
+                    .press(forDuration: 0.05,
+                           thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.06, dy: to)))
+            }
+        }
+        return app.isRevealed(element)
+    }
+
     private func openReminders() {
-        let modules = app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10))
-        modules.tap()
+        app.openModulesTab()
 
         let settings = app.buttons["Settings"]
         XCTAssertTrue(app.reveal(settings), "Settings is not offered")

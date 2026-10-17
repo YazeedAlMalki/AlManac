@@ -25,9 +25,9 @@ import AlmanacCore
 struct NotificationScheduler {
     private let center = UNUserNotificationCenter.current()
 
-    /// The prefix `NotificationPlanner` gives every identifier. Used only to
-    /// recognise *our own* stale requests, never to remove anything else.
-    static let ownedPrefix = "almanac."
+    /// Recognises *our own* stale requests, never anything else. The rule is
+    /// `NotificationPlan.isOwned`, in AlmanacCore, where it is tested.
+    static func isOwned(_ identifier: String) -> Bool { NotificationPlan.isOwned(identifier) }
 
     @discardableResult
     func requestAuthorization() async throws -> Bool {
@@ -59,7 +59,7 @@ struct NotificationScheduler {
         let plannedIDs = Set(plan.notifications.map(\.identifier))
         let stale = pending
             .map(\.identifier)
-            .filter { $0.hasPrefix(Self.ownedPrefix) && !plannedIDs.contains($0) }
+            .filter { Self.isOwned($0) && !plannedIDs.contains($0) }
         if !stale.isEmpty {
             center.removePendingNotificationRequests(withIdentifiers: stale)
         }
@@ -108,7 +108,7 @@ struct NotificationScheduler {
     func cancelAll() async {
         let ids = await center.pendingNotificationRequests()
             .map(\.identifier)
-            .filter { $0.hasPrefix(Self.ownedPrefix) }
+            .filter { Self.isOwned($0) }
         guard !ids.isEmpty else { return }
         center.removePendingNotificationRequests(withIdentifiers: ids)
     }
@@ -119,7 +119,7 @@ struct NotificationScheduler {
     func pendingOwnedIdentifiers() async -> [String] {
         await center.pendingNotificationRequests()
             .map(\.identifier)
-            .filter { $0.hasPrefix(Self.ownedPrefix) }
+            .filter { Self.isOwned($0) }
             .sorted()
     }
 

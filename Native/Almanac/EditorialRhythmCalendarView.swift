@@ -195,12 +195,15 @@ struct EditorialRhythmCalendarView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .accessibilityElement(children: .combine)
             }
-            ringRow(
-                title: String(localized: "Digestion"),
-                state: day.digestion == .disabled ? String(localized: "Off") : String(localized: "Fill rule unavailable"),
-                detail: nil,
-                complete: false
-            )
+            // Not in v1 (owner, G2, 2026-10-16): no row while the ring is off.
+            if day.digestion != .disabled {
+                ringRow(
+                    title: String(localized: "Digestion"),
+                    state: String(localized: "Fill rule unavailable"),
+                    detail: nil,
+                    complete: false
+                )
+            }
 
             NavigationLink {
                 ActivityRingDayEditor(db: model.database, day: day.day) {
@@ -295,9 +298,11 @@ struct EditorialRhythmCalendarView: View {
         let hydration = day.hydration == .complete ? complete : incomplete
         let training = day.training == .complete ? complete : incomplete
         let nutrition = nutritionPresentation(day.nutrition).state
-        let digestion = day.digestion == .disabled ? String(localized: "off") : String(localized: "fill rule unavailable")
         var parts = [displayDay(day.day), String(localized: "Hydration \(hydration)"), String(localized: "Training \(training)"),
-                     String(localized: "Nutrition \(nutrition)"), String(localized: "Digestion \(digestion)")]
+                     String(localized: "Nutrition \(nutrition)")]
+        if day.digestion != .disabled {
+            parts.append(String(localized: "Digestion \(String(localized: "fill rule unavailable"))"))
+        }
         if day.isGolden { parts.append(String(localized: "golden day")) }
         if day.day == model.todayDay { parts.append(String(localized: "today")) }
         if day.day == model.selectedDay { parts.append(String(localized: "selected")) }

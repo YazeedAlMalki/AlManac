@@ -15,12 +15,15 @@ references below (§n) point there.
 | ANSES-CIQUAL 2025 | `ciqual` | B | All 3,484 foods |
 | CoFID 2021 | `cofid` | B | All 2,887 rows of `1.3 Proximates` |
 | AFCD Release 3 | `afcd` | B | All 1,588 foods, per 100 g and (213 liquids) per 100 mL |
-| Almanac-native | `almanac` | N | Nothing yet — awaits Saudi/Gulf dish data |
+| Almanac-native | `almanac` | N | Regional dishes authored in `native/*.csv` (15 so far); see "Almanac-native dishes" |
 
 Canonical nutrients are only what calorie calculation needs (energy, protein,
 fat, carbohydrate, fibre, alcohol). The dictionary splits some of these into
 more than one canonical nutrient where sources publish different quantities
 under the same name — see "Carbohydrate" below.
+
+`almanac` canonicalises recipes of the other four sources' canonical foods,
+so `all` runs it last; `canonicalise almanac` on its own needs them in place.
 
 Group C and D sources (Open Food Facts, SFDA, NEVO, TBCA, IFCT, FAO/INFOODS,
 Bahrain, Tunisia, Lebanon, INNTA) are never read by this pipeline.
@@ -262,3 +265,44 @@ so the dictionary keeps them apart:
 Collapsing them into one "carbohydrate" would under-count every fibre-rich
 food outside USDA by 4 kcal per gram of fibre. CoFID's Englyst NSP is a
 different measurement and is not mapped.
+
+## Almanac-native dishes (`sources/almanac.py`, `native/`)
+
+Regional dishes Almanac authors. The inputs live in this repository, not the
+lake, because Almanac owns them; `extract almanac` copies them in with their
+SHA-256s. Save each sheet as UTF-8 CSV with exactly these headings:
+
+| File | Columns |
+|---|---|
+| `native/dishes.csv` | `dish_id` (lower-case, digits, hyphens), `name_en`, `name_ar`, `transliteration`, `state` (`cooked` or `raw`), `yield_g` (finished weight; blank = the components' sum), `retention` (blank = none applied), `benchmark_ref`, `notes` |
+| `native/components.csv` | `dish_id`, `food_ref` (a canonical USDA, CIQUAL, CoFID or AFCD food, e.g. `usda:2346393`), `grams`, `note` |
+| `native/portions.csv` | `dish_id`, `amount`, `unit` (e.g. `plate`), `grams` |
+
+A dish becomes `almanac:regional-{dish_id}`, licence group N, food group
+`regional`. Its values are the recipe reduced per 100 g of `yield_g`, by the
+same rule as AlmanacCore's `NutritionDishEditor.reduce`: a nutrient only when
+every component reports it; `not_analysed` makes it unknown; `trace` and
+`below_loq` count as 0. Every value is `calculated_recipe`, never `measured`.
+The English name carries the transliteration in brackets, so search finds it;
+the Arabic name is its own `ar` row. A household measure becomes a
+`household_measure` portion, qualifier `borrowed`. `source_record` names the
+state, the component count and the benchmark.
+
+**Stops the stage** (nothing is written): a missing column, a bad or repeated
+`dish_id`, no `name_en`, a `state` other than cooked/raw, a dish with no
+components, a weight that is not a positive number, a component or benchmark
+that is not a canonical food of a shippable source (SFDA and Open Food Facts
+included), or a source not yet canonicalised.
+
+**Reported** in `processed/native-report.md`, not enforced: no Arabic name; no
+household measure; cooked with no `yield_g`; general Atwater (4/4/9/7, `qa.general_atwater`)
+more than 15 % from the components' own summed energy, or not computable
+because the components share no total-carbohydrate basis; no benchmark, or
+more than 20 % from the benchmark's general-Atwater figure; a name (folded:
+case, harakat, Arabic letter variants) shared by two dishes. A benchmark is a
+comparison, never a source of values.
+
+Without the lake (a cloud session), `rebuild_from_bundle.py` recovers the four
+reference sources' canonical rows from the shipped bundle and runs the stages
+above on them. With `--no-dishes` it must reproduce the shipped bundle row for
+row; it did on 2026-10-17, before the first dishes went in.

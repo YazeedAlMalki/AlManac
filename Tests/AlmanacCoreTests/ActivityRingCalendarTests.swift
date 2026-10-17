@@ -162,7 +162,9 @@ final class ActivityRingCalendarTests: XCTestCase {
 
         try settings.setDigestionEnabled(true)
         XCTAssertTrue(try settings.isDigestionEnabled())
-        XCTAssertEqual(try XCTUnwrap(rings.month(containing: date).day(on: "2026-09-24")).digestion, .fillRuleUnavailable)
+        // Owner, G2, 2026-10-16: no digestion ring in v1, whatever is stored.
+        XCTAssertFalse(ActivityRingCalendar.digestionRingInV1)
+        XCTAssertEqual(try XCTUnwrap(rings.month(containing: date).day(on: "2026-09-24")).digestion, .disabled)
     }
 
     func testGoldenDayIsNotAwardedWithoutNutritionTargets() throws {

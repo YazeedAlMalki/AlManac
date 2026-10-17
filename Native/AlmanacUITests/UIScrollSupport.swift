@@ -109,6 +109,22 @@ extension XCUIApplication {
         let failure = staticTexts["Almanac could not open"]
         return !failure.waitForExistence(timeout: 5)
     }
+
+    /// Relaunches with the last `days` days of readiness history planted — a
+    /// night, the morning's vitals and the score they earn, per day
+    /// (`ReadinessHistorySeedPlan`). Same shape and reasons as `seedVitals`;
+    /// re-applying it leaves the same rows.
+    @discardableResult
+    func seedReadinessHistory(days: Int) -> Bool {
+        terminate()
+        while let index = launchArguments.firstIndex(of: "-AlmanacSeedReadinessHistory") {
+            launchArguments.removeSubrange(index..<min(index + 2, launchArguments.count))
+        }
+        launchArguments += ["-AlmanacSeedReadinessHistory", String(days)]
+        launch()
+        let failure = staticTexts["Almanac could not open"]
+        return !failure.waitForExistence(timeout: 5)
+    }
 }
 
 extension XCUIApplication {
@@ -211,6 +227,20 @@ extension XCUIApplication {
                 drag(collectionViews.firstMatch, direction: direction)
                 stuckCount = 0
             }
+        }
+        if isRevealed(element) { return true }
+
+        // ponytail: a flick can carry a row from just under the bottom bar to
+        // above the navigation bar in one go, and a one-way sweep never comes
+        // back for it: it spends its budget at the list's end and reports the
+        // row missing (CI 2026-10-17, health-connect-heart in Settings, 148 s).
+        // So sweep back with drags. A drag moves about half the list, less than
+        // the visible window, so the way back cannot skip a row. Only reached
+        // once the sweep has failed, so callers that pass are unchanged.
+        let back: RevealDirection = direction == .up ? .down : .up
+        for _ in 0..<maxSwipes where collectionViews.firstMatch.exists {
+            if isRevealed(element) { return true }
+            drag(collectionViews.firstMatch, direction: back)
         }
         return isRevealed(element)
     }
@@ -415,3 +445,23 @@ extension XCUIApplication {
     }
 }
 
+
+extension XCUIApplication {
+    /// Taps the Modules tab and waits for the Modules list.
+    ///
+    /// Three tests failed on 2026-10-16 and 17 (AllergenFilter, NotificationSettings,
+    /// TrainingProgram), each a few seconds after a fresh launch and each passing
+    /// on the same commit in the other run. All three tapped Modules and went on
+    /// without checking it opened, so they failed later, on a row that was not
+    /// there, with messages that blamed the row ("Settings is not offered", after
+    /// three minutes of swiping). Checking here names the step that failed: the
+    /// tab tap, or the row.
+    func openModulesTab(file: StaticString = #filePath, line: UInt = #line) {
+        let modules = buttons["tab-modules"].exists ? buttons["tab-modules"] : buttons["Modules"].firstMatch
+        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Modules tab", file: file, line: line)
+        modules.tap()
+        XCTAssertTrue(navigationBars["Modules"].waitForExistence(timeout: 5),
+                      "the Modules tab did not open; navigation bars: \(navigationBars.allElementsBoundByIndex.map(\.identifier))",
+                      file: file, line: line)
+    }
+}

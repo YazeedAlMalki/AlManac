@@ -25,6 +25,8 @@ struct HydrationLoggingView: View {
     @State private var error: String?
     @State private var warnings: [DrinkLoggingWarning] = []
     @State private var addingDrink = false
+    @State private var editingCaffeine = false
+    @State private var caffeineText = ""
     /// Loaded once on appear. `allDrinks()` reads `hydration_drink`, so
     /// computing it from two computed properties would query the database
     /// twice per render.
@@ -64,6 +66,16 @@ struct HydrationLoggingView: View {
                 }
             }
             .editorError($error)
+            .alert("Caffeine per serving", isPresented: $editingCaffeine) {
+                TextField("mg", text: $caffeineText).keyboardType(.decimalPad)
+                Button("Save") { saveCaffeine(typed: true) }
+                Button("Use the typical value") { saveCaffeine(typed: false) }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                if let drink = selected, let typical = CatalogDrinks.byID(drink.id)?.caffeineMilligrams {
+                    Text("Typical value for \(Int(drink.volumeMilliliters.rounded())) mL: \(AlmanacNumber.compact(typical)) mg.")
+                }
+            }
             .task { drinks = model.allDrinks() }
         }
     }
@@ -167,6 +179,19 @@ struct HydrationLoggingView: View {
                 if let sugar = drink.sugarGrams, sugar > 0 {
                     figure(String(localized: "Sugar"), String(localized: "\(AlmanacNumber.compact(sugar * scale)) g"))
                 }
+                if drink.caffeineMilligrams > 0 {
+                    figure(isOwnCaffeine(drink) ? String(localized: "Caffeine (your figure)") : String(localized: "Caffeine"),
+                           String(localized: "\(AlmanacNumber.compact(drink.caffeineMilligrams * scale)) mg"))
+                }
+                // A catalog drink's caffeine is a typical figure; the person may
+                // know theirs (a stronger brew, a double shot). Only caffeine.
+                if !drink.isCustom, (CatalogDrinks.byID(drink.id)?.caffeineMilligrams ?? 0) > 0 {
+                    Button("Change caffeine") {
+                        caffeineText = AlmanacNumber.compact(drink.caffeineMilligrams)
+                        editingCaffeine = true
+                    }
+                    .accessibilityIdentifier("drink-change-caffeine")
+                }
             } header: {
                 Text("This amount")
             } footer: {
@@ -180,6 +205,36 @@ struct HydrationLoggingView: View {
             Text(label).font(AlmanacTypography.font(.body))
             Spacer(minLength: 12)
             Text(value).font(AlmanacTypography.font(.data).monospacedDigit())
+        }
+    }
+
+    // MARK: - Caffeine preset
+
+    private func isOwnCaffeine(_ drink: Drink) -> Bool {
+        guard !drink.isCustom, let typical = CatalogDrinks.byID(drink.id) else { return false }
+        return typical.caffeineMilligrams != drink.caffeineMilligrams
+    }
+
+    /// Saves the typed figure, or with `typed: false` puts the typical one
+    /// back, then re-reads the list so the selected drink carries it.
+    private func saveCaffeine(typed: Bool) {
+        guard let drink = selected else { return }
+        let milligrams: Double?
+        if typed {
+            guard let value = Double(userInput: caffeineText), value >= 0 else {
+                error = String(localized: "Enter caffeine in mg, 0 or more.")
+                return
+            }
+            milligrams = value
+        } else {
+            milligrams = nil
+        }
+        do {
+            try model.setCaffeinePreset(drinkID: drink.id, milligrams: milligrams)
+            drinks = model.allDrinks()
+            selected = drinks.first { $0.id == drink.id }
+        } catch {
+            self.error = String(describing: error)
         }
     }
 
@@ -240,6 +295,7 @@ struct CustomDrinkView: View {
     @State private var caloriesText = ""
     @State private var sodiumText = ""
     @State private var sugarText = ""
+    @State private var caffeineText = ""
     @State private var error: String?
     var onSave: (Drink) -> Void
 
@@ -259,6 +315,8 @@ struct CustomDrinkView: View {
                     TextField("Calories (kcal)", text: $caloriesText).keyboardType(.numberPad)
                     TextField("Sodium (mg)", text: $sodiumText).keyboardType(.numberPad)
                     TextField("Sugar (g, optional)", text: $sugarText).keyboardType(.decimalPad)
+                    TextField("Caffeine (mg, optional)", text: $caffeineText).keyboardType(.decimalPad)
+                        .accessibilityIdentifier("custom-drink-caffeine")
                 } header: {
                     Text("Nutrition")
                 } footer: {
@@ -292,7 +350,8 @@ struct CustomDrinkView: View {
                 liquidType: type, volumeMilliliters: volume,
                 caloriesKcal: Double(userInput: caloriesText) ?? 0,
                 sodiumMilligrams: Double(userInput: sodiumText) ?? 0,
-                sugarGrams: Double(userInput: sugarText))
+                sugarGrams: Double(userInput: sugarText),
+                caffeineMilligrams: max(0, Double(userInput: caffeineText) ?? 0))
             onSave(drink)
             dismiss()
         } catch {

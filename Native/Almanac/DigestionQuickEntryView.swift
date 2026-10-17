@@ -34,6 +34,13 @@ struct DigestionQuickEntryView: View {
     @State private var bloodPresent = false
     @State private var bloodAmount: BloodAmount = .none
     @State private var gas: Gas = .unstated
+    /// BRD §6.3's escalation inputs (Migration 060), with "not stated" as a real
+    /// third state, as for gas.
+    @State private var severePain: Gas = .unstated
+    @State private var dizziness: Gas = .unstated
+    /// The draft advisory for the entry just saved (owner, G1, 2026-10-16).
+    @State private var advisory: DigestionAdvisory?
+    @State private var urgentAdvisory: DigestionAdvisory?
     @State private var grade: UrinationColorGrade = .grade4
     @State private var notes = ""
     @State private var time = Date()
@@ -124,7 +131,13 @@ struct DigestionQuickEntryView: View {
             .navigationTitle("Log digestion")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                // "Done" once something is saved: the sheet stays open after an
+                // entry that raised an advisory, so it can be read.
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(confirmation == nil ? "Cancel" : "Done") {
+                        if confirmation == nil { dismiss() } else { onSaved() }
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save", action: save)
                         .disabled(db == nil)
@@ -132,6 +145,16 @@ struct DigestionQuickEntryView: View {
                 }
             }
             .editorError($error)
+            // The urgent level does not wait to be scrolled to.
+            .alert(urgentAdvisory?.level.title ?? "", isPresented: Binding(
+                get: { urgentAdvisory != nil },
+                set: { if !$0 { urgentAdvisory = nil } }
+            )) {
+                Button("OK", role: .cancel) { urgentAdvisory = nil }
+            } message: {
+                Text(((urgentAdvisory?.reasons.filter { $0.level == .seekUrgentCare }.map(\.sentence) ?? [])
+                      + [DigestionAdvisory.reviewNote]).joined(separator: "\n\n"))
+            }
             .task { reload() }
         }
     }
@@ -182,7 +205,7 @@ struct DigestionQuickEntryView: View {
         } header: {
             AlmanacSectionHeader(title: String(localized: "Colour"))
         } footer: {
-            Text("Almanac records what you saw and does not interpret it.")
+            Text("Almanac records what you saw. Where an entry may need attention it says so, in draft wording a clinician has not reviewed.")
         }
     }
 
@@ -204,6 +227,18 @@ struct DigestionQuickEntryView: View {
                 }
             }
             .accessibilityIdentifier("digestion-gas")
+            Picker("Severe pain", selection: $severePain) {
+                ForEach(Gas.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .accessibilityIdentifier("digestion-severe-pain")
+            Picker("Dizziness or weakness", selection: $dizziness) {
+                ForEach(Gas.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .accessibilityIdentifier("digestion-dizziness")
         } header: {
             AlmanacSectionHeader(title: String(localized: "Symptoms"))
         } footer: {
@@ -268,6 +303,9 @@ struct DigestionQuickEntryView: View {
             if let confirmation {
                 AlmanacStatusMark(text: confirmation, tone: .good)
             }
+            if let advisory {
+                DigestionAdvisoryNote(advisory: advisory)
+            }
         } header: {
             AlmanacSectionHeader(title: String(localized: "Today"))
         }
@@ -282,7 +320,8 @@ struct DigestionQuickEntryView: View {
         do {
             switch kind {
             case .bowel:
-                _ = try DigestionStore(db: db).log(
+                let store = DigestionStore(db: db)
+                let id = try store.log(
                     BowelMovementDraft(timestamp: time,
                                        bristolType: bristol,
                                        color: stoolColor.rawValue,
@@ -294,19 +333,30 @@ struct DigestionQuickEntryView: View {
                                        // the spec gives it a scale, so a picker
                                        // here would be inventing one. Recorded
                                        // in docs/features/digestion.md.
-                                       notes: cleanNotes),
+                                       notes: cleanNotes,
+                                       severePain: severePain == .unstated ? nil : (severePain == .yes),
+                                       dizzinessOrWeakness: dizziness == .unstated ? nil : (dizziness == .yes)),
                     logicalDay: day)
                 confirmation = String(localized: "Bowel movement logged")
+                advisory = try store.entry(id: id).flatMap { saved in
+                    let from = (0..<6).reduce(LogicalDay(day)) { d, _ in timeModel.day(before: d) ?? d }.value
+                    let to = timeModel.day(after: LogicalDay(day))?.value ?? day
+                    return DigestionAdvisory.assess(saved, recent: try store.logs(from: from, to: to),
+                                                    timeModel: timeModel)
+                }
+                if advisory?.level == .seekUrgentCare { urgentAdvisory = advisory }
             case .urination:
                 _ = try UrinationStore(db: db).log(
                     UrinationDraft(timestamp: time, colorGrade: grade, notes: cleanNotes),
                     logicalDay: day)
                 confirmation = String(localized: "Urination logged")
+                advisory = nil
             }
             notes = ""
             reload()
             trackingModel.refresh()
-            onSaved()
+            // An entry that raised an advisory keeps the sheet open on it.
+            if advisory == nil { onSaved() }
         } catch {
             self.error = String(describing: error)
         }
@@ -457,5 +507,32 @@ struct UrinationGradeView: View {
         .almanacModuleSurface()
         .navigationTitle("Colour grade")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// The draft advisory under a saved entry: its level, what raised it, and that
+/// the wording has not been reviewed by a clinician (BRD §6.3; owner, G1).
+struct DigestionAdvisoryNote: View {
+    let advisory: DigestionAdvisory
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(advisory.level.title)
+                .font(AlmanacTypography.font(.bodyMedium))
+                .foregroundStyle(advisory.level == .informational ? AlmanacPalette.textPrimary : AlmanacPalette.warning)
+            ForEach(advisory.reasons, id: \.self) { reason in
+                Text(reason.sentence)
+                    .font(AlmanacTypography.font(.body))
+                    .foregroundStyle(AlmanacPalette.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Text(DigestionAdvisory.reviewNote)
+                .font(AlmanacTypography.font(.caption))
+                .foregroundStyle(AlmanacPalette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("digestion-advisory")
     }
 }

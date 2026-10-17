@@ -96,11 +96,13 @@ struct ModulesView: View {
         case .fasting:
             FastingView(model: fastingModel)
         case .supplements:
-            SupplementView(db: db, trackingModel: trackingModel)
+            SupplementView(db: db, trackingModel: trackingModel, notificationModel: notificationModel)
         case .context:
             ContextTagsView(db: db, trackingModel: trackingModel)
         case .prayer:
             PrayerView(model: prayerModel, notificationModel: notificationModel)
+        case .circadian:
+            CircadianView(db: db)
         case .bodyCircumference:
             BodyCircumferenceView(db: db, healthModel: healthModel)
         case .vitals:
@@ -113,6 +115,8 @@ struct ModulesView: View {
             DayTimelineView(db: db)
         case .bodyComposition:
             MeasurementsView(db: db, trackingModel: trackingModel)
+        case .digestion:
+            DigestionHistoryView(db: db)
         case .profile:
             ProfileView(db: db, readinessModel: readinessModel)
         case .settings:
@@ -158,6 +162,22 @@ struct MeasurementsView: View {
 
                 Button("Log body measurement", systemImage: "plus") { addingBody = true }
                     .disabled(db == nil)
+            }
+
+            // A year of each metric, charted, with its readings to correct or
+            // delete (BRD §6.6, §6.17).
+            Section("History") {
+                ForEach(BodyMetric.allCases) { metric in
+                    NavigationLink {
+                        BodyMetricHistoryView(db: db, metric: metric) {
+                            reload()
+                            trackingModel.refresh()
+                        }
+                    } label: {
+                        Text(metric.title)
+                    }
+                    .accessibilityIdentifier("body-history-\(metric.rawValue)")
+                }
             }
 
             // The readings themselves, which is a different question from "where

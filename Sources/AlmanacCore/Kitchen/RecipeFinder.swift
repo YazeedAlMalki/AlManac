@@ -44,6 +44,10 @@ public struct RecipeMatch: Sendable, Hashable {
     public let yieldGrams: Double?
     public let servingCount: Int?
 
+    /// Where the recipe came from, when it was imported (`WikibooksRecipeBundle`).
+    /// Nil for the person's own dishes.
+    public var source: ImportedRecipeSource? = nil
+
     public var missing: [RecipeIngredient] { ingredients.filter { !$0.isOnHand } }
     public var onHandCount: Int { ingredients.count - missing.count }
 }
@@ -164,7 +168,9 @@ public struct RecipeFinder: Sendable {
     }
 
     /// Recipes whose name, in any language, contains `text` compared folded;
-    /// every recipe when `text` is empty. Name order. What is on hand is read
+    /// every recipe when `text` is empty. The person's own dishes first, then
+    /// the imported ones, each in name order: three hundred Wikibooks recipes
+    /// would otherwise bury the person's own (`CONTEXT.md`, Kitchen recipes). What is on hand is read
     /// from the pantry, so the list can still say what each recipe is missing.
     public func browse(_ text: String,
                        excluding allergens: Set<FoodAllergen>,
@@ -184,7 +190,7 @@ public struct RecipeFinder: Sendable {
                                WHERE name_fold LIKE ? ESCAPE '\\')
                 """, [.text(pattern)], onHand: pantry)
         }
-        return try finish(matches.sorted(by: RecipeFinder.byName), excluding: allergens, limit: limit)
+        return try finish(matches.sorted(by: RecipeFinder.ownFirst), excluding: allergens, limit: limit)
     }
 
     // MARK: Reading
@@ -201,17 +207,20 @@ public struct RecipeFinder: Sendable {
         var names: [SourceIdentifier: String] = [:]
         var ingredients: [SourceIdentifier: [RecipeIngredient]] = [:]
         var sizes: [SourceIdentifier: (yield: Double?, servings: Int?)] = [:]
+        var sources: [SourceIdentifier: ImportedRecipeSource] = [:]
         for row in try db.query("""
             SELECT c.dish_ref, d.name AS dish_name, c.component_ref, c.grams,
                    n.name AS component_name, dd.yield_grams, dd.serving_count,
                    COALESCE(m.ingredient_id, c.component_ref) AS match_key,
-                   i.name AS ingredient_name
+                   i.name AS ingredient_name,
+                   s.source, s.title, s.url, s.revision, s.licence, s.stated_servings
             FROM nutrition_dish_component c
             LEFT JOIN nutrition_food_name d ON d.food_ref = c.dish_ref AND d.is_primary = 1
             LEFT JOIN nutrition_food_name n ON n.food_ref = c.component_ref AND n.is_primary = 1
             LEFT JOIN nutrition_dish dd ON dd.food_ref = c.dish_ref
             LEFT JOIN kitchen_ingredient_food m ON m.food_ref = c.component_ref
             LEFT JOIN kitchen_ingredient i ON i.id = m.ingredient_id
+            LEFT JOIN kitchen_recipe_source s ON s.food_ref = c.dish_ref
             WHERE \(condition)
             ORDER BY c.dish_ref, c.sequence;
             """, parameters) {
@@ -222,6 +231,7 @@ public struct RecipeFinder: Sendable {
                 order.append(dish)
                 names[dish] = row.string("dish_name") ?? dish.description
                 sizes[dish] = (row.double("yield_grams"), row.int("serving_count").map { Int($0) })
+                sources[dish] = WikibooksRecipeBundle.source(from: row)
             }
             ingredients[dish, default: []].append(
                 RecipeIngredient(ref: ref, name: row.string("component_name"), grams: grams,
@@ -232,7 +242,8 @@ public struct RecipeFinder: Sendable {
             RecipeMatch(recipe: $0, name: names[$0] ?? $0.description,
                         ingredients: ingredients[$0] ?? [],
                         allergen: DishAllergenJudgement(ref: $0, verdict: AllergenVerdict(status: .notApplicable)),
-                        yieldGrams: sizes[$0]?.yield, servingCount: sizes[$0]?.servings)
+                        yieldGrams: sizes[$0]?.yield, servingCount: sizes[$0]?.servings,
+                        source: sources[$0])
         }
     }
 
@@ -255,7 +266,8 @@ public struct RecipeFinder: Sendable {
                 ?? DishAllergenJudgement(ref: match.recipe, verdict: AllergenVerdict(status: .notApplicable))
             let judged = RecipeMatch(recipe: match.recipe, name: match.name,
                                      ingredients: match.ingredients, allergen: judgement,
-                                     yieldGrams: match.yieldGrams, servingCount: match.servingCount)
+                                     yieldGrams: match.yieldGrams, servingCount: match.servingCount,
+                                     source: match.source)
             if judgement.isHidden {
                 withheld.append(judged)
                 triggered.formUnion(judgement.verdict.declared)
@@ -299,6 +311,11 @@ public struct RecipeFinder: Sendable {
     private static func fewestMissingFirst(_ a: RecipeMatch, _ b: RecipeMatch) -> Bool {
         if a.missing.count != b.missing.count { return a.missing.count < b.missing.count }
         if a.onHandCount != b.onHandCount { return a.onHandCount > b.onHandCount }
+        return byName(a, b)
+    }
+
+    private static func ownFirst(_ a: RecipeMatch, _ b: RecipeMatch) -> Bool {
+        if (a.source == nil) != (b.source == nil) { return a.source == nil }
         return byName(a, b)
     }
 

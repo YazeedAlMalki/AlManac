@@ -6,15 +6,18 @@ import Foundation
 ///
 /// One form for both rather than two, because the fields are identical and a
 /// separate "edit" form is a second place for the vocabularies to drift. The
-/// reminder time and the active flag are deliberately absent: `SupplementPlanStore`
-/// gives them their own single-purpose methods so that saving this form can
-/// never clear a reminder by omitting it.
+/// active flag is deliberately absent (it is the row's swipe action). The
+/// reminder is here but written through its own single-purpose call,
+/// `SupplementReminderSetting`, and only when it changed — so saving the rest of
+/// the form can never clear a reminder by omitting it.
 @MainActor
 struct SupplementPlanEditor: View {
     let db: Database
     /// Nil creates a plan; non-nil edits that one.
     let plan: SupplementPlan?
-    let onSaved: () -> Void
+    /// Called after a save. `true` when this save turned a reminder on, which
+    /// is the deliberate action that may ask for notification permission.
+    let onSaved: (_ reminderTurnedOn: Bool) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
@@ -22,6 +25,8 @@ struct SupplementPlanEditor: View {
     @State private var doseUnit = SupplementDoseUnit.milligram.rawValue
     @State private var frequency = SupplementFrequency.daily.rawValue
     @State private var timingNotes = ""
+    @State private var remind = false
+    @State private var reminderTime = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
     @State private var error: String?
 
     private var isEditing: Bool { plan != nil }
@@ -58,6 +63,30 @@ struct SupplementPlanEditor: View {
                          : "Optional. Shown under the name on the adherence list.")
                 }
 
+                // A discontinued plan is never planned (`activePlansWithReminders`),
+                // so a reminder on one could be set and never fire.
+                if plan?.isActive == false {
+                    Section {
+                        Text("A discontinued plan has no reminder.")
+                            .foregroundStyle(AlmanacPalette.textSecondary)
+                    } header: {
+                        Text("Reminder")
+                    }
+                } else {
+                Section {
+                    Toggle("Remind me", isOn: $remind)
+                        .accessibilityIdentifier("supplement-reminder")
+                    if remind {
+                        DatePicker("Time", selection: $reminderTime, displayedComponents: .hourAndMinute)
+                            .accessibilityIdentifier("supplement-reminder-time")
+                    }
+                } header: {
+                    Text("Reminder")
+                } footer: {
+                    Text("Turning a reminder on also turns on supplement reminders in Reminders.")
+                }
+                }
+
                 if isEditing {
                     Section {
                         Label("Discontinuing a plan keeps it and its history. Use the swipe action on the plan row.",
@@ -89,6 +118,16 @@ struct SupplementPlanEditor: View {
         doseUnit = plan.doseUnit
         frequency = plan.frequency
         timingNotes = plan.timingNotes ?? ""
+        remind = plan.reminderEnabled
+        if let minute = plan.reminderMinuteOfDay {
+            reminderTime = Calendar.current.date(bySettingHour: minute / 60, minute: minute % 60,
+                                                 second: 0, of: Date()) ?? reminderTime
+        }
+    }
+
+    private var reminderMinute: Int {
+        let parts = Calendar.current.dateComponents([.hour, .minute], from: reminderTime)
+        return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
     }
 
     private func save() {
@@ -107,12 +146,19 @@ struct SupplementPlanEditor: View {
                                         frequency: frequency, timingNotes: cleanNotes)
         do {
             let store = SupplementPlanStore(db: db)
+            let id: Int64
             if let plan {
                 try store.update(draft, id: plan.id)
+                id = plan.id
             } else {
-                _ = try store.create(draft)
+                id = try store.create(draft)
             }
-            onSaved()
+            let minute: Int? = remind ? reminderMinute : nil
+            let editable = plan?.isActive != false
+            if editable, plan?.reminderEnabled != remind || (remind && plan?.reminderMinuteOfDay != minute) {
+                try SupplementReminderSetting(db: db).set(planId: id, enabled: remind, minuteOfDay: minute)
+            }
+            onSaved(editable && remind && plan?.reminderEnabled != true)
             dismiss()
         } catch {
             self.error = String(describing: error)

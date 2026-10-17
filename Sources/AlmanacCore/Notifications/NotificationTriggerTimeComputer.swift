@@ -29,15 +29,15 @@ import Foundation
 public enum NotificationTriggerTimeComputer {
 
     /// §14.2 — 20 minutes before Fajr, only on a scheduled religious fast day.
-    public static func suhoorTrigger(fajr: Date, isFastDay: Bool) -> Date? {
+    public static func suhoorTrigger(fajr: Date, isFastDay: Bool, leadMinutes: Int = 20) -> Date? {
         guard isFastDay else { return nil }
-        return fajr.addingTimeInterval(-20 * 60)
+        return fajr.addingTimeInterval(-Double(leadMinutes) * 60)
     }
 
     /// §14.2 — at Maghrib itself, only on a scheduled religious fast day.
-    public static func iftarTrigger(maghrib: Date, isFastDay: Bool) -> Date? {
+    public static func iftarTrigger(maghrib: Date, isFastDay: Bool, delayMinutes: Int = 0) -> Date? {
         guard isFastDay else { return nil }
-        return maghrib
+        return maghrib.addingTimeInterval(Double(delayMinutes) * 60)
     }
 
     /// §14.2 — "every `intervalMinutes` minutes during the user's active
@@ -63,6 +63,27 @@ public enum NotificationTriggerTimeComputer {
             next = next.addingTimeInterval(intervalMinutes * 60)
         }
         return times
+    }
+
+    /// BRD §6.13, Ramadan mode: "hydration target compressed to night with
+    /// shift-aware cadence". On a dry-fast day the reminders an ordinary day
+    /// would get — the same count, from the same wake-to-sleep window — are
+    /// spread evenly between Maghrib and the earlier of two hours before the
+    /// day's intended sleep and the next Fajr. That is the shift-aware part:
+    /// someone working nights keeps reminders through the night, someone
+    /// sleeping at 23:00 stops at 21:00. Strictly inside the span: Maghrib has
+    /// its own iftar reminder, and Fajr begins the next fast.
+    /// ponytail: even spacing; weighting toward suhoor or iftar is a later call.
+    public static func nightWaterReminderTimes(maghrib: Date, nextFajr: Date,
+                                               expectedWakeTime: Date, expectedSleepWindowStart: Date,
+                                               intervalMinutes: Double = 90) -> [Date] {
+        let count = waterReminderTimes(expectedWakeTime: expectedWakeTime,
+                                       expectedSleepWindowStart: expectedSleepWindowStart,
+                                       intervalMinutes: intervalMinutes).count
+        let end = min(expectedSleepWindowStart.addingTimeInterval(-2 * 3600), nextFajr)
+        guard count > 0, end > maghrib else { return [] }
+        let step = end.timeIntervalSince(maghrib) / Double(count + 1)
+        return (1...count).map { maghrib.addingTimeInterval(step * Double($0)) }
     }
 
     /// §14.2 — `offsetMinutes` before `expectedSleepWindowStart` (default

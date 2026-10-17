@@ -21,12 +21,13 @@ import AlmanacCore
 ///   §9.7 valid days and never counted calibration at all, so the "Preliminary
 ///   estimate" label §9.7 requires could not appear.
 /// - **Context:** injuries (§9.6.1), religious fast days, a session planned
-///   before iftar, and the day's circadian transition are all read from the
-///   stores that own them. Manual recovery days, planned rest days and planned
-///   deload weeks stay `false`, and the reason is a missing data model rather
-///   than a missing call: nothing in this repo records a deload week or a
-///   recovery day, so there is nothing to read. Recorded in
-///   `docs/features/readiness.md` rather than invented here.
+///   before iftar, the day's circadian transition and a recovery day the
+///   person declared (`RecoveryDayStore`, 2026-10-16) are all read from the
+///   stores that own them. Planned rest days and planned deload weeks stay
+///   `false`, and the reason is a missing data model rather than a missing
+///   call: nothing in this repo records a dated plan or a deload week, so there
+///   is nothing to read. Recorded in `docs/features/readiness.md` rather than
+///   invented here.
 /// - **Stages:** the primary episode's stage split *is* wired
 ///   (`SleepStageBreakdownReader`). It was not, and §9.2's "no stage data → 50"
 ///   was therefore the score on every single run rather than the fallback: 20%
@@ -47,6 +48,8 @@ final class ReadinessModel: ObservableObject {
     @Published private(set) var sleepDurationMinutes: Int?
     @Published private(set) var todayMood: MoodLogEntry?
     @Published private(set) var todaySoreness: SorenessLogEntry?
+    /// §9.6's "manually selected recovery day" for today's logical day.
+    @Published private(set) var isRecoveryDay = false
     /// A past cycle with a real score and no feedback yet — §9.10 requires
     /// the 👍/👎 prompt to wait until "the start of the next cycle" rather
     /// than showing right under the score that produced it, so this is
@@ -84,6 +87,7 @@ final class ReadinessModel: ObservableObject {
     private var vitalsStore: VitalsRecordStore?
     private var moodStore: MoodLogStore?
     private var sorenessStore: SorenessLogStore?
+    private var recoveryDayStore: RecoveryDayStore?
     private var sleepStore: SleepEpisodeStore?
     private var injuryStore: InjuryNoteStore?
     private var cycleStore: ReadinessCycleStore?
@@ -98,6 +102,7 @@ final class ReadinessModel: ObservableObject {
         vitalsStore = VitalsRecordStore(db: db)
         moodStore = MoodLogStore(db: db)
         sorenessStore = SorenessLogStore(db: db)
+        recoveryDayStore = RecoveryDayStore(db: db)
         sleepStore = SleepEpisodeStore(db: db)
         injuryStore = InjuryNoteStore(db: db)
         cycleStore = ReadinessCycleStore(db: db)
@@ -108,8 +113,8 @@ final class ReadinessModel: ObservableObject {
 
     func refresh() {
         guard let profileStore, let vitalsStore, let moodStore, let sorenessStore,
-              let sleepStore, let injuryStore, let cycleStore, let recordStore,
-              let stageReader else { return }
+              let recoveryDayStore, let sleepStore, let injuryStore, let cycleStore,
+              let recordStore, let stageReader else { return }
         // Hoisted out of the `do` so the save below can run on its own. Reading
         // and saving fail for different reasons and the user can do different
         // things about them, so they get different words — see below.
@@ -168,6 +173,7 @@ final class ReadinessModel: ObservableObject {
 
             todayMood = try moodStore.logs(for: today.value).last
             todaySoreness = try sorenessStore.logs(for: today.value).last
+            isRecoveryDay = try recoveryDayStore.isRecoveryDay(today.value)
 
             let injuries = try injuryStore.injuriesAffectingTraining()
 
@@ -191,6 +197,7 @@ final class ReadinessModel: ObservableObject {
             let context = ReadinessContext(
                 activeInjuryBodyArea: injuries.first?.bodyArea,
                 injuryAffectsTraining: !injuries.isEmpty,
+                manualRecoveryDay: isRecoveryDay,
                 religiousFastDay: try ReligiousFastScheduleStore(db: db!).isFastDay(today.value),
                 fastedSessionPlanned: try isSessionPlannedBeforeIftar(day: today),
                 shiftTransition: try isCircadianTransition(day: today),
@@ -297,6 +304,24 @@ final class ReadinessModel: ObservableObject {
             logicalDay: timeModel.logicalDay(now).value)
         try sorenessStore.linkToReadinessCycle(id: sorenessID, cycleId: cycleId)
 
+        refresh()
+    }
+
+    /// Declares today a recovery day, or takes the declaration back, and
+    /// refreshes so the recommendation and today's stored record follow.
+    ///
+    /// Written the moment the switch moves rather than on a Save, so it can be
+    /// changed back for as long as the screen is open — the same as the
+    /// readiness switch on a training session. Only today: a declaration about
+    /// another day goes through `RecoveryDayStore` with that day named, and
+    /// does not rewrite that day's stored record (§9.9).
+    func setRecoveryDay(_ isRecoveryDay: Bool) throws {
+        guard let recoveryDayStore else {
+            throw EditorFailure(message: String(localized: "The database is unavailable."))
+        }
+        let now = Date()
+        try recoveryDayStore.set(isRecoveryDay, logicalDay: timeModel.logicalDay(now).value, at: now,
+                                 timezoneOffset: TimeZone.current.secondsFromGMT(for: now) / 60)
         refresh()
     }
 

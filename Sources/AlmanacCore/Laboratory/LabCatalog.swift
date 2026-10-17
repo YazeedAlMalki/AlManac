@@ -119,21 +119,26 @@ public struct LabCatalogStore: Sendable {
     /// External codes are stored unverified by default and are **not** used for
     /// matching until someone verifies them. No code is seeded unverified as
     /// though it were confirmed.
+    /// `displayName` is the issuing system's own name for the code. LOINC's
+    /// licence requires one with every LOINC code (Migration 061).
     public func addExternalCode(system: String, code: String, to analyteID: String,
-                                verified: Bool = false, verifiedBy: String? = nil) throws {
+                                verified: Bool = false, verifiedBy: String? = nil,
+                                displayName: String? = nil) throws {
         try db.run("""
         INSERT INTO lab_catalog_external_code
-            (analyte_id, system, code, verified, verified_at, verified_by)
-        VALUES (?, ?, ?, ?, ?, ?)
+            (analyte_id, system, code, verified, verified_at, verified_by, display_name)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(analyte_id, system, code) DO UPDATE SET
             verified = excluded.verified,
             verified_at = excluded.verified_at,
-            verified_by = excluded.verified_by;
+            verified_by = excluded.verified_by,
+            display_name = COALESCE(excluded.display_name, lab_catalog_external_code.display_name);
         """, [
             .text(analyteID), .text(system), .text(code),
             .integer(verified ? 1 : 0),
             verified ? .text(nowText) : .null,
-            verifiedBy.map { SQLValue.text($0) } ?? .null
+            verifiedBy.map { SQLValue.text($0) } ?? .null,
+            displayName.map { SQLValue.text($0) } ?? .null
         ])
     }
 

@@ -187,6 +187,43 @@ public struct ShiftScheduleStore: @unchecked Sendable {
         return id
     }
 
+    /// Saves `pattern` and writes the shifts it produces, one occurrence per
+    /// day from its start through `last`, except days already changed by hand.
+    /// Returns the pattern row's id, which every occurrence it wrote points
+    /// back at.
+    @discardableResult
+    public func applyPattern(_ pattern: ShiftRecurrencePatternDraft, through last: LogicalDay,
+                             timeModel: TimeModel) throws -> Int64 {
+        // One transaction, so a pattern that cannot be expanded (or a write
+        // that fails halfway down the list) leaves neither the pattern row nor
+        // a stub of its days behind.
+        try db.transaction {
+            let patternId = try createRecurrencePattern(pattern)
+            let drafts = try ShiftPatternExpander.occurrences(for: pattern, patternId: patternId,
+                                                              through: last, timeModel: timeModel)
+            for draft in drafts {
+                // A day the user changed by hand outranks a rotation entered
+                // over it; `occurrence(for:)` reads the newest row, so writing
+                // beside it would replace their change.
+                if try occurrence(for: draft.date)?.isManualOverride == true { continue }
+                try logOccurrence(draft)
+            }
+            return patternId
+        }
+    }
+
+    /// The schedule the shift editor writes into: the newest active one, or a
+    /// new "My Schedule" when the user has none. `shift_schedule` is only a
+    /// named container (§5.5), so one is enough until the app has a reason to
+    /// offer several.
+    public func defaultScheduleId() throws -> Int64 {
+        if let id = try db.query("SELECT id FROM shift_schedule WHERE isActive = 1 ORDER BY id DESC LIMIT 1;")
+            .first?.int("id") {
+            return id
+        }
+        return try createSchedule(ShiftScheduleDraft())
+    }
+
     // MARK: - Read
 
     /// The shift occurrence for a given date, if one has been logged.

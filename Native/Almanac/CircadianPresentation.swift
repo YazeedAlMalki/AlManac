@@ -75,3 +75,25 @@ enum CircadianPresentation {
         return String(localized: "Day \(n) of moving to later hours.")
     }
 }
+
+/// The names a person sees for the kinds of shift (§5.5 `shift_occurrence.shiftType`).
+///
+/// `title(for:)` is an exhaustive `switch`, so a new `ShiftType` is a build
+/// error here rather than a shift that shows up with a raw `on_call` for a name.
+enum ShiftPresentation {
+    /// The order the editor offers them in: working shifts by time of day, then
+    /// the ones that are not a fixed slot, then rest.
+    static let options: [ShiftType] = [.day, .evening, .night, .split, .onCall, .custom, .rest]
+
+    static func title(for shift: ShiftType) -> String {
+        switch shift {
+        case .day: return String(localized: "Day shift")
+        case .evening: return String(localized: "Evening shift")
+        case .night: return String(localized: "Night shift")
+        case .split: return String(localized: "Split shift")
+        case .onCall: return String(localized: "On call")
+        case .custom: return String(localized: "Custom")
+        case .rest: return String(localized: "Rest day")
+        }
+    }
+}

@@ -73,8 +73,9 @@ final class ArabicUITests: XCTestCase {
     /// CI runs it twice. In the suite it runs early, on an empty database, so it
     /// sees empty states. A second step runs it again after the whole suite,
     /// with `ALMANAC_ARABIC_PASS=populated`, on the database the English tests
-    /// filled. In that run it also plants two weeks of resting heart rate and
-    /// HRV, rising and falling, so Insights has a trend to draw an arrow for,
+    /// filled. In that run it also plants two weeks of readiness history —
+    /// nights, morning vitals and the scores they earn, climbing — so Trends has
+    /// a chart with a direction and Insights has trends to draw arrows for,
     /// and it prints where everything on the chart screens sits
     /// (`layout` lines), which is how the charts' direction is read from the
     /// log. Its names carry a `pop-` prefix.
@@ -87,7 +88,7 @@ final class ArabicUITests: XCTestCase {
         }
         app.launch()
         if populated {
-            XCTAssertTrue(app.seedVitals(Self.twoWeeksOfVitals), "the vitals seed was refused")
+            XCTAssertTrue(app.seedReadinessHistory(days: 14), "the readiness history seed was refused")
         }
         XCTAssertTrue(app.buttons["tab-today"].waitForExistence(timeout: 15), "no bottom bar")
 
@@ -133,12 +134,6 @@ final class ArabicUITests: XCTestCase {
     }
 
     private func tag(_ name: String) -> String { populated ? "pop-\(name)" : name }
-
-    /// Fourteen mornings: resting heart rate rising 50 → 63 and HRV falling
-    /// 70 → 57, so every trend row has a direction and none is flat.
-    private static let twoWeeksOfVitals = (0...13).flatMap { back in
-        ["rhr=\(63 - back)@-\(back)", "hrv=\(57 + back)@-\(back)"]
-    }.joined(separator: ",")
 
     /// Screens with charts, whose element positions are printed in the
     /// populated run.

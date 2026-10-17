@@ -23,6 +23,9 @@ final class FastingModel: ObservableObject {
     @Published private(set) var ramadanEnabled = true
     @Published private(set) var monThuEnabled = false
     @Published private(set) var whiteDaysEnabled = false
+    /// True until the person has said which fasts they keep (owner, T02,
+    /// 2026-10-16). Today asks while it is true.
+    @Published private(set) var needsFastsQuestion = false
     @Published private(set) var error: String?
 
     /// Whether today is a religious fast day. Read by Quick Log to seed the
@@ -111,6 +114,7 @@ final class FastingModel: ObservableObject {
                 }
             monThuEnabled = try schedules.isRecurringEnabled(ReligiousFastScheduleStore.monThu)
             whiteDaysEnabled = try schedules.isRecurringEnabled(ReligiousFastScheduleStore.whiteDays)
+            needsFastsQuestion = try coordinator.needsFastsQuestion()
 
             let sessions = FastingSessionStore(db: db)
             activeSession = try sessions.activeSession()
@@ -131,6 +135,15 @@ final class FastingModel: ObservableObject {
     func setToday(isFast: Bool?) {
         guard let coordinator, let date = religiousToday?.date else { return }
         perform { try coordinator.setManualFastDay(date, isFast: isFast, reason: "Set on the Fasting screen") }
+    }
+
+    /// The answer to "Which fasts do you keep?".
+    func answerFastsQuestion(ramadan: Bool, mondaysAndThursdays: Bool, whiteDays: Bool) {
+        guard let coordinator else { return }
+        perform {
+            try coordinator.answerFastsQuestion(ramadan: ramadan, mondaysAndThursdays: mondaysAndThursdays,
+                                                whiteDays: whiteDays)
+        }
     }
 
     func setRamadan(_ enabled: Bool) {
@@ -639,6 +652,46 @@ struct FastingView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+/// "Which fasts do you keep?" — asked on Today until it is answered (owner,
+/// T02, 2026-10-16), so the app does not assume. Ramadan starts on, as it was
+/// before anyone asked; the two standing rules start off. The same switches stay
+/// on the Fasting screen afterwards.
+struct FastsQuestionCard: View {
+    @ObservedObject var model: FastingModel
+    @State private var ramadan = true
+    @State private var mondaysAndThursdays = false
+    @State private var whiteDays = false
+
+    var body: some View {
+        AlmanacCard {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Which fasts do you keep?")
+                        .font(AlmanacTypography.font(.bodyMedium))
+                        .foregroundStyle(AlmanacPalette.textPrimary)
+                    Text("Almanac follows these for fasting, suhoor and iftar reminders. You can change them on the Fasting screen.")
+                        .font(AlmanacTypography.font(.caption))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Toggle("Ramadan", isOn: $ramadan)
+                    .accessibilityIdentifier("fasts-question-ramadan")
+                Toggle("Mondays and Thursdays", isOn: $mondaysAndThursdays)
+                    .accessibilityIdentifier("fasts-question-mon-thu")
+                Toggle("White Days (13th–15th)", isOn: $whiteDays)
+                    .accessibilityIdentifier("fasts-question-white-days")
+                Button("Save") {
+                    model.answerFastsQuestion(ramadan: ramadan, mondaysAndThursdays: mondaysAndThursdays,
+                                              whiteDays: whiteDays)
+                }
+                .buttonStyle(AlmanacPrimaryButtonStyle())
+                .accessibilityIdentifier("fasts-question-save")
+            }
+            .tint(AlmanacPalette.accent)
         }
     }
 }

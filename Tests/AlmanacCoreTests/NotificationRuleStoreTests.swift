@@ -101,6 +101,43 @@ struct NotificationRuleStoreTests {
         #expect(try store.rule(for: .bedtime).scheduledMinuteOfDay == 22 * 60 + 15)
     }
 
+    @Test("A distance is kept per type, survives the switch, and is refused out of range or on the wrong type")
+    func offsetMinutes() throws {
+        try store.setOffsetMinutes(30, for: .suhoor)
+        try store.setEnabled(false, for: .suhoor)
+        try store.setEnabled(true, for: .suhoor)
+        #expect(try store.rule(for: .suhoor).offsetMinutes == 30)
+        #expect(try store.rule(for: .iftar).offsetMinutes == nil)
+
+        #expect(throws: NotificationRuleStoreError.invalidOffset(type: .suhoor, minutes: 2)) {
+            try store.setOffsetMinutes(2, for: .suhoor)
+        }
+        #expect(throws: NotificationRuleStoreError.invalidOffset(type: .iftar, minutes: 61)) {
+            try store.setOffsetMinutes(61, for: .iftar)
+        }
+        #expect(throws: NotificationRuleStoreError.invalidOffset(type: .bedtime, minutes: 10)) {
+            try store.setOffsetMinutes(10, for: .bedtime)
+        }
+        #expect(try store.rule(for: .suhoor).offsetMinutes == 30, "a refused write changed nothing")
+
+        try store.setOffsetMinutes(nil, for: .suhoor)
+        #expect(try store.rule(for: .suhoor).offsetMinutes == nil)
+    }
+
+    @Test("Setting a time leaves the switch and the distance alone")
+    func scheduledMinuteKeepsTheRest() throws {
+        try store.setOffsetMinutes(10, for: .iftar)
+        try store.setEnabled(false, for: .iftar)
+        try store.setScheduledMinuteOfDay(nil, for: .iftar)
+        let iftar = try store.rule(for: .iftar)
+        #expect(iftar.isEnabled == false)
+        #expect(iftar.offsetMinutes == 10)
+
+        try store.setScheduledMinuteOfDay(22 * 60, for: .bedtime)
+        #expect(try store.rule(for: .bedtime).scheduledMinuteOfDay == 22 * 60)
+        #expect(try store.rule(for: .bedtime).isEnabled == false, "bedtime's default switch is untouched")
+    }
+
     @Test("Corrupt HH:MM text reads as no time chosen, not as a crash")
     func corruptTextIsNil() throws {
         try store.setRule(NotificationRule(type: .bedtime, isEnabled: true, scheduledMinuteOfDay: 22 * 60))
