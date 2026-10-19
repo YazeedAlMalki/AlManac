@@ -98,7 +98,7 @@ public enum AttributionCatalog {
     /// Sources the build ships. Append-only; adding an id here without a
     /// matching `entries` row fails `AttributionAudit`.
     public static let bundledSourceIds: [String] = [
-        "workout-guide", "everkinetic", "usda", "ciqual", "cofid", "afcd",
+        "workout-guide", "everkinetic", "free-exercise-db", "wger", "usda", "ciqual", "cofid", "afcd",
         "bristol-stool-form-scale", "loinc", "wikibooks-cookbook"
     ]
 
@@ -126,6 +126,33 @@ public enum AttributionCatalog {
                 + "rasterized on a transparent 512 × 512 canvas, recoloured for monochrome "
                 + "display, and vector-traced by workout-guide. Those 76 files are released by "
                 + "workout-guide under CC BY-SA 4.0 and are shipped here unmodified."
+        ),
+        // The exercise library's two further sources (owner, 2026-10-19;
+        // `ExerciseLibrarySeed`). free-exercise-db's publisher does not say
+        // where its photos come from; the owner accepted that risk.
+        Attribution(
+            sourceId: "free-exercise-db",
+            title: "Free Exercise DB exercises and photos",
+            author: "yuhonas (free-exercise-db), from wrkout/exercises.json",
+            sourceURL: "https://github.com/yuhonas/free-exercise-db",
+            licenses: [unlicense],
+            isModified: true,
+            modificationNote: "Each exercise's first photo is shipped, scaled to 512 pixels wide. "
+                + "Exercises that are the same as another source's are merged into one record."
+        ),
+        // wger licenses each exercise separately; the authors are listed per
+        // licence below the sources (`ExerciseAuthorCredits`). Only wger's
+        // exercise data is used, not its AGPL application code or its images.
+        Attribution(
+            sourceId: "wger",
+            title: "wger Workout Manager exercise data",
+            author: "wger project contributors",
+            sourceURL: "https://github.com/wger-project/wger",
+            licenses: [ccBySa30, ccBySa40, ccBy40, cc0],
+            isModified: true,
+            modificationNote: "Exercise names, muscles and equipment are matched against the other "
+                + "exercise sources and kept, tagged with wger, on the merged record. Exercises with "
+                + "no photo from another source are not included."
         ),
         Attribution(
             sourceId: "usda",
@@ -237,6 +264,7 @@ public enum AttributionCatalog {
         case "cc0": return cc0
         case "cc_by_sa_3": return ccBySa30
         case "cc_by_sa_4": return ccBySa40
+        case "cc_by_4": return ccBy40
         case "unlicense": return unlicense
         case "mit": return mit
         default: return nil

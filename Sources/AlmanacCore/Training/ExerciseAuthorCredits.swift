@@ -20,12 +20,22 @@ public enum ExerciseAuthorCredits {
     /// blank authors dropped, deterministic order. Pure, so the page's
     /// rendering has nothing to get wrong and the list is testable without UI.
     public static func distinct(from entries: [ExerciseCatalogEntry]) -> [ExerciseAuthorCredit] {
+        distinct(entries.map { (author: $0.licenseAuthor, licenseGroup: $0.licenseGroup) })
+    }
+
+    /// The same for the sources merged into records (`exerciseSource`), whose
+    /// authors a catalogue row alone would not name.
+    public static func distinct(from sources: [ExerciseSourceRecord]) -> [ExerciseAuthorCredit] {
+        distinct(sources.map { (author: $0.licenseAuthor, licenseGroup: $0.licenseGroup) })
+    }
+
+    public static func distinct(_ pairs: [(author: String?, licenseGroup: String)]) -> [ExerciseAuthorCredit] {
         var seen = Set<String>()
         var credits: [ExerciseAuthorCredit] = []
-        for entry in entries {
-            guard let author = entry.licenseAuthor, !author.isEmpty else { continue }
-            let license = AttributionCatalog.licenseReference(forGroup: entry.licenseGroup)
-            let key = "\(author)|\(license?.url ?? entry.licenseGroup)"
+        for (author, licenseGroup) in pairs {
+            guard let author, !author.isEmpty else { continue }
+            let license = AttributionCatalog.licenseReference(forGroup: licenseGroup)
+            let key = "\(author)|\(license?.url ?? licenseGroup)"
             guard seen.insert(key).inserted else { continue }
             credits.append(ExerciseAuthorCredit(author: author, license: license))
         }

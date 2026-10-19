@@ -68,8 +68,15 @@ struct AttributionsView: View {
     /// exercise source names an author per row, and listing them here satisfies
     /// the per-exercise attribution obligation without a per-row detail screen.
     /// The grouping itself lives in `ExerciseAuthorCredits` (core, tested).
+    /// Authors come from the catalogue rows and from every source merged into
+    /// a record (`exerciseSource`), so a wger author whose exercise was merged
+    /// into another source's record is still listed.
     private func loadAuthors() {
-        guard let db, let entries = try? ExerciseCatalogStore(db: db).all() else { return }
-        authors = Dictionary(grouping: entries, by: \.sourceId).mapValues(ExerciseAuthorCredits.distinct(from:))
+        let store = db.map { ExerciseCatalogStore(db: $0) }
+        guard let entries = try? store?.all(), let sources = try? store?.sources() else { return }
+        var pairs: [String: [(author: String?, licenseGroup: String)]] = [:]
+        for entry in entries { pairs[entry.sourceId, default: []].append((author: entry.licenseAuthor, licenseGroup: entry.licenseGroup)) }
+        for source in sources { pairs[source.sourceId, default: []].append((author: source.licenseAuthor, licenseGroup: source.licenseGroup)) }
+        authors = pairs.mapValues { ExerciseAuthorCredits.distinct($0) }
     }
 }

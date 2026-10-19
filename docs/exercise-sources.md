@@ -57,3 +57,19 @@ a source graphic — Squat Thrust, Leg Press, Leg Curl, Leg Extension, Reverse
 Curl, Chin-up, Cycling — but not Pause Bench, Thruster, Glute-Ham Raise or
 Renegade Row. Re-adding those needs a source with a compliant graphic, or
 Almanac drawing them itself under its own `almanac:` namespace.
+
+## Licence check, 2026-10-19
+
+Checked before use, at the source, for the owner's requirements: commercial
+use allowed, a demonstration graphic for every exercise, credit on the
+Attributions page.
+
+| Source | Licence (where read) | Commercial use | Graphic | Used |
+|---|---|---|---|---|
+| free-exercise-db `f00c92c7` | Unlicense (`LICENSE.md`); "public domain" (README, and upstream `wrkout/exercises.json` README) | Yes, as licensed. **Risk:** neither repository says where the photos and text came from; the fields match Bodybuilding.com's exercise database (force, level, mechanic, strongman/powerlifting categories), which suggests, without proving, that they were copied from it. **The owner accepted the risk on 2026-10-19.** | 2 photos for 873 of 876 exercises; the 3 without are not shipped | Primary |
+| wger `8f72cb2f` | Data per exercise: CC BY-SA 3.0, CC BY-SA 4.0, CC BY 4.0 or CC0 (`/api/v2/license/`, fixture `licenses.json`; README "Exercise/Ingredient Data: Creative Commons (see individual entries)"). Code AGPL-3.0, not used. | Yes, with attribution (and share-alike for the CC BY-SA rows' data) | Images are on wger.de, not in the repository; not shipped | Secondary: merged into records that have a graphic; credited per author |
+| openGym (`DuarteSantos8/openGym`; the brief's "openGymP" does not exist) | AGPL-3.0 (`LICENSE`) | Code cannot be copied into Almanac | — | Inspiration only; nothing copied |
+
+What shipped: 783 new records from free-exercise-db, 132 workout-guide rows
+extended with matching sources, 1,085 exercises in all. Every match, conflict
+and held row: `docs/features/exercise-merge-log.md`. Build: `tools/exercises`.

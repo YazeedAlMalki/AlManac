@@ -386,6 +386,7 @@ final class LaboratoryModel: ObservableObject {
             try LabCatalogSeed.seed(into: catalog)
             let exercises = ExerciseCatalogStore(db: db)
             try WorkoutGuideSeed.seed(into: exercises)
+            try ExerciseLibrarySeed.seed(into: exercises)
             // Both content rules are checked here as well as in the test suite:
             // shipping an uncredited source, or an exercise with no
             // demonstration graphic, must not reach a user's device.

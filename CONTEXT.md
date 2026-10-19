@@ -971,6 +971,40 @@ so a test that passed only on its retry is still listed.
 **None of these has been confirmed** as a suite-wide rule.
 *Overrule by:* removing the flag from the "Test" step in `.github/workflows/ci.yml`.
 
+### Exercise library: free-exercise-db and wger (2026-10-19)
+
+**Confirmed by the owner, 2026-10-19:** free-exercise-db is the primary
+exercise source and wger the secondary; "use Free Exercise DB (I accept the
+risk)" — the risk being that its publisher does not say where its photos and
+text come from (`docs/exercise-sources.md`, "Licence check, 2026-10-19").
+**Confirmed:** one record per real exercise across sources, every source's
+attribution kept, conflicts kept with both values and logged.
+
+How the build applies that (`tools/exercises`); **none of these has been
+confirmed:**
+
+- **workout-guide's rows are never rewritten.** People's logged sets point at
+  them, so when another source matches one, that row stays the record and the
+  other source is recorded against it (`exerciseSource`, Migration 066). No
+  two workout-guide rows were found to match, so none had to be kept apart.
+- **A record shows its base row's values**: workout-guide's, else
+  free-exercise-db's. The other sources' values are kept beside it, not
+  shown. That is a fixed rule, not a choice per conflict; the 34 conflicts are
+  listed in `docs/features/exercise-merge-log.md` for review.
+- **"Unsure" is merged only when the names differ by no variation word.**
+  "Bench Press - NB" merges with "Bench Press"; "Incline Bench Press",
+  "Weighted Push-up" and "Seated Calf Stretch" against "Seated Hamstring and
+  Calf Stretch" do not. A row that states no equipment takes the one its name
+  says ("Biceps Curl With Cable" is a cable curl).
+- **wger-only exercises are held.** Their images are on wger.de, which the
+  build session could not reach; 679 groups with no shippable graphic are
+  listed in the merge log, not shipped.
+- **free-exercise-db's first photo only**, scaled to 512 px wide (19 MB for
+  783 exercises).
+
+*Overrule by:* the merge log's rule in `tools/exercises/almanac_exercises/build.py`
+(`VARIATION`, `NEUTRAL`, `UNSURE`), then `python3 -m almanac_exercises build`.
+
 ### Weighing
 
 **Meter fraction**:
