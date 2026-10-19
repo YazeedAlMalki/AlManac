@@ -68,8 +68,19 @@ Attributions page.
 |---|---|---|---|---|
 | free-exercise-db `f00c92c7` | Unlicense (`LICENSE.md`); "public domain" (README, and upstream `wrkout/exercises.json` README) | Yes, as licensed. **Risk:** neither repository says where the photos and text came from; the fields match Bodybuilding.com's exercise database (force, level, mechanic, strongman/powerlifting categories), which suggests, without proving, that they were copied from it. **The owner accepted the risk on 2026-10-19.** | 2 photos for 873 of 876 exercises; the 3 without are not shipped | Primary |
 | wger `8f72cb2f` | Data per exercise: CC BY-SA 3.0, CC BY-SA 4.0, CC BY 4.0 or CC0 (`/api/v2/license/`, fixture `licenses.json`; README "Exercise/Ingredient Data: Creative Commons (see individual entries)"). Code AGPL-3.0, not used. | Yes, with attribution (and share-alike for the CC BY-SA rows' data) | Images are on wger.de, not in the repository; not shipped | Secondary: merged into records that have a graphic; credited per author |
-| openGym (`DuarteSantos8/openGym`; the brief's "openGymP" does not exist) | AGPL-3.0 (`LICENSE`) | Code cannot be copied into Almanac | — | Inspiration only; nothing copied |
+| openGym (`DuarteSantos8/openGym`; the brief's "openGymP" does not exist) | Code AGPL-3.0 (`LICENSE`). Its 5,600 exercise stills and animations are © Aliaksandr Makatserchyk, Gym visual, "licensed for use in openGym only" (README, License) | No: neither the code nor the media can be used | — | Inspiration only; nothing copied |
 
 What shipped: 783 new records from free-exercise-db, 132 workout-guide rows
 extended with matching sources, 1,085 exercises in all. Every match, conflict
 and held row: `docs/features/exercise-merge-log.md`. Build: `tools/exercises`.
+
+### What openGym does that Almanac could learn from (not built)
+
+Read from its README only; no code was opened. Its library is browsed by
+muscle on a body map and filtered by the equipment a person owns; timed
+exercises (planks, hangs, carries) and bodyweight exercises that carry no
+load are first-class; exercise names are translated (19 languages, Arabic
+included). Almanac already browses muscle → method → exercise and has timed
+and bodyweight prescription types. An "equipment I own" filter and Arabic
+exercise names (wger carries 48 Arabic translations) are the two ideas worth
+an owner decision.

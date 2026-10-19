@@ -395,9 +395,9 @@ public struct NutritionCatalog: @unchecked Sendable {
                         modifier: String? = nil) throws -> PortionMatch {
         let forms = NutritionCatalog.matchableForms(unit)
         guard !forms.isEmpty else { return .notFound }
-        var candidates = ref.namespace == .openFoodFacts
-            ? try offPortions(of: ref).filter { forms.contains(TextFold.fold($0.unitText)) }
-            : try db.query("""
+        var candidates = try ref.namespace == .openFoodFacts
+            ? offPortions(of: ref).filter { forms.contains(TextFold.fold($0.unitText)) }
+            : db.query("""
             SELECT id, food_ref, amount, unit_text, modifier_text, gram_weight,
                    sequence, licence_group, source_value
             FROM nutrition_portion
