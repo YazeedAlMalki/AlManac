@@ -200,8 +200,8 @@ public struct NutritionCatalog: @unchecked Sendable {
 
     /// Foods whose name in any language contains `text`, compared folded (`TextFold`):
     /// case, accents and Arabic letter variants do not matter. Each food once, by primary name.
-    public func search(_ text: String, limit: Int = 50) throws -> [NutritionFood] {
-        try search(text, limit: limit, excluding: []).foods
+    public func search(_ text: String, limit: Int = 50, includingProducts: Bool = false) throws -> [NutritionFood] {
+        try search(text, limit: limit, excluding: [], includingProducts: includingProducts).foods
     }
 
     /// The same search, with a hard allergen filter over the results.
@@ -232,9 +232,18 @@ public struct NutritionCatalog: @unchecked Sendable {
     ///
     /// Still one query. The verdict is computed in Swift from the primary name
     /// already being read, not by a second query per row.
+    ///
+    /// ## Packaged products are asked for
+    ///
+    /// `includingProducts` lists Open Food Facts products (`OpenFoodFacts.swift`)
+    /// beside the reference foods. They are read from the app's own file, so
+    /// they would otherwise appear in every catalog, whatever it holds; the
+    /// food search screen asks for them, and a lookup by `off:` ref works
+    /// either way.
     public func search(_ text: String,
                        limit: Int = 50,
-                       excluding allergens: Set<FoodAllergen>) throws -> NutritionFoodSearchResults {
+                       excluding allergens: Set<FoodAllergen>,
+                       includingProducts: Bool = false) throws -> NutritionFoodSearchResults {
         let folded = TextFold.fold(text)
         guard !folded.isEmpty, limit > 0 else {
             return NutritionFoodSearchResults(allergens: allergens)
@@ -283,7 +292,7 @@ public struct NutritionCatalog: @unchecked Sendable {
         // Open Food Facts products (their own read-only file, `OpenFoodFacts.swift`)
         // are listed beside the reference foods, in name order, under the same
         // limit, so a packaged product is found the way any food is.
-        let products = try offCandidates(folded: folded, text: text, limit: limit)
+        let products = try (includingProducts ? offCandidates(folded: folded, text: text, limit: limit) : [])
             .map { Candidate(ref: $0.ref, name: $0.name, nameFolded: $0.nameFolded) }
         let candidates = Array((reference + products)
             .sorted { ($0.nameFolded, $0.ref.description) < ($1.nameFolded, $1.ref.description) }

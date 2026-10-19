@@ -126,7 +126,7 @@ final class NutritionModel: ObservableObject {
         // so the empty set is right, and it is the caller's job not to read it as
         // "checked and clean".
         let allergens = (try? ProfileStore(db: db).allergenSet()) ?? []
-        return try catalog.search(text, excluding: allergens)
+        return try catalog.search(text, excluding: allergens, includingProducts: true)
     }
 
     /// Almanac's calorie number per 100 g, when the catalog can produce one.

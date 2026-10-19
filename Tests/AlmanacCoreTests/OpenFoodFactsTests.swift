@@ -22,17 +22,22 @@ struct OpenFoodFactsTests {
 
     @Test("Nothing is written into the person's database")
     func keptApart() throws {
-        _ = try catalog.search("tuna")
+        _ = try catalog.search("tuna", includingProducts: true)
         _ = try catalog.values(for: tuna, basis: .per100g)
         #expect(try db.query("SELECT name FROM sqlite_master WHERE name LIKE 'off%';").isEmpty)
         #expect(try catalog.food(tuna)?.licenceGroup == .shareAlike)
         #expect(try catalog.food(tuna)?.sourceName == "Open Food Facts products")
     }
 
+    @Test("Products are listed only when asked for")
+    func onlyWhenAsked() throws {
+        #expect(try catalog.search("light solid tuna").isEmpty)
+    }
+
     @Test("A product is found by name and by barcode, with or without leading zeros")
     func search() throws {
-        #expect(try catalog.search("light solid tuna").contains { $0.ref == tuna })
-        #expect(try catalog.search("32894015518").contains { $0.ref == tuna })
+        #expect(try catalog.search("light solid tuna", includingProducts: true).contains { $0.ref == tuna })
+        #expect(try catalog.search("32894015518", includingProducts: true).contains { $0.ref == tuna })
     }
 
     @Test("Values, calories and the label's serving come through the catalog")
@@ -53,13 +58,13 @@ struct OpenFoodFactsTests {
             let food = try #require(try catalog.food(SourceIdentifier(namespace: .openFoodFacts, localID: code)))
             #expect(food.ref == record, "\(code)")
         }
-        let hits = try catalog.search("mountain dew").filter { $0.ref.namespace == .openFoodFacts }
+        let hits = try catalog.search("mountain dew", includingProducts: true).filter { $0.ref.namespace == .openFoodFacts }
         #expect(hits.filter { $0.ref == record }.count == 1, "one record, not one row per barcode")
     }
 
     @Test("The allergen filter withholds products by name like any food")
     func allergenFilter() throws {
-        let results = try catalog.search("peanut", excluding: [.peanuts])
+        let results = try catalog.search("peanut", excluding: [.peanuts], includingProducts: true)
         #expect(results.foods.allSatisfy { !$0.primaryName.lowercased().contains("peanut") })
         #expect(results.blocked.contains { $0.ref.namespace == .openFoodFacts })
     }
