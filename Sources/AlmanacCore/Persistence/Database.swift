@@ -73,6 +73,20 @@ public final class Database: @unchecked Sendable {
         try execute("PRAGMA busy_timeout = 5000;")
     }
 
+    /// A file shipped inside the app bundle, read in place: opened read-only and
+    /// left in its own journal mode, since the bundle cannot be written to.
+    public init(readOnlyPath path: String) throws {
+        self.path = path
+        var h: OpaquePointer?
+        let rc = sqlite3_open_v2(path, &h, SQLITE_OPEN_READONLY | SQLITE_OPEN_FULLMUTEX, nil)
+        guard rc == SQLITE_OK, let opened = h else {
+            let err = SQLiteError.from(h, code: rc)
+            if h != nil { sqlite3_close_v2(h) }
+            throw err
+        }
+        self.handle = opened
+    }
+
     public static func inMemory() throws -> Database { try Database(path: ":memory:") }
 
     deinit { if let handle { sqlite3_close_v2(handle) } }

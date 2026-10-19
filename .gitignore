@@ -2,6 +2,7 @@
 .swiftpm/
 *.sqlite
 !Sources/AlmanacCore/Nutrition/Resources/almanac.sqlite
+!Sources/AlmanacCore/Nutrition/Resources/open-food-facts.sqlite
 *.sqlite-wal
 *.sqlite-shm
 __pycache__/

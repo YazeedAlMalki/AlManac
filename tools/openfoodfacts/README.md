@@ -1,6 +1,6 @@
 # Almanac Open Food Facts build
 
-Builds `Sources/AlmanacCore/Nutrition/Resources/open-food-facts.json` (ODbL)
+Builds `Sources/AlmanacCore/Nutrition/Resources/open-food-facts.sqlite` (ODbL)
 and `docs/features/open-food-facts-merge-log.md` from Open Food Facts' CSV
 export. The licence, the scope and how share-alike is kept away from the
 nutrition reference: `docs/features/open-food-facts.md`.

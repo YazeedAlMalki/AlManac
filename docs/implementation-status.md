@@ -47,7 +47,7 @@ and is not a current implementation target.
 | Piece | State | Where |
 |---|---|---|
 | Exercise library | 783 free-exercise-db exercises shipped with a photo; 132 workout-guide rows extended with the sources that matched them; 1,085 exercises. wger contributes to merged records only: its images are on wger.de, which this session could not reach, so 679 wger-only groups are held. | `tools/exercises`, `ExerciseLibrarySeed`, Migration 066, `docs/features/exercise-merge-log.md` |
-| Open Food Facts | 3,514 Gulf packaged products in their own ODbL file and tables, searchable by name, brand or barcode, loggable like any food | `tools/openfoodfacts`, `OpenFoodFactsBundle`, Migration 067, `docs/features/open-food-facts.md` |
+| Open Food Facts | 3,514 Gulf packaged products in their own ODbL file, read in place (never copied into the person's database or backups), searchable by name, brand or barcode, loggable like any food | `tools/openfoodfacts`, `OpenFoodFacts`, `docs/features/open-food-facts.md` |
 | USDA SR Legacy and FNDDS | Pipeline code and tests on synthetic data; the real build runs where the food-data lake is (fdc.nal.usda.gov is not reachable from the cloud session) | `tools/nutrition` |
 | One record per real item | Exercises and Open Food Facts merged and logged; foods across the reference sources: see the food merge log | the three merge logs |
 

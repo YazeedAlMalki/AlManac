@@ -1019,9 +1019,10 @@ How it was built (`tools/openfoodfacts`); **none of these has been confirmed:**
   and carbohydrate: 3,514 records from 33,938 Gulf products (most of the rest
   have no nutrition at all). The whole export with nutrition is about 2.2
   million products, too large to ship in an app.
-- **Its own tables and file, never the reference.** `off_*` tables
-  (Migration 067) installed from `open-food-facts.json`, released under the
-  ODbL. Group C stays unshippable inside `almanac.sqlite`.
+- **Its own file, read in place, never the reference.** `open-food-facts.sqlite`,
+  released under the ODbL, is opened read-only; nothing is copied into the
+  person's database, so backups stay the size they were. Group C stays
+  unshippable inside `almanac.sqlite`.
 - **Not merged with reference foods.** A branded product and a generic food
   are different items, and merging would carry ODbL data into the reference.
   Duplicates are merged within Open Food Facts only (barcode, or brand + name

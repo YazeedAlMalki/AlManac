@@ -2,29 +2,29 @@ import Testing
 import Foundation
 @testable import AlmanacCore
 
-/// Open Food Facts products on the shipped file (owner, 2026-10-19): their
-/// own tables, licence group C, read through the catalog like any food.
+/// Open Food Facts products on the shipped file (owner, 2026-10-19): read in
+/// place from their own ODbL database, licence group C, through the catalog
+/// like any food.
 @Suite("Open Food Facts products")
 struct OpenFoodFactsTests {
     let db = try! TestDatabase()
     var catalog: NutritionCatalog { NutritionCatalog(db: db) }
     let tuna = SourceIdentifier(namespace: .openFoodFacts, localID: "0032894015518")
 
-    init() throws {
-        try OpenFoodFactsBundle.installIfNeeded(into: db)
+    @Test("The bundled file opens read-only and holds the Gulf products")
+    func bundledFile() throws {
+        let file = try #require(OpenFoodFacts.db)
+        #expect(OpenFoodFacts.index.count > 3000)
+        #expect(try file.query("SELECT 1 FROM off_product WHERE licence_group <> 'C';").isEmpty)
+        #expect(try file.query("SELECT value FROM off_meta WHERE key = 'licence';").first?.string("value") == "ODbL-1.0")
+        #expect(throws: (any Error).self) { try file.run("DELETE FROM off_meta;") }
     }
 
-    @Test("The bundled file installs once")
-    func installsOnce() throws {
-        let count = try #require(try db.query("SELECT COUNT(*) AS n FROM off_product;").first?.int("n"))
-        #expect(count > 3000)
-        #expect(try OpenFoodFactsBundle.installIfNeeded(into: db) == nil)
-    }
-
-    @Test("Every row is licence group C and none enters the reference tables")
+    @Test("Nothing is written into the person's database")
     func keptApart() throws {
-        #expect(try db.query("SELECT 1 FROM off_product WHERE licence_group <> 'C';").isEmpty)
-        #expect(try db.query("SELECT 1 FROM nutrition_food WHERE food_ref LIKE 'off:%';").isEmpty)
+        _ = try catalog.search("tuna")
+        _ = try catalog.values(for: tuna, basis: .per100g)
+        #expect(try db.query("SELECT name FROM sqlite_master WHERE name LIKE 'off%';").isEmpty)
         #expect(try catalog.food(tuna)?.licenceGroup == .shareAlike)
         #expect(try catalog.food(tuna)?.sourceName == "Open Food Facts products")
     }

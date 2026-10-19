@@ -1,6 +1,9 @@
+import sqlite3
+import tempfile
 import unittest
+from pathlib import Path
 
-from almanac_off.build import Product, build_records, check
+from almanac_off.build import Product, build_records, check, write_db
 
 
 def product(code, name="Laban", brands="Almarai", modified=1, **values):
@@ -40,6 +43,16 @@ class OffTests(unittest.TestCase):
         energy = records[0]["values"]["energy_kcal"]
         self.assertAlmostEqual(energy["amount"], 60.0, places=1)
         self.assertEqual((energy["sourceValue"], energy["unit"]), ("251", "kJ"))
+
+    def test_database_keeps_every_barcode_and_member(self):
+        records, _, _ = build_records([product("1"), product("2", proteins_100g="3.2", modified=2)])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "off.sqlite"
+            write_db(records, "sha", path)
+            con = sqlite3.connect(path)
+            self.assertEqual(con.execute("SELECT code FROM off_barcode ORDER BY code").fetchall(), [("1",), ("2",)])
+            self.assertEqual(con.execute("SELECT code FROM off_member").fetchall(), [("1",)])
+            self.assertEqual(con.execute("SELECT DISTINCT licence_group FROM off_product").fetchall(), [("C",)])
 
 
 if __name__ == "__main__":

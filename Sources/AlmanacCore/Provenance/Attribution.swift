@@ -170,7 +170,7 @@ public enum AttributionCatalog {
         // id is the `off:` namespace so a product's source name resolves like
         // any food's. ODbL 4.3 asks for this notice; 4.4 and 4.6 are met by
         // releasing the adapted database itself under the ODbL (the bundled
-        // `open-food-facts.json`) with the method that made it
+        // `open-food-facts.sqlite`) with the method that made it
         // (`tools/openfoodfacts`). Product photos are not used.
         Attribution(
             sourceId: "off",
@@ -182,7 +182,7 @@ public enum AttributionCatalog {
             modificationNote: "Only products sold in the Gulf states with a name and energy, protein, "
                 + "fat and carbohydrate are included; energy given only in kJ is converted to kcal; "
                 + "barcodes and entries for the same product are merged into one record. This adapted "
-                + "database is released under the ODbL 1.0: it is the file open-food-facts.json inside "
+                + "database is released under the ODbL 1.0: it is the file open-food-facts.sqlite inside "
                 + "the app.",
             sourceNotice: "Contains information from Open Food Facts (https://openfoodfacts.org), which is "
                 + "made available here under the Open Database License (ODbL) 1.0. Individual contents "

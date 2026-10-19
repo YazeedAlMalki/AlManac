@@ -23,11 +23,13 @@ derivative works under the same conditions.
 ## How Almanac meets it
 
 - **Kept apart.** The products are their own database, `Sources/AlmanacCore/
-  Nutrition/Resources/open-food-facts.json`, installed into their own tables
-  (`off_product`, `off_value`, `off_barcode`, Migration 067; every row group
-  C). The nutrition reference (`almanac.sqlite`, groups A/B/N) is unchanged and
-  its licence guard still refuses group C, so share-alike cannot reach it. No
-  Open Food Facts product is merged with a reference food.
+  Nutrition/Resources/open-food-facts.sqlite` (`off_product`, `off_value`,
+  `off_barcode`, `off_member`, `off_meta`; every row group C), which the app
+  opens read-only and reads in place (`OpenFoodFacts`). Nothing is installed:
+  the products never enter the person's database, so backups do not carry
+  them either. The nutrition reference (`almanac.sqlite`, groups A/B/N) is
+  unchanged and its licence guard still refuses group C, so share-alike cannot
+  reach it. No Open Food Facts product is merged with a reference food.
 - **Released under the ODbL.** That file is the adapted database. It carries
   the notice, ships inside the app unencrypted (App Store encryption covers the
   executable, not resources), and `tools/openfoodfacts` is the method that made
@@ -55,6 +57,6 @@ One record per real product: see `docs/features/open-food-facts-merge-log.md`.
 ```sh
 cd tools/openfoodfacts
 python3 -m almanac_off fetch    # the export → $ALMANAC_FOOD_DATA/raw/off, with SHA256SUMS
-python3 -m almanac_off build    # → open-food-facts.json and the merge log
+python3 -m almanac_off build    # → open-food-facts.sqlite and the merge log
 python3 -m unittest discover -s tests -t .
 ```

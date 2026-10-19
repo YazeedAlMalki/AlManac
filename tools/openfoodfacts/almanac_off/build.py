@@ -38,7 +38,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[3]
-OUT_JSON = REPO / "Sources/AlmanacCore/Nutrition/Resources/open-food-facts.json"
+OUT_DB = REPO / "Sources/AlmanacCore/Nutrition/Resources/open-food-facts.sqlite"
 MERGE_LOG = REPO / "docs/features/open-food-facts-merge-log.md"
 EXPORT_URL = "https://openfoodfacts-ds.s3.eu-west-3.amazonaws.com/en.openfoodfacts.org.products.csv.gz"
 EXPORT_NAME = "en.openfoodfacts.org.products.csv.gz"
@@ -309,20 +309,64 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+SCHEMA = """
+CREATE TABLE off_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE off_product (
+    food_ref TEXT PRIMARY KEY, name TEXT NOT NULL, brands TEXT NOT NULL, quantity_text TEXT NOT NULL,
+    serving_text TEXT, serving_grams REAL, basis TEXT NOT NULL CHECK (basis IN ('per_100g', 'per_100ml')),
+    url TEXT NOT NULL, last_modified INTEGER NOT NULL, licence_group TEXT NOT NULL CHECK (licence_group = 'C'));
+CREATE TABLE off_barcode (code TEXT PRIMARY KEY, food_ref TEXT NOT NULL REFERENCES off_product (food_ref));
+CREATE INDEX idx_off_barcode_trimmed ON off_barcode (ltrim(code, '0'));
+CREATE TABLE off_value (
+    food_ref TEXT NOT NULL REFERENCES off_product (food_ref), nutrient_id TEXT NOT NULL, amount REAL NOT NULL,
+    qualifier TEXT NOT NULL, source_value TEXT NOT NULL, source_field TEXT NOT NULL, source_unit TEXT NOT NULL,
+    PRIMARY KEY (food_ref, nutrient_id));
+-- Every merged member's own name and values, so where members disagree both values are kept.
+CREATE TABLE off_member (
+    code TEXT PRIMARY KEY, food_ref TEXT NOT NULL REFERENCES off_product (food_ref), name TEXT NOT NULL,
+    brands TEXT NOT NULL, last_modified INTEGER NOT NULL, values_json TEXT NOT NULL);
+"""
+
+NOTICE = ("Contains information from Open Food Facts (https://openfoodfacts.org), which is made available "
+          "here under the Open Database License (ODbL) 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). "
+          "Individual contents are under the Database Contents License (DbCL) 1.0 "
+          "(https://opendatacommons.org/licenses/dbcl/1-0/).")
+
+
+def write_db(records: list[dict], export_sha: str, target: Path = None) -> None:
+    """The adapted database, released under the ODbL: the app reads it in place,
+    read-only, so it is never copied into a person's own database or backups."""
+    import sqlite3
+    target = target or OUT_DB
+    tmp = target.with_suffix(".tmp")
+    tmp.unlink(missing_ok=True)
+    con = sqlite3.connect(tmp)
+    con.executescript(SCHEMA)
+    con.executemany("INSERT INTO off_meta VALUES (?, ?)", [
+        ("licence", "ODbL-1.0"), ("contents_licence", "DbCL-1.0"), ("notice", NOTICE),
+        ("source_url", EXPORT_URL), ("source_sha256", export_sha),
+        ("scope", "Products sold in Saudi Arabia, the UAE, Kuwait, Qatar, Bahrain or Oman, with a name "
+                  "and energy, protein, fat and carbohydrate."),
+        ("method", "tools/openfoodfacts in the Almanac repository")])
+    for r in records:
+        con.execute("INSERT INTO off_product VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'C')",
+                    (r["ref"], r["name"], r["brands"], r["quantity"], r["servingText"], r["servingGrams"],
+                     r["basis"], r["url"], r["lastModified"]))
+        con.executemany("INSERT INTO off_barcode VALUES (?, ?)", [(c, r["ref"]) for c in r["codes"]])
+        con.executemany("INSERT INTO off_value VALUES (?, ?, ?, ?, ?, ?, ?)", [
+            (r["ref"], n, v["amount"], v["qualifier"], v["sourceValue"], v["sourceField"], v["unit"])
+            for n, v in sorted(r["values"].items())])
+        con.executemany("INSERT INTO off_member VALUES (?, ?, ?, ?, ?, ?)", [
+            (m["code"], r["ref"], m["name"], m["brands"], m["lastModified"],
+             json.dumps(m["values"], sort_keys=True, ensure_ascii=False)) for m in r["members"]])
+    con.commit()
+    con.execute("VACUUM")
+    con.close()
+    tmp.replace(target)
+
+
 def write(records, matches, excluded, total: int, export: Path, export_sha: str) -> dict:
-    payload = {
-        "licence": "ODbL-1.0",
-        "contentsLicence": "DbCL-1.0",
-        "notice": ("Contains information from Open Food Facts (https://openfoodfacts.org), which is made "
-                   "available here under the Open Database License (ODbL) 1.0 "
-                   "(https://opendatacommons.org/licenses/odbl/1-0/). Individual contents are under the "
-                   "Database Contents License (DbCL) 1.0 (https://opendatacommons.org/licenses/dbcl/1-0/)."),
-        "source": {"url": EXPORT_URL, "sha256": export_sha},
-        "scope": "Products sold in Saudi Arabia, the UAE, Kuwait, Qatar, Bahrain or Oman, with a name "
-                 "and energy, protein, fat and carbohydrate.",
-        "products": records,
-    }
-    OUT_JSON.write_text(json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
+    write_db(records, export_sha)
     counts = {
         "Gulf products in the export": total,
         "excluded (see below)": len(excluded),

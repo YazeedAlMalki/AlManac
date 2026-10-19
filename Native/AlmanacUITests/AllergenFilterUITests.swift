@@ -191,12 +191,14 @@ final class AllergenFilterUITests: XCTestCase {
         type("rice", into: field)
 
         let sources = ["USDA FoodData Central", "ANSES-CIQUAL", "McCance and Widdowson",
-                       "Australian Food Composition Database", "Almanac"]
-        var labels: [String] = []
-        XCTAssertTrue(app.waitUntil(timeout: 15) {
-            labels = (app.buttons.allElementsBoundByIndex + app.staticTexts.allElementsBoundByIndex).map(\.label)
-            return labels.contains { label in label.contains(" · ") && sources.contains { label.contains($0) } }
-        }, "no food row named its source: \(labels)")
+                       "Australian Food Composition Database", "Almanac", "Open Food Facts products"]
+        // One predicate query rather than reading every element by index: the
+        // list is still filling while it is read, and an index that vanished
+        // between the count and the read failed the run (CI, 2026-10-19).
+        let named = NSPredicate(format: "label CONTAINS ' · ' AND ("
+            + sources.map { "label CONTAINS '\($0)'" }.joined(separator: " OR ") + ")")
+        XCTAssertTrue(app.descendants(matching: .any).matching(named).firstMatch.waitForExistence(timeout: 15),
+                      "no food row named its source")
     }
 
     // MARK: - Helpers

@@ -259,10 +259,10 @@ public struct NutritionCatalog: @unchecked Sendable {
                                  name: row.string("primary_name") ?? row.string("primary_fold") ?? raw,
                                  nameFolded: row.string("primary_fold") ?? "")
             }
-        // Open Food Facts products (their own tables, `OpenFoodFacts.swift`)
+        // Open Food Facts products (their own read-only file, `OpenFoodFacts.swift`)
         // are listed beside the reference foods, in name order, under the same
         // limit, so a packaged product is found the way any food is.
-        let products = try offCandidates(pattern: pattern, text: text, limit: limit)
+        let products = try offCandidates(folded: folded, text: text, limit: limit)
             .map { Candidate(ref: $0.ref, name: $0.name, nameFolded: $0.nameFolded) }
         let candidates = Array((reference + products)
             .sorted { ($0.nameFolded, $0.ref.description) < ($1.nameFolded, $1.ref.description) }
