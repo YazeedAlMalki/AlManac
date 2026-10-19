@@ -22,7 +22,7 @@ struct AttributionTests {
     func nutritionSourcesAreCredited() {
         let expected: [String: (title: String, author: String, notice: String, url: String,
                                 licenses: [String: String], modified: Bool)] = [
-            "usda": ("USDA FoodData Central, Foundation Foods",
+            "usda": ("USDA FoodData Central: Foundation Foods, SR Legacy and FNDDS",
                      "U.S. Department of Agriculture, Agricultural Research Service",
                      "U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov.",
                      "https://fdc.nal.usda.gov/",

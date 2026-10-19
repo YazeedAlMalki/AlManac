@@ -1005,6 +1005,40 @@ confirmed:**
 *Overrule by:* the merge log's rule in `tools/exercises/almanac_exercises/build.py`
 (`VARIATION`, `NEUTRAL`, `UNSURE`), then `python3 -m almanac_exercises build`.
 
+### Food data: USDA SR Legacy and FNDDS, one record per real food (2026-10-19)
+
+**Confirmed by the owner, 2026-10-19:** USDA FoodData Central Foundation and
+SR Legacy for core nutrient values, FNDDS for food codes and portion weights;
+one record per real food across all sources, every source's attribution kept,
+conflicts kept with both values and logged, reviewed once at the end
+(`docs/food-sources.md`, `docs/features/food-merge-log.md`).
+
+How the build applies that; **none of these has been confirmed:**
+
+- **One namespace for the three USDA data types**, `usda:<fdc_id>`, each
+  food's own code (NDB number, FNDDS food code) in `source_record`. They are
+  one publisher's one download under one licence.
+- **FNDDS values without a derivation code are `calculated_recipe`**; SR
+  Legacy values without one are `measured`, as Foundation's are.
+- **FNDDS and SR Legacy portions are named in the publisher's words** ("1 cup",
+  "cup, chopped"); an FNDDS portion with no amount is one of the portion its
+  description names.
+- **A merge is a search-time map, not a rewrite.** Every member keeps its rows,
+  values and licence; the search lists the record (USDA first, then CoFID,
+  CIQUAL, AFCD) and finds it by any member's name (Migration 068). A logged
+  food keeps pointing at the row that was logged.
+- **"Unsure" is narrow.** Names may differ only by neutral words ("fresh",
+  "average", "standard"…) with agreeing nutrient profiles. A name-overlap
+  threshold was measured first on the shipped bundle and merged sirloin with
+  fillet, black beans with cannellini and prunes with and without sugar, so it
+  was dropped. Same names are merged whatever their values; the 63 records
+  whose members disagree (honey at 278, 288 and 331 kcal; "Coconut milk" at 22
+  and 199 kcal, which reads as two different foods) are in the log.
+- **Almanac's own dishes are never merged.**
+
+*Overrule by:* `NEUTRAL`, `TOLERANCE`, `BASE_ORDER` in
+`tools/nutrition/almanac_nutrition/merge.py`, then `python3 -m almanac_nutrition merge`.
+
 ### Weighing
 
 **Meter fraction**:

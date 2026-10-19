@@ -183,6 +183,18 @@ public struct NutritionCatalog: @unchecked Sendable {
         EnergyEstimate.preferred(from: try values(for: ref, basis: basis), basis: basis)
     }
 
+    /// Every source's row for the real food `ref` is (Migration 068): the record
+    /// the search shows first, then the other members, each with its own names,
+    /// values and licence. A food no other source matched is its only member.
+    public func members(of ref: SourceIdentifier) throws -> [NutritionFood] {
+        let record = try db.query("SELECT record_ref FROM nutrition_food_merge WHERE food_ref = ?;",
+                                  [.text(ref.description)]).first?.string("record_ref") ?? ref.description
+        let others = try db.query("""
+            SELECT food_ref FROM nutrition_food_merge WHERE record_ref = ? AND food_ref <> ? ORDER BY food_ref;
+            """, [.text(record), .text(record)]).compactMap { $0.string("food_ref") }
+        return try ([record] + others).compactMap(SourceIdentifier.init(parsing:)).compactMap { try food($0) }
+    }
+
     /// Foods whose name in any language contains `text`, compared folded (`TextFold`):
     /// case, accents and Arabic letter variants do not matter. Each food once, by primary name.
     public func search(_ text: String, limit: Int = 50) throws -> [NutritionFood] {
@@ -234,12 +246,21 @@ public struct NutritionCatalog: @unchecked Sendable {
         // looking for the jar in front of them cannot match that against the label
         // they are holding. They are columns of the same row, so reading both is
         // no extra query.
+        // One row per real food (Migration 068): a food merged into another
+        // food's record is not listed, and its names find the record instead. A
+        // member whose record is not in the catalog lists as itself.
         let candidates = try db.query("""
             SELECT f.food_ref, p.name AS primary_name, p.name_fold AS primary_fold
             FROM nutrition_food f
             JOIN nutrition_food_name p ON p.food_ref = f.food_ref AND p.is_primary = 1
-            WHERE EXISTS (SELECT 1 FROM nutrition_food_name n
-                          WHERE n.food_ref = f.food_ref AND n.name_fold LIKE ? ESCAPE '\\')
+            WHERE NOT EXISTS (SELECT 1 FROM nutrition_food_merge m
+                              JOIN nutrition_food r ON r.food_ref = m.record_ref
+                              WHERE m.food_ref = f.food_ref AND m.record_ref <> f.food_ref)
+              AND EXISTS (SELECT 1 FROM nutrition_food_name n
+                          WHERE n.name_fold LIKE ? ESCAPE '\\'
+                            AND (n.food_ref = f.food_ref
+                                 OR n.food_ref IN (SELECT food_ref FROM nutrition_food_merge
+                                                   WHERE record_ref = f.food_ref)))
             ORDER BY p.name_fold, f.food_ref
             LIMIT ?;
             """, [.text(pattern), .integer(Int64(limit))])

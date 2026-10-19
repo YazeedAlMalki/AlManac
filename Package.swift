@@ -45,6 +45,7 @@ let package = Package(
                             .copy("Training/Resources/free-exercise-db"),
                             .copy("Training/Resources/exercise-library.json"),
                             .copy("Kitchen/Resources/wikibooks-recipes.json"),
+                            .copy("Nutrition/Resources/food-merges.json"),
                             .process("Localization/Resources")]),
         .testTarget(name: "AlmanacCoreTests", dependencies: ["AlmanacCore"], path: "Tests/AlmanacCoreTests")
     ]
