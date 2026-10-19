@@ -66,6 +66,9 @@ final class NutritionModel: ObservableObject {
                     // Kitchen's Wikibooks recipes are made of the reference's
                     // foods, so they install after it, once per bundle.
                     let recipes = try WikibooksRecipeBundle.installIfNeeded(into: referenceDatabase)
+                    // Open Food Facts products: their own tables and file (ODbL),
+                    // installed once per bundle like the recipes.
+                    try OpenFoodFactsBundle.installIfNeeded(into: referenceDatabase)
                     // Kitchen's ingredient table is derived from the catalog's
                     // names, so it is rebuilt whenever the catalog changes, and
                     // built once on a database that predates it (Migration 054).

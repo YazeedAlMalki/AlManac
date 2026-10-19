@@ -120,7 +120,7 @@ public struct NutritionFood: Sendable, Hashable {
 
 /// Read access to the imported reference foods. A seam over SQL, not an ORM.
 public struct NutritionCatalog: @unchecked Sendable {
-    private let db: Database
+    let db: Database
 
     public init(db: Database) {
         self.db = db
@@ -131,6 +131,7 @@ public struct NutritionCatalog: @unchecked Sendable {
     }
 
     public func food(_ ref: SourceIdentifier) throws -> NutritionFood? {
+        if ref.namespace == .openFoodFacts { return try offFood(ref) }
         guard let row = try db.query("""
             SELECT licence_group, food_group_code, food_group_name, source_record
             FROM nutrition_food WHERE food_ref = ?;
@@ -152,7 +153,8 @@ public struct NutritionCatalog: @unchecked Sendable {
 
     /// Every value published for the food on one basis. Tokens keep an empty amount.
     public func values(for ref: SourceIdentifier, basis: NutritionBasis) throws -> [NutrientValue] {
-        try db.query("""
+        if ref.namespace == .openFoodFacts { return try offValues(for: ref, basis: basis) }
+        return try db.query("""
             SELECT nutrient_id, amount, qualifier, confidence, source_value, source_nutrient_id, source_unit,
                    licence_group
             FROM nutrition_value WHERE food_ref = ? AND basis = ? ORDER BY nutrient_id;
@@ -173,7 +175,8 @@ public struct NutritionCatalog: @unchecked Sendable {
 
     /// The bases the publisher gives values on: per 100 g, and for some liquids per 100 mL too.
     public func bases(for ref: SourceIdentifier) throws -> [NutritionBasis] {
-        try db.query("SELECT DISTINCT basis FROM nutrition_value WHERE food_ref = ? ORDER BY basis;",
+        if ref.namespace == .openFoodFacts { return try offBases(for: ref) }
+        return try db.query("SELECT DISTINCT basis FROM nutrition_value WHERE food_ref = ? ORDER BY basis;",
                      [.text(ref.description)])
             .compactMap { $0.string("basis").flatMap(NutritionBasis.init(rawValue:)) }
     }
@@ -234,7 +237,7 @@ public struct NutritionCatalog: @unchecked Sendable {
         // looking for the jar in front of them cannot match that against the label
         // they are holding. They are columns of the same row, so reading both is
         // no extra query.
-        let candidates = try db.query("""
+        let reference = try db.query("""
             SELECT f.food_ref, p.name AS primary_name, p.name_fold AS primary_fold
             FROM nutrition_food f
             JOIN nutrition_food_name p ON p.food_ref = f.food_ref AND p.is_primary = 1
@@ -256,6 +259,14 @@ public struct NutritionCatalog: @unchecked Sendable {
                                  name: row.string("primary_name") ?? row.string("primary_fold") ?? raw,
                                  nameFolded: row.string("primary_fold") ?? "")
             }
+        // Open Food Facts products (their own tables, `OpenFoodFacts.swift`)
+        // are listed beside the reference foods, in name order, under the same
+        // limit, so a packaged product is found the way any food is.
+        let products = try offCandidates(pattern: pattern, text: text, limit: limit)
+            .map { Candidate(ref: $0.ref, name: $0.name, nameFolded: $0.nameFolded) }
+        let candidates = Array((reference + products)
+            .sorted { ($0.nameFolded, $0.ref.description) < ($1.nameFolded, $1.ref.description) }
+            .prefix(limit))
 
         var kept: [NutritionFood] = []
         var verdicts: [SourceIdentifier: AllergenVerdict] = [:]
@@ -366,7 +377,8 @@ public struct NutritionCatalog: @unchecked Sendable {
 
     /// Every measure held for a food, in the order it was added.
     public func portions(of ref: SourceIdentifier) throws -> [NutritionPortion] {
-        try db.query("""
+        if ref.namespace == .openFoodFacts { return try offPortions(of: ref) }
+        return try db.query("""
             SELECT id, food_ref, amount, unit_text, modifier_text, gram_weight,
                    sequence, licence_group, source_value
             FROM nutrition_portion WHERE food_ref = ? ORDER BY sequence, unit_text;
@@ -383,7 +395,9 @@ public struct NutritionCatalog: @unchecked Sendable {
                         modifier: String? = nil) throws -> PortionMatch {
         let forms = NutritionCatalog.matchableForms(unit)
         guard !forms.isEmpty else { return .notFound }
-        var candidates = try db.query("""
+        var candidates = ref.namespace == .openFoodFacts
+            ? try offPortions(of: ref).filter { forms.contains(TextFold.fold($0.unitText)) }
+            : try db.query("""
             SELECT id, food_ref, amount, unit_text, modifier_text, gram_weight,
                    sequence, licence_group, source_value
             FROM nutrition_portion

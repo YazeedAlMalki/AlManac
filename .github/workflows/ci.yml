@@ -72,6 +72,13 @@ jobs:
         working-directory: tools/recipes
         run: python3 -m unittest discover -s tests -t .
 
+      # The exercise library and Open Food Facts builders. Synthetic rows only;
+      # neither needs its source data or a third-party package to test.
+      - name: Exercise and Open Food Facts tool tests
+        run: |
+          (cd tools/exercises && python3 -m unittest discover -s tests -t .)
+          (cd tools/openfoodfacts && python3 -m unittest discover -s tests -t .)
+
       # The nutrition pipeline (tools/nutrition), native regional dishes included.
       # Synthetic lakes only; the real-lake tests skip without the lake.
       - name: Nutrition pipeline tests

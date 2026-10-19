@@ -85,6 +85,10 @@ public enum AttributionCatalog {
         url: "https://unlicense.org/")
     public static let mit = LicenseReference(name: "MIT",
         url: "https://opensource.org/license/mit")
+    public static let odbl = LicenseReference(name: "Open Database License (ODbL) 1.0",
+        url: "https://opendatacommons.org/licenses/odbl/1-0/")
+    public static let dbcl = LicenseReference(name: "Database Contents License (DbCL) 1.0",
+        url: "https://opendatacommons.org/licenses/dbcl/1-0/")
     public static let loincLicense = LicenseReference(name: "LOINC License",
         url: "https://loinc.org/license")
     /// For a source credited without a licence anyone has identified. Its link
@@ -99,7 +103,7 @@ public enum AttributionCatalog {
     /// matching `entries` row fails `AttributionAudit`.
     public static let bundledSourceIds: [String] = [
         "workout-guide", "everkinetic", "free-exercise-db", "wger", "usda", "ciqual", "cofid", "afcd",
-        "bristol-stool-form-scale", "loinc", "wikibooks-cookbook"
+        "bristol-stool-form-scale", "loinc", "wikibooks-cookbook", "off"
     ]
 
     public static let entries: [Attribution] = [
@@ -161,6 +165,28 @@ public enum AttributionCatalog {
             sourceURL: "https://fdc.nal.usda.gov/",
             licenses: [cc0Universal],
             sourceNotice: "U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov."
+        ),
+        // Packaged products (owner, 2026-10-19; `OpenFoodFactsBundle`). The
+        // id is the `off:` namespace so a product's source name resolves like
+        // any food's. ODbL 4.3 asks for this notice; 4.4 and 4.6 are met by
+        // releasing the adapted database itself under the ODbL (the bundled
+        // `open-food-facts.json`) with the method that made it
+        // (`tools/openfoodfacts`). Product photos are not used.
+        Attribution(
+            sourceId: "off",
+            title: "Open Food Facts products",
+            author: "Open Food Facts contributors",
+            sourceURL: "https://world.openfoodfacts.org",
+            licenses: [odbl, dbcl],
+            isModified: true,
+            modificationNote: "Only products sold in the Gulf states with a name and energy, protein, "
+                + "fat and carbohydrate are included; energy given only in kJ is converted to kcal; "
+                + "barcodes and entries for the same product are merged into one record. This adapted "
+                + "database is released under the ODbL 1.0: it is the file open-food-facts.json inside "
+                + "the app.",
+            sourceNotice: "Contains information from Open Food Facts (https://openfoodfacts.org), which is "
+                + "made available here under the Open Database License (ODbL) 1.0. Individual contents "
+                + "are under the Database Contents License (DbCL) 1.0."
         ),
         Attribution(
             sourceId: "ciqual",

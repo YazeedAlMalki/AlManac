@@ -1005,6 +1005,36 @@ confirmed:**
 *Overrule by:* the merge log's rule in `tools/exercises/almanac_exercises/build.py`
 (`VARIATION`, `NEUTRAL`, `UNSURE`), then `python3 -m almanac_exercises build`.
 
+### Open Food Facts products (2026-10-19)
+
+**Confirmed by the owner, 2026-10-19:** "Use Open Food Facts" for packaged
+products and barcodes, with its ODbL attribution and share-alike obligations
+checked first (`docs/features/open-food-facts.md`). This overrides the
+technical spec's "group C never ships".
+
+How it was built (`tools/openfoodfacts`); **none of these has been confirmed:**
+
+- **Gulf products only.** Countries include Saudi Arabia, the UAE, Kuwait,
+  Qatar, Bahrain or Oman, and the product has a name and energy, protein, fat
+  and carbohydrate: 3,514 records from 33,938 Gulf products (most of the rest
+  have no nutrition at all). The whole export with nutrition is about 2.2
+  million products, too large to ship in an app.
+- **Its own tables and file, never the reference.** `off_*` tables
+  (Migration 067) installed from `open-food-facts.json`, released under the
+  ODbL. Group C stays unshippable inside `almanac.sqlite`.
+- **Not merged with reference foods.** A branded product and a generic food
+  are different items, and merging would carry ODbL data into the reference.
+  Duplicates are merged within Open Food Facts only (barcode, or brand + name
+  + nutrition); the record shows its most recently edited member.
+- **No Arabic names and no allergen data yet.** The CSV export carries one
+  name per product; Arabic names and allergen tags are in the 13 GB JSONL
+  export. The allergen filter works on product names, as for every food.
+- **No barcode scanner.** Search finds a product by its barcode number; a
+  camera scanner is a separate feature nobody has asked for yet.
+
+*Overrule by:* `GULF` and `check` in `tools/openfoodfacts/almanac_off/build.py`,
+then `python3 -m almanac_off build`.
+
 ### Weighing
 
 **Meter fraction**:
