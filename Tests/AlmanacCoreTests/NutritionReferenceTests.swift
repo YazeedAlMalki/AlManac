@@ -38,11 +38,13 @@ final class NutritionReferenceTests: XCTestCase {
         let db = try migrated()
         // Excludes nutrition_window (Migration024, Slice 6/Fasting) and
         // nutrition_food_factor (Migration027, Ticket 5's portion-schema
-        // reconciliation) — both match this LIKE pattern without being one
-        // of the tables migrations 008-011 actually left behind.
+        // reconciliation) and the food merge map (Migration067) — all match
+        // this LIKE pattern without being one of the tables migrations 008-011
+        // actually left behind.
         let tables = Set(try db.query("""
             SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'nutrition!_%' ESCAPE '!'
-                AND name NOT IN ('nutrition_window', 'nutrition_food_factor');
+                AND name NOT IN ('nutrition_window', 'nutrition_food_factor',
+                                 'nutrition_food_merge', 'nutrition_food_merge_import');
             """).compactMap { $0.string("name") })
         // Migrations 009-011 (food log, portions and native dishes, portion
         // identity) are module-prefixed the same way; this asserts the full

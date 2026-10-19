@@ -160,7 +160,7 @@ public enum AttributionCatalog {
         ),
         Attribution(
             sourceId: "usda",
-            title: "USDA FoodData Central, Foundation Foods",
+            title: "USDA FoodData Central: Foundation Foods, SR Legacy and FNDDS",
             author: "U.S. Department of Agriculture, Agricultural Research Service",
             sourceURL: "https://fdc.nal.usda.gov/",
             licenses: [cc0Universal],

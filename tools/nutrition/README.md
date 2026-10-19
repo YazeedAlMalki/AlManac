@@ -11,7 +11,7 @@ references below (§n) point there.
 
 | Source | Namespace | Group | What is canonicalised |
 |---|---|---|---|
-| USDA FoodData Central 2026-04-30 | `usda` | A | Foundation Foods listed in `foundation_food.csv` (395). Branded, SR Legacy, FNDDS and the 74 unlisted Foundation records are extracted or left in raw, not canonicalised. |
+| USDA FoodData Central 2026-04-30 | `usda` | A | Foundation Foods listed in `foundation_food.csv` (395), SR Legacy foods listed in `sr_legacy_food.csv`, FNDDS foods listed in `survey_fndds_food.csv`. Branded and the 74 unlisted Foundation records are left in raw or excluded, not canonicalised. |
 | ANSES-CIQUAL 2025 | `ciqual` | B | All 3,484 foods |
 | CoFID 2021 | `cofid` | B | All 2,887 rows of `1.3 Proximates` |
 | AFCD Release 3 | `afcd` | B | All 1,588 foods, per 100 g and (213 liquids) per 100 mL |
@@ -57,6 +57,7 @@ python3 -m almanac_nutrition bundle
 python3 -m almanac_nutrition all                 # every source, then union + bundle
 python3 -m almanac_nutrition qa                  # independent re-read of every raw cell
 python3 -m almanac_nutrition fixture             # regenerate fixtures/bundle_v1.sql
+python3 -m almanac_nutrition merge               # one record per real food → food-merges.json + log
 python3 -m unittest discover -s tests -t .       # fast; synthetic fixtures only
 ALMANAC_NUTRITION_INTEGRATION=1 python3 -m unittest discover -s tests -t .   # + real lake
 ```
@@ -179,17 +180,38 @@ only ever comes from a cell that says 0**.
 ### USDA (`sources/usda.py`) — reference implementation
 - Inputs: `FoodData Central United States/FoodData_Central_csv_2026-04-30/*.csv`
   (manifest `usda`).
-- Extract: `food.csv` rows with `data_type = foundation_food` (469), their
-  `food_nutrient` and `food_portion` rows, plus the lookup tables whole.
-- Canonicalise: foods listed in `foundation_food.csv` (395). The other 74 are
-  recorded in `manifest.json` `notes.excluded` (68 share a description with a
-  listed record — superseded versions). Values per 100 g; qualifier from
-  `derivation_id` → code → `derivation_qualifiers.csv`; blank code →
-  `measured` (Foundation Foods are analytical); `confidence` = the code.
-- Portions: `food_portion` rows for the 395 listed foods (123 of the 187
-  extracted — the rest belong to the 74 excluded), `measure_unit_id` resolved
+- Extract: `food.csv` rows with `data_type` `foundation_food` (469),
+  `sr_legacy_food` or `survey_fndds_food`, their `food_nutrient`,
+  `food_portion` and `input_food` rows, plus the lookup tables whole
+  (`foundation_food`, `sr_legacy_food`, `survey_fndds_food`, `nutrient`,
+  `food_nutrient_derivation`, `food_category`, `wweia_food_category`,
+  `measure_unit`). One namespace for all three: `usda:<fdc_id>`.
+- Canonicalise: foods listed in their type's own file — `foundation_food.csv`
+  (395), `sr_legacy_food.csv`, `survey_fndds_food.csv`. Unlisted ones are
+  recorded in `manifest.json` `notes.excluded` (the 74 Foundation records; 68
+  share a description with a listed record — superseded versions); counts per
+  type in `notes.foods_by_data_type`.
+- Codes: `source_record` is `food.csv fdc_id=…; <listing file> <column>=<code>`,
+  the code being Foundation's or SR Legacy's `NDB_number` or FNDDS's
+  `food_code`. An FNDDS food with exactly one `input_food` row also records
+  `input_food.csv sole input fdc_id=… sr_code=…`: that food is its one
+  ingredient as eaten. The food de-duplication stage reads these
+  (`merge.py`).
+- Groups: Foundation and SR Legacy from `food_category.csv`; FNDDS from
+  `survey_fndds_food.wweia_category_number` → `wweia_food_category.csv`.
+- Values per 100 g; qualifier from `derivation_id` → code →
+  `derivation_qualifiers.csv`; `confidence` = the code. Blank code: Foundation
+  and SR Legacy → `measured`; FNDDS → `calculated_recipe` (FNDDS values are
+  calculated from its ingredients; key `<none: survey_fndds_food>` in the
+  dictionary, `confidence` stays empty — no code is invented).
+- Portions: `food_portion` rows for listed foods, `measure_unit_id` resolved
   to its name via `measure_unit.csv`. `kind` `household_measure`;
-  `confidence` = `data_points`.
+  `confidence` = `data_points`. SR Legacy and FNDDS use measure unit 9999
+  "undetermined" and name the measure themselves, so the unit is
+  `portion_description` (FNDDS: "1 cup") or else `modifier` (SR Legacy:
+  "cup, chopped"). FNDDS leaves `amount` blank — the count is in the
+  description — so its amount is 1 (one "1 cup"). A 9999 row with neither
+  word is not a portion; it is listed in `notes.portions_with_no_measure_name`.
 
 ### CIQUAL (`sources/ciqual.py`)
 - Inputs: `raw/ciqual/2025/{alim,alim_grp,compo,const,sources}_2025_11_03.xml`
@@ -239,6 +261,26 @@ Bundle schema version 1 (`bundle.schema_sql`): `bundle_meta`,
 AlmanacCore's `NutritionReferenceImporter` reads all eight and re-asserts the
 licence groups itself. Household measures are copied into `nutrition_portion`;
 specific gravity and edible proportion are copied into `nutrition_food_factor`.
+
+## One record per real food (`merge.py`)
+
+The owner's rule (2026-10-19): one record per real food across every
+source. `merge` reads a built bundle and writes
+`Sources/AlmanacCore/Nutrition/Resources/food-merges.json` (food_ref →
+record_ref) and `docs/features/food-merge-log.md`. It changes no bundle row:
+every member keeps its names, values, portions and licence, so removing a
+source is still removing its rows. AlmanacCore installs the map
+(`FoodMergeBundle`, Migration 067) and the search shows one row per record.
+
+Matches, strongest first: **code** (USDA's own links in `source_record`:
+Foundation and SR Legacy sharing an NDB number; an FNDDS food whose only
+ingredient is an SR Legacy food), **same** (equal normalised English names,
+comma-separated parts in any order), **unsure** (names differing only by
+neutral words — `NEUTRAL` — whose nutrient profiles agree within
+`TOLERANCE`, against every member of both groups). Values that disagree
+beyond the tolerance are listed as conflicts; both stay. The record is the
+USDA member if any (Foundation, SR Legacy, FNDDS), then CoFID, CIQUAL, AFCD.
+`almanac:` dishes are never merged. Re-run `merge` after every `bundle`.
 
 ## Energy: stored vs calculated
 

@@ -1,0 +1,2531 @@
+{
+ "bundleSHA256": "0877c29145436f70e35c01c0a8c5e60d0baa0ed160c80f6122bb835720355902",
+ "merges": [
+  {
+   "foodRef": "afcd:F000074",
+   "kind": "same",
+   "recordRef": "cofid:16-448",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-448",
+   "kind": "same",
+   "recordRef": "cofid:16-448",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F000089",
+   "kind": "same",
+   "recordRef": "ciqual:13111",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13111",
+   "kind": "same",
+   "recordRef": "ciqual:13111",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F000130",
+   "kind": "same",
+   "recordRef": "cofid:14-031",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-031",
+   "kind": "same",
+   "recordRef": "cofid:14-031",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F000144",
+   "kind": "same",
+   "recordRef": "cofid:13-153",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20052",
+   "kind": "same",
+   "recordRef": "cofid:13-153",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-153",
+   "kind": "same",
+   "recordRef": "cofid:13-153",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F000155",
+   "kind": "same",
+   "recordRef": "usda:2710823",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20279",
+   "kind": "same",
+   "recordRef": "usda:2710823",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2710823",
+   "kind": "same",
+   "recordRef": "usda:2710823",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F000243",
+   "kind": "same",
+   "recordRef": "cofid:13-532",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-532",
+   "kind": "same",
+   "recordRef": "cofid:13-532",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F000431",
+   "kind": "unsure",
+   "recordRef": "cofid:13-514",
+   "score": 0.75
+  },
+  {
+   "foodRef": "cofid:13-514",
+   "kind": "unsure",
+   "recordRef": "cofid:13-514",
+   "score": 0.75
+  },
+  {
+   "foodRef": "afcd:F000739",
+   "kind": "same",
+   "recordRef": "cofid:18-043",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-043",
+   "kind": "same",
+   "recordRef": "cofid:18-043",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F000810",
+   "kind": "same",
+   "recordRef": "cofid:18-064",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-064",
+   "kind": "same",
+   "recordRef": "cofid:18-064",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F001267",
+   "kind": "same",
+   "recordRef": "usda:2727581",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13029",
+   "kind": "same",
+   "recordRef": "usda:2727581",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-388",
+   "kind": "same",
+   "recordRef": "usda:2727581",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2727581",
+   "kind": "same",
+   "recordRef": "usda:2727581",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F001290",
+   "kind": "same",
+   "recordRef": "usda:2346411",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13028",
+   "kind": "same",
+   "recordRef": "usda:2346411",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2346411",
+   "kind": "same",
+   "recordRef": "usda:2346411",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F001905",
+   "kind": "unsure",
+   "recordRef": "usda:747447",
+   "score": 0.67
+  },
+  {
+   "foodRef": "ciqual:20057",
+   "kind": "same",
+   "recordRef": "usda:747447",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:747447",
+   "kind": "same",
+   "recordRef": "usda:747447",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F001914",
+   "kind": "unsure",
+   "recordRef": "usda:2685575",
+   "score": 0.75
+  },
+  {
+   "foodRef": "ciqual:20058",
+   "kind": "same",
+   "recordRef": "usda:2685575",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-177",
+   "kind": "same",
+   "recordRef": "usda:2685575",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2685575",
+   "kind": "same",
+   "recordRef": "usda:2685575",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F001973",
+   "kind": "unsure",
+   "recordRef": "cofid:17-685",
+   "score": 0.67
+  },
+  {
+   "foodRef": "cofid:17-685",
+   "kind": "unsure",
+   "recordRef": "cofid:17-685",
+   "score": 0.67
+  },
+  {
+   "foodRef": "afcd:F001996",
+   "kind": "same",
+   "recordRef": "cofid:13-187",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-187",
+   "kind": "same",
+   "recordRef": "cofid:13-187",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002006",
+   "kind": "same",
+   "recordRef": "usda:2346408",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-190",
+   "kind": "same",
+   "recordRef": "usda:2346408",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2346408",
+   "kind": "same",
+   "recordRef": "usda:2346408",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002015",
+   "kind": "same",
+   "recordRef": "cofid:13-509",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-509",
+   "kind": "same",
+   "recordRef": "cofid:13-509",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002378",
+   "kind": "unsure",
+   "recordRef": "usda:2685573",
+   "score": 0.67
+  },
+  {
+   "foodRef": "ciqual:20016",
+   "kind": "same",
+   "recordRef": "usda:2685573",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-512",
+   "kind": "same",
+   "recordRef": "usda:2685573",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2685573",
+   "kind": "same",
+   "recordRef": "usda:2685573",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002390",
+   "kind": "unsure",
+   "recordRef": "usda:2346405",
+   "score": 0.67
+  },
+  {
+   "foodRef": "cofid:13-636",
+   "kind": "same",
+   "recordRef": "usda:2346405",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2346405",
+   "kind": "same",
+   "recordRef": "usda:2346405",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002408",
+   "kind": "same",
+   "recordRef": "cofid:12-345",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-345",
+   "kind": "same",
+   "recordRef": "cofid:12-345",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002448",
+   "kind": "same",
+   "recordRef": "cofid:12-355",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-355",
+   "kind": "same",
+   "recordRef": "cofid:12-355",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002488",
+   "kind": "same",
+   "recordRef": "cofid:12-176",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-176",
+   "kind": "same",
+   "recordRef": "cofid:12-176",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002709",
+   "kind": "same",
+   "recordRef": "cofid:18-411",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:40111",
+   "kind": "same",
+   "recordRef": "cofid:18-411",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-411",
+   "kind": "same",
+   "recordRef": "cofid:18-411",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002884",
+   "kind": "same",
+   "recordRef": "ciqual:20026",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20026",
+   "kind": "same",
+   "recordRef": "ciqual:20026",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002929",
+   "kind": "same",
+   "recordRef": "cofid:17-648",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-648",
+   "kind": "same",
+   "recordRef": "cofid:17-648",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002946",
+   "kind": "same",
+   "recordRef": "cofid:17-091",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-091",
+   "kind": "same",
+   "recordRef": "cofid:17-091",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F002980",
+   "kind": "same",
+   "recordRef": "cofid:12-545",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-545",
+   "kind": "same",
+   "recordRef": "cofid:12-545",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003248",
+   "kind": "same",
+   "recordRef": "usda:2758976",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2758976",
+   "kind": "same",
+   "recordRef": "usda:2758976",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003249",
+   "kind": "same",
+   "recordRef": "ciqual:13113",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13113",
+   "kind": "same",
+   "recordRef": "ciqual:13113",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003337",
+   "kind": "same",
+   "recordRef": "cofid:13-876",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-876",
+   "kind": "same",
+   "recordRef": "cofid:13-876",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003627",
+   "kind": "same",
+   "recordRef": "cofid:17-487",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-487",
+   "kind": "same",
+   "recordRef": "cofid:17-487",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003725",
+   "kind": "same",
+   "recordRef": "cofid:12-943",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-943",
+   "kind": "same",
+   "recordRef": "cofid:12-943",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003729",
+   "kind": "same",
+   "recordRef": "cofid:12-937",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-937",
+   "kind": "same",
+   "recordRef": "cofid:12-937",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003737",
+   "kind": "same",
+   "recordRef": "cofid:12-939",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-939",
+   "kind": "same",
+   "recordRef": "cofid:12-939",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003784",
+   "kind": "unsure",
+   "recordRef": "cofid:13-240",
+   "score": 0.67
+  },
+  {
+   "foodRef": "cofid:13-240",
+   "kind": "unsure",
+   "recordRef": "cofid:13-240",
+   "score": 0.67
+  },
+  {
+   "foodRef": "afcd:F003820",
+   "kind": "unsure",
+   "recordRef": "ciqual:20028",
+   "score": 0.67
+  },
+  {
+   "foodRef": "ciqual:20028",
+   "kind": "unsure",
+   "recordRef": "ciqual:20028",
+   "score": 0.67
+  },
+  {
+   "foodRef": "afcd:F003832",
+   "kind": "same",
+   "recordRef": "ciqual:13013",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13013",
+   "kind": "same",
+   "recordRef": "ciqual:13013",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F003998",
+   "kind": "same",
+   "recordRef": "cofid:11-021",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-021",
+   "kind": "same",
+   "recordRef": "cofid:11-021",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004000",
+   "kind": "same",
+   "recordRef": "usda:2512375",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-897",
+   "kind": "same",
+   "recordRef": "usda:2512375",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2512375",
+   "kind": "same",
+   "recordRef": "usda:2512375",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004009",
+   "kind": "same",
+   "recordRef": "cofid:11-888",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-888",
+   "kind": "same",
+   "recordRef": "cofid:11-888",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004014",
+   "kind": "unsure",
+   "recordRef": "cofid:11-889",
+   "score": 0.75
+  },
+  {
+   "foodRef": "cofid:11-889",
+   "kind": "unsure",
+   "recordRef": "cofid:11-889",
+   "score": 0.75
+  },
+  {
+   "foodRef": "afcd:F004015",
+   "kind": "same",
+   "recordRef": "cofid:11-891",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-891",
+   "kind": "same",
+   "recordRef": "cofid:11-891",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004196",
+   "kind": "unsure",
+   "recordRef": "cofid:17-360",
+   "score": 0.33
+  },
+  {
+   "foodRef": "cofid:17-360",
+   "kind": "unsure",
+   "recordRef": "cofid:17-360",
+   "score": 0.33
+  },
+  {
+   "foodRef": "afcd:F004244",
+   "kind": "same",
+   "recordRef": "ciqual:13183",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13183",
+   "kind": "same",
+   "recordRef": "ciqual:13183",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004380",
+   "kind": "same",
+   "recordRef": "cofid:17-050",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:31008",
+   "kind": "same",
+   "recordRef": "cofid:17-050",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-050",
+   "kind": "same",
+   "recordRef": "cofid:17-050",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004604",
+   "kind": "same",
+   "recordRef": "ciqual:31053",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:31053",
+   "kind": "same",
+   "recordRef": "ciqual:31053",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004607",
+   "kind": "same",
+   "recordRef": "cofid:17-688",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-688",
+   "kind": "same",
+   "recordRef": "cofid:17-688",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F004781",
+   "kind": "same",
+   "recordRef": "usda:323505",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20346",
+   "kind": "same",
+   "recordRef": "usda:323505",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:323505",
+   "kind": "same",
+   "recordRef": "usda:323505",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F005049",
+   "kind": "same",
+   "recordRef": "cofid:18-481",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-481",
+   "kind": "same",
+   "recordRef": "cofid:18-481",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F005164",
+   "kind": "unsure",
+   "recordRef": "cofid:13-624",
+   "score": 0.67
+  },
+  {
+   "foodRef": "ciqual:20039",
+   "kind": "same",
+   "recordRef": "cofid:13-624",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-624",
+   "kind": "same",
+   "recordRef": "cofid:13-624",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F005192",
+   "kind": "same",
+   "recordRef": "usda:2346388",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2346388",
+   "kind": "same",
+   "recordRef": "usda:2346388",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F005268",
+   "kind": "same",
+   "recordRef": "ciqual:26051",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:26051",
+   "kind": "same",
+   "recordRef": "ciqual:26051",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F005712",
+   "kind": "same",
+   "recordRef": "cofid:14-087",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-087",
+   "kind": "same",
+   "recordRef": "cofid:14-087",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F005972",
+   "kind": "same",
+   "recordRef": "cofid:17-362",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-362",
+   "kind": "same",
+   "recordRef": "cofid:17-362",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006150",
+   "kind": "same",
+   "recordRef": "cofid:16-259",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-259",
+   "kind": "same",
+   "recordRef": "cofid:16-259",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006159",
+   "kind": "same",
+   "recordRef": "usda:748278",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:748278",
+   "kind": "same",
+   "recordRef": "usda:748278",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006163",
+   "kind": "same",
+   "recordRef": "usda:330458",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-031",
+   "kind": "same",
+   "recordRef": "usda:330458",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:330458",
+   "kind": "same",
+   "recordRef": "usda:330458",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006166",
+   "kind": "same",
+   "recordRef": "cofid:17-034",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-034",
+   "kind": "same",
+   "recordRef": "cofid:17-034",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006167",
+   "kind": "same",
+   "recordRef": "cofid:17-036",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-036",
+   "kind": "same",
+   "recordRef": "cofid:17-036",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006177",
+   "kind": "same",
+   "recordRef": "cofid:17-038",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-038",
+   "kind": "same",
+   "recordRef": "cofid:17-038",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006181",
+   "kind": "same",
+   "recordRef": "cofid:17-039",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-039",
+   "kind": "same",
+   "recordRef": "cofid:17-039",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006183",
+   "kind": "same",
+   "recordRef": "usda:1750348",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:1750348",
+   "kind": "same",
+   "recordRef": "usda:1750348",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006186",
+   "kind": "same",
+   "recordRef": "usda:1750350",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-042",
+   "kind": "same",
+   "recordRef": "usda:1750350",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:1750350",
+   "kind": "same",
+   "recordRef": "usda:1750350",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006187",
+   "kind": "same",
+   "recordRef": "cofid:17-043",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-043",
+   "kind": "same",
+   "recordRef": "cofid:17-043",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006188",
+   "kind": "same",
+   "recordRef": "usda:748366",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:748366",
+   "kind": "same",
+   "recordRef": "usda:748366",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006189",
+   "kind": "same",
+   "recordRef": "usda:1750349",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-045",
+   "kind": "same",
+   "recordRef": "usda:1750349",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:1750349",
+   "kind": "same",
+   "recordRef": "usda:1750349",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006191",
+   "kind": "same",
+   "recordRef": "cofid:17-686",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-686",
+   "kind": "same",
+   "recordRef": "cofid:17-686",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006195",
+   "kind": "same",
+   "recordRef": "cofid:13-300",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:58100",
+   "kind": "same",
+   "recordRef": "cofid:13-300",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-300",
+   "kind": "same",
+   "recordRef": "cofid:13-300",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F006281",
+   "kind": "same",
+   "recordRef": "ciqual:11035",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11035",
+   "kind": "same",
+   "recordRef": "ciqual:11035",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F007610",
+   "kind": "same",
+   "recordRef": "ciqual:13046",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13046",
+   "kind": "same",
+   "recordRef": "ciqual:13046",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F007619",
+   "kind": "same",
+   "recordRef": "usda:2346410",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13015",
+   "kind": "same",
+   "recordRef": "usda:2346410",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-375",
+   "kind": "same",
+   "recordRef": "usda:2346410",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2346410",
+   "kind": "same",
+   "recordRef": "usda:2346410",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F007628",
+   "kind": "same",
+   "recordRef": "usda:2758975",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13047",
+   "kind": "same",
+   "recordRef": "usda:2758975",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2758975",
+   "kind": "same",
+   "recordRef": "usda:2758975",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F007712",
+   "kind": "unsure",
+   "recordRef": "cofid:13-522",
+   "score": 0.67
+  },
+  {
+   "foodRef": "cofid:13-522",
+   "kind": "unsure",
+   "recordRef": "cofid:13-522",
+   "score": 0.67
+  },
+  {
+   "foodRef": "afcd:F007715",
+   "kind": "same",
+   "recordRef": "cofid:13-882",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11036",
+   "kind": "same",
+   "recordRef": "cofid:13-882",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-882",
+   "kind": "same",
+   "recordRef": "cofid:13-882",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F007726",
+   "kind": "same",
+   "recordRef": "ciqual:11037",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11037",
+   "kind": "same",
+   "recordRef": "ciqual:11037",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F007853",
+   "kind": "same",
+   "recordRef": "cofid:16-420",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-420",
+   "kind": "same",
+   "recordRef": "cofid:16-420",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F007860",
+   "kind": "same",
+   "recordRef": "cofid:16-418",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-418",
+   "kind": "same",
+   "recordRef": "cofid:16-418",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008112",
+   "kind": "same",
+   "recordRef": "cofid:19-656",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:19-656",
+   "kind": "same",
+   "recordRef": "cofid:19-656",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008174",
+   "kind": "same",
+   "recordRef": "cofid:11-958",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-958",
+   "kind": "same",
+   "recordRef": "cofid:11-958",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008209",
+   "kind": "same",
+   "recordRef": "ciqual:15047",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:15047",
+   "kind": "same",
+   "recordRef": "ciqual:15047",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008211",
+   "kind": "same",
+   "recordRef": "ciqual:11061",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11061",
+   "kind": "same",
+   "recordRef": "ciqual:11061",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008215",
+   "kind": "same",
+   "recordRef": "ciqual:15011",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:15011",
+   "kind": "same",
+   "recordRef": "ciqual:15011",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008373",
+   "kind": "unsure",
+   "recordRef": "ciqual:20173",
+   "score": 0.75
+  },
+  {
+   "foodRef": "ciqual:20173",
+   "kind": "unsure",
+   "recordRef": "ciqual:20173",
+   "score": 0.75
+  },
+  {
+   "foodRef": "afcd:F008749",
+   "kind": "unsure",
+   "recordRef": "cofid:13-521",
+   "score": 0.75
+  },
+  {
+   "foodRef": "cofid:13-521",
+   "kind": "unsure",
+   "recordRef": "cofid:13-521",
+   "score": 0.75
+  },
+  {
+   "foodRef": "afcd:F008952",
+   "kind": "same",
+   "recordRef": "usda:2346409",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13014",
+   "kind": "same",
+   "recordRef": "usda:2346409",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-324",
+   "kind": "same",
+   "recordRef": "usda:2346409",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2346409",
+   "kind": "same",
+   "recordRef": "usda:2346409",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008969",
+   "kind": "same",
+   "recordRef": "cofid:17-060",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:31017",
+   "kind": "same",
+   "recordRef": "cofid:17-060",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-060",
+   "kind": "same",
+   "recordRef": "cofid:17-060",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F008983",
+   "kind": "same",
+   "recordRef": "cofid:14-263",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-263",
+   "kind": "same",
+   "recordRef": "cofid:14-263",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009049",
+   "kind": "same",
+   "recordRef": "cofid:17-065",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-065",
+   "kind": "same",
+   "recordRef": "cofid:17-065",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009160",
+   "kind": "same",
+   "recordRef": "cofid:13-883",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-883",
+   "kind": "same",
+   "recordRef": "cofid:13-883",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009190",
+   "kind": "same",
+   "recordRef": "cofid:13-519",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20172",
+   "kind": "same",
+   "recordRef": "cofid:13-519",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-519",
+   "kind": "same",
+   "recordRef": "cofid:13-519",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009285",
+   "kind": "same",
+   "recordRef": "cofid:16-416",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:26039",
+   "kind": "same",
+   "recordRef": "cofid:16-416",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-416",
+   "kind": "same",
+   "recordRef": "cofid:16-416",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009499",
+   "kind": "same",
+   "recordRef": "ciqual:11091",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11091",
+   "kind": "same",
+   "recordRef": "ciqual:11091",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009532",
+   "kind": "same",
+   "recordRef": "cofid:13-669@row2827",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20022",
+   "kind": "same",
+   "recordRef": "cofid:13-669@row2827",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-669@row2827",
+   "kind": "same",
+   "recordRef": "cofid:13-669@row2827",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009536",
+   "kind": "same",
+   "recordRef": "ciqual:9660",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:9660",
+   "kind": "same",
+   "recordRef": "ciqual:9660",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009571",
+   "kind": "same",
+   "recordRef": "cofid:17-752",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:5214",
+   "kind": "same",
+   "recordRef": "cofid:17-752",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-752",
+   "kind": "same",
+   "recordRef": "cofid:17-752",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009579",
+   "kind": "same",
+   "recordRef": "ciqual:5216",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:5216",
+   "kind": "same",
+   "recordRef": "ciqual:5216",
+   "score": 1.0
+  },
+  {
+   "foodRef": "afcd:F009590",
+   "kind": "same",
+   "recordRef": "cofid:17-757",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:5201",
+   "kind": "same",
+   "recordRef": "cofid:17-757",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-757",
+   "kind": "same",
+   "recordRef": "cofid:17-757",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:10001",
+   "kind": "same",
+   "recordRef": "cofid:16-263",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-263",
+   "kind": "same",
+   "recordRef": "cofid:16-263",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:10011",
+   "kind": "same",
+   "recordRef": "cofid:16-260",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-260",
+   "kind": "same",
+   "recordRef": "cofid:16-260",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:10016",
+   "kind": "same",
+   "recordRef": "cofid:16-254",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-254",
+   "kind": "same",
+   "recordRef": "cofid:16-254",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:10030",
+   "kind": "same",
+   "recordRef": "cofid:16-235",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-235",
+   "kind": "same",
+   "recordRef": "cofid:16-235",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:10999",
+   "kind": "same",
+   "recordRef": "cofid:13-811",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-811",
+   "kind": "same",
+   "recordRef": "cofid:13-811",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11000",
+   "kind": "same",
+   "recordRef": "usda:1104647",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-244",
+   "kind": "same",
+   "recordRef": "usda:1104647",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:1104647",
+   "kind": "same",
+   "recordRef": "usda:1104647",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11014",
+   "kind": "same",
+   "recordRef": "cofid:13-844",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-844",
+   "kind": "same",
+   "recordRef": "cofid:13-844",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11016",
+   "kind": "same",
+   "recordRef": "cofid:13-258",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-258",
+   "kind": "same",
+   "recordRef": "cofid:13-258",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11018",
+   "kind": "same",
+   "recordRef": "cofid:17-339",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-339",
+   "kind": "same",
+   "recordRef": "cofid:17-339",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11024",
+   "kind": "same",
+   "recordRef": "cofid:13-845",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-845",
+   "kind": "same",
+   "recordRef": "cofid:13-845",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11027",
+   "kind": "same",
+   "recordRef": "cofid:13-836",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-836",
+   "kind": "same",
+   "recordRef": "cofid:13-836",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11029",
+   "kind": "same",
+   "recordRef": "cofid:13-837",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-837",
+   "kind": "same",
+   "recordRef": "cofid:13-837",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11033",
+   "kind": "same",
+   "recordRef": "cofid:13-804",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-804",
+   "kind": "same",
+   "recordRef": "cofid:13-804",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11034",
+   "kind": "same",
+   "recordRef": "cofid:13-835",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-835",
+   "kind": "same",
+   "recordRef": "cofid:13-835",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11039",
+   "kind": "same",
+   "recordRef": "cofid:13-852",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-852",
+   "kind": "same",
+   "recordRef": "cofid:13-852",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11063",
+   "kind": "same",
+   "recordRef": "cofid:13-825",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-825",
+   "kind": "same",
+   "recordRef": "cofid:13-825",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11068",
+   "kind": "same",
+   "recordRef": "cofid:13-892",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-892",
+   "kind": "same",
+   "recordRef": "cofid:13-892",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11069",
+   "kind": "same",
+   "recordRef": "cofid:13-853",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-853",
+   "kind": "same",
+   "recordRef": "cofid:13-853",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11070",
+   "kind": "same",
+   "recordRef": "cofid:13-893",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-893",
+   "kind": "same",
+   "recordRef": "cofid:13-893",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11092",
+   "kind": "same",
+   "recordRef": "cofid:13-857",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-857",
+   "kind": "same",
+   "recordRef": "cofid:13-857",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:11093",
+   "kind": "same",
+   "recordRef": "cofid:13-824",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-824",
+   "kind": "same",
+   "recordRef": "cofid:13-824",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13037",
+   "kind": "same",
+   "recordRef": "cofid:14-321",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-321",
+   "kind": "same",
+   "recordRef": "cofid:14-321",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13161",
+   "kind": "same",
+   "recordRef": "ciqual:13161",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:13172",
+   "kind": "same",
+   "recordRef": "ciqual:13161",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:15010",
+   "kind": "same",
+   "recordRef": "cofid:14-844",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-844",
+   "kind": "same",
+   "recordRef": "cofid:14-844",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:16030",
+   "kind": "same",
+   "recordRef": "cofid:17-002",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-002",
+   "kind": "same",
+   "recordRef": "cofid:17-002",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:18005",
+   "kind": "same",
+   "recordRef": "cofid:17-158",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-158",
+   "kind": "same",
+   "recordRef": "cofid:17-158",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:18028",
+   "kind": "same",
+   "recordRef": "ciqual:18028",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:18030",
+   "kind": "same",
+   "recordRef": "ciqual:18028",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:18041",
+   "kind": "same",
+   "recordRef": "cofid:14-820",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-820",
+   "kind": "same",
+   "recordRef": "cofid:14-820",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:18340",
+   "kind": "same",
+   "recordRef": "ciqual:18340",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:18345",
+   "kind": "same",
+   "recordRef": "ciqual:18340",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19023",
+   "kind": "same",
+   "recordRef": "cofid:12-320",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-320",
+   "kind": "same",
+   "recordRef": "cofid:12-320",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19024",
+   "kind": "same",
+   "recordRef": "cofid:12-596",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-596",
+   "kind": "same",
+   "recordRef": "cofid:12-596",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19041",
+   "kind": "same",
+   "recordRef": "cofid:12-314",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-314",
+   "kind": "same",
+   "recordRef": "cofid:12-314",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19042",
+   "kind": "same",
+   "recordRef": "cofid:12-313",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-313",
+   "kind": "same",
+   "recordRef": "cofid:12-313",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19050",
+   "kind": "same",
+   "recordRef": "cofid:12-554",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-554",
+   "kind": "same",
+   "recordRef": "cofid:12-554",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19051",
+   "kind": "same",
+   "recordRef": "cofid:12-307",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-307",
+   "kind": "same",
+   "recordRef": "cofid:12-307",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19593",
+   "kind": "same",
+   "recordRef": "ciqual:19593",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19600",
+   "kind": "same",
+   "recordRef": "ciqual:19593",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:19860",
+   "kind": "same",
+   "recordRef": "cofid:12-555",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-555",
+   "kind": "same",
+   "recordRef": "cofid:12-555",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20019",
+   "kind": "same",
+   "recordRef": "cofid:13-523",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-523",
+   "kind": "same",
+   "recordRef": "cofid:13-523",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20031",
+   "kind": "same",
+   "recordRef": "cofid:13-520",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-520",
+   "kind": "same",
+   "recordRef": "cofid:13-520",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20034",
+   "kind": "same",
+   "recordRef": "cofid:13-499",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-499",
+   "kind": "same",
+   "recordRef": "cofid:13-499",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20053",
+   "kind": "same",
+   "recordRef": "usda:2685577",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2685577",
+   "kind": "same",
+   "recordRef": "usda:2685577",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20055",
+   "kind": "same",
+   "recordRef": "cofid:13-219",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-219",
+   "kind": "same",
+   "recordRef": "cofid:13-219",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20091",
+   "kind": "same",
+   "recordRef": "cofid:13-164",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-164",
+   "kind": "same",
+   "recordRef": "cofid:13-164",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20097",
+   "kind": "same",
+   "recordRef": "cofid:13-342",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-342",
+   "kind": "same",
+   "recordRef": "cofid:13-342",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20170",
+   "kind": "unsure",
+   "recordRef": "usda:2685582",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2685582",
+   "kind": "unsure",
+   "recordRef": "usda:2685582",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:2018",
+   "kind": "same",
+   "recordRef": "cofid:14-289",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-289",
+   "kind": "same",
+   "recordRef": "cofid:14-289",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20181",
+   "kind": "same",
+   "recordRef": "usda:2747659",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-312",
+   "kind": "same",
+   "recordRef": "usda:2747659",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2747659",
+   "kind": "same",
+   "recordRef": "usda:2747659",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20218",
+   "kind": "same",
+   "recordRef": "cofid:13-234",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-234",
+   "kind": "same",
+   "recordRef": "cofid:13-234",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:2024",
+   "kind": "unsure",
+   "recordRef": "cofid:14-285",
+   "score": 0.75
+  },
+  {
+   "foodRef": "cofid:14-285",
+   "kind": "unsure",
+   "recordRef": "cofid:14-285",
+   "score": 0.75
+  },
+  {
+   "foodRef": "ciqual:2030",
+   "kind": "same",
+   "recordRef": "cofid:14-279",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-279",
+   "kind": "same",
+   "recordRef": "cofid:14-279",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:20385",
+   "kind": "unsure",
+   "recordRef": "cofid:13-517",
+   "score": 0.67
+  },
+  {
+   "foodRef": "cofid:13-517",
+   "kind": "unsure",
+   "recordRef": "cofid:13-517",
+   "score": 0.67
+  },
+  {
+   "foodRef": "ciqual:20917",
+   "kind": "same",
+   "recordRef": "cofid:13-118",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-118",
+   "kind": "same",
+   "recordRef": "cofid:13-118",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:22500",
+   "kind": "same",
+   "recordRef": "cofid:12-946",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-946",
+   "kind": "same",
+   "recordRef": "cofid:12-946",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:22506",
+   "kind": "unsure",
+   "recordRef": "cofid:12-947",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-947",
+   "kind": "unsure",
+   "recordRef": "cofid:12-947",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:26006",
+   "kind": "same",
+   "recordRef": "usda:2768188",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2768188",
+   "kind": "same",
+   "recordRef": "usda:2768188",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:26104",
+   "kind": "same",
+   "recordRef": "cofid:16-080",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-080",
+   "kind": "same",
+   "recordRef": "cofid:16-080",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:26130",
+   "kind": "same",
+   "recordRef": "cofid:16-091",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-091",
+   "kind": "same",
+   "recordRef": "cofid:16-091",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:26162",
+   "kind": "same",
+   "recordRef": "cofid:16-142",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-142",
+   "kind": "same",
+   "recordRef": "cofid:16-142",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:27019",
+   "kind": "same",
+   "recordRef": "cofid:16-154",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-154",
+   "kind": "same",
+   "recordRef": "cofid:16-154",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:28505",
+   "kind": "same",
+   "recordRef": "cofid:19-128",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:19-128",
+   "kind": "same",
+   "recordRef": "cofid:19-128",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:30150",
+   "kind": "same",
+   "recordRef": "ciqual:30150",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:30151",
+   "kind": "same",
+   "recordRef": "ciqual:30150",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:30176",
+   "kind": "same",
+   "recordRef": "cofid:19-106",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:19-106",
+   "kind": "same",
+   "recordRef": "cofid:19-106",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:30350",
+   "kind": "same",
+   "recordRef": "cofid:19-517",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:19-517",
+   "kind": "same",
+   "recordRef": "cofid:19-517",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:31016",
+   "kind": "same",
+   "recordRef": "cofid:17-063",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-063",
+   "kind": "same",
+   "recordRef": "cofid:17-063",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:31050",
+   "kind": "same",
+   "recordRef": "cofid:17-114",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-114",
+   "kind": "same",
+   "recordRef": "cofid:17-114",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:36003",
+   "kind": "same",
+   "recordRef": "cofid:18-488",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-488",
+   "kind": "same",
+   "recordRef": "cofid:18-488",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:36023",
+   "kind": "same",
+   "recordRef": "usda:2727568",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2727568",
+   "kind": "same",
+   "recordRef": "usda:2727568",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:36029",
+   "kind": "same",
+   "recordRef": "usda:2727569",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2727569",
+   "kind": "same",
+   "recordRef": "usda:2727569",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:36301",
+   "kind": "same",
+   "recordRef": "cofid:18-350",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-350",
+   "kind": "same",
+   "recordRef": "cofid:18-350",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:4000",
+   "kind": "same",
+   "recordRef": "cofid:11-027",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-027",
+   "kind": "same",
+   "recordRef": "cofid:11-027",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:40058",
+   "kind": "same",
+   "recordRef": "cofid:18-396",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-396",
+   "kind": "same",
+   "recordRef": "cofid:18-396",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:40102",
+   "kind": "same",
+   "recordRef": "cofid:18-413",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-413",
+   "kind": "same",
+   "recordRef": "cofid:18-413",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:40106",
+   "kind": "same",
+   "recordRef": "cofid:18-409",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-409",
+   "kind": "same",
+   "recordRef": "cofid:18-409",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:40207",
+   "kind": "same",
+   "recordRef": "cofid:18-423",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-423",
+   "kind": "same",
+   "recordRef": "cofid:18-423",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:40302",
+   "kind": "same",
+   "recordRef": "cofid:18-421",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-421",
+   "kind": "same",
+   "recordRef": "cofid:18-421",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:40407",
+   "kind": "same",
+   "recordRef": "cofid:18-402",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-402",
+   "kind": "same",
+   "recordRef": "cofid:18-402",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:5006",
+   "kind": "same",
+   "recordRef": "cofid:17-222",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-222",
+   "kind": "same",
+   "recordRef": "cofid:17-222",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:5007",
+   "kind": "same",
+   "recordRef": "cofid:17-224",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-224",
+   "kind": "same",
+   "recordRef": "cofid:17-224",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:5215",
+   "kind": "same",
+   "recordRef": "cofid:17-755",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-755",
+   "kind": "same",
+   "recordRef": "cofid:17-755",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:54500",
+   "kind": "same",
+   "recordRef": "cofid:13-167",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-167",
+   "kind": "same",
+   "recordRef": "cofid:13-167",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:6521",
+   "kind": "same",
+   "recordRef": "cofid:18-486",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-486",
+   "kind": "same",
+   "recordRef": "cofid:18-486",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:7300",
+   "kind": "same",
+   "recordRef": "cofid:11-940",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-940",
+   "kind": "same",
+   "recordRef": "cofid:11-940",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:7603",
+   "kind": "same",
+   "recordRef": "cofid:11-988",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-988",
+   "kind": "same",
+   "recordRef": "cofid:11-988",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:9108",
+   "kind": "same",
+   "recordRef": "cofid:11-872",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-872",
+   "kind": "same",
+   "recordRef": "cofid:11-872",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:9109",
+   "kind": "same",
+   "recordRef": "cofid:11-876",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-876",
+   "kind": "same",
+   "recordRef": "cofid:11-876",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:9340",
+   "kind": "same",
+   "recordRef": "cofid:14-843",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:14-843",
+   "kind": "same",
+   "recordRef": "cofid:14-843",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:9690",
+   "kind": "same",
+   "recordRef": "cofid:11-904",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-904",
+   "kind": "same",
+   "recordRef": "cofid:11-904",
+   "score": 1.0
+  },
+  {
+   "foodRef": "ciqual:9815",
+   "kind": "same",
+   "recordRef": "cofid:11-726",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:11-726",
+   "kind": "same",
+   "recordRef": "cofid:11-726",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:12-184",
+   "kind": "same",
+   "recordRef": "usda:2259793",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2259793",
+   "kind": "same",
+   "recordRef": "usda:2259793",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:13-510",
+   "kind": "same",
+   "recordRef": "usda:2346407",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2346407",
+   "kind": "same",
+   "recordRef": "usda:2346407",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:15-776",
+   "kind": "same",
+   "recordRef": "cofid:15-776",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:15-781",
+   "kind": "same",
+   "recordRef": "cofid:15-776",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-127",
+   "kind": "same",
+   "recordRef": "cofid:16-127",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:16-128",
+   "kind": "same",
+   "recordRef": "cofid:16-127",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:17-033",
+   "kind": "same",
+   "recordRef": "usda:748323",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:748323",
+   "kind": "same",
+   "recordRef": "usda:748323",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:18-470",
+   "kind": "same",
+   "recordRef": "cofid:18-470",
+   "score": 1.0
+  },
+  {
+   "foodRef": "cofid:19-607",
+   "kind": "same",
+   "recordRef": "cofid:18-470",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2003591",
+   "kind": "unsure",
+   "recordRef": "usda:2003591",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2003597",
+   "kind": "unsure",
+   "recordRef": "usda:2003591",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2262072",
+   "kind": "same",
+   "recordRef": "usda:2262072",
+   "score": 1.0
+  },
+  {
+   "foodRef": "usda:2758989",
+   "kind": "same",
+   "recordRef": "usda:2262072",
+   "score": 1.0
+  }
+ ]
+}
