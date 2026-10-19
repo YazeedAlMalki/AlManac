@@ -57,6 +57,7 @@ python3 -m almanac_nutrition bundle
 python3 -m almanac_nutrition all                 # every source, then union + bundle
 python3 -m almanac_nutrition qa                  # independent re-read of every raw cell
 python3 -m almanac_nutrition fixture             # regenerate fixtures/bundle_v1.sql
+python3 -m almanac_nutrition merge               # one record per real food → food-merges.json + log
 python3 -m unittest discover -s tests -t .       # fast; synthetic fixtures only
 ALMANAC_NUTRITION_INTEGRATION=1 python3 -m unittest discover -s tests -t .   # + real lake
 ```
@@ -260,6 +261,26 @@ Bundle schema version 1 (`bundle.schema_sql`): `bundle_meta`,
 AlmanacCore's `NutritionReferenceImporter` reads all eight and re-asserts the
 licence groups itself. Household measures are copied into `nutrition_portion`;
 specific gravity and edible proportion are copied into `nutrition_food_factor`.
+
+## One record per real food (`merge.py`)
+
+The owner's rule (2026-10-19): one record per real food across every
+source. `merge` reads a built bundle and writes
+`Sources/AlmanacCore/Nutrition/Resources/food-merges.json` (food_ref →
+record_ref) and `docs/features/food-merge-log.md`. It changes no bundle row:
+every member keeps its names, values, portions and licence, so removing a
+source is still removing its rows. AlmanacCore installs the map
+(`FoodMergeInstaller`, Migration 068) and the search shows one row per record.
+
+Matches, strongest first: **code** (USDA's own links in `source_record`:
+Foundation and SR Legacy sharing an NDB number; an FNDDS food whose only
+ingredient is an SR Legacy food), **same** (equal normalised English names,
+comma-separated parts in any order), **unsure** (names differing only by
+neutral words — `NEUTRAL` — whose nutrient profiles agree within
+`TOLERANCE`, against every member of both groups). Values that disagree
+beyond the tolerance are listed as conflicts; both stay. The record is the
+USDA member if any (Foundation, SR Legacy, FNDDS), then CoFID, CIQUAL, AFCD.
+`almanac:` dishes are never merged. Re-run `merge` after every `bundle`.
 
 ## Energy: stored vs calculated
 

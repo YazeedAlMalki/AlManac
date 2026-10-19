@@ -4,8 +4,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
-from . import bundle, fixture, qa
+from . import bundle, fixture, merge, qa
 from .canonical_io import CanonicalError
 from .dictionary import DictionaryError, load
 from .lake import InputVerificationError, Lake
@@ -34,6 +35,9 @@ def main(argv: list[str] | None = None) -> int:
     commands.add_parser("all", help="extract and canonicalise every source, then union and bundle")
     commands.add_parser("qa", help="re-read every raw cell and check the canonical, union and bundle stages")
     commands.add_parser("fixture", help="regenerate fixtures/bundle_v1.sql for AlmanacCore's tests")
+    commands.add_parser("merge", help="one record per real food: write food-merges.json and the merge log "
+                                      "from a built bundle").add_argument(
+        "--bundle", help="bundle to read (default: the lake's build/almanac.sqlite)")
     args = parser.parse_args(argv)
 
     lake = Lake(args.lake)
@@ -47,6 +51,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"union: {_summary(bundle.union(lake, dictionary))}")
         elif args.command == "fixture":
             print(f"fixture -> {fixture.write(dictionary)}")
+        elif args.command == "merge":
+            for name, count in merge.run(Path(args.bundle) if args.bundle else lake.bundle).items():
+                print(f"{name}: {count}")
         elif args.command == "qa":
             report = qa.run(lake, dictionary)
             print(qa.summary(report))
