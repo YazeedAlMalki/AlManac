@@ -38,7 +38,7 @@ final class NutritionReferenceTests: XCTestCase {
         let db = try migrated()
         // Excludes nutrition_window (Migration024, Slice 6/Fasting) and
         // nutrition_food_factor (Migration027, Ticket 5's portion-schema
-        // reconciliation) and the food merge map (Migration068) — all match
+        // reconciliation) and the food merge map (Migration067) — all match
         // this LIKE pattern without being one of the tables migrations 008-011
         // actually left behind.
         let tables = Set(try db.query("""

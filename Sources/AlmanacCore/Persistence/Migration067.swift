@@ -1,6 +1,6 @@
 import Foundation
 
-/// Migration 068 — one record per real food (owner, 2026-10-19).
+/// Migration 067 — one record per real food (owner, 2026-10-19).
 ///
 /// The reference sources overlap: CoFID, CIQUAL, AFCD and USDA each publish
 /// "Honey". `tools/nutrition`'s merge stage decides which foods are the same
@@ -13,8 +13,8 @@ import Foundation
 ///
 /// `nutrition_food_merge_import` holds the SHA-256 of the map last installed,
 /// so it installs once per file, as `nutrition_reference_import` does.
-public enum Migration068_FoodMerge: Migration {
-    public static let version = 68
+public enum Migration067_FoodMerge: Migration {
+    public static let version = 67
     public static let name = "food_merge"
 
     public static func up(_ db: Database) throws {

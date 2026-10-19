@@ -183,7 +183,7 @@ public struct NutritionCatalog: @unchecked Sendable {
         EnergyEstimate.preferred(from: try values(for: ref, basis: basis), basis: basis)
     }
 
-    /// Every source's row for the real food `ref` is (Migration 068): the record
+    /// Every source's row for the real food `ref` is (Migration 067): the record
     /// the search shows first, then the other members, each with its own names,
     /// values and licence. A food no other source matched is its only member.
     public func members(of ref: SourceIdentifier) throws -> [NutritionFood] {
@@ -246,7 +246,7 @@ public struct NutritionCatalog: @unchecked Sendable {
         // looking for the jar in front of them cannot match that against the label
         // they are holding. They are columns of the same row, so reading both is
         // no extra query.
-        // One row per real food (Migration 068): a food merged into another
+        // One row per real food (Migration 067): a food merged into another
         // food's record is not listed, and its names find the record instead. A
         // member whose record is not in the catalog lists as itself.
         let candidates = try db.query("""

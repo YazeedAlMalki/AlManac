@@ -270,7 +270,7 @@ source. `merge` reads a built bundle and writes
 record_ref) and `docs/features/food-merge-log.md`. It changes no bundle row:
 every member keeps its names, values, portions and licence, so removing a
 source is still removing its rows. AlmanacCore installs the map
-(`FoodMergeInstaller`, Migration 068) and the search shows one row per record.
+(`FoodMergeBundle`, Migration 067) and the search shows one row per record.
 
 Matches, strongest first: **code** (USDA's own links in `source_record`:
 Foundation and SR Legacy sharing an NDB number; an FNDDS food whose only

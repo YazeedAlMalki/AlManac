@@ -2,7 +2,7 @@ import Testing
 import Foundation
 @testable import AlmanacCore
 
-/// One record per real food (owner, 2026-10-19; Migration 068). The matching
+/// One record per real food (owner, 2026-10-19; Migration 067). The matching
 /// is tested in `tools/nutrition/tests/test_merge.py`; these pin what the map
 /// does to the catalog.
 @Suite("Food merge map")

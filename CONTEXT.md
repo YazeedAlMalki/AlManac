@@ -1025,7 +1025,7 @@ How the build applies that; **none of these has been confirmed:**
   description names.
 - **A merge is a search-time map, not a rewrite.** Every member keeps its rows,
   values and licence; the search lists the record (USDA first, then CoFID,
-  CIQUAL, AFCD) and finds it by any member's name (Migration 068). A logged
+  CIQUAL, AFCD) and finds it by any member's name (Migration 067). A logged
   food keeps pointing at the row that was logged.
 - **"Unsure" is narrow.** Names may differ only by neutral words ("fresh",
   "average", "standard"…) with agreeing nutrient profiles. A name-overlap

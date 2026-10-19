@@ -3,7 +3,7 @@ import Foundation
 /// Installs `food-merges.json`, the one-record-per-real-food map
 /// `tools/nutrition` writes (`python3 -m almanac_nutrition merge`;
 /// `docs/features/food-merge-log.md` lists every merge and conflict).
-/// Migration 068 says what the map is and is not.
+/// Migration 067 says what the map is and is not.
 public enum FoodMergeBundle {
     public static var resourceURL: URL {
         Bundle.module.bundleURL.appendingPathComponent("food-merges.json")

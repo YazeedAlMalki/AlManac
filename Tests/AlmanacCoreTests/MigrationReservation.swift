@@ -17,11 +17,7 @@ import Foundation
 /// in `AlmanacMigrations.all`. **When the fasting work merges, empty this set.**
 /// **Emptied 2026-10-07:** the fasting work merged, and 050 is
 /// `Migration050_PrayerPreferences`, ahead of Kitchen's 051.
-///
-/// **067 — Open Food Facts (2026-10-19).** Built on its own branch beside the
-/// food merge map (068) on this one. **When the Open Food Facts work merges,
-/// empty this set again.**
-let reservedUnmergedMigrationVersions: Set<Int> = [67]
+let reservedUnmergedMigrationVersions: Set<Int> = []
 
 /// `start...end`, less the reserved versions: what a contiguous list would hold
 /// once every reservation has merged.
