@@ -1,5 +1,6 @@
 # Almanac implementation status
 
+Updated 2026-10-19 (latest): the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
 Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
 Updated 2026-10-17 (earlier yet): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
@@ -38,6 +39,17 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-19 — Exercise library and Open Food Facts (steps 8 and 9)
+
+**Outcome.** Not re-scored: the owner's merge-log review is still to come.
+
+| Piece | State | Where |
+|---|---|---|
+| Exercise library | 783 free-exercise-db exercises shipped with a photo; 132 workout-guide rows extended with the sources that matched them; 1,085 exercises. wger contributes to merged records only: its images are on wger.de, which this session could not reach, so 679 wger-only groups are held. | `tools/exercises`, `ExerciseLibrarySeed`, Migration 066, `docs/features/exercise-merge-log.md` |
+| Open Food Facts | 3,514 Gulf packaged products in their own ODbL file and tables, searchable by name, brand or barcode, loggable like any food | `tools/openfoodfacts`, `OpenFoodFactsBundle`, Migration 067, `docs/features/open-food-facts.md` |
+| USDA SR Legacy and FNDDS | Pipeline code and tests on synthetic data; the real build runs where the food-data lake is (fdc.nal.usda.gov is not reachable from the cloud session) | `tools/nutrition` |
+| One record per real item | Exercises and Open Food Facts merged and logged; foods across the reference sources: see the food merge log | the three merge logs |
 
 ## 2026-10-17 — Readiness back to 98: the owner accepts the retried tap
 
