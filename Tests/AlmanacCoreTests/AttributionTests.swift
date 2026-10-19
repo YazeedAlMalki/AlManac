@@ -84,7 +84,7 @@ struct AttributionTests {
     @Test("A bundled source with no entry fails the build")
     func missingEntryFailsTheBuild() {
         #expect(throws: MissingAttribution.self) {
-            try AttributionAudit.assertAttributed(["free-exercise-db"])
+            try AttributionAudit.assertAttributed(["not-a-bundled-source"])
         }
     }
 
