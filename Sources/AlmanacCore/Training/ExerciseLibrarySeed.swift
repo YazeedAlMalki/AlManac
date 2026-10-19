@@ -81,9 +81,15 @@ public enum ExerciseLibrarySeed {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let now = ISO8601DateFormatter().string(from: Date())
+        let records = loadRecords()
+        // This runs at every launch: once every source row is in, there is
+        // nothing to do, so skip the write transaction on the main thread.
+        let expected = records.reduce(0) { $0 + $1.sources.count }
+        if let held = try store.db.query("SELECT COUNT(*) AS n FROM exerciseSource;").first?.int("n"),
+           held >= expected { return 0 }
         return try store.db.transaction {
             var inserted = 0
-            for record in loadRecords() {
+            for record in records {
                 var row = try store.exercise(sourceId: record.sourceId, exerciseId: record.exerciseId)
                 if row == nil, let new = record.insert {
                     let id = try store.insert(ExerciseCatalogDraft(
