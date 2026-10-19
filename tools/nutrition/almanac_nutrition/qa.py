@@ -60,13 +60,25 @@ def _number(text: str) -> float | None:
 
 # --- Independent readers of the raw files ------------------------------------------------
 
+# Each FDC data type in scope, and the file that lists its current foods.
+USDA_LISTINGS = {"foundation_food": "foundation_food.csv", "sr_legacy_food": "sr_legacy_food.csv",
+                 "survey_fndds_food": "survey_fndds_food.csv"}
+
+
+def _usda_foods(base) -> dict[str, str]:
+    """fdc_id -> data_type, for every food of an in-scope type that its listing names."""
+    listed = {}
+    for data_type, file in USDA_LISTINGS.items():
+        with open(base / file, newline="", encoding="utf-8-sig") as f:
+            listed[data_type] = {r["fdc_id"] for r in csv.DictReader(f)}
+    with open(base / "food.csv", newline="", encoding="utf-8-sig") as f:
+        return {r["fdc_id"]: r["data_type"] for r in csv.DictReader(f)
+                if r["data_type"] in listed and r["fdc_id"] in listed[r["data_type"]]}
+
+
 def raw_usda(lake: Lake, dictionary: Dictionary) -> tuple[set[str], Cells]:
     base = lake.source_dir("usda") / "FoodData_Central_csv_2026-04-30"
-    with open(base / "foundation_food.csv", newline="", encoding="utf-8-sig") as f:
-        listed = {r["fdc_id"] for r in csv.DictReader(f)}
-    with open(base / "food.csv", newline="", encoding="utf-8-sig") as f:
-        foods = {r["fdc_id"] for r in csv.DictReader(f)
-                 if r["data_type"] == "foundation_food" and r["fdc_id"] in listed}
+    foods = set(_usda_foods(base))
     mapped = _mapped(dictionary, "usda")
     cells: Cells = defaultdict(list)
     with open(base / "food_nutrient.csv", newline="", encoding="utf-8-sig") as f:
@@ -159,18 +171,22 @@ READERS = {"usda": raw_usda, "ciqual": raw_ciqual, "cofid": raw_cofid, "afcd": r
 def raw_usda_portions(lake: Lake) -> dict[tuple[str, str, str], tuple[str, str]]:
     """(food_ref, 'household_measure', source_record) -> (gram_weight text, amount text)."""
     base = lake.source_dir("usda") / "FoodData_Central_csv_2026-04-30"
-    with open(base / "foundation_food.csv", newline="", encoding="utf-8-sig") as f:
-        listed = {r["fdc_id"] for r in csv.DictReader(f)}
-    with open(base / "food.csv", newline="", encoding="utf-8-sig") as f:
-        foods = {r["fdc_id"] for r in csv.DictReader(f)
-                 if r["data_type"] == "foundation_food" and r["fdc_id"] in listed}
+    foods = _usda_foods(base)
     cells: dict[tuple[str, str, str], tuple[str, str]] = {}
     with open(base / "food_portion.csv", newline="", encoding="utf-8-sig") as f:
         for r in csv.DictReader(f):
             if r["fdc_id"] not in foods:
                 continue
+            # SR Legacy and FNDDS name an "undetermined" measure in their own words; a row
+            # with no words at all is not a portion (the canonical stage lists those).
+            if (r["measure_unit_id"] == "9999" and foods[r["fdc_id"]] != "foundation_food"
+                    and not (r["portion_description"].strip() or r["modifier"].strip())):
+                continue
+            amount = r["amount"].strip()
+            if not amount and foods[r["fdc_id"]] == "survey_fndds_food":
+                amount = "1"  # FNDDS: one of the portion its description names ("1 cup")
             key = (f"usda:{r['fdc_id']}", "household_measure", f"food_portion.csv id={r['id']}")
-            cells[key] = (r["gram_weight"].strip(), r["amount"].strip())
+            cells[key] = (r["gram_weight"].strip(), amount)
     return cells
 
 

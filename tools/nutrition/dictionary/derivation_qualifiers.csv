@@ -1,5 +1,6 @@
 source,code,qualifier,meaning
-usda,,measured,No derivation code published. Foundation Foods are analytical by definition.
+usda,,measured,"No derivation code published. Foundation Foods are analytical by definition; an SR Legacy value without a code is taken as reported for the food."
+usda,<none: survey_fndds_food>,calculated_recipe,"No derivation code published for an FNDDS food. FNDDS values are calculated from the values of the food's ingredients (FNDDS documentation), so a recipe calculation."
 usda,A,measured,Analytical
 usda,AI,measured,Analytical data; from the literature or government; incomplete documentation
 usda,AR,measured,Analytical data; derived by linear regression

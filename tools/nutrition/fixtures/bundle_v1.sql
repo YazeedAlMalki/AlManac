@@ -5,7 +5,7 @@ CREATE TABLE bundle_meta (
     value TEXT NOT NULL
 ) STRICT;
 INSERT INTO "bundle_meta" VALUES('built_at','fixture');
-INSERT INTO "bundle_meta" VALUES('dictionary_sha256','6f6960fe5ee93e1ee4f586cf4143b3b57c09e3f5736bd21328a542d11874af1d');
+INSERT INTO "bundle_meta" VALUES('dictionary_sha256','144f12ca82f01e7b28f55220157c55299f3e9f1434dbc138fbc8135e44f38f0a');
 INSERT INTO "bundle_meta" VALUES('schema_version','1');
 INSERT INTO "bundle_meta" VALUES('sources','{"afcd": "Release 3", "almanac": "", "ciqual": "2025", "cofid": "2021", "usda": "2026-04-30"}');
 INSERT INTO "bundle_meta" VALUES('tool_revision','fixture');
@@ -113,7 +113,7 @@ INSERT INTO "nutrition_source" VALUES('afcd','afcd_release3','Australian Food Co
 INSERT INTO "nutrition_source" VALUES('almanac','almanac_native','Almanac native foods','','Almanac proprietary','N','Almanac.','https://almanac.invalid/');
 INSERT INTO "nutrition_source" VALUES('ciqual','ciqual_2025','ANSES-CIQUAL French food composition table 2025','2025','CC BY 4.0 and Etalab Open Licence 2.0','B','ANSES. Table de composition nutritionnelle des aliments Ciqual 2025. Licensed under CC BY 4.0.','https://doi.org/10.5281/zenodo.17550133');
 INSERT INTO "nutrition_source" VALUES('cofid','cofid_2021','McCance and Widdowson''s Composition of Foods Integrated Dataset 2021','2021','Open Government Licence v3.0','B','Contains public sector information licensed under the Open Government Licence v3.0. Source: McCance and Widdowson''s The Composition of Foods Integrated Dataset 2021, Public Health England.','https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid');
-INSERT INTO "nutrition_source" VALUES('usda','usda_fdc','USDA FoodData Central, Foundation Foods','2026-04-30','CC0 1.0 Universal','A','U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov.','https://fdc.nal.usda.gov/');
+INSERT INTO "nutrition_source" VALUES('usda','usda_fdc','USDA FoodData Central: Foundation Foods, SR Legacy and FNDDS','2026-04-30','CC0 1.0 Universal','A','U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2019. fdc.nal.usda.gov.','https://fdc.nal.usda.gov/');
 CREATE TABLE nutrition_value (
     food_ref           TEXT NOT NULL REFERENCES nutrition_food (food_ref),
     nutrient_id        TEXT NOT NULL REFERENCES nutrition_nutrient (nutrient_id),
