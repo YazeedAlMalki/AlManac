@@ -92,6 +92,7 @@ struct FoodMergeTests {
         try FoodMergeBundle.installIfNeeded(into: db)
         let honey = try catalog.search("honey", limit: 200).filter { $0.primaryName == "Honey" }
         #expect(honey.count == 1)
-        #expect(try catalog.members(of: try #require(honey.first).ref).count == 3)
+        let record = try #require(honey.first)
+        #expect(try catalog.members(of: record.ref).count == 3)
     }
 }
