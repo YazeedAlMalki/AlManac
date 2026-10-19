@@ -4,7 +4,7 @@
 **Status:** proposal. No application code has been changed.
 **Scope:** architecture. Laboratory's own requirements are in
 `docs/features/laboratory.md` and are not repeated or replaced here.
-**Evidence:** the repository at `/home/yamal/projects/almanac`, commit
+**Evidence:** this repository at commit
 `e9e6aa1`, 15 source files, 4 test suites.
 
 ---

@@ -41,7 +41,7 @@ public struct ExerciseProgressStore: @unchecked Sendable {
     ///
     /// The batch read a generated session needs. A day's sheet asks about three
     /// exercises at once, and three `history(exerciseCatalogId:)` calls in a `for`
-    /// is the per-item query the handoff §8 rule is written about — it reads as
+    /// is the per-item query the README performance rule is written about — it reads as
     /// one query per exercise and costs one per exercise every time the sheet is
     /// drawn. `suggestions(for:)` is the caller that needed this.
     ///

@@ -3,8 +3,7 @@
 **Status:** core + UI built, 2026-10-02. Migration 049, three stores, three
 engines; the screens in `Native/Almanac` (`ProgramListView`, `ProgramDayView`,
 `ProgramSessionView`, `ExerciseProgressGraphsView`). The feature's definitions
-come from `docs/handoff-2026-10-01-training-program.md`, which is a
-product-decisions handoff, not a status handoff; `docs/features/training.md`
+come from the owner's decisions of 2026-10-01, kept in §10; `docs/features/training.md`
 remains the doc for everything underneath it.
 
 ## 1. What a program is, and why it is three tables
@@ -81,7 +80,7 @@ it, so the next session skips an exercise the user never actually did. Counting
 rows fixes it, and `RotationEngineTests` covers deletion.
 
 **Two queries per plan**, whatever the pool size. Not a per-item read in a loop
-— the handoff §8 performance rule, and the reason the split into series/plan is
+— the README performance rule, and the reason the split into series/plan is
 worth doing at all.
 
 ## 4. Availability: two mechanisms, one prompt
@@ -253,3 +252,73 @@ values separately.
   flagged tension: "remove permanently" must be as easy to reach as "skip for
   today") is implemented in `ProgramSessionView` as a single `confirmationDialog`
   offering both "Skip just for today" and "Remove from rotation" together.
+
+## 10. Owner decisions, 2026-10-01
+
+The product decisions this feature was built from, kept here so they outlive
+the note that first recorded them.
+
+### Decisions
+
+#### 1. Equipment variants
+- Tracked separately by default (dumbbell fly and cable fly are distinct entries).
+- Can be displayed together in the same graph — toggled via a radio button directly on the graph ("Separate" | "Combined").
+- Small-print note shown under the graph in combined mode: equipment variants may not be directly comparable.
+
+#### 2. Exercise generation — rotation
+- A program day (e.g. Push) holds a pool of exercises that rotate across sessions.
+- Each time the user does a Push day, the app generates that session's exercise list from the pool in rotation order.
+- Rotation advances on **completed sessions, not calendar time.** Users may be athletes (professional or amateur) with irregular schedules — skipping a day is normal. If the user doesn't train for a week, the next Push day they pick up is still the next item in the rotation, not advanced or reset by the gap.
+
+#### 3. Exercise availability — two mechanisms, reason is separate from mechanism
+Two athlete archetypes drive this (home gym vs. commercial gym), but the mechanism doesn't care about the archetype — only about how long the unavailability lasts:
+
+| Mechanism | Trigger (reason is informational, not the deciding factor) | Effect on rotation |
+|---|---|---|
+| **Permanent pool removal** | Equipment not owned at the user's gym, a variation the user dislikes, or any condition that holds every time. | `is_active = false`. Never offered again until the user manually re-adds it. |
+| **Per-session skip** | Equipment occupied today, short on time — a one-off. | **Holds its position.** The same skipped item is offered again next time that day type comes up, repeatedly, until the user explicitly, permanently removes it. |
+
+Dislike and lack-of-equipment are **not** functionally different — both resolve to permanent removal. The skip reason is never "does the user dislike this" — it's purely "is this a one-off or does it hold every time." UI copy should ask it that way (e.g. "Skip just for today" vs. "Remove from rotation"), not frame it as a preference judgment.
+
+**Flagged tension:** if a user's gym genuinely never has a given machine, "skip for today" would be the wrong action every single time — it'll keep re-offering something they can never do. The UI needs to make "remove permanently" at least as easy to reach as "skip for today" at the moment of skipping, so a recurring equipment gap doesn't turn into a recurring annoyance. Not a blocker, but worth designing the skip prompt with both options visible together.
+
+#### 4. Progressive overload
+- Off by default.
+- Enabled per-exercise in Settings.
+- Progression rule is **set by the user per exercise** (not a fixed +2.5 kg rule globally) — user defines the increment and condition.
+
+#### 5. Progress graph — two small graphs per exercise
+- Both graphs live inside the exercise detail view, each small and individually toggleable.
+- Graph A: weight (or load) over sessions.
+- Graph B: volume (sets × reps × load) over sessions.
+- Equipment variant display: radio button toggle (Separate / Combined) applies to both.
+
+#### 6. Multiple active programs
+- Yes — user can have multiple programs active at once (e.g. PPL + mobility routine).
+- At session start, user selects which program and which day type.
+
+### UX flow
+
+```
+Workout tab
+  └── "Start Workout"
+        └── Select program (PPL / Mobility / …)
+              └── Select day type (Push / Pull / Legs)
+                    └── [Prompt] "Factor in your readiness score?" Yes / No
+                          └── Clipboard — active session
+                                ├── Generated exercise list (rotated from pool, skipping inactive items)
+                                ├── Per-exercise action: "Skip just for today" or "Remove from rotation" (shown together)
+                                ├── Prescribed sets × reps × load per exercise
+                                ├── Equipment variant selector per exercise
+                                ├── Tap set → enter actual reps + load → mark done
+                                └── Finish → session saved → graphs update
+```
+
+### Open (not blocking build)
+
+| Question | Option A | Option B |
+|---|---|---|
+| Rotation order — strict cycle or user-reorderable? | Strict cycle by `rotation_position`. | User can freely reorder in the template editor. |
+| `quality_reps` (fencing drills) in v1 or deferred? | Build now. | Defer — zero source content, high authoring cost. |
+
+**Resolved 2026-10-01:** per-session skip holds its position (does not advance rotation) and is re-offered next time until the user permanently removes it — see Decision 3.

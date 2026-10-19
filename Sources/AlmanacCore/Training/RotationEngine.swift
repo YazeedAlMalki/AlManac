@@ -72,7 +72,7 @@ public struct RotationPlan: Sendable, Hashable {
 ///
 /// Reads, in total, **two queries per plan** regardless of pool size: the active
 /// pool, and the day's slot count. Both are hoisted out of the per-slot work,
-/// which is the handoff §8 rule — "ask what varies within the pass, read the rest
+/// which is the README performance rule — "ask what varies within the pass, read the rest
 /// once". A rotation built from a query inside a `for` over slots is a
 /// per-session cost that grows with the program.
 public struct RotationEngine: @unchecked Sendable {

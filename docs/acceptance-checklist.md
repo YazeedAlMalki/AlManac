@@ -297,7 +297,7 @@ puts a reading on the day it names and not on today's card, so the first sign it
 had stopped working is a failure about the hook rather than a score three screens
 later.
 
-The steps are the UX flow from `docs/handoff-2026-10-01-training-program.md`.
+The steps are the UX flow in `docs/features/training-program.md` §10.
 
 | # | Step | Result |
 |---|---|---|

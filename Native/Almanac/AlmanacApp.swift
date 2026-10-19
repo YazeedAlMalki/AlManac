@@ -458,7 +458,8 @@ final class LaboratoryModel: ObservableObject {
     /// import — so deciding it at the import would freeze the wrong answer into
     /// the record. One query when there is nothing to do, and only the stale
     /// jobs are examined after that, which is what keeps this off the critical
-    /// path (see the performance note in `docs/handoff-2026-09-30.md` §8).
+    /// path: ask what varies within a pass and read the rest once
+    /// (the rule `NotificationPlannerCostTests` pins for the planner).
     ///
     /// Returns how many jobs it closed, so a caller can tell "nothing to do"
     /// from "ran and found nothing".

@@ -91,7 +91,7 @@ public struct ProgramDayStore: @unchecked Sendable {
         SELECT * FROM trainingProgram WHERE deletedAt IS NULL ORDER BY name COLLATE NOCASE;
         """).compactMap(TrainingProgramEntry.init(from:))
         // Hoisted, not inside the loop: a query per program is fine at two
-        // programs and linear at twenty (handoff §8, "ask what varies within the
+        // programs and linear at twenty (README performance rule, "ask what varies within the
         // pass, read the rest once").
         let daysByProgram = try db.query("""
         SELECT * FROM programDay WHERE deletedAt IS NULL ORDER BY id;

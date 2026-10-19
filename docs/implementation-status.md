@@ -1343,7 +1343,7 @@ the same stale-frame problem the `reveal`→tap race had, one layer down.
 
 ## 2026-10-02 — Training Program: the layer above a session (core + UI)
 
-The AI-delegatable half of `docs/handoff-2026-10-01-training-program.md`. Full
+The build half of the owner decisions in `docs/features/training-program.md` §10. Full
 write-up in `docs/features/training-program.md`; what follows is what a reader
 of this file needs to know.
 

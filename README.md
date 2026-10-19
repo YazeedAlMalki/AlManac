@@ -119,6 +119,14 @@ to be wired by hand for night-window assignment, and the note left behind was
 that the seventh path added later would be the one that forgot. A missed call
 site should cost one stale refresh, not a permanently wrong state.
 
+**The app must not get heavy or lag: ask what varies within a pass, and read
+the rest once.** The worked example is `NotificationPlanner`, which once asked
+for its suppression context per candidate, about 140 queries on every
+foreground. Only two of its five axes depend on the instant, so the other three
+are read once and the rows the two need are read once and answered from memory:
+about 4 queries a pass, pinned by `NotificationPlannerCostTests`, whose
+`batchedEqualsPerInstant` proves the faster pass gives the same answers.
+
 **A status claim is a claim that can be checked.** Several handoffs in a row
 arrived with confidently wrong statements about this codebase — that a feature
 was blocked on a column nothing reads, that a table was unbuilt when it had
