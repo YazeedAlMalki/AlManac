@@ -92,6 +92,28 @@ final class LabCSVImportTests: XCTestCase {
         XCTAssertEqual(bySourceText["~5"]?.content.numericValue, 5.0)
     }
 
+    func testNonDecimalNumberSpellingsStayText() throws {
+        let store = try makeStore(seedCatalog: false)
+        let text = csv([
+            "R-4,2026-09-08,Laboratory A,,Ferritin,NaN,ng/mL,,,,o1",
+            "R-4,2026-09-08,Laboratory A,,Ferritin,inf,ng/mL,,,,o2",
+            "R-4,2026-09-08,Laboratory A,,Ferritin,0x1A,ng/mL,,,,o3",
+            "R-4,2026-09-08,Laboratory A,,Ferritin,1.5e2,ng/mL,,,,o4",
+        ])
+
+        _ = try LabReportCSVImport.importReports(csv: text, into: store)
+
+        let report = try XCTUnwrap(try store.reports(limit: 10).first)
+        let results = try store.currentResults(inReport: report.id)
+        let bySourceText = Dictionary(uniqueKeysWithValues: results.map { ($0.content.sourceValueText ?? "", $0) })
+        for spelling in ["NaN", "inf", "0x1A"] {
+            XCTAssertEqual(bySourceText[spelling]?.content.valueType, .text, spelling)
+            XCTAssertEqual(bySourceText[spelling]?.content.textValue, spelling)
+        }
+        XCTAssertEqual(bySourceText["1.5e2"]?.content.valueType, .quantitative)
+        XCTAssertEqual(bySourceText["1.5e2"]?.content.numericValue, 150)
+    }
+
     func testNonNumericValueIsStoredAsTextVerbatim() throws {
         let store = try makeStore(seedCatalog: false)
         let text = csv([

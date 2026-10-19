@@ -156,26 +156,37 @@ struct BackupView: View {
     private func importBackup(from url: URL) {
         isWorking = true
         defer { isWorking = false }
+        // A file picked from Files or iCloud is outside the sandbox and can
+        // only be read inside a security-scoped access window.
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        let tmp = fileManager.temporaryDirectory
+            .appendingPathComponent("AlmanacImport-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: tmp) }
         do {
             try fileManager.createDirectory(at: backupsDirectory, withIntermediateDirectories: true)
+            try fileManager.createDirectory(at: tmp, withIntermediateDirectories: true)
             let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
             let target = backupsDirectory.appendingPathComponent("imported-\(stamp).almanac-backup")
             let bundleURL: URL
-            if url.pathExtension == "zip" {
+            if url.pathExtension.lowercased() == "zip" {
                 // Unzip to a temp dir first; the validated container then lands
                 // in the backups folder like any locally-created one.
-                let tmp = fileManager.temporaryDirectory
-                    .appendingPathComponent("AlmanacImport-\(UUID().uuidString)", isDirectory: true)
-                defer { try? fileManager.removeItem(at: tmp) }
                 let extracted = try BackupZipper.unzip(archivePath: url.path, into: tmp.path)
                 bundleURL = URL(fileURLWithPath: extracted)
             } else {
-                bundleURL = url
+                // Validated as a private copy: opening a SQLite file can write
+                // to it (journal mode, sidecars), and the person's original in
+                // Files must not change. The copy is also what gets adopted,
+                // so what was validated is exactly what lands in the folder.
+                bundleURL = tmp.appendingPathComponent("candidate.almanac-backup")
+                try fileManager.copyItem(at: url, to: bundleURL)
             }
             // Validate before adopting: a non-bundle (or a foreign zip that
             // unzipped but still is not one) must not land in the folder.
             _ = try service.readBundleInfo(at: bundleURL.path)
-            try fileManager.copyItem(at: bundleURL, to: target)
+            for suffix in ["-wal", "-shm"] { try? fileManager.removeItem(atPath: bundleURL.path + suffix) }
+            try fileManager.moveItem(at: bundleURL, to: target)
             reload()
         } catch {
             self.error = String(describing: error)

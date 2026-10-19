@@ -216,10 +216,10 @@ jobs were then built in `d21d9a9` ("Record every laboratory import, and let a
 later alias fix it"): Migration 046 (`import_job`), `LabImportJobStore`,
 `LabImportJobReconciler`, `LabImportJobTests`, and the Import history screen.
 As built, **a failed import does leave a job row**, with status `failed` and a
-`failure_reason` (`LabImportJobStore.markFailed`). That is the code's choice,
+`failure_reason` (`LabReportCSVImport`'s failure path records it through `LabImportJobStore.record`). That is the code's choice,
 not an owner decision: **owner gate G4 is closed: yes, a row (2026-10-16)** and nothing was changed here.
-If the owner decides "no row", the change is to stop calling `markFailed` and
-delete the row instead.
+If the owner decides "no row", the change is to stop recording a job on that
+failure path instead.
 
 The original text, kept for the record:
 

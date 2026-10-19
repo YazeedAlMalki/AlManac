@@ -88,35 +88,6 @@ public struct HydrationCalculator: Sendable {
         )
     }
 
-    /// Analyze hydration patterns to predict future needs.
-    public func adaptProfile(
-        baseProfile: HydrationProfile,
-        recentMetrics: [HydrationMetrics],
-        averageExerciseMinutes: Double
-    ) -> HydrationProfile {
-        guard !recentMetrics.isEmpty else { return baseProfile }
-
-        let averageAdherence = recentMetrics
-            .map { $0.hydrationPercentage }
-            .reduce(0, +) / Double(recentMetrics.count)
-
-        var newBaseline = baseProfile.baselineIntakeMilliliters
-        if averageAdherence < 75 {
-            newBaseline *= 1.1
-        } else if averageAdherence > 110 {
-            newBaseline *= 0.95
-        }
-
-        let newActivityLevel = detectActivityLevel(averageExerciseMinutes)
-
-        return HydrationProfile(
-            baselineIntakeMilliliters: newBaseline,
-            bodyWeightKg: baseProfile.bodyWeightKg,
-            activityLevel: newActivityLevel,
-            updatedAt: Date()
-        )
-    }
-
     // MARK: - Private Helpers
 
     /// Reads the factor off the level. Was a `switch` in here, and moving it onto
@@ -194,16 +165,6 @@ public struct HydrationCalculator: Sendable {
             return "Regular reminder: Drink some water to stay on track."
         case .low:
             return "You're doing well with hydration. Keep it up!"
-        }
-    }
-
-    private func detectActivityLevel(_ averageExerciseMinutes: Double) -> ActivityLevel {
-        switch averageExerciseMinutes {
-        case 0: return .sedentary
-        case 0..<15: return .light
-        case 15..<45: return .moderate
-        case 45..<90: return .high
-        default: return .veryHigh
         }
     }
 }

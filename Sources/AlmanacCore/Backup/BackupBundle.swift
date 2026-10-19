@@ -193,10 +193,30 @@ public extension BackupService {
         let restoredFile = tmpDir.appendingPathComponent("restored.sqlite")
         try Data(dbBytes).write(to: restoredFile, options: .atomic)
         let restored = try Database(path: restoredFile.path)
+        let payloadVersion: Int64
+        let integrity: String?
         do {
-            _ = try restored.query("SELECT COUNT(*) AS n FROM schema_migrations;")
+            payloadVersion = try restored.query(
+                "SELECT COALESCE(MAX(version), 0) AS v FROM schema_migrations;").first?.int("v") ?? 0
+            integrity = try restored.query("PRAGMA quick_check;").first?.string("quick_check")
         } catch {
             throw BackupError.corruptBundle(reason: "database payload is not an Almanac database")
+        }
+        guard integrity == "ok" else {
+            throw BackupError.corruptBundle(reason: "database payload failed its integrity check")
+        }
+        // `bundle_meta.schema_version` is the bundle's claim about its payload;
+        // the payload's own migration head is the fact. A bundle whose two
+        // disagree is refused rather than swapped in over a live database.
+        guard payloadVersion == expected else {
+            throw BackupError.incompatibleSchemaVersion(found: payloadVersion, expected: expected)
+        }
+        // Triggers and views run inside every later write and read. The
+        // checksums only prove the bundle is intact, not who made it, so a
+        // payload may not bring any this app version does not define itself.
+        guard try schemaCode(of: restored) == schemaCode(of: db) else {
+            throw BackupError.corruptBundle(
+                reason: "database payload carries triggers or views this app version does not define")
         }
         try HydrationStore(db: restored).reconcileAfterRestore()
         // Spec line 1942 step 6d: "Rebuild nutrition_window assignments for
@@ -238,7 +258,7 @@ public extension BackupService {
                     guard stagedURL.resolvingSymlinksInPath().standardizedFileURL.path
                         .hasPrefix(stagingPath + "/") else {
                         throw BackupError.corruptBundle(
-                            reason: "staged document path escapes its staging root: \\(relativePath)"
+                            reason: "staged document path escapes its staging root: \(relativePath)"
                         )
                     }
                     try fm.createDirectory(at: stagedURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -307,10 +327,18 @@ public extension BackupService {
         }
     }
 
+    /// Every trigger and view in `database`, by type, name and definition.
+    private func schemaCode(of database: Database) throws -> Set<String> {
+        Set(try database.query("""
+            SELECT type || ':' || name || ':' || COALESCE(sql, '') AS k
+            FROM sqlite_master WHERE type IN ('trigger', 'view');
+            """).compactMap { $0.string("k") })
+    }
+
     private func validatedDocumentTarget(relativePath: String, under root: URL) throws -> URL {
         let components = URL(fileURLWithPath: relativePath).pathComponents
         guard !components.contains("..") else {
-            throw BackupError.corruptBundle(reason: "document path contains '..': \\(relativePath)")
+            throw BackupError.corruptBundle(reason: "document path contains '..': \(relativePath)")
         }
         let target = URL(fileURLWithPath: relativePath, relativeTo: root).standardizedFileURL
         let rootPath = root.resolvingSymlinksInPath().standardizedFileURL.path

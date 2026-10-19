@@ -74,11 +74,12 @@ public struct BackupService: Sendable {
 
     /// Replaces this database's contents with a snapshot's, wholesale.
     ///
-    /// This is the happy-path slice only: a valid snapshot onto a reachable
-    /// path. Schema-version gating, corrupt-file detection, transactional
-    /// rollback, and HealthKit de-duplication are separate, not-yet-built
-    /// slices — see the Slice 12 handoff.
-    public func restore(from path: String) throws {
+    /// No schema-version gate, no checksum, no integrity check and no
+    /// HealthKit de-duplication — so it is internal, kept for the tests that
+    /// exercise the raw online-backup primitive. Everything user-facing
+    /// restores through `restoreBundle(at:documentsRoot:)`, which has all of
+    /// those.
+    func restore(from path: String) throws {
         let snapshot = try Database(path: path)
         try snapshot.backup(into: db)
     }

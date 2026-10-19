@@ -3,7 +3,6 @@ import dataclasses
 import sqlite3
 import unittest
 from contextlib import closing
-from pathlib import Path
 
 from almanac_nutrition import bundle
 from almanac_nutrition.canonical_io import CanonicalError, read_canonical, write_canonical

@@ -37,28 +37,6 @@ enum CircadianPresentation {
         }
     }
 
-    /// A short label for a dense surface, where the sentence above will not fit.
-    static func shortLabel(for type: CircadianContextType) -> String? {
-        switch type {
-        case .stableDay: return String(localized: "Day rhythm")
-        case .stableEvening: return String(localized: "Evening rhythm")
-        case .stableNight: return String(localized: "Night rhythm")
-        case .transitionEarlier: return String(localized: "Moving earlier")
-        case .transitionLater: return String(localized: "Moving later")
-        case .firstDayAfterNight: return String(localized: "First day back")
-        case .recovery: return String(localized: "Rest day")
-        case .irregular: return String(localized: "Still irregular")
-        case .unknown: return nil
-        }
-    }
-
-    /// Whether this context is one a correlation should not be computed across.
-    /// Kept beside the wording because the two are the same fact: the sentence
-    /// above tells the user why a number was narrowed, and this is the narrowing.
-    static func isTransition(_ type: CircadianContextType) -> Bool {
-        type == .transitionEarlier || type == .transitionLater
-    }
-
     // MARK: - Private
 
     /// §13.1 names the two directions: coming off nights onto days moves

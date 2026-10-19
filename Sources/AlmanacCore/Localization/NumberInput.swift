@@ -31,9 +31,16 @@ public enum NumberInput {
 
 extension Double {
     /// What a person typed, in either language's digits. Nil for whatever
-    /// `Double(_:)` refuses once the digits are ASCII, an empty field included.
+    /// `Double(_:)` refuses once the digits are ASCII, an empty field included,
+    /// and for the spellings it accepts that are not a typed number: "nan",
+    /// "inf", hexadecimal, and anything that overflows to infinity. A NaN that
+    /// got past a field would pass no `> 0` check and trap the first
+    /// `Int(_:)` that rounded it.
     public init?(userInput text: String) {
-        self.init(NumberInput.ascii(text))
+        let ascii = NumberInput.ascii(text)
+        guard ascii.allSatisfy({ "0123456789.+-eE".contains($0) }),
+              let value = Double(ascii), value.isFinite else { return nil }
+        self = value
     }
 }
 

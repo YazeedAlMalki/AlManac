@@ -7,7 +7,7 @@ from almanac_nutrition import bundle
 from almanac_nutrition.canonical_io import CanonicalError, read_canonical, write_canonical
 from almanac_nutrition.dictionary import Source
 from almanac_nutrition.licence import LicenceViolation, assert_shippable
-from almanac_nutrition.model import Food, FoodName, Value, validate
+from almanac_nutrition.model import validate
 from tests.support import DICTIONARY, canonical_set, temp_lake
 
 

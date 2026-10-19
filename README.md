@@ -19,7 +19,7 @@ specification is [`docs/almanac-tech-spec-v1_0.md`](docs/almanac-tech-spec-v1_0.
 | Foundation (Technical Spec §4) | Here |
 |---|---|
 | Database | `Database`, `SQLiteError`; SQLite vendored under `Sources/CSQLite` |
-| Migration runner | `Migration`, `MigrationRunner`; **58 migrations** (2026-10-16; the newest is 058, `notification_rule_offset`) |
+| Migration runner | `Migration`, `MigrationRunner`; **67 migrations** (2026-10-19; the newest is 067, `food_merge`) |
 | Domain schema | **Built** — transcribed from §5 across migrations 002–045; later migrations add the app's own tables and columns |
 | TimeModel / `logicalDay()` | Built; the §7.1 **04:00** boundary is the default, still injectable |
 | Readiness cycles | Built — `ReadinessCycleStore`, and the §8.4 linking services |
