@@ -20,7 +20,8 @@ public struct EnergyEstimate: Sendable, Hashable {
         case byDifference = "by_difference"
         /// Available carbohydrate by weight plus total dietary fibre (CIQUAL, AFCD).
         case availablePlusFibre = "available_plus_fibre"
-        /// Available carbohydrate as monosaccharide equivalents plus fibre (CoFID).
+        /// Available carbohydrate as monosaccharide equivalents, converted to weight
+        /// by `GeneralAtwater.monosaccharideEquivalentsToWeight`, plus fibre (CoFID).
         case availableMonosaccharidePlusFibre = "available_monosaccharide_plus_fibre"
     }
 
@@ -54,6 +55,19 @@ public enum GeneralAtwater {
     public static let fatKilocaloriesPerGram = 9.0
     public static let alcoholKilocaloriesPerGram = 7.0
 
+    /// Grams of available carbohydrate by weight per gram expressed as
+    /// monosaccharide equivalents: 3.75 / 4.
+    ///
+    /// CoFID states carbohydrate as monosaccharide equivalents — starch counted
+    /// as the glucose it hydrolyses to (×1.10), disaccharides likewise (×1.05) —
+    /// and prices it at 3.75 kcal/g for exactly that reason. Taking the number at
+    /// 4 kcal/g as if it were a weight overstated every CoFID food by the
+    /// hydration uplift: a median +8 kcal/100 g, white bread +10 %, white sugar
+    /// at 420 kcal from "105 g of carbohydrate per 100 g". Scaling to weight
+    /// first keeps one 4 kcal/g factor for every source and leaves the grams a
+    /// screen shows comparable with CIQUAL's and AFCD's.
+    public static let monosaccharideEquivalentsToWeight = 3.75 / 4.0
+
     /// nil when protein, fat or total carbohydrate cannot be read — never a guess.
     public static func estimate(from values: [NutrientValue], basis: NutritionBasis) -> EnergyEstimate? {
         var published: [String: NutrientValue] = [:]
@@ -74,6 +88,28 @@ public enum GeneralAtwater {
                               carbohydrateTerm: carbohydrate.term, inputsTakenAsZero: zeros.sorted())
     }
 
+    /// Total carbohydrate in grams, the quantity general Atwater prices at
+    /// 4 kcal/g, read the same way `estimate` reads it: by difference if
+    /// published, otherwise available carbohydrate (as a weight) plus fibre. A
+    /// trace counts as zero. Nil when it cannot be read — never a guess.
+    ///
+    /// The one definition of "carbs" across sources: USDA's figure includes
+    /// fibre, CIQUAL's and AFCD's exclude it, and CoFID's is not a weight, so
+    /// anything summing or showing carbohydrate across foods reads it here.
+    public static func totalCarbohydrateGrams(from values: [NutrientValue],
+                                              basis: NutritionBasis) -> Double? {
+        var published: [String: NutrientValue] = [:]
+        for value in values where value.basis == basis { published[value.nutrientID] = value }
+        return totalCarbohydrate { Term(published[$0]) }?.total.grams
+    }
+
+    /// Alcohol in grams as `estimate` counts it: absent, unanalysed, trace or
+    /// "< x" is zero, because every source's own energy figure counts alcohol
+    /// only where it is present.
+    public static func alcoholGrams(from values: [NutrientValue], basis: NutritionBasis) -> Double {
+        Term(values.first { $0.basis == basis && $0.nutrientID == "alcohol" })?.grams ?? 0
+    }
+
     /// By difference if published; otherwise available carbohydrate plus fibre.
     /// Fibre is never assumed, so available carbohydrate alone gives no total.
     private static func totalCarbohydrate(_ read: (String) -> Term?)
@@ -84,7 +120,8 @@ public enum GeneralAtwater {
             return (available + fibre, .availablePlusFibre)
         }
         if let available = read("carbohydrate_available_monosaccharide") {
-            return (available + fibre, .availableMonosaccharidePlusFibre)
+            return (available.scaled(by: monosaccharideEquivalentsToWeight) + fibre,
+                    .availableMonosaccharidePlusFibre)
         }
         return nil
     }
@@ -113,6 +150,10 @@ public enum GeneralAtwater {
                 guard let amount = value.amount else { return nil }
                 self.init(grams: amount, takenAsZero: [])
             }
+        }
+
+        func scaled(by factor: Double) -> Term {
+            Term(grams: grams * factor, takenAsZero: takenAsZero)
         }
 
         static func + (lhs: Term, rhs: Term) -> Term {

@@ -128,8 +128,11 @@ struct NutritionQuickEntryView: View {
         Section("Today") {
             if let totals = model.todaysTotals, totals.mealsCounted > 0 {
                 LabeledContent("Total", value: String(localized: "\(Int(totals.kcal.rounded())) kcal"))
-                if !totals.isComplete {
-                    Text("Some logged foods are missing an amount or a reference match, so this total is a floor, not the full picture.")
+                // Keyed on the calories, not `isComplete`: a day mixing two
+                // sources always has some carbohydrate id one meal lacks, which
+                // says nothing about this figure.
+                if let caveat = totals.energyCaveat {
+                    Text(caveat)
                         .font(.caption).foregroundStyle(.secondary)
                 }
             } else {

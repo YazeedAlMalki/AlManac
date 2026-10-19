@@ -161,6 +161,38 @@ struct NutritionSummaryTests {
         #expect(result.incompleteNutrients.contains("energy_kcal"),
                 "a total that quietly omits an unpriceable meal is the failure this exists to stop")
         #expect(!result.isComplete)
+        #expect(result.mealsWithoutEnergy.count == 1)
+        #expect(!result.isEnergyComplete)
+        #expect(result.energyCaveat == "Partial total: 1 food has no calorie figure. Their calories are not counted.")
+    }
+
+    @Test("A day whose meals report carbohydrate under different ids still has a complete calorie total")
+    func mixedCarbohydrateIdsDoNotMakeTheCalorieTotalPartial() throws {
+        // USDA states carbohydrate by difference; CIQUAL states available
+        // carbohydrate plus fibre. Every meal is priced, so the energy is whole
+        // even though no carbohydrate id is reported by both.
+        try seedAtwaterFood(rice, protein: 2.5, fat: 0.5, carbohydrate: 28.0)
+        try seedFood(beans)
+        try seedValues(beans, [("protein", 8.0, "g"), ("fat_total", 0.5, "g"),
+                               ("carbohydrate_available", 16.0, "g"), ("fibre_total_dietary", 6.0, "g")])
+        try eat(rice, grams: 100)
+        try eat(beans, grams: 100)
+
+        let result = try totals()
+        #expect(!result.isComplete, "carbohydrate ids genuinely differ")
+        #expect(result.isEnergyComplete)
+        #expect(result.energyCaveat == nil)
+        #expect(DayEnergy.total(food: result, drinks: [])?.isFoodComplete == true)
+    }
+
+    @Test("The caveat names every cause, counted")
+    func caveatNamesEachCause() throws {
+        try seedAtwaterFood(rice, protein: 2.5, fat: 0.5, carbohydrate: 28.0)
+        try eat(rice, grams: nil)
+        try eat(rice, grams: nil)
+        try eat(ghost, grams: 100)
+        #expect(try totals().energyCaveat
+                == "Partial total: 2 foods have no amount and 1 food is not in the food catalogue. Their calories are not counted.")
     }
 
     @Test("A nutrient one meal does not report is absent from the total, not smaller in it")
