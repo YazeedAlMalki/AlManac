@@ -57,13 +57,7 @@ struct EndFastIntent: AppIntent {
     static let openAppWhenRun = false
 
     func perform() async throws -> some IntentResult {
-        let db = try AppGroupDatabase.open()
-        let store = FastingSessionStore(db: db)
-        // Intermittent only. A religious fast ends at Maghrib or at the first
-        // thing logged after Fajr; a widget tap must not end it some other way.
-        if let session = try store.activeIntermittentSession() {
-            try store.endScheduled(id: session.id, at: Date())
-        }
+        // SCRATCH mutation: this intent does nothing.
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
