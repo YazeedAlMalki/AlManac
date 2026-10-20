@@ -311,113 +311,23 @@ jobs:
       # `-resultBundlePath` is set explicitly so a failure can be attached to
       # the run. Without it the bundle lands in DerivedData under a name that
       # includes a UUID, which is not something a workflow can name.
+      # SCRATCH (never merged): the backup tests ten times, no retry.
       - name: Test
         run: |
-          set -euo pipefail
+          set -uo pipefail
           xcodebuild test \
             -project Native/Almanac.xcodeproj \
             -scheme Almanac \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath "$RUNNER_TEMP/AlmanacUITests.xcresult" \
-            -retry-tests-on-failure -test-iterations 2 \
+            -only-testing:AlmanacUITests/PhoneMigrationUITests \
+            -test-iterations 10 \
             CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/xcodebuild-test.log"
 
-      # Every assertion failure, gathered at the end of the log. The UI suite
-      # writes tens of thousands of lines, and a failure's message is otherwise
-      # only findable by scrolling the whole run; log readers that fetch only
-      # the tail (as the cloud sessions' tools do) never see it at all.
-      #
-      # On every run, not only a red one: a failed test is run once more
-      # (`-retry-tests-on-failure`; the owner accepted one retry for a dropped
-      # tap on 2026-10-17, and this extends it to the suite) after one or two
-      # of 108 tests failed per run on XCTest timeouts, a different test each
-      # time). A real failure fails both times and the job is red; one that
-      # passed on its second try is still listed here, so a flaky test stays
-      # visible.
-      - name: Summarise failures
+      - name: Report
         if: always()
         run: |
-          grep -E ": error: |Test Case .* failed" "$RUNNER_TEMP/xcodebuild-test.log" | cut -c1-600 || true
-
-      # The Arabic pass again, on the database the suite just filled: logged
-      # training, meals, water, measurements and recipes, plus two weeks of
-      # vitals the test plants itself. The run in the suite saw only empty
-      # states. TEST_RUNNER_ variables reach the test process without the prefix.
-      - name: Arabic pass on the populated simulator
-        if: always()
-        run: |
-          set -euo pipefail
-          TEST_RUNNER_ALMANAC_ARABIC_PASS=populated xcodebuild test-without-building \
-            -project Native/Almanac.xcodeproj \
-            -scheme Almanac \
-            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
-            -only-testing:AlmanacUITests/ArabicUITests/testScreenshotEveryScreenInArabic \
-            -resultBundlePath "$RUNNER_TEMP/ArabicPopulated.xcresult" \
-            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/arabic-populated.log"
-
-      # The Arabic screenshot pass (ArabicUITests.testScreenshotEveryScreenInArabic)
-      # prints each screen's Latin-script text and off-screen elements as
-      # `ARABIC-PASS` lines. Gathered here so a reader of the log's tail sees them.
-      - name: Arabic pass report
-        if: always()
-        run: |
-          grep -h "^ARABIC-PASS" "$RUNNER_TEMP/xcodebuild-test.log" | grep -v $'\tlayout\t' | sort -u | cut -c1-400 || true
-          # The populated run in page order, since layout lines are read by position.
-          [ -f "$RUNNER_TEMP/arabic-populated.log" ] &&
-            grep -h "^ARABIC-PASS" "$RUNNER_TEMP/arabic-populated.log" | awk '!seen[$0]++' | cut -c1-400 || true
-
-      # The pass's screenshots as plain PNGs, so reading them does not need Xcode.
-      - name: Export the Arabic screenshots
-        if: always()
-        run: |
-          set -uo pipefail
-          mkdir -p "$RUNNER_TEMP/arabic-screenshots"
-          for BUNDLE in "$RUNNER_TEMP/AlmanacUITests.xcresult" "$RUNNER_TEMP/ArabicPopulated.xcresult"; do
-          [ -d "$BUNDLE" ] || continue
-          OUT="$RUNNER_TEMP/attachments-$(basename "$BUNDLE" .xcresult)"
-          xcrun xcresulttool export attachments --path "$BUNDLE" --output-path "$OUT" || continue
-          python3 - "$OUT" "$RUNNER_TEMP/arabic-screenshots" <<'PY' || echo "::warning::could not sort the Arabic screenshots"
-          import json, os, shutil, sys
-          src, dst = sys.argv[1], sys.argv[2]
-          manifest = json.load(open(os.path.join(src, "manifest.json")))
-          for test in manifest:
-              for a in test.get("attachments", []):
-                  name = a.get("suggestedHumanReadableName", "")
-                  if name.startswith("ar-"):
-                      base = name.split("_", 1)[0] if name.endswith(".png") else name
-                      target = base if base.endswith(".png") else base + ".png"
-                      shutil.copy(os.path.join(src, a["exportedFileName"]), os.path.join(dst, target))
-          print(len(os.listdir(dst)), "Arabic screenshots")
-          PY
-          done
-
-      # What the screen held when a UI test failed, as text in this log. The
-      # result bundle has it, but a cloud session cannot download artifacts,
-      # and a run of lost taps after launch (2026-10-16/17) could not be told
-      # apart from a missing row without it. Last, so a tail-only reader sees it.
-      - name: Print the failing tests' attachments
-        if: failure()
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-          OUT="$RUNNER_TEMP/failure-attachments"
-          xcrun xcresulttool export attachments --path "$RUNNER_TEMP/AlmanacUITests.xcresult" \
-            --output-path "$OUT" --only-failures || { echo "no failure attachments exported"; exit 0; }
-          python3 - "$OUT" <<'PY'
-          import json, os, sys
-          src = sys.argv[1]
-          for test in json.load(open(os.path.join(src, "manifest.json"))):
-              print("=== " + test.get("testIdentifier", "?"))
-              for a in test.get("attachments", []):
-                  name, path = a.get("suggestedHumanReadableName", ""), os.path.join(src, a["exportedFileName"])
-                  try:
-                      text = open(path, encoding="utf-8").read()
-                  except (UnicodeDecodeError, OSError):
-                      print("--- " + name + " (binary, " + str(os.path.getsize(path)) + " bytes)")
-                      continue
-                  print("--- " + name)
-                  print(text[:8000] + ("\n[... cut]" if len(text) > 8000 else ""))
-          PY
+          grep -hE ": error: |Test Case .* (failed|passed)|Executed [0-9]+ test" "$RUNNER_TEMP/xcodebuild-test.log" | cut -c1-1500 || true
 
       - name: Attach the Arabic screenshots
         if: always()
