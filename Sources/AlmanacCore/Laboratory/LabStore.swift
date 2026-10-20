@@ -115,7 +115,9 @@ public struct LabRevision: Sendable {
 
 /// Persistence for the Laboratory module, and its timeline provider.
 ///
-/// `record` runs in its own transaction; do not call it from inside another.
+/// `record` runs in its own transaction. Called inside another, it runs as a
+/// savepoint in that one (`Database.transaction` nests), as the CSV import
+/// does for a whole file.
 public struct LabStore: TimelineProviding, @unchecked Sendable {
     public let domain = "laboratory"
     let db: Database
