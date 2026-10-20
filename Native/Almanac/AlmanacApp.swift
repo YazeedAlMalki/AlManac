@@ -153,6 +153,21 @@ struct AlmanacApp: App {
                         hydrationModel.refresh()
                     }
                 }
+                // The fasting widget's two buttons, the same way: `start` or `end`.
+                let arguments = ProcessInfo.processInfo.arguments
+                if let flag = arguments.firstIndex(of: "-AlmanacRunFastIntent"), flag + 1 < arguments.count {
+                    let which = arguments[flag + 1]
+                    Task {
+                        do {
+                            switch which {
+                            case "start": _ = try await StartFastIntent().perform()
+                            case "end": _ = try await EndFastIntent().perform()
+                            default: print("-AlmanacRunFastIntent takes start or end, not \(which)")
+                            }
+                        } catch { print("Fast intent \(which) failed: \(error)") }
+                        fastingModel.refresh()
+                    }
+                }
                 #endif
                 nutritionModel.configure(db: model.db)
                 trainingModel.configure(db: model.db)
