@@ -37,6 +37,9 @@ final class PhoneMigrationUITests: XCTestCase {
         openProfile()
         let original = sports()
         setSports(before)
+        // A backup needs a valid email on the profile (owner, 2026-10-20).
+        openProfile()
+        if email().isEmpty { setEmail("a4@example.com") } else { back(from: "Profile") }
 
         // Export: the backup is made, listed with its summary, and offered for
         // sharing as the zip a new phone would receive.
@@ -75,6 +78,48 @@ final class PhoneMigrationUITests: XCTestCase {
                        "after the restore the profile should read as it did when the backup was made")
 
         setSports(original)
+    }
+
+    /// The owner's rule (2026-10-20): creating a backup needs a valid email on
+    /// the profile. With none, Create backup is offered but disabled and says
+    /// why; a malformed one is refused at Save; a valid one enables it.
+    /// Restore is not gated, so a new phone can restore before it has a profile.
+    func testCreatingABackupNeedsAValidEmail() {
+        openProfile()
+        let original = email()
+        setEmail("")
+
+        openBackups()
+        let create = app.buttons["Create backup"]
+        XCTAssertTrue(create.waitForExistence(timeout: 10), "Backup & restore offers no Create backup")
+        XCTAssertFalse(create.isEnabled, "Create backup is enabled with no email on the profile")
+        XCTAssertTrue(app.element("backup-needs-email").waitForExistence(timeout: 5),
+                      "Backup & restore does not say a backup needs an email")
+        back(from: "Backup & restore")
+        back(from: "Settings")
+
+        openProfile()
+        type("not-an-email", into: app.textFields["profile-email"])
+        app.buttons["Save"].tap()
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 5), "a malformed email was saved without a word")
+        XCTAssertTrue(alert.staticTexts.allElementsBoundByIndex.contains { $0.label.contains("valid email address") },
+                      "the refusal does not say what is wrong: \(alert.staticTexts.allElementsBoundByIndex.map(\.label))")
+        alert.buttons["OK"].tap()
+        back(from: "Profile")
+        openProfile()
+        XCTAssertEqual(email(), "", "a malformed email was saved")
+        setEmail("name@example.com")
+
+        openBackups()
+        XCTAssertTrue(create.waitForExistence(timeout: 10))
+        XCTAssertTrue(create.isEnabled, "Create backup stays disabled with a valid email on the profile")
+        XCTAssertFalse(app.element("backup-needs-email").exists)
+        back(from: "Backup & restore")
+        back(from: "Settings")
+
+        openProfile()
+        setEmail(original.isEmpty ? "name@example.com" : original)
     }
 
     // MARK: - Helpers
@@ -116,6 +161,34 @@ final class PhoneMigrationUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 10), "Profile has no Sports field")
         let value = field.value as? String ?? ""
         return value == sportsField ? "" : value  // an empty field reads back its placeholder
+    }
+
+    private func email() -> String {
+        let field = app.textFields["profile-email"]
+        XCTAssertTrue(app.reveal(field), "Profile has no Email field")
+        let value = field.value as? String ?? ""
+        return value == "Email" ? "" : value  // an empty field reads back its placeholder
+    }
+
+    /// Sets the Email field, saves, and reopens Profile to prove the write.
+    /// Expects Profile to be open; leaves it closed.
+    private func setEmail(_ text: String) {
+        let field = app.textFields["profile-email"]
+        XCTAssertTrue(app.reveal(field), "Profile has no Email field")
+        type(text, into: field)
+        app.buttons["Save"].tap()
+        back(from: "Profile")
+        openProfile()
+        XCTAssertEqual(email(), text, "the profile did not save the email \(text)")
+        back(from: "Profile")
+    }
+
+    /// Replaces a text field's contents with `text`.
+    private func type(_ text: String, into field: XCUIElement) {
+        XCTAssertTrue(app.reveal(field), "no such field")
+        let current = (field.value as? String ?? "")
+        field.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count + 4) + text)
     }
 
     /// Replaces the field's text, saves, and reopens Profile to prove the write:

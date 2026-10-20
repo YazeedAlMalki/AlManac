@@ -24,6 +24,9 @@ public struct UserProfile: Sendable, Hashable {
     /// install has these yet and a migration cannot invent them.
     public let firstName: String?
     public let lastName: String?
+    /// Well formed whenever it is set (`ProfileEmail`). Creating a backup
+    /// needs one (`mayCreateBackup`). Stays on this phone.
+    public let email: String?
 
     public let dateOfBirth: String?
     public let biologicalSex: String?  // e.g., "male", "female", "other"
@@ -100,6 +103,7 @@ public struct UserProfile: Sendable, Hashable {
     public init(displayName: String,
                 firstName: String? = nil,
                 lastName: String? = nil,
+                email: String? = nil,
                 dateOfBirth: String? = nil,
                 biologicalSex: String? = nil,
                 heightCm: Double? = nil,
@@ -115,6 +119,7 @@ public struct UserProfile: Sendable, Hashable {
         self.displayName = displayName
         self.firstName = firstName
         self.lastName = lastName
+        self.email = email
         self.dateOfBirth = dateOfBirth
         self.biologicalSex = biologicalSex
         self.heightCm = heightCm
@@ -159,7 +164,7 @@ public struct ProfileStore: @unchecked Sendable {
     public func profile() throws -> UserProfile {
         // Fetch the singleton profile row (id=1)
         if let row = try db.query("""
-        SELECT displayName, firstName, lastName, dateOfBirth, biologicalSex, heightCm,
+        SELECT displayName, firstName, lastName, email, dateOfBirth, biologicalSex, heightCm,
                sports, unitBasis, registeredAt, trainingExperience, bloodType,
                createdAt, updatedAt, bodyMeasurementTrackSides
         FROM profile WHERE id = 1;
@@ -305,6 +310,23 @@ public struct ProfileStore: @unchecked Sendable {
                    [name.map { SQLValue.text($0) } ?? .null, .text(nowText)])
     }
 
+    /// Saves the email address, trimmed. `nil` or blank clears it; text that is
+    /// not a well-formed address throws `ProfileEmailError.invalid` and leaves
+    /// the saved one as it was.
+    public func updateEmail(_ email: String?) throws {
+        let trimmed = email?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let value: SQLValue
+        if trimmed.isEmpty {
+            value = .null
+        } else if let valid = ProfileEmail.normalized(trimmed) {
+            value = .text(valid)
+        } else {
+            throw ProfileEmailError.invalid
+        }
+        try ensureRowExists()
+        try db.run("UPDATE profile SET email = ?, updatedAt = ? WHERE id = 1;", [value, .text(nowText)])
+    }
+
     /// Changes the unit masses are shown in.
     public func updateUnitBasis(_ basis: UnitBasis) throws {
         try ensureRowExists()
@@ -379,6 +401,7 @@ public struct ProfileStore: @unchecked Sendable {
             displayName: row.string("displayName") ?? "User",
             firstName: row.string("firstName"),
             lastName: row.string("lastName"),
+            email: row.string("email"),
             dateOfBirth: row.string("dateOfBirth"),
             biologicalSex: row.string("biologicalSex"),
             heightCm: row.double("heightCm"),

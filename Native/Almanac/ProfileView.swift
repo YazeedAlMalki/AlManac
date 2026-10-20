@@ -30,6 +30,7 @@ struct ProfileView: View {
     @State private var displayName = ""
     @State private var firstName = ""
     @State private var lastName = ""
+    @State private var email = ""
     @State private var dateOfBirth = ""
     /// The parsed value, not the raw string. A typed value that does not parse
     /// becomes `.notSet` here rather than being saved and re-parsed somewhere
@@ -57,6 +58,19 @@ struct ProfileView: View {
                 TextField("Height (cm)", text: $height)
                     .keyboardType(.decimalPad)
                 TextField("Sports (comma-separated)", text: $sports)
+            }
+
+            Section {
+                TextField("Email", text: $email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .accessibilityIdentifier("profile-email")
+            } header: {
+                Text("Email")
+            } footer: {
+                Text("Creating a backup needs a valid email address. It stays on this phone and is not sent anywhere.")
             }
 
             // Split from "Profile" because these three change *what the app
@@ -178,6 +192,7 @@ struct ProfileView: View {
             displayName = profile.displayName
             firstName = profile.firstName ?? ""
             lastName = profile.lastName ?? ""
+            email = profile.email ?? ""
             dateOfBirth = profile.dateOfBirth ?? ""
             biologicalSex = BiologicalSex.parse(profile.biologicalSex)
             height = profile.heightCm.map { String(describing: $0) } ?? ""
@@ -209,6 +224,11 @@ struct ProfileView: View {
                 throw EditorFailure(message: String(localized: "Height must be a number between 0 and 300 cm."))
             }
 
+            let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmedEmail.isEmpty || ProfileEmail.isValid(trimmedEmail) else {
+                throw EditorFailure(message: String(localized: "Enter a valid email address, like name@example.com."))
+            }
+
             let store = ProfileStore(db: db)
             try store.updateDisplayName(name)
             // ASCII digits whatever keyboard typed them, so the stored date reads
@@ -227,6 +247,7 @@ struct ProfileView: View {
             )
             try store.updateFirstName(optionalText(firstName.trimmingCharacters(in: .whitespacesAndNewlines)))
             try store.updateLastName(optionalText(lastName.trimmingCharacters(in: .whitespacesAndNewlines)))
+            try store.updateEmail(trimmedEmail)
             try store.updateUnitBasis(unitBasis)
             try store.updateTrainingExperience(trainingExperience)
             try store.updateBloodType(bloodType)

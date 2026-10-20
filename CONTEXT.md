@@ -1083,12 +1083,35 @@ before-public-release item, and this entry does not remove it from that list.
 *Overrule by:* asking for passphrase-encrypted backups (a change to
 `BackupService` and `BackupView`), or by striking export encryption from BRD §8.
 
-**Backups limited to signed-in users: not built, waiting on one answer.** The
-code has no sign-in or account of any kind, and BRD §1 principle 5 reads
-"100% on-device data — no accounts, servers, recurring costs". On 2026-10-20
-the owner was asked which sign-in counts: the Apple ID the phone is signed in
-with, or an account inside Almanac (which principle 5 rules out today). No code
-is written until that is answered.
+**Backups need a valid email: owner's answer, 2026-10-20.** Asked which
+sign-in counts (the phone's Apple ID, or an account inside Almanac), the owner
+answered "Both", then "As long as the user is registered with a valid email".
+Asked whether an Almanac account means one on this phone only or an online
+one, the owner answered "I don't know what to answer".
+
+How it was built (Migration 068, `ProfileEmail`, `ProfileView`, `BackupView`).
+**None of these has been confirmed.**
+
+- **The email lives on this phone only.** No account, no server, no message
+  sent: BRD §1 principle 5 ("no accounts, servers") stands. *Overrule by:*
+  asking for an online account, which is a new architecture decision (a server,
+  its cost, and a change to principle 5).
+- **"Valid" means well formed**: one `@`, something before it, a domain with a
+  dot, no spaces. A phone cannot prove an address exists without sending it
+  mail. *Overrule by:* asking for a confirmed address (needs a server).
+- **"Registered" means the email is saved, not `registeredAt`.** The app has
+  no first-run registration screen: `ProfileStore.markRegistered` exists and
+  nothing in the app calls it, although "Registration" above describes a
+  flow. Requiring `registeredAt` would lock backups for everyone. *Overrule
+  by:* building the registration flow and adding `isRegistered` to
+  `UserProfile.mayCreateBackup`.
+- **Only creating a backup is gated.** Importing and restoring are not, so a
+  new phone can restore before it has a profile of its own, and the restored
+  profile brings its email back. *Overrule by:* gating restore in `BackupView`.
+- **The Apple ID is not checked.** Reading whether the phone is signed in to
+  iCloud needs an iCloud entitlement the app does not have, and the owner's
+  second answer named only the email. *Overrule by:* asking for it.
+- **The four new Arabic strings are drafts**, not reviewed by a native speaker.
 
 ### Weighing
 

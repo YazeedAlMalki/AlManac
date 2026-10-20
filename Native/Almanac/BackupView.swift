@@ -25,6 +25,9 @@ struct BackupView: View {
     @State private var error: String?
     @State private var isWorking = false
     @State private var importPresented = false
+    /// A backup needs a valid email on the profile (owner, 2026-10-20).
+    /// Read on every visit, so an email saved in Profile counts at once.
+    @State private var mayCreateBackup = false
 
     private var fileManager: FileManager { .default }
     private var supportRoot: URL {
@@ -52,9 +55,15 @@ struct BackupView: View {
                 } label: {
                     Label("Create backup", systemImage: "externaldrive.badge.plus")
                 }
-                .disabled(isWorking)
-                Text("Saves the database and every laboratory document into one file on this device.")
-                    .font(.caption).foregroundStyle(.secondary)
+                .disabled(isWorking || !mayCreateBackup)
+                if mayCreateBackup {
+                    Text("Saves the database and every laboratory document into one file on this device.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text("Add a valid email address in Profile to create backups. Restoring a backup does not need one.")
+                        .font(.caption).foregroundStyle(AlmanacPalette.warning)
+                        .accessibilityIdentifier("backup-needs-email")
+                }
                 if let latest {
                     ShareLink(item: shareItem(for: latest)) {
                         Label("Share latest backup", systemImage: "square.and.arrow.up")
@@ -117,6 +126,7 @@ struct BackupView: View {
     }
 
     private func reload() {
+        mayCreateBackup = (try? ProfileStore(db: db).profile().mayCreateBackup) ?? false
         do {
             try fileManager.createDirectory(at: backupsDirectory, withIntermediateDirectories: true)
             bundles = try service.listBundles(in: backupsDirectory.path)
@@ -126,6 +136,7 @@ struct BackupView: View {
     }
 
     private func createBackup() {
+        guard mayCreateBackup else { return }
         isWorking = true
         defer { isWorking = false }
         do {
