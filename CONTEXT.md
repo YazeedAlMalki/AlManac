@@ -1069,6 +1069,27 @@ How the build applies that; **none of these has been confirmed:**
 *Overrule by:* `NEUTRAL`, `TOLERANCE`, `BASE_ORDER` in
 `tools/nutrition/almanac_nutrition/merge.py`, then `python3 -m almanac_nutrition merge`.
 
+### Backups (2026-10-20)
+
+**Decided by the owner (in chat, relayed by the 2026-10-20 handoff): backups
+will not be encrypted.** This closes the audit's open question "Backups are not
+encrypted" (`docs/audit-2026-10-19.md`, "Found and left for a decision"). A
+shared backup `.zip` keeps holding lab results, vitals and the rest in plain
+form, so where a person puts it decides who can read it.
+
+One reading of it is mine, not the owner's. **None of these has been
+confirmed.** The decision is for now. BRD §6.18, §6.19 and §8 still list export encryption as a
+before-public-release item, and this entry does not remove it from that list.
+*Overrule by:* asking for passphrase-encrypted backups (a change to
+`BackupService` and `BackupView`), or by striking export encryption from BRD §8.
+
+**Backups limited to signed-in users: not built, waiting on one answer.** The
+code has no sign-in or account of any kind, and BRD §1 principle 5 reads
+"100% on-device data — no accounts, servers, recurring costs". On 2026-10-20
+the owner was asked which sign-in counts: the Apple ID the phone is signed in
+with, or an account inside Almanac (which principle 5 rules out today). No code
+is written until that is answered.
+
 ### Weighing
 
 **Meter fraction**:
