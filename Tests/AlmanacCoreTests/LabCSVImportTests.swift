@@ -70,6 +70,39 @@ final class LabCSVImportTests: XCTestCase {
         XCTAssertEqual(try store.currentResults(inReport: reports[0].id).count, 2)
     }
 
+    /// The whole file is one transaction: a row that fails partway leaves no
+    /// report and no observation from the rows before it, and the next attempt
+    /// imports the file once, not on top of half of it.
+    func testAnImportThatFailsPartwayLeavesNothingAndReimportsCleanly() throws {
+        let store = try makeStore(seedCatalog: false)
+        let text = csv([
+            "R-1,2026-09-08,HealthCheck Lab,,Ferritin,42,ng/mL,,,,o1",
+            "R-2,2026-09-09,HealthCheck Lab,,Vitamin D,9.4,ng/mL,,,,boom",
+        ])
+        // Stands in for any write that fails on the file's last row.
+        try store.db.execute("""
+        CREATE TEMP TRIGGER fail_on_boom BEFORE INSERT ON lab_observation
+        WHEN NEW.source_observation_id = 'boom' BEGIN SELECT RAISE(ABORT, 'boom'); END;
+        """)
+        XCTAssertThrowsError(try LabReportCSVImport.importReports(csv: text, into: store))
+        XCTAssertEqual(try count("lab_report", in: store), 0, "the first report outlived the failed import")
+        XCTAssertEqual(try count("lab_observation", in: store), 0, "the first row outlived the failed import")
+
+        try store.db.execute("DROP TRIGGER fail_on_boom;")
+        let retried = try LabReportCSVImport.importReports(csv: text, into: store)
+        XCTAssertEqual(retried.reportsCreated, 2)
+        XCTAssertEqual(retried.observationsCreated, 2)
+        let again = try LabReportCSVImport.importReports(csv: text, into: store)
+        XCTAssertEqual(again.reportsUnchanged, 2)
+        XCTAssertEqual(again.observationsUnchanged, 2)
+        XCTAssertEqual(try count("lab_report", in: store), 2)
+        XCTAssertEqual(try count("lab_observation", in: store), 2)
+    }
+
+    private func count(_ table: String, in store: LabStore) throws -> Int64 {
+        try store.db.query("SELECT COUNT(*) AS n FROM \(table);").first?.int("n") ?? -1
+    }
+
     func testComparatorValuesAreParsedAndVerbatimTextKept() throws {
         let store = try makeStore(seedCatalog: false)
         let text = csv([

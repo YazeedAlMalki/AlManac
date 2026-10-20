@@ -1069,6 +1069,65 @@ How the build applies that; **none of these has been confirmed:**
 *Overrule by:* `NEUTRAL`, `TOLERANCE`, `BASE_ORDER` in
 `tools/nutrition/almanac_nutrition/merge.py`, then `python3 -m almanac_nutrition merge`.
 
+### Backups (2026-10-20)
+
+**Decided by the owner (in chat, relayed by the 2026-10-20 handoff): backups
+will not be encrypted.** This closes the audit's open question "Backups are not
+encrypted" (`docs/audit-2026-10-19.md`, "Found and left for a decision"). A
+shared backup `.zip` keeps holding lab results, vitals and the rest in plain
+form, so where a person puts it decides who can read it.
+
+One reading of it is mine, not the owner's. **None of these has been
+confirmed.** The decision is for now. BRD §6.18, §6.19 and §8 still list export encryption as a
+before-public-release item, and this entry does not remove it from that list.
+*Overrule by:* asking for passphrase-encrypted backups (a change to
+`BackupService` and `BackupView`), or by striking export encryption from BRD §8.
+
+**Backups need a valid email: owner's answer, 2026-10-20.** Asked which
+sign-in counts (the phone's Apple ID, or an account inside Almanac), the owner
+answered "Both", then "As long as the user is registered with a valid email".
+Asked whether an Almanac account means one on this phone only or an online
+one, the owner answered "I don't know what to answer".
+
+How it was built (Migration 068, `ProfileEmail`, `ProfileView`, `BackupView`).
+**None of these has been confirmed.**
+
+- **The email lives on this phone only.** No account, no server, no message
+  sent: BRD §1 principle 5 ("no accounts, servers") stands. *Overrule by:*
+  asking for an online account, which is a new architecture decision (a server,
+  its cost, and a change to principle 5).
+- **"Valid" means well formed**: one `@`, something before it, a domain with a
+  dot, no spaces. A phone cannot prove an address exists without sending it
+  mail. *Overrule by:* asking for a confirmed address (needs a server).
+- **"Registered" means the email is saved, not `registeredAt`.** The app has
+  no first-run registration screen: `ProfileStore.markRegistered` exists and
+  nothing in the app calls it, although "Registration" above describes a
+  flow. Requiring `registeredAt` would lock backups for everyone. *Overrule
+  by:* building the registration flow and adding `isRegistered` to
+  `UserProfile.mayCreateBackup`.
+- **Only creating a backup is gated.** Importing and restoring are not, so a
+  new phone can restore before it has a profile of its own, and the restored
+  profile brings its email back. *Overrule by:* gating restore in `BackupView`.
+- **The Apple ID is not checked.** Reading whether the phone is signed in to
+  iCloud needs an iCloud entitlement the app does not have, and the owner's
+  second answer named only the email. *Overrule by:* asking for it.
+- **The four new Arabic strings are drafts**, not reviewed by a native speaker.
+
+### Scoring the 2026-10-20 re-score
+
+**None of these has been confirmed.**
+
+- **Training held at 98** although `testEquipmentVariantPickerOffersTheFiveAnswers`
+  failed once in run 39443200247 and passed on its retry ("exercise 1 is missing
+  from the catalog"). Readiness was lowered on 2026-10-17 for a test that failed
+  twice; this is one failure since `02ebecb`, in the test reaching a row of a
+  1,085-row list rather than in the feature. *Overrule by:* treating it as the
+  Readiness case was treated, which takes Training's last increment off until
+  the picker test is diagnosed.
+- **App Intents are scored 3 of 3, +5 in all** (Slice 12 at 85), by the formula
+  of "Scoring the 2026-10-17 merge", not the handoff's estimate of +2.
+  *Overrule by:* naming a different split.
+
 ### Weighing
 
 **Meter fraction**:

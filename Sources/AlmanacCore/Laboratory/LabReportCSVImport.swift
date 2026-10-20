@@ -62,75 +62,83 @@ public enum LabReportCSVImport {
         // that goes on to throw.
         result.reportIDs = groupOrder
 
-        for reportID in groupOrder {
-            guard let reportRows = groups[reportID] else { continue }
-            result.groups += 1
+        // One transaction for the whole file, so an attempt that throws partway
+        // leaves nothing behind: no report without the rest of its rows, and
+        // no half-imported file for a re-import to finish on top of. The store
+        // calls below open their own transactions, which nest as savepoints.
+        let parsed = result
+        return try store.db.transaction { () throws -> LabCSVImportResult in
+            var result = parsed
+            for reportID in groupOrder {
+                guard let reportRows = groups[reportID] else { continue }
+                result.groups += 1
 
-            // Report-level fields come from the group's first row.
-            let first = reportRows[0]
-            var draft = LabReportDraft()
-            draft.sourceSystem = sourceSystem
-            draft.sourceReportID = reportID
-            draft.laboratoryNameText = clean(first[2])
-            draft.headerText = clean(first[3])
-            if let date = clean(first[1]) {
-                draft.reportedAt = PartialDateTime(text: date, precision: .day)
-            }
-            draft.entryOrigin = "csv-import"
+                // Report-level fields come from the group's first row.
+                let first = reportRows[0]
+                var draft = LabReportDraft()
+                draft.sourceSystem = sourceSystem
+                draft.sourceReportID = reportID
+                draft.laboratoryNameText = clean(first[2])
+                draft.headerText = clean(first[3])
+                if let date = clean(first[1]) {
+                    draft.reportedAt = PartialDateTime(text: date, precision: .day)
+                }
+                draft.entryOrigin = "csv-import"
 
-            let outcome = try store.upsertReport(draft)
-            switch outcome {
-            case .created: result.reportsCreated += 1
-            case .unchanged: result.reportsUnchanged += 1
-            case .conflict: result.reportConflicts += 1
-            case .updated, .replayIgnored, .staleIgnored: break
-            }
-
-            for (rowIndex, cells) in reportRows.enumerated() {
-                guard let testName = clean(cells[4]) else {
-                    result.invalidRows.append(shortened(cells.joined(separator: ",")))
-                    continue
+                let outcome = try store.upsertReport(draft)
+                switch outcome {
+                case .created: result.reportsCreated += 1
+                case .unchanged: result.reportsUnchanged += 1
+                case .conflict: result.reportConflicts += 1
+                case .updated, .replayIgnored, .staleIgnored: break
                 }
 
-                var observation = LabObservationDraft()
-                observation.reportID = outcome.reportID
-                observation.sourceSystem = sourceSystem
-                observation.sourceObservationID = clean(cells[10]) ?? "\(reportID)#\(rowIndex + 1)"
-                observation.collectedAt = draft.reportedAt
-
-                var content = LabRevisionContent()
-                content.contentOrigin = .sourceExtraction
-                content.actor = "csv-import"
-                content.sourceAnalyteText = testName
-                content.sourceValueText = clean(cells[5])
-                content.unitText = clean(cells[6])
-                content.rangeText = clean(cells[7])
-                content.flagText = clean(cells[8])
-                content.commentText = clean(cells[9])
-
-                if let value = content.sourceValueText, !value.isEmpty {
-                    if let parsed = parseNumeric(value) {
-                        content.valueType = .quantitative
-                        content.comparator = parsed.comparator
-                        content.numericValue = parsed.value
-                    } else {
-                        content.valueType = .text
-                        content.textValue = value
+                for (rowIndex, cells) in reportRows.enumerated() {
+                    guard let testName = clean(cells[4]) else {
+                        result.invalidRows.append(shortened(cells.joined(separator: ",")))
+                        continue
                     }
-                } else {
-                    content.valueType = .absent
-                    content.missingReason = .notReportedBySource
-                }
 
-                let recorded = try store.record(observation, content: content)
-                switch recorded {
-                case .created: result.observationsCreated += 1
-                case .unchanged: result.observationsUnchanged += 1
-                case .revised: result.observationsRevised += 1
+                    var observation = LabObservationDraft()
+                    observation.reportID = outcome.reportID
+                    observation.sourceSystem = sourceSystem
+                    observation.sourceObservationID = clean(cells[10]) ?? "\(reportID)#\(rowIndex + 1)"
+                    observation.collectedAt = draft.reportedAt
+
+                    var content = LabRevisionContent()
+                    content.contentOrigin = .sourceExtraction
+                    content.actor = "csv-import"
+                    content.sourceAnalyteText = testName
+                    content.sourceValueText = clean(cells[5])
+                    content.unitText = clean(cells[6])
+                    content.rangeText = clean(cells[7])
+                    content.flagText = clean(cells[8])
+                    content.commentText = clean(cells[9])
+
+                    if let value = content.sourceValueText, !value.isEmpty {
+                        if let parsed = parseNumeric(value) {
+                            content.valueType = .quantitative
+                            content.comparator = parsed.comparator
+                            content.numericValue = parsed.value
+                        } else {
+                            content.valueType = .text
+                            content.textValue = value
+                        }
+                    } else {
+                        content.valueType = .absent
+                        content.missingReason = .notReportedBySource
+                    }
+
+                    let recorded = try store.record(observation, content: content)
+                    switch recorded {
+                    case .created: result.observationsCreated += 1
+                    case .unchanged: result.observationsUnchanged += 1
+                    case .revised: result.observationsRevised += 1
+                    }
                 }
             }
+            return result
         }
-        return result
     }
 
     // MARK: - Recording the attempt

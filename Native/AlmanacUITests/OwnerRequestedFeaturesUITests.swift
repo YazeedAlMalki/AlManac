@@ -443,6 +443,60 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
                        .completed, "\(before) mL became '\(total.label)', not \(before + 250) mL")
     }
 
+    /// The fasting widget's two buttons run `StartFastIntent` and
+    /// `EndFastIntent`. Each is run once in a relaunch, and the Fasting screen's
+    /// intermittent half must follow: a running fast after the start, a broken
+    /// one after the end.
+    ///
+    /// The end runs first as well, so a fast left running by an earlier run
+    /// cannot stand in for the start. A start that does nothing fails at "no
+    /// fast is running"; an end that does nothing fails at either end. Each
+    /// state is asserted by a control that only it shows, never by absence:
+    /// the list is lazy, so an absent row can just be off-screen.
+    func testTheFastingWidgetsIntentsStartAndEndAFast() {
+        let start = app.buttons["start-intermittent"]
+        let breakNow = app.buttons["break-fast-now"]
+
+        runFastIntent("end")
+        XCTAssertTrue(app.reveal(start),
+                      "a fast is still running after the end intent: \(fastingScreenText())")
+
+        runFastIntent("start")
+        XCTAssertTrue(app.reveal(breakNow),
+                      "no fast is running after the start intent: \(fastingScreenText())")
+        XCTAssertTrue(app.reveal(app.element("fasting-if-elapsed")),
+                      "the running fast shows no elapsed time: \(fastingScreenText())")
+
+        runFastIntent("end")
+        XCTAssertTrue(app.reveal(start),
+                      "the fast the start intent began is still running after the end intent: \(fastingScreenText())")
+        XCTAssertTrue(app.reveal(app.staticTexts["Broken"]),
+                      "the ended fast is not shown as broken: \(fastingScreenText())")
+    }
+
+    /// Relaunches with the intent to run, then opens Fasting's intermittent half.
+    private func runFastIntent(_ which: String) {
+        app.terminate()
+        while let index = app.launchArguments.firstIndex(of: "-AlmanacRunFastIntent") {
+            app.launchArguments.removeSubrange(index...index + 1)
+        }
+        app.launchArguments += ["-AlmanacRunFastIntent", which]
+        app.launch()
+        openModule("Fasting")
+        XCTAssertTrue(app.navigationBars["Fasting"].waitForExistence(timeout: 10), "Fasting did not open")
+        let intermittent = app.buttons["Intermittent"]
+        XCTAssertTrue(app.reveal(intermittent), "the toggle offers no intermittent half")
+        intermittent.tap()
+        // A religious fast running today is left alone by both intents, by
+        // design, so this test has nothing to drive.
+        if app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "religious fast is running"))
+            .firstMatch.exists {
+            XCTFail("today's religious fast is running, so the intents defer to it: \(fastingScreenText())")
+        }
+    }
+
+    private func fastingScreenText() -> [String] { app.staticTexts.allElementsBoundByIndex.map(\.label) }
+
     /// "1,250 mL" → 1250.
     private static func milliliters(_ label: String) -> Int { Int(label.filter(\.isNumber)) ?? -1 }
 

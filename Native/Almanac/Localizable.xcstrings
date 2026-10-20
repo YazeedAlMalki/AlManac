@@ -12810,6 +12810,46 @@
           }
         }
       }
+    },
+    "Email": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "البريد الإلكتروني"
+          }
+        }
+      }
+    },
+    "Creating a backup needs a valid email address. It stays on this phone and is not sent anywhere.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يتطلب إنشاء نسخة احتياطية عنوان بريد إلكتروني صالحًا. يبقى على هذا الهاتف ولا يُرسَل إلى أي مكان."
+          }
+        }
+      }
+    },
+    "Enter a valid email address, like name@example.com.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل عنوان بريد إلكتروني صالحًا، مثل name@example.com."
+          }
+        }
+      }
+    },
+    "Add a valid email address in Profile to create backups. Restoring a backup does not need one.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أضف عنوان بريد إلكتروني صالحًا في الملف الشخصي لإنشاء النسخ الاحتياطية. لا تحتاج استعادة نسخة احتياطية إليه."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
