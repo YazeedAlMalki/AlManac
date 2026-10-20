@@ -325,7 +325,8 @@ jobs:
 
       - name: Report
         if: always()
-        run: grep -hE ": error: |Test Case .* (failed|passed)|Executed [0-9]+ test" "$RUNNER_TEMP/xcodebuild-test.log" | cut -c1-1500 || true
+        run: |
+          grep -hE ": error: |Test Case .* (failed|passed)|Executed [0-9]+ test" "$RUNNER_TEMP/xcodebuild-test.log" | cut -c1-1500 || true
 
       - name: Attach the Arabic screenshots
         if: always()
