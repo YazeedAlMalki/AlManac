@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-19 (latest): the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
+Updated 2026-10-20 (latest): re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
+Updated 2026-10-19: the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
 Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
 Updated 2026-10-17 (earlier yet): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
@@ -39,6 +40,172 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-20 — Re-score after the Oct 19 work; App Intents driven; audit merged; backups need an email
+
+**Outcome.** The tracker stands at **1,130 of 1,200 (94.2 %)**, up from 1,126.
+Migration & Completion rises from 81 to **85**: all three §6.21 App Intents
+are now run by a test. The Oct 19 work (exercise library, Open Food Facts,
+USDA pipeline, food merge map) adds no points: no rubric line covers it, and
+its three merge logs are not reviewed by the owner yet. No phase is lowered:
+Training's exercise-picker failures after Oct 19 were the test helper's, not
+the app's, and are fixed (`02ebecb`, merged with the audit). All 13 Training UI
+tests then passed in three full runs with nothing retried.
+
+### The table
+
+Formula: the total is the plain sum of the 12 phase scores; percent = total ÷ 1,200.
+
+| # | Phase | Was | Now | Evidence |
+|---|---|---:|---:|---|
+| 1 | Foundation | 100 | 100 | |
+| 2 | Readiness | 98 | 98 | The owner-accepted retry stays. The dropped tap is **not** root-caused (below), so nothing is added |
+| 3 | Hydration & Caffeine | 92 | 92 | Device check outstanding (water in Apple Health) |
+| 4 | Training | 98 | 98 | Exercise picker: `reveal()` scrolled the list beneath the sheet (`02ebecb`). 13 of 13 Training UI tests green in 39402931837, 39402967540 and 39404296542, none retried. The exercise library itself has no rubric line; its merge log awaits the owner |
+| 5 | Nutrition | 96 | 96 | Open Food Facts and the USDA/merge-map work have no rubric line; 98 still needs T07/T08 |
+| 6 | Fasting & Prayer | 96 | 96 | Cap until a device run |
+| 7 | Body & Wellness | 95 | 95 | |
+| 8 | Regional Food Data | 87 | 87 | Assumes D_full = 30 (not confirmed; 82 at 50). The food merge map never merges Almanac's own dishes |
+| 9 | Digestion & Urination | 95 | 95 | Advisory stays a draft, not clinician-reviewed |
+| 10 | Insights | 95 | 95 | |
+| 11 | Notifications | 93 | 93 | Device check outstanding (reminder on time). See "Contradictions" for the audit's reconcile bug |
+| 12 | Migration & Completion | 81 | **85** | `OwnerRequestedFeaturesUITests.testTheFastingWidgetsIntentsStartAndEndAFast` runs `StartFastIntent` and `EndFastIntent`. With `LogWaterIntent` that is 3 of 3: +5 × 3 ÷ 3 = 5 over 80, so 85 (it was +1 for 1 of 3). Device restore outstanding |
+| | **Total** | **1,126** | **1,130** | 1,130 ÷ 1,200 = 94.2 % |
+
+### What was run
+
+| Check | Run | Result |
+|---|---|---|
+| Master at `12fd3a1` | 39274604596 | All three jobs green on attempt 1. One UI test failed once and passed on its retry: `TrainingProgramUITests.testDeletingOrAbandoningASessionDoesNotConsumeARotationStep` ("exercise 1 is missing from the catalog", line 969) |
+| Audit branch at `bccc044` | 39278476929 | Attempt 1 red: `testVariantModeToggleAppliesToBothGraphsAndShowsTheNote` failed on both tries and `testEnteringActualsUpdatesBothGraphs` once, all at the exercise picker. Attempt 2 green |
+| PR #21 head `02ebecb` | 39402931837 (push), 39402967540 (pull request) | All green: 108 UI tests, "Summarise failures" empty (nothing failed even once), Arabic pass green |
+| This branch at `d908ab1` (tasks 3 and 6) | 39404296542 | All green: 109 UI tests including the new fasting-intent test, nothing failed even once, Arabic pass green; `swift test` green with the new lab test |
+| This branch with the email gate and this entry | (pushed 2026-10-20) | Reported in the hand-back; merged to master only if green |
+| Fasting intents test, 12 times in a row | 39403814495 | 12 of 12 passed |
+| Start intent disabled (scratch) | 39404164035 | Test failed at "no fast is running after the start intent" (line 465) |
+| End intent disabled (scratch) | 39404168678 | Test passed the start and failed at "the fast the start intent began is still running after the end intent" (line 471) |
+| Lab import without the transaction (scratch) | 39404048319 | Only the new test failed: 2 reports and 1 row outlived the failed import; the other 413 XCTest and 1,204 Swift Testing tests passed |
+
+### Tasks
+
+**1. Audit branch merged.** PR #21 (`48e16f7`, `bccc044`, and `02ebecb` from the
+session that wrote it). Its first CI run was the first compile; it compiled,
+and `swift test` passed. The UI failure was the test helper's: with a sheet
+open, `reveal()` scrolled the list beneath it, which the 1,085-exercise
+catalog of Oct 19 exposed. `02ebecb` fixed it. The Codex review found nothing.
+Merged into master as `0cc4e39` (merge commit, no conflicts with this
+branch's lab-import change: the two touch different parts of the file).
+
+**2. Master at `12fd3a1`:** green, with the one retried Training test above. It
+is the same exercise-picker failure, so the merge of `02ebecb` covers it.
+Not re-run.
+
+**3. StartFast and EndFast App Intents driven.** A DEBUG launch argument,
+`-AlmanacRunFastIntent start|end`, runs the widget's own intent against the
+app's database, the way `-AlmanacRunLogWaterIntent` does. The test runs the end
+intent first (so a fast left by an earlier run cannot pass for the start),
+then start, then end, and checks the Fasting screen's intermittent half each
+time by a control only that state shows. Both mutation runs above show it fails
+without each intent.
+
+**4. Recovery-day dropped tap: not root-caused.** A scratch run (39403814495)
+ran the test as it stood at `12fd3a1` with the retry removed, 12 times (48
+taps), and a variant that scrolls without momentum, 12 times (48 taps).
+It also ran an experiment that taps the switch 36 times after a flick, after
+a flick and 4 s, and after a held drag. **No tap was dropped, in any mode.**
+
+- Ruled out: a coasting scroll eating the tap. That was my first hypothesis. XCTest waits
+  for the app to go idle before it taps, so even the "tap right after a flick"
+  trials landed 3.6 to 4.9 s after the release.
+- No alert was on screen in any of the 48 taps (not ruled out inside the full suite).
+- Measured: each change of the switch moves it by 22 pt. The recommendation
+  card above it changes by one line of text. The switch's own hit area is
+  about ±15 pt around the row's middle. So a change to that card *between*
+  XCTest reading the frame and the tap would put the tap off the switch. That
+  matches the earlier log ("XCTest had to re-find Today's list three times"),
+  but it is not shown: it did not happen once in 132 taps outside the full suite.
+
+Not done: no retry added, no fix committed, no points. The next step that
+would settle it is a run of the *full* suite with the retry off and the
+switch's frame logged just before and just after the tap.
+
+**5. Re-score:** the table above.
+
+**6. Lab CSV import is one transaction.** `LabReportCSVImport.importReports`
+runs its whole loop in one `Database.transaction`. `LabStore.upsertReport` and
+`LabStore.record` nest inside it as savepoints. `testAnImportThatFailsPartwayLeavesNothingAndReimportsCleanly`
+fails the file's last row with a temp trigger. Nothing is left behind, and the
+retried import creates each report once and is then unchanged on a third import.
+
+### Contradictions found
+
+- **"`LabStore.record` cannot be nested inside another transaction"** (handoff,
+  audit, and the `LabStore` doc comment of 2026-09-08). The code disagrees:
+  `Database.transaction` has nested as a SAVEPOINT since `be9dd3b`
+  (2026-09-15), pinned by `DatabaseTests.testTransactionsNest`. The comment is
+  corrected; the code and its tests win.
+- **App Intents worth "about +2"** (handoff). The recorded formula
+  (`CONTEXT.md`, "Scoring the 2026-10-17 merge": "Slice 12 rises to 85") gives
+  +4 over 81. The formula is used.
+- **Notifications 93 vs the audit's reconcile bug.** The audit found that
+  every reconcile re-added every reminder (`NotificationScheduler.matches`).
+  No test or run counted for 93 was about that comparison, so nothing is
+  lowered, but no test pins the fix either.
+- **Backups "limited to signed-in users" vs BRD §1 principle 5** ("no
+  accounts"). Settled by the owner's answer: a valid email on the profile,
+  kept on the phone; no account and no server (below).
+- **"Registration" (CONTEXT.md, Language) describes a first-run flow that the
+  app does not have.** `registeredAt` and `markRegistered` exist in the core;
+  nothing in the app calls them. The email gate does not depend on them.
+
+### Backups need a valid email (owner, 2026-10-20)
+
+Asked which sign-in counts, the owner answered "As long as the user is
+registered with a valid email". Built (not scored; no rubric line):
+
+- Migration 068 adds `profile.email`. `ProfileEmail` accepts a well-formed
+  address only, and `ProfileStore.updateEmail` refuses anything else.
+- Profile has an Email field. Backup & restore disables **Create backup**
+  until a valid email is saved, and says why. Import and restore are not gated.
+- Tests: `ProfileEmailTests` (the rule, a round-trip, a refused address
+  keeping the saved one, `mayCreateBackup`), the upgrade list in
+  `BodyMeasurementTests` (now through 068), and
+  `PhoneMigrationUITests.testCreatingABackupNeedsAValidEmail`. The A4 test
+  now sets an email before it backs up.
+- Four new Arabic strings are drafts, not reviewed by a native speaker.
+
+### Unconfirmed decisions logged (CONTEXT.md, "Backups (2026-10-20)")
+
+**None of these has been confirmed.**
+
+- "Backups will not be encrypted" (the owner's) is read as *for now*: BRD §6.18,
+  §6.19 and §8 still list export encryption before public release. *Overrule by:*
+  asking for passphrase-encrypted backups, or striking export encryption from BRD §8.
+- The email stays on this phone; no account, no server. *Overrule by:* asking
+  for an online account (a server, its cost, and a change to BRD principle 5).
+- "Valid" means well formed, not confirmed by mail. *Overrule by:* asking for a
+  confirmed address (needs a server).
+- "Registered" means the email is saved, not `registeredAt` (no registration
+  screen exists). *Overrule by:* building that flow and adding `isRegistered`
+  to `UserProfile.mayCreateBackup`.
+- Only creating a backup is gated, not import or restore. *Overrule by:* gating
+  restore in `BackupView`.
+- The phone's Apple ID is not checked (it needs an iCloud entitlement the app
+  does not have). *Overrule by:* asking for it.
+
+### Owner-side, unchanged
+
+Three iPhone checks (`docs/device-checklist.md`; about +9); clinician review of the
+digestion advisory; D_full; 15 more dishes (about +13 at 30); the Diet Profile
+Addendum (T07/T08, about +2; not in the repo); native-speaker review of the
+Arabic; the Oct 19 merge logs; the USDA SR Legacy and FNDDS build on the lake;
+D9 (does restore re-derive fasting windows?).
+
+Scratch branches to delete (this session cannot delete branches):
+`claude/scratch-mutation-start-intent-2026-10-20`,
+`claude/scratch-mutation-end-intent-2026-10-20`,
+`claude/scratch-mutation-lab-csv-2026-10-20`,
+`claude/scratch-tap-diagnosis-2026-10-20`.
 
 ## 2026-10-19 — Exercise library and Open Food Facts (steps 8 and 9)
 
