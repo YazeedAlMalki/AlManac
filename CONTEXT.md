@@ -1113,6 +1113,21 @@ How it was built (Migration 068, `ProfileEmail`, `ProfileView`, `BackupView`).
   second answer named only the email. *Overrule by:* asking for it.
 - **The four new Arabic strings are drafts**, not reviewed by a native speaker.
 
+### Scoring the 2026-10-20 re-score
+
+**None of these has been confirmed.**
+
+- **Training held at 98** although `testEquipmentVariantPickerOffersTheFiveAnswers`
+  failed once in run 39443200247 and passed on its retry ("exercise 1 is missing
+  from the catalog"). Readiness was lowered on 2026-10-17 for a test that failed
+  twice; this is one failure since `02ebecb`, in the test reaching a row of a
+  1,085-row list rather than in the feature. *Overrule by:* treating it as the
+  Readiness case was treated, which takes Training's last increment off until
+  the picker test is diagnosed.
+- **App Intents are scored 3 of 3, +5 in all** (Slice 12 at 85), by the formula
+  of "Scoring the 2026-10-17 merge", not the handoff's estimate of +2.
+  *Overrule by:* naming a different split.
+
 ### Weighing
 
 **Meter fraction**:

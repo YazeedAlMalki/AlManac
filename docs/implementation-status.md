@@ -47,10 +47,11 @@ and is not a current implementation target.
 Migration & Completion rises from 81 to **85**: all three §6.21 App Intents
 are now run by a test. The Oct 19 work (exercise library, Open Food Facts,
 USDA pipeline, food merge map) adds no points: no rubric line covers it, and
-its three merge logs are not reviewed by the owner yet. No phase is lowered:
-Training's exercise-picker failures after Oct 19 were the test helper's, not
-the app's, and are fixed (`02ebecb`, merged with the audit). All 13 Training UI
-tests then passed in three full runs with nothing retried.
+its three merge logs are not reviewed by the owner yet. No phase is lowered,
+but Training's 98 is a call, not a certainty: its exercise-picker test failure
+("exercise 1 is missing from the catalog") is **not** fully fixed. `02ebecb`
+(merged with the audit) made it rarer; it came back once in four full runs
+since, and passed on the retry (below).
 
 ### The table
 
@@ -61,7 +62,7 @@ Formula: the total is the plain sum of the 12 phase scores; percent = total ÷ 1
 | 1 | Foundation | 100 | 100 | |
 | 2 | Readiness | 98 | 98 | The owner-accepted retry stays. The dropped tap is **not** root-caused (below), so nothing is added |
 | 3 | Hydration & Caffeine | 92 | 92 | Device check outstanding (water in Apple Health) |
-| 4 | Training | 98 | 98 | Exercise picker: `reveal()` scrolled the list beneath the sheet (`02ebecb`). 13 of 13 Training UI tests green in 39402931837, 39402967540 and 39404296542, none retried. The exercise library itself has no rubric line; its merge log awaits the owner |
+| 4 | Training | 98 | 98 (held; a call) | Exercise picker: `reveal()` scrolled the list beneath the sheet; `02ebecb` fixed that case. 13 of 13 Training UI tests green with nothing retried in 39402931837, 39402967540 and 39404296542, but `testEquipmentVariantPickerOffersTheFiveAnswers` failed once in 39443200247 at the same step ("exercise 1 is missing from the catalog", line 969) and passed on its retry. Not lowered, because the failure is the test reaching a row in a 1,085-row list, not the feature; see CONTEXT.md. The exercise library itself has no rubric line; its merge log awaits the owner |
 | 5 | Nutrition | 96 | 96 | Open Food Facts and the USDA/merge-map work have no rubric line; 98 still needs T07/T08 |
 | 6 | Fasting & Prayer | 96 | 96 | Cap until a device run |
 | 7 | Body & Wellness | 95 | 95 | |
@@ -80,7 +81,9 @@ Formula: the total is the plain sum of the 12 phase scores; percent = total ÷ 1
 | Audit branch at `bccc044` | 39278476929 | Attempt 1 red: `testVariantModeToggleAppliesToBothGraphsAndShowsTheNote` failed on both tries and `testEnteringActualsUpdatesBothGraphs` once, all at the exercise picker. Attempt 2 green |
 | PR #21 head `02ebecb` | 39402931837 (push), 39402967540 (pull request) | All green: 108 UI tests, "Summarise failures" empty (nothing failed even once), Arabic pass green |
 | This branch at `d908ab1` (tasks 3 and 6) | 39404296542 | All green: 109 UI tests including the new fasting-intent test, nothing failed even once, Arabic pass green; `swift test` green with the new lab test |
-| This branch with the email gate and this entry | (pushed 2026-10-20) | Reported in the hand-back; merged to master only if green |
+| This branch at `4a3b486` (email gate) | 39421125872 | Green, but the new `testCreatingABackupNeedsAValidEmail` failed once ("Profile never opened") and passed on its retry. Not merged on that |
+| `PhoneMigrationUITests` ×10, no retry, after `d0e98ff` (scratch) | 39443214069 | 20 of 20 passed (each test 10 times) |
+| This branch at `d0e98ff` | 39443200247 | Green. The backup tests passed first time. One unrelated retry: `TrainingProgramUITests.testEquipmentVariantPickerOffersTheFiveAnswers` ("exercise 1 is missing from the catalog") |
 | Fasting intents test, 12 times in a row | 39403814495 | 12 of 12 passed |
 | Start intent disabled (scratch) | 39404164035 | Test failed at "no fast is running after the start intent" (line 465) |
 | End intent disabled (scratch) | 39404168678 | Test passed the start and failed at "the fast the start intent began is still running after the end intent" (line 471) |
@@ -92,7 +95,8 @@ Formula: the total is the plain sum of the 12 phase scores; percent = total ÷ 1
 session that wrote it). Its first CI run was the first compile; it compiled,
 and `swift test` passed. The UI failure was the test helper's: with a sheet
 open, `reveal()` scrolled the list beneath it, which the 1,085-exercise
-catalog of Oct 19 exposed. `02ebecb` fixed it. The Codex review found nothing.
+catalog of Oct 19 exposed. `02ebecb` fixed that case; the same message came
+back once since (Training row above), so it is not fully fixed. The Codex review found nothing.
 Merged into master as `0cc4e39` (merge commit, no conflicts with this
 branch's lab-import change: the two touch different parts of the file).
 
