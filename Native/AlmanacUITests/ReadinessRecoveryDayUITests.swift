@@ -40,7 +40,7 @@ final class ReadinessRecoveryDayUITests: XCTestCase {
         openToday()
 
         let toggle = app.element("recovery-day-toggle")
-        XCTAssertTrue(app.reveal(toggle), "Today offers no recovery-day switch")
+        XCTAssertTrue(revealAtRest(toggle), "Today offers no recovery-day switch")
         setRecoveryDay(toggle, on: false)
 
         // The day as it reads with no declaration: a score, and a band sentence.
@@ -76,6 +76,107 @@ final class ReadinessRecoveryDayUITests: XCTestCase {
         XCTAssertTrue(app.waitUntil(timeout: 5) { card.label == bandSentence })
     }
 
+    // MARK: - SCRATCH: diagnosis only, never merged
+
+    /// The test as it stood at 12fd3a1 (`app.reveal` + `waitUntilSettled`),
+    /// minus the retry, printing one TAP-DIAG line per tap.
+    func testScratchOriginalWithoutRetry() {
+        openToday()
+        diag("launch", "question-card=\(app.staticTexts["Which fasts do you keep?"].exists)")
+        let toggle = app.element("recovery-day-toggle")
+        let before = toggle.exists ? toggle.frame : .zero
+        XCTAssertTrue(app.reveal(toggle), "Today offers no recovery-day switch")
+        let after = toggle.frame
+        diag("reveal", "frame-before=\(before) frame-after=\(after) scrolled=\(before.midY != after.midY)")
+        for wanted in [false, true, false, true, false] {
+            originalTap(toggle, on: wanted)
+        }
+    }
+
+    /// The proposed fix: `revealAtRest`, one tap, no retry.
+    func testScratchFixed() {
+        openToday()
+        let toggle = app.element("recovery-day-toggle")
+        XCTAssertTrue(revealAtRest(toggle), "Today offers no recovery-day switch")
+        for wanted in [false, true, false, true, false] {
+            let target = wanted ? "1" : "0"
+            guard toggle.value as? String != target else { continue }
+            XCTAssertTrue(revealAtRest(toggle))
+            toggle.tapSwitchControl()
+            let took = app.waitUntil(timeout: 5) { toggle.value as? String == target }
+            diag("fixed-tap", "wanted=\(target) took=\(took) frame=\(toggle.frame)")
+            XCTAssertTrue(took, "fixed: the switch did not move to \(target)")
+        }
+    }
+
+    /// Does a coasting page eat the tap? Three ways to arrive at the switch,
+    /// twelve fresh launches each, one tap each.
+    func testScratchMomentumExperiment() {
+        for mode in ["flick-then-settle-check", "flick-then-4s", "drag-hold"] {
+            var dropped = 0, took = 0, offscreen = 0
+            for trial in 0..<12 {
+                app.terminate()
+                app.launch()
+                openToday()
+                Thread.sleep(forTimeInterval: 3)
+                let toggle = app.element("recovery-day-toggle")
+                guard revealAtRest(toggle) else { offscreen += 1; continue }
+                let page = app.scrollViews.firstMatch
+                let start = page.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.8))
+                let end = page.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.7))
+                let releasedAt = Date()
+                switch mode {
+                case "drag-hold":
+                    start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
+                default:
+                    start.press(forDuration: 0.05, thenDragTo: end, withVelocity: XCUIGestureVelocity(rawValue: 900),
+                                thenHoldForDuration: 0)
+                }
+                if mode == "flick-then-settle-check" { _ = app.waitUntilSettled(toggle) }
+                if mode == "flick-then-4s" { Thread.sleep(forTimeInterval: 4) }
+                guard app.isRevealed(toggle) else { offscreen += 1; continue }
+                let value = toggle.value as? String
+                let frameAtTap = toggle.frame
+                let sinceRelease = Date().timeIntervalSince(releasedAt)
+                toggle.tapSwitchControl()
+                let changed = app.waitUntil(timeout: 3) { toggle.value as? String != value }
+                Thread.sleep(forTimeInterval: 1)
+                let frameLater = toggle.frame
+                if changed { took += 1 } else { dropped += 1 }
+                diag("momentum", "mode=\(mode) trial=\(trial) changed=\(changed) "
+                     + "since-release=\(String(format: "%.2f", sinceRelease))s frame-at-tap=\(frameAtTap) "
+                     + "frame-1s-later=\(frameLater)")
+            }
+            diag("momentum-summary", "mode=\(mode) took=\(took) dropped=\(dropped) offscreen=\(offscreen)")
+        }
+        let toggle = app.element("recovery-day-toggle")
+        if revealAtRest(toggle), toggle.value as? String == "1" { toggle.tapSwitchControl() }
+    }
+
+    private func originalTap(_ toggle: XCUIElement, on: Bool) {
+        let wanted = on ? "1" : "0"
+        guard toggle.value as? String != wanted else { return }
+        XCTAssertTrue(app.reveal(toggle))
+        let settled = app.waitUntilSettled(toggle)
+        let frameAtTap = toggle.frame
+        toggle.tapSwitchControl()
+        let took = app.waitUntil(timeout: 3) { toggle.value as? String == wanted }
+        let frameLater = toggle.frame
+        diag("original-tap", "wanted=\(wanted) took=\(took) settled=\(settled) frame-at-tap=\(frameAtTap) "
+             + "frame-3s-later=\(frameLater) alerts=\(app.alerts.count)")
+        if !took {
+            // Keep the run going so one iteration can report several taps.
+            print("TAP-DIAG\ttree\t" + String(app.debugDescription.prefix(6000)).replacingOccurrences(of: "\n", with: " | "))
+            _ = app.waitUntil(timeout: 3) { false }
+            toggle.tapSwitchControl()
+            _ = app.waitUntil(timeout: 3) { toggle.value as? String == wanted }
+        }
+    }
+
+    private func diag(_ kind: String, _ detail: String) {
+        print("TAP-DIAG\t\(kind)\t\(name)\t\(detail)")
+    }
+
     // MARK: - Helpers
 
     private func openToday() {
@@ -86,28 +187,43 @@ final class ReadinessRecoveryDayUITests: XCTestCase {
                       "Today never finished loading")
     }
 
+    /// Scrolls `element` into view with drags that hold still before they
+    /// let go, so Today is at rest, not coasting, when the switch is tapped.
+    ///
+    /// The dropped tap (76ed79b, da1da96, and once locally) was the scroll
+    /// view's momentum. Today is a `ScrollView`, and `reveal` scrolls it with
+    /// flicks. A flick keeps the page coasting for a second or two after it
+    /// lets go, and a tap on a coasting scroll view only stops the scroll:
+    /// UIKit never hands it to the switch. `waitUntilSettled` could not see
+    /// that, because at the end of a coast the frame moves by less than a
+    /// point between two reads. A drag that holds before lifting leaves no
+    /// velocity behind, so there is nothing to coast.
+    private func revealAtRest(_ element: XCUIElement) -> Bool {
+        let page = app.scrollViews.firstMatch
+        for _ in 0..<12 {
+            if app.isRevealed(element) { return true }
+            guard page.exists else { break }
+            page.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.7))
+                .press(forDuration: 0.05,
+                       thenDragTo: page.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.45)),
+                       withVelocity: .slow,
+                       thenHoldForDuration: 0.3)
+        }
+        return app.isRevealed(element)
+    }
+
     /// Moves the switch only if it is not already where it is wanted, and
     /// waits for the value to say so: a tap that lands on the label rather than
     /// the switch does nothing, and the assertion should say that rather than
     /// fail later on the card.
+    ///
+    /// One tap, no retry: the page is at rest (`revealAtRest`), so a tap that
+    /// does not take is a real failure.
     private func setRecoveryDay(_ toggle: XCUIElement, on: Bool) {
         let wanted = on ? "1" : "0"
         guard toggle.value as? String != wanted else { return }
-        XCTAssertTrue(app.reveal(toggle))
-        // Twice in CI (76ed79b, da1da96) one tap left the switch at 0 for the
-        // whole wait, on a Today screen whose list XCTest was still re-finding:
-        // a tap synthesised from a frame that then moved. Settle first, as the
-        // Training test does before its tap.
-        XCTAssertTrue(app.waitUntilSettled(toggle),
-                      "the recovery-day switch's frame kept moving; Today had not settled")
+        XCTAssertTrue(revealAtRest(toggle))
         toggle.tapSwitchControl()
-        // One retry, for a tap that is dropped even on a settled screen. If
-        // the app itself snapped the switch back, the second tap fails the
-        // same way and the assertion below still reports it.
-        if !app.waitUntil(timeout: 2, { toggle.value as? String == wanted }) {
-            _ = app.waitUntilSettled(toggle)
-            toggle.tapSwitchControl()
-        }
         let card = app.staticTexts["readiness-recommendation"]
         XCTAssertTrue(app.waitUntil(timeout: 5) { toggle.value as? String == wanted },
                       "the recovery-day switch did not move to \(wanted): value \(String(describing: toggle.value)), "
