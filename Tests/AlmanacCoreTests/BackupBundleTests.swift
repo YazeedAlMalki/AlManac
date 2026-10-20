@@ -454,6 +454,63 @@ final class BackupBundleTests: XCTestCase {
                        "valid bundles only, newest first")
     }
 
+    func testRestoreRefusesPayloadWhoseOwnSchemaDisagreesWithItsMetadata() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/lying.almanac-backup"
+        let targetPath = dir + "/tgt.sqlite"
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        // The payload's migration head is one below the app's, and the
+        // metadata is edited to claim the app's head.
+        let source = try makeDB(sourcePath, anchors: [("hrv", [4, 2])])
+        let head = try migrationHead(sourcePath)
+        try source.run("DELETE FROM schema_migrations WHERE version = ?;", [.integer(head)])
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: nil, note: nil)
+        do {
+            let tampered = try Database(path: bundlePath)
+            try tampered.run("UPDATE bundle_meta SET schema_version = ?;", [.integer(head)])
+        }
+
+        let target = try makeDB(targetPath, anchors: [("steps", [9])])
+        do {
+            try BackupService(db: target).restoreBundle(at: bundlePath)
+            XCTFail("restore must check the payload's own schema, not only the metadata's claim")
+        } catch BackupService.BackupError.incompatibleSchemaVersion(let found, let expected) {
+            XCTAssertEqual(found, head - 1)
+            XCTAssertEqual(expected, head)
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9])
+    }
+
+    func testRestoreRefusesPayloadCarryingForeignTriggers() throws {
+        let dir = try tempDir()
+        let sourcePath = dir + "/src.sqlite"
+        let bundlePath = dir + "/trigger.almanac-backup"
+        let targetPath = dir + "/tgt.sqlite"
+        defer { try? FileManager.default.removeItem(atPath: dir) }
+
+        let source = try makeDB(sourcePath, anchors: [("hrv", [4, 2])])
+        try source.execute("""
+            CREATE TRIGGER planted AFTER INSERT ON sync_anchor
+            BEGIN DELETE FROM sync_anchor; END;
+            """)
+        try BackupService(db: source).writeBundle(to: bundlePath, documentsRoot: nil, note: nil)
+
+        let target = try makeDB(targetPath, anchors: [("steps", [9])])
+        do {
+            try BackupService(db: target).restoreBundle(at: bundlePath)
+            XCTFail("restore must refuse a payload with a trigger the app does not define")
+        } catch BackupService.BackupError.corruptBundle(let reason) {
+            XCTAssertTrue(reason.contains("triggers"), "unexpected reason: \(reason)")
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+        XCTAssertEqual(try SyncAnchorStore(db: target).load("steps")?.token, [9])
+    }
+
     private func migrationHead(_ dbPath: String) throws -> Int64 {
         let db = try Database(path: dbPath)
         return try db.query("SELECT COALESCE(MAX(version), 0) AS v FROM schema_migrations;")

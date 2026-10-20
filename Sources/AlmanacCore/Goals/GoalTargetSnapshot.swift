@@ -139,16 +139,6 @@ public struct GoalTargetSnapshot: Sendable, Hashable, Identifiable {
         bodyCompositionTargets[metric]
     }
 
-    /// Whether the target for `metric` was chosen rather than computed.
-    ///
-    /// Always `true` for a target that exists today, because nothing generates
-    /// one. It is a method rather than a stored column because the answer is a
-    /// property of *which* target is being asked about, and a column would have
-    /// to be nullable and then duplicated across two sets of columns.
-    public func isManualTarget(for metric: BodyMetric) -> Bool {
-        bodyCompositionTargets[metric] != nil
-    }
-
     /// This snapshot keyed by each metric it carries a target for, in the shape
     /// `BodyCompositionProgress.all` wants.
     ///

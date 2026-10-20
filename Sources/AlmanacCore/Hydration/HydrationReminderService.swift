@@ -101,42 +101,4 @@ public struct HydrationReminderService: Sendable {
 
         return nextTime
     }
-
-    /// User-friendly reminder text for `recommendation`.
-    public func reminderMessage(for recommendation: HydrationRecommendation) -> String {
-        var message = "\(recommendation.reason)\n\n"
-        message += "Drink \(Int(recommendation.recommendedVolumeMilliliters))ml\n"
-
-        if !recommendation.suggestedLiquidTypes.isEmpty {
-            message += "Suggested: \(recommendation.suggestedLiquidTypes.map(label).joined(separator: ", "))\n"
-        }
-
-        if let timeSince = recommendation.timeSinceLastDrinkMinutes, timeSince > 120 {
-            message += "\nYou haven't had anything to drink in \(formatted(minutes: timeSince))"
-        }
-
-        return message
-    }
-
-    private func label(_ type: LiquidType) -> String {
-        switch type {
-        case .water: return "Water"
-        case .sportsDrink: return "Sports Drink"
-        case .electrolyteSolution: return "Electrolyte Solution"
-        case .coconutWater: return "Coconut Water"
-        case .juice: return "Juice"
-        case .tea: return "Tea"
-        case .coffee: return "Coffee"
-        case .milk: return "Milk"
-        case .other: return "Other"
-        }
-    }
-
-    private func formatted(minutes: Int) -> String {
-        if minutes < 60 { return "\(minutes) minutes" }
-        let hours = minutes / 60
-        let mins = minutes % 60
-        if mins == 0 { return "\(hours) hour\(hours > 1 ? "s" : "")" }
-        return "\(hours)h \(mins)m"
-    }
 }

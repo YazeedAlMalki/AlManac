@@ -321,16 +321,6 @@ public struct LabImportJobStore: @unchecked Sendable {
         ])
     }
 
-    /// Writes the reconciled counts of a job that did not run to completion.
-    /// Separate from `resolve` so the "counts describe the rows" invariant does
-    /// not have to be weakened to allow a zero-row failure.
-    public func markFailed(id: Int64, reason: String) throws {
-        try db.run("""
-        UPDATE import_job SET status = ?, failure_reason = ?, finished_at = ? WHERE id = ?;
-        """, [.text(LabImportStatus.failed.rawValue), .text(reason),
-              .text(""), .integer(id)])
-    }
-
     // MARK: - Read
 
     public func job(id: Int64) throws -> LabImportJob? {

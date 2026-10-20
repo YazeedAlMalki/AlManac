@@ -1,37 +1,23 @@
 import Foundation
 
-/// What a food's own data can and cannot say about turning an *as-purchased*
-/// mass into an *edible* one.
-///
-/// This is the answer `edibleGrams` gives, and it is deliberately a four-way
-/// split rather than a `Double?`. The reason is the shape of the data: CoFID
-/// ships an edible proportion for 2,887 of the bundle's 8,354 foods, so the
-/// common case is *nobody stated one*. Collapsing that into `nil` next to a
-/// genuine "not analysed" would invite the two most tempting wrong moves —
-///
-/// ```swift
-/// factor?.value ?? 1.0   // invents "nothing is discarded" for ~65% of foods
-/// factor?.value ?? gross // silently reports a gross mass as an edible one
-/// ```
-///
-/// — and both produce a plausible number for a food the data says nothing
-/// about. `NutritionTotals` already treats an unmeasured nutrient as a named
-/// gap (`incompleteNutrients`) rather than a zero; this follows the same rule
-/// one step earlier, at the point the mass is decided.
-public enum EdibleYield: Sendable, Hashable {
-    /// The publisher stated a proportion and it is usable.
-    case known(proportion: Double, source: NutritionFactorSource)
-    /// A factor row exists but carries no number (CoFID's `N`, "not
-    /// analysed"). The proportion is unknown, and the source said so.
-    case notAnalysed(source: NutritionFactorSource)
-    /// The food has no factor row of this kind at all — the majority of the
-    /// catalogue, and every food outside CoFID.
-    case unstated
-    /// A proportion that cannot be used: outside `(0, 1]`, or not finite.
-    /// Kept separate from `unstated` because the data *claimed* something and
-    /// it is the bundle's problem, not the caller's.
-    case unusable(reason: String)
-}
+// What a food's own data can and cannot say about turning an *as-purchased*
+// mass into an *edible* one.
+//
+// `EdibleProportion` below is that answer, and it is deliberately a four-way
+// split rather than a `Double?`. The reason is the shape of the data: CoFID
+// ships an edible proportion for 2,887 of the bundle's 8,354 foods, so the
+// common case is *nobody stated one*. Collapsing that into `nil` next to a
+// genuine "not analysed" would invite the two most tempting wrong moves —
+//
+// ```swift
+// factor?.value ?? 1.0   // invents "nothing is discarded" for ~65% of foods
+// factor?.value ?? gross // silently reports a gross mass as an edible one
+// ```
+//
+// — and both produce a plausible number for a food the data says nothing
+// about. `NutritionTotals` already treats an unmeasured nutrient as a named
+// gap (`incompleteNutrients`) rather than a zero; this follows the same rule
+// one step earlier, at the point the mass is decided.
 
 /// Where a factor came from, so a derived mass can name its own provenance.
 public enum NutritionFactorSource: Sendable, Hashable {

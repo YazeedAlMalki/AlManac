@@ -11,6 +11,10 @@ struct NumberInputTests {
         #expect(Double(userInput: "") == nil)
         #expect(Double(userInput: "72abc") == nil)
         #expect(Int(userInput: "7.5") == nil)
+        #expect(Double(userInput: "nan") == nil)
+        #expect(Double(userInput: "inf") == nil)
+        #expect(Double(userInput: "0x1A") == nil)
+        #expect(Double(userInput: "1e400") == nil)
     }
 
     @Test("Arabic-Indic digits and the Arabic decimal separator parse")

@@ -87,7 +87,7 @@ struct HealthView: View {
         }
         let grouped = number.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
             .first!
-            .replacingOccurrences(of: "(?<=[0-9])(?=[0-9]{3})", with: ",", options: .regularExpression)
+            .replacingOccurrences(of: "(?<=[0-9])(?=(?:[0-9]{3})+$)", with: ",", options: .regularExpression)
         return NumberDisplay.localized(grouped + (number.contains(".") ? number.suffix(from: number.firstIndex(of: ".")!) : ""))
             + " " + unit
     }

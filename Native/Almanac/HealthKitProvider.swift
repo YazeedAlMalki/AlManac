@@ -223,8 +223,14 @@ final class HealthKitProvider: HealthProvider, HealthWriter, @unchecked Sendable
 
     private func storedIdentifier(syncIdentifier: String, type: HKQuantityType) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
-            let predicate = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier,
-                                                        allowedValues: [syncIdentifier])
+            // Scoped to this app's own source: any app can write a sample whose
+            // metadata carries the same sync identifier string, and its UUID
+            // must not be adopted as the record of our write.
+            let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeySyncIdentifier,
+                                            allowedValues: [syncIdentifier]),
+                HKQuery.predicateForObjects(from: HKSource.default()),
+            ])
             let query = HKSampleQuery(sampleType: type, predicate: predicate, limit: 1, sortDescriptors: nil) {
                 _, samples, error in
                 if let error { continuation.resume(throwing: error) }

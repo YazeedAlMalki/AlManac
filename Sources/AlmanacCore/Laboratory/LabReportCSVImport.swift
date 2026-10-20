@@ -283,7 +283,11 @@ public enum LabReportCSVImport {
             text = String(text.dropFirst(symbol.count)).trimmingCharacters(in: .whitespaces)
             break
         }
-        guard let value = Double(text) else { return nil }
+        // Plain decimal notation only. `Double` also accepts "nan", "inf",
+        // "infinity" and hexadecimal ("0x1A"), none of which is a reported
+        // number: those stay `.text`, exactly as the source wrote them.
+        guard !text.isEmpty, text.allSatisfy({ "0123456789.+-eE".contains($0) }),
+              let value = Double(text), value.isFinite else { return nil }
         return NumericParts(comparator: comparator, value: value)
     }
 

@@ -57,9 +57,4 @@ public struct FastingIntakeLog: @unchecked Sendable {
         }
         return found.sorted { $0.at == $1.at ? $0.id < $1.id : $0.at < $1.at }
     }
-
-    /// The first intake in `[start, end)`, or nil when there was none.
-    public func earliestIntake(from start: Date, to end: Date) throws -> Intake? {
-        try intakes(from: start, to: end).first
-    }
 }

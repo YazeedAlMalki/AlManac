@@ -142,9 +142,9 @@ struct DayTimelineView: View {
     /// missing one, so it is marked rather than filled in.
     private func time(for item: TrackingTimelineItem) -> String {
         guard let at = item.occurredAt else { return "—" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return formatter.string(from: at)
+        // Through the app's display calendar like every other time on screen,
+        // so the person's 12/24-hour setting and the language's digits apply.
+        return at.almanacFormatted(date: .omitted, time: .shortened)
     }
 
     private func reload() {

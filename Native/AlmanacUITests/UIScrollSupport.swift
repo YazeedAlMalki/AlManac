@@ -170,6 +170,7 @@ extension XCUIApplication {
     func reveal(_ element: XCUIElement,
                 maxSwipes: Int = 24,
                 direction: RevealDirection = .up) -> Bool {
+        let list = scrollTarget()
         /// Where the list's own content currently starts, so "did that move?" is
         /// answerable rather than guessed at.
         ///
@@ -192,7 +193,7 @@ extension XCUIApplication {
         /// rather than answering. A snapshot is immutable, so it cannot lose an
         /// element halfway through being read.
         func anchor() -> CGFloat? {
-            guard let root = try? collectionViews.firstMatch.snapshot() else { return nil }
+            guard let root = try? list.snapshot() else { return nil }
             var top: CGFloat?
             func walk(_ node: XCUIElementSnapshot) {
                 if node.elementType == .staticText, node.frame.height > 1 {
@@ -223,8 +224,8 @@ extension XCUIApplication {
             // the content under a held touch, which is what actually scrolls.
             // Two consecutive no-move swipes is the trigger, not the first, so a
             // list that is genuinely at its end does not pay for a drag.
-            if stuckCount >= 2, collectionViews.firstMatch.exists {
-                drag(collectionViews.firstMatch, direction: direction)
+            if stuckCount >= 2, list.exists {
+                drag(list, direction: direction)
                 stuckCount = 0
             }
         }
@@ -238,11 +239,41 @@ extension XCUIApplication {
         // the visible window, so the way back cannot skip a row. Only reached
         // once the sweep has failed, so callers that pass are unchanged.
         let back: RevealDirection = direction == .up ? .down : .up
-        for _ in 0..<maxSwipes where collectionViews.firstMatch.exists {
+        for _ in 0..<maxSwipes where list.exists {
             if isRevealed(element) { return true }
-            drag(collectionViews.firstMatch, direction: back)
+            drag(list, direction: back)
         }
         return isRevealed(element)
+    }
+
+    /// The list a reveal should scroll: the frontmost one, not the first.
+    ///
+    /// A sheet leaves the screen beneath it in the accessibility tree, so with
+    /// the exercise picker open over a program day `collectionViews.firstMatch`
+    /// is the *day's* list. Dragging it moves nothing the test can see, and
+    /// `testVariantModeToggleAppliesToBothGraphsAndShowsTheNote` reported
+    /// exercise 1 "missing from the catalog" after a whole budget of drags on
+    /// `program-day-screen` (CI 2026-10-19). The presented list comes later in
+    /// the tree, in a frame of its own, so the last full-size list whose
+    /// frame differs from the first one's is taken. Read from one snapshot,
+    /// for the reason `anchor()` gives; a screen with a single list is
+    /// unchanged.
+    private func scrollTarget() -> XCUIElement {
+        guard let root = try? snapshot() else { return collectionViews.firstMatch }
+        var frames: [CGRect] = []
+        func walk(_ node: XCUIElementSnapshot) {
+            if node.elementType == .collectionView { frames.append(node.frame) }
+            node.children.forEach(walk)
+        }
+        walk(root)
+        // Only a list in a different frame from the first is a presented
+        // one. Screens kept in the tree at the same place (a pushed screen's
+        // parent, another tab) keep the old `firstMatch` behaviour.
+        guard frames.count > 1, let first = frames.first,
+              let index = frames.lastIndex(where: { $0.height > 200 && $0 != first }) else {
+            return collectionViews.firstMatch
+        }
+        return collectionViews.element(boundBy: index)
     }
 
     /// A press-then-drag across the middle of `list`, which scrolls it a long
