@@ -34,18 +34,7 @@ struct StartFastIntent: AppIntent {
     static let openAppWhenRun = false
 
     func perform() async throws -> some IntentResult {
-        let db = try AppGroupDatabase.open()
-        let store = FastingSessionStore(db: db)
-        // One fast at a time (`idx_fasting_session_one_active`). A second tap,
-        // or a tap while today's religious fast runs, starts nothing rather than
-        // failing on the index.
-        if try store.activeSession() == nil {
-            let logicalDay = TimeModel(timeZone: .current).logicalDay(Date()).value
-            try store.start(
-                FastingSessionDraft(startTimestamp: Date(), sessionType: .ifPlanned,
-                                    timezoneOffset: TimeZone.current.secondsFromGMT() / 60),
-                logicalDay: logicalDay)
-        }
+        // SCRATCH mutation: this intent does nothing.
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
