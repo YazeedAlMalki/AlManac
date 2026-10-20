@@ -62,7 +62,15 @@ public struct MigrationRunner: Sendable {
 
         var ran: [Int] = []
         for m in migrations where appliedByVersion[m.version] == nil {
-            try db.transaction {
+            let didRun = try db.transaction { () throws -> Bool in
+                // The app and its widget extension open the same file, and
+                // either can be first after an update. The list above was read
+                // outside this lock, so another process may have applied this
+                // version while we waited on BEGIN IMMEDIATE; re-reading it
+                // here is what keeps a migration from running twice.
+                let done = try db.query("SELECT 1 AS x FROM schema_migrations WHERE version = ?;",
+                                        [.integer(Int64(m.version))])
+                guard done.isEmpty else { return false }
                 try m.up(db)
                 try db.run(
                     "INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?);",
@@ -70,8 +78,9 @@ public struct MigrationRunner: Sendable {
                      .text(m.name),
                      .text(ISO8601DateFormatter().string(from: clock.now))]
                 )
+                return true
             }
-            ran.append(m.version)
+            if didRun { ran.append(m.version) }
         }
         return ran
     }

@@ -114,7 +114,9 @@ public enum BackupZipper {
         let totalEntries = u16(bytes, eocdIndex + 10)
         let cdSize = u32(bytes, eocdIndex + 12)
         let cdOffset = u32(bytes, eocdIndex + 16)
-        guard totalEntries >= 1, cdOffset + cdSize <= UInt32(bytes.count) else {
+        // Summed as 64-bit: a crafted EOCD with offset and size near UInt32.max
+        // would overflow a UInt32 sum and trap instead of being refused.
+        guard totalEntries >= 1, UInt64(cdOffset) + UInt64(cdSize) <= UInt64(bytes.count) else {
             throw BackupService.BackupError.notABackupFile(archivePath)
         }
 
@@ -137,6 +139,12 @@ public enum BackupZipper {
             }
             let name = String(bytes: bytes[cursor + 46 ..< cursor + 46 + nameLen], encoding: .utf8) ?? ""
             if name.hasSuffix(".almanac-backup") {
+                // Exactly one, as documented: with two, which one is "the"
+                // backup would be a guess.
+                guard bundleEntry == nil else {
+                    throw BackupService.BackupError.notABackupFile(
+                        "\(archivePath): more than one .almanac-backup inside")
+                }
                 guard method == 0 else {
                     throw BackupService.BackupError.notABackupFile(
                         "\(archivePath): entry '\(name)' uses compression this build does not support")
@@ -167,9 +175,15 @@ public enum BackupZipper {
             throw BackupService.BackupError.corruptBundle(reason: "zip entry failed its CRC-32 check")
         }
 
-        // Guard the extracted name stays inside the extraction directory.
-        let outURL = URL(fileURLWithPath: entry.name, relativeTo: URL(fileURLWithPath: extractionDir))
-            .standardizedFileURL
+        // Only the entry's last path component is used, so a name carrying
+        // folders ("a/b.almanac-backup") or ".." cannot place the file anywhere
+        // but directly inside the extraction directory. The prefix check
+        // stays as a second gate.
+        let leafName = (entry.name as NSString).lastPathComponent
+        guard leafName.hasSuffix(".almanac-backup"), leafName != ".almanac-backup" else {
+            throw BackupService.BackupError.notABackupFile(archivePath)
+        }
+        let outURL = URL(fileURLWithPath: extractionDir).appendingPathComponent(leafName).standardizedFileURL
         guard outURL.path.hasPrefix(URL(fileURLWithPath: extractionDir).standardizedFileURL.path + "/") else {
             throw BackupService.BackupError.notABackupFile(archivePath)
         }

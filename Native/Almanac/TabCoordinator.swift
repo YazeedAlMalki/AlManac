@@ -95,12 +95,6 @@ final class TabCoordinator: ObservableObject {
         apply(TabRouting.plan(selection: state.selection, paths: state.paths, poppingToRoot: true))
     }
 
-    /// Whether a route is the one currently on screen, for a caller that wants
-    /// to mark it rather than push it.
-    func isShowing(_ route: AppRoute) -> Bool {
-        state.selection == route.tab && state.path(for: route.tab).last == route
-    }
-
     // MARK: - Private
 
     private func apply(_ plan: TabRouting.Plan) {

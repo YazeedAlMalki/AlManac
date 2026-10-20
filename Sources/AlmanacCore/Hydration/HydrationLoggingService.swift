@@ -77,13 +77,6 @@ public struct HydrationLoggingService: Sendable {
                                    caloriesLogged: settings.isCalorieTrackingEnabled ? scaledCalories : nil)
     }
 
-    /// Logs a plain amount with no drink attached — unchanged from before
-    /// Migration013, still the right call for "just water, no catalog entry".
-    @discardableResult
-    public func logAmount(_ amount: Milliliters, at date: Date = Date(), note: String? = nil) throws -> String {
-        try store.log(HydrationLogDraft(amount: amount, loggedAt: date, note: note))
-    }
-
     /// Saves a user-authored drink to `hydration_drink`, tagged
     /// `.userEntered` regardless of what the caller passes — a custom drink
     /// is definitionally the user's own figures, never a catalog estimate.

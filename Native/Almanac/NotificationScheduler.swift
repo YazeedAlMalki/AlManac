@@ -145,12 +145,14 @@ struct NotificationScheduler {
     private static func matches(_ request: UNNotificationRequest,
                                 _ planned: PlannedNotification) -> Bool {
         guard let trigger = request.trigger as? UNTimeIntervalNotificationTrigger,
-              !trigger.repeats else { return false }
-        let plannedInterval = max(1, planned.fireAt.timeIntervalSinceNow)
-        // Within a second of each other: the pending trigger was resolved
-        // against an earlier "now" than this pass is, and demanding equality
-        // would re-add the same notification on every pass forever.
-        return abs(trigger.timeInterval - plannedInterval) < 1
+              !trigger.repeats, let pendingFireDate = trigger.nextTriggerDate() else { return false }
+        // Fire *dates* are compared, not intervals. `trigger.timeInterval` is
+        // the interval as it was when the request was added, while the plan's
+        // interval shrinks as time passes, so comparing the two failed on
+        // every pass after the first and re-added every reminder each time.
+        // Within two seconds: the trigger was resolved against the "now" of
+        // the pass that added it, not exactly `fireAt`.
+        return abs(pendingFireDate.timeIntervalSince(planned.fireAt)) < 2
             && request.content.title == planned.title
             && request.content.body == planned.body
     }

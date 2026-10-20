@@ -47,10 +47,15 @@ struct SHA256 {
     mutating func update(_ bytes: [UInt8]) {
         length &+= UInt64(bytes.count) &* 8
         buffer.append(contentsOf: bytes)
-        while buffer.count >= 64 {
-            compress(Array(buffer.prefix(64)))
-            buffer.removeFirst(64)
+        // Walk the buffer by offset and drop the consumed prefix once.
+        // `removeFirst(64)` per block shifted the whole remainder each time,
+        // which made hashing a 1 MiB chunk quadratic in its size.
+        var offset = 0
+        while buffer.count - offset >= 64 {
+            compress(Array(buffer[offset ..< offset + 64]))
+            offset += 64
         }
+        if offset > 0 { buffer.removeFirst(offset) }
     }
 
     mutating func finalize() -> [UInt8] {
