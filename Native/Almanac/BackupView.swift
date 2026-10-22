@@ -297,7 +297,7 @@ private struct EncryptedShareSheet: View {
     @State private var confirmation = ""
     @State private var isEncrypting = false
     @State private var sharedFile: URL?
-    @State private var workDirectory: URL?
+    @State private var work = ShareWork()
     @State private var error: String?
 
     private var canEncrypt: Bool {
@@ -308,9 +308,14 @@ private struct EncryptedShareSheet: View {
         NavigationStack {
             Form {
                 Section {
+                    // Locked while encrypting: the job seals with the passphrase
+                    // it started with, so an edit now would show one passphrase
+                    // beside a file made with another.
                     SecureField("Passphrase", text: $passphrase)
+                        .disabled(isEncrypting)
                         .accessibilityIdentifier("backup-passphrase")
                     SecureField("Repeat passphrase", text: $confirmation)
+                        .disabled(isEncrypting)
                         .accessibilityIdentifier("backup-passphrase-repeat")
                 } footer: {
                     Text("Use at least 8 characters. Almanac does not keep the passphrase: without it, this backup cannot be restored.")
@@ -351,7 +356,12 @@ private struct EncryptedShareSheet: View {
             .onChange(of: passphrase) { _, _ in discardSharedFile() }
             .onChange(of: confirmation) { _, _ in discardSharedFile() }
         }
-        .onDisappear { discardSharedFile() }
+        // Leaving the sheet, by Done or a swipe, cancels any encryption still
+        // running; the job removes what it made once it finishes.
+        .onDisappear {
+            work.cancel()
+            discardSharedFile()
+        }
     }
 
     private func encrypt() {
@@ -362,7 +372,10 @@ private struct EncryptedShareSheet: View {
         let secret = passphrase
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("AlmanacShare-\(UUID().uuidString)", isDirectory: true)
-        Task {
+        // Recorded before the job starts, so leaving the sheet mid-way knows
+        // which folder is the job's.
+        work.directory = directory
+        work.task = Task {
             do {
                 // Key derivation is deliberately slow; it runs off the main
                 // thread so the sheet keeps drawing its progress.
@@ -373,21 +386,43 @@ private struct EncryptedShareSheet: View {
                     defer { try? FileManager.default.removeItem(at: sealed) }
                     return try BackupZipper.zip(bundlePath: sealed.path)
                 }.value
-                discardSharedFile()
-                workDirectory = directory
-                sharedFile = URL(fileURLWithPath: zip)
+                if work.isCancelled {
+                    // The sheet closed while this ran: nothing may be shared.
+                    try? FileManager.default.removeItem(at: directory)
+                } else {
+                    sharedFile = URL(fileURLWithPath: zip)
+                }
             } catch {
                 try? FileManager.default.removeItem(at: directory)
-                self.error = String(describing: error)
+                if !work.isCancelled { self.error = String(describing: error) }
             }
             isEncrypting = false
         }
     }
 
     private func discardSharedFile() {
-        if let workDirectory { try? FileManager.default.removeItem(at: workDirectory) }
-        workDirectory = nil
+        if let directory = work.directory { try? FileManager.default.removeItem(at: directory) }
+        work.directory = nil
         sharedFile = nil
+    }
+}
+
+/// The share sheet's running encryption, held by reference so the job can see
+/// that the sheet has closed by the time it finishes. Only ever touched on the
+/// main actor.
+@MainActor
+private final class ShareWork {
+    var directory: URL?
+    var task: Task<Void, Never>?
+    private(set) var isCancelled = false
+
+    /// Stops the job from publishing its file, and deletes the folder it has
+    /// already made. A job still encrypting cleans up when it finishes.
+    func cancel() {
+        isCancelled = true
+        task?.cancel()
+        if let directory { try? FileManager.default.removeItem(at: directory) }
+        directory = nil
     }
 }
 
