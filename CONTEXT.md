@@ -1061,12 +1061,16 @@ How the build applies that; **none of these has been confirmed:**
   "average", "standard"…) with agreeing nutrient profiles. A name-overlap
   threshold was measured first on the shipped bundle and merged sirloin with
   fillet, black beans with cannellini and prunes with and without sugar, so it
-  was dropped. Same names are merged whatever their values; the 63 records
-  whose members disagree (honey at 278, 288 and 331 kcal; "Coconut milk" at 22
-  and 199 kcal, which reads as two different foods) are in the log.
+  was dropped. Same names are merged unless their energy differs by more than
+  half (owner, 2026-10-22): "Coconut milk" at 22 kcal (the drink) and 199 kcal
+  (the canned cream) stay two records, as do instant coffee, fresh sage and
+  raw shallots. Each food is compared with the group's median and never for
+  under 25 kcal, so one outlying analysis (CoFID raspberries at 25 kcal) or
+  two near-zero waters do not split a group. The 59 records whose members
+  still disagree (honey at 278, 288 and 331 kcal) are in the log.
 - **Almanac's own dishes are never merged.**
 
-*Overrule by:* `NEUTRAL`, `TOLERANCE`, `BASE_ORDER` in
+*Overrule by:* `NEUTRAL`, `TOLERANCE`, `APART`, `BASE_ORDER` in
 `tools/nutrition/almanac_nutrition/merge.py`, then `python3 -m almanac_nutrition merge`.
 
 ### Backups (2026-10-20)

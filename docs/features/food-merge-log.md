@@ -2,17 +2,18 @@
 
 Written by `python3 -m almanac_nutrition merge`; do not edit by hand. Bundle: `almanac.sqlite` sha256 `0877c2914543`.
 
-Rule (owner, 2026-10-19): one record per real food across every source. Foods are matched on USDA's own codes (**code**: a Foundation and an SR Legacy food with one NDB number, an FNDDS food whose only ingredient is an SR Legacy food), on equal normalised English names (**same**), or on names that differ only by words naming nothing about the food (*all*, *average*, *commercial*, *fresh*, *generic*, *mean*, *plain*, *regular*, *standard*, *type*, *typical*, *variety*) and whose nutrient profiles agree (**unsure**; energy within 25 kcal or 12 %, protein, fat and carbohydrate within 1.5–2 g or 15 %, per 100 g). Every member keeps its own rows and licence; the search shows the record (USDA first, then CoFID, CIQUAL, AFCD). Almanac's own dishes are never merged.
+Rule (owner, 2026-10-19): one record per real food across every source. Foods are matched on USDA's own codes (**code**: a Foundation and an SR Legacy food with one NDB number, an FNDDS food whose only ingredient is an SR Legacy food), on equal normalised English names (**same**, unless their energy per 100 g differs by more than half: owner, 2026-10-22), or on names that differ only by words naming nothing about the food (*all*, *average*, *commercial*, *fresh*, *generic*, *mean*, *plain*, *regular*, *standard*, *type*, *typical*, *variety*) and whose nutrient profiles agree (**unsure**; energy within 25 kcal or 12 %, protein, fat and carbohydrate within 1.5–2 g or 15 %, per 100 g). Every member keeps its own rows and licence; the search shows the record (USDA first, then CoFID, CIQUAL, AFCD). Almanac's own dishes are never merged.
 
 | | Count |
 |---|---:|
 | foods read (almanac: excluded) | 8354 |
-| records with more than one source row | 193 |
-| foods merged into another food's record | 228 |
+| records with more than one source row | 189 |
+| foods merged into another food's record | 224 |
 | matches: code | 0 |
-| matches: same name | 209 |
+| matches: same name | 205 |
 | matches: unsure | 19 |
-| records with a conflict | 63 |
+| records with a conflict | 59 |
+| same-name foods kept apart (energy differs by more than half) | 4 |
 
 ## Conflicts
 
@@ -73,21 +74,12 @@ Members whose values differ by more than the tolerance. Both values are kept, ea
 | `cofid:13-825` Dill, dried | energy_kcal | 315 (`ciqual:11063`); 253 (`cofid:13-825`) |
 | `cofid:13-892` Rosemary, fresh | protein | 3.31 (`ciqual:11068`); 1.4 (`cofid:13-892`) |
 | `cofid:13-892` Rosemary, fresh | carbohydrate | 20.7 (`ciqual:11068`); 25.257 (`cofid:13-892`) |
-| `cofid:13-853` Sage, fresh | energy_kcal | 34.9 (`ciqual:11069`); 119 (`cofid:13-853`) |
-| `cofid:13-853` Sage, fresh | fat_total | 0.5 (`ciqual:11069`); 4.6 (`cofid:13-853`) |
 | `cofid:13-893` Thyme, fresh | protein | 5.56 (`ciqual:11070`); 3 (`cofid:13-893`) |
 | `ciqual:13161` Dairy and cereal-based beverage for baby's dinner, with vegetables, from 4/6 months | fat_total | 2.83 (`ciqual:13161`); 8.93 (`ciqual:13172`) |
 | `ciqual:13161` Dairy and cereal-based beverage for baby's dinner, with vegetables, from 4/6 months | carbohydrate | 12.5 (`ciqual:13161`); 25.05 (`ciqual:13172`) |
-| `cofid:17-158` Coffee, powder, instant | energy_kcal | 291 (`ciqual:18005`); 75 (`cofid:17-158`) |
-| `cofid:17-158` Coffee, powder, instant | protein | 18.5 (`ciqual:18005`); 14.6 (`cofid:17-158`) |
-| `cofid:17-158` Coffee, powder, instant | carbohydrate | 61.9 (`ciqual:18005`); 4.286 (`cofid:17-158`) |
-| `cofid:14-820` Coconut milk | energy_kcal | 199 (`ciqual:18041`); 22 (`cofid:14-820`) |
-| `cofid:14-820` Coconut milk | protein | 1.94 (`ciqual:18041`); 0.3 (`cofid:14-820`) |
-| `cofid:14-820` Coconut milk | fat_total | 19.2 (`ciqual:18041`); 0.3 (`cofid:14-820`) |
 | `cofid:12-555` Yogurt, Greek style, plain | energy_kcal | 103 (`ciqual:19860`); 133 (`cofid:12-555`) |
 | `cofid:12-555` Yogurt, Greek style, plain | protein | 3.02 (`ciqual:19860`); 5.7 (`cofid:12-555`) |
 | `cofid:12-555` Yogurt, Greek style, plain | fat_total | 8.16 (`ciqual:19860`); 10.2 (`cofid:12-555`) |
-| `cofid:13-342` Shallots, raw | energy_kcal | 61.7 (`ciqual:20097`); 20 (`cofid:13-342`) |
 | `cofid:13-118` Tempeh | protein | 16.1 (`ciqual:20917`); 20.7 (`cofid:13-118`) |
 | `cofid:13-118` Tempeh | fat_total | 4.7 (`ciqual:20917`); 6.4 (`cofid:13-118`) |
 | `cofid:12-946` Omelette, plain, homemade | protein | 13.8 (`ciqual:22500`); 10.9 (`cofid:12-946`) |
@@ -118,6 +110,17 @@ Members whose values differ by more than the tolerance. Both values are kept, ea
 | `cofid:18-470` Beef, mince, stewed | protein | 21.8 (`cofid:18-470`); 10.9 (`cofid:19-607`) |
 | `cofid:18-470` Beef, mince, stewed | fat_total | 13.5 (`cofid:18-470`); 9.9 (`cofid:19-607`) |
 | `cofid:18-470` Beef, mince, stewed | carbohydrate | 0 (`cofid:18-470`); 2.681 (`cofid:19-607`) |
+
+## Kept apart
+
+Foods sharing a name whose energy differs by more than half of the larger value. Each stays its own record.
+
+| Food | kcal per 100 g | Same name as |
+|---|---:|---|
+| `cofid:13-853` Sage, fresh | 119 | `ciqual:11069` 34.9 kcal |
+| `cofid:17-158` Coffee, powder, instant | 75 | `ciqual:18005` 291 kcal |
+| `cofid:14-820` Coconut milk | 22 | `ciqual:18041` 199 kcal |
+| `cofid:13-342` Shallots, raw | 20 | `ciqual:20097` 61.7 kcal |
 
 ## Merges
 
@@ -237,7 +240,6 @@ Members whose values differ by more than the tolerance. Both values are kept, ea
 | `cofid:13-852` | `ciqual:11039` Saffron<br>`cofid:13-852` Saffron | same 1.0: `ciqual:11039` ~ `cofid:13-852` |
 | `cofid:13-825` | `ciqual:11063` Dill, dried<br>`cofid:13-825` Dill, dried | same 1.0: `ciqual:11063` ~ `cofid:13-825` |
 | `cofid:13-892` | `ciqual:11068` Rosemary, fresh<br>`cofid:13-892` Rosemary, fresh | same 1.0: `ciqual:11068` ~ `cofid:13-892` |
-| `cofid:13-853` | `ciqual:11069` Sage, fresh<br>`cofid:13-853` Sage, fresh | same 1.0: `ciqual:11069` ~ `cofid:13-853` |
 | `cofid:13-893` | `ciqual:11070` Thyme, fresh<br>`cofid:13-893` Thyme, fresh | same 1.0: `ciqual:11070` ~ `cofid:13-893` |
 | `cofid:13-857` | `ciqual:11092` Tarragon, fresh<br>`cofid:13-857` Tarragon, fresh | same 1.0: `ciqual:11092` ~ `cofid:13-857` |
 | `cofid:13-824` | `ciqual:11093` Dill, fresh<br>`cofid:13-824` Dill, fresh | same 1.0: `ciqual:11093` ~ `cofid:13-824` |
@@ -245,9 +247,7 @@ Members whose values differ by more than the tolerance. Both values are kept, ea
 | `ciqual:13161` | `ciqual:13161` Dairy and cereal-based beverage for baby's dinner, with vegetables, from 4/6 months<br>`ciqual:13172` Dairy and cereal-based beverage for baby's dinner, with vegetables, from 4/6 months | same 1.0: `ciqual:13161` ~ `ciqual:13172` |
 | `cofid:14-844` | `ciqual:15010` Sesame seed<br>`cofid:14-844` Sesame seeds | same 1.0: `ciqual:15010` ~ `cofid:14-844` |
 | `cofid:17-002` | `ciqual:16030` Cocoa butter<br>`cofid:17-002` Cocoa butter | same 1.0: `ciqual:16030` ~ `cofid:17-002` |
-| `cofid:17-158` | `ciqual:18005` Coffee, powder, instant<br>`cofid:17-158` Coffee, powder, instant | same 1.0: `ciqual:18005` ~ `cofid:17-158` |
 | `ciqual:18028` | `ciqual:18028` Bottled water, flavoured, no added sugars and no sweetener(s)<br>`ciqual:18030` Bottled water, flavoured, no added sugars and with sweetener(s) | same 1.0: `ciqual:18028` ~ `ciqual:18030` |
-| `cofid:14-820` | `ciqual:18041` Coconut milk<br>`cofid:14-820` Coconut milk | same 1.0: `ciqual:18041` ~ `cofid:14-820` |
 | `ciqual:18340` | `ciqual:18340` Carbonated beverage or fruit soft drink, fruit content < 10% , no added sugars and with sweetener(s)<br>`ciqual:18345` Carbonated beverage or fruit soft drink, fruit content < 10% , no added sugars and no sweetener(s) | same 1.0: `ciqual:18340` ~ `ciqual:18345` |
 | `cofid:12-320` | `ciqual:19023` Milk, whole, UHT<br>`cofid:12-320` Milk, whole, UHT | same 1.0: `ciqual:19023` ~ `cofid:12-320` |
 | `cofid:12-596` | `ciqual:19024` Milk, whole, pasteurised<br>`cofid:12-596` Milk, whole, pasteurised, average | same 1.0: `ciqual:19024` ~ `cofid:12-596` |
@@ -263,7 +263,6 @@ Members whose values differ by more than the tolerance. Both values are kept, ea
 | `usda:2685577` | `ciqual:20053` Eggplant, raw<br>`usda:2685577` Eggplant, raw | same 1.0: `ciqual:20053` ~ `usda:2685577` |
 | `cofid:13-219` | `ciqual:20055` Celeriac, raw<br>`cofid:13-219` Celeriac, raw | same 1.0: `ciqual:20055` ~ `cofid:13-219` |
 | `cofid:13-164` | `ciqual:20091` Beetroot, raw<br>`cofid:13-164` Beetroot, raw | same 1.0: `ciqual:20091` ~ `cofid:13-164` |
-| `cofid:13-342` | `ciqual:20097` Shallot, raw<br>`cofid:13-342` Shallots, raw | same 1.0: `ciqual:20097` ~ `cofid:13-342` |
 | `usda:2685582` | `ciqual:20170` Tomato puree, canned<br>`usda:2685582` Tomato, puree, canned | unsure 1.0: `ciqual:20170` ~ `usda:2685582` |
 | `cofid:14-289` | `ciqual:2018` Prune juice<br>`cofid:14-289` Prune juice | same 1.0: `ciqual:2018` ~ `cofid:14-289` |
 | `usda:2747659` | `ciqual:20181` Parsnip, raw<br>`cofid:13-312` Parsnip, raw<br>`usda:2747659` Parsnips, raw | same 1.0: `ciqual:20181` ~ `cofid:13-312`<br>same 1.0: `ciqual:20181` ~ `usda:2747659` |

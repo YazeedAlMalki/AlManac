@@ -1574,18 +1574,6 @@
    "score": 1.0
   },
   {
-   "foodRef": "ciqual:11069",
-   "kind": "same",
-   "recordRef": "cofid:13-853",
-   "score": 1.0
-  },
-  {
-   "foodRef": "cofid:13-853",
-   "kind": "same",
-   "recordRef": "cofid:13-853",
-   "score": 1.0
-  },
-  {
    "foodRef": "ciqual:11070",
    "kind": "same",
    "recordRef": "cofid:13-893",
@@ -1670,18 +1658,6 @@
    "score": 1.0
   },
   {
-   "foodRef": "ciqual:18005",
-   "kind": "same",
-   "recordRef": "cofid:17-158",
-   "score": 1.0
-  },
-  {
-   "foodRef": "cofid:17-158",
-   "kind": "same",
-   "recordRef": "cofid:17-158",
-   "score": 1.0
-  },
-  {
    "foodRef": "ciqual:18028",
    "kind": "same",
    "recordRef": "ciqual:18028",
@@ -1691,18 +1667,6 @@
    "foodRef": "ciqual:18030",
    "kind": "same",
    "recordRef": "ciqual:18028",
-   "score": 1.0
-  },
-  {
-   "foodRef": "ciqual:18041",
-   "kind": "same",
-   "recordRef": "cofid:14-820",
-   "score": 1.0
-  },
-  {
-   "foodRef": "cofid:14-820",
-   "kind": "same",
-   "recordRef": "cofid:14-820",
    "score": 1.0
   },
   {
@@ -1883,18 +1847,6 @@
    "foodRef": "cofid:13-164",
    "kind": "same",
    "recordRef": "cofid:13-164",
-   "score": 1.0
-  },
-  {
-   "foodRef": "ciqual:20097",
-   "kind": "same",
-   "recordRef": "cofid:13-342",
-   "score": 1.0
-  },
-  {
-   "foodRef": "cofid:13-342",
-   "kind": "same",
-   "recordRef": "cofid:13-342",
    "score": 1.0
   },
   {

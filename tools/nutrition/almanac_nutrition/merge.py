@@ -14,7 +14,10 @@ How two foods are matched, strongest first:
 
 - code: USDA's own links. A Foundation food and an SR Legacy food with the same
   NDB number; an FNDDS food whose only ingredient is an SR Legacy food.
-- same: equal normalised English names.
+- same: equal normalised English names, unless their energy differs by more
+  than half (APART, against the group's median, never under 25 kcal): "Coconut milk" at 22 kcal (the drink) and at 199 kcal
+  (the canned cream) share a name, not a food. Those stay separate records and
+  are logged as kept apart.
 - unsure: names that differ only by NEUTRAL words ("Spinach, baby, fresh,
   raw" / "Spinach, baby, raw") AND agree on the nutrient profile (PROFILE
   within TOLERANCE), checked against every member already in both groups, so
@@ -51,6 +54,12 @@ NEUTRAL = {"fresh", "average", "type", "plain", "standard", "regular", "typical"
 TOLERANCE = {"energy_kcal": (25.0, 0.12), "protein": (1.5, 0.15), "fat_total": (1.5, 0.15),
              "carbohydrate": (2.0, 0.15)}
 PROFILE = tuple(TOLERANCE)
+# Owner, 2026-10-22: two foods with one name are still two foods when their
+# energy per 100 g differs by more than half of the larger value. Compared
+# with each group's median, so one outlying analysis cannot split a group by
+# arriving first, and never for less than the energy tolerance's 25 kcal,
+# where a half of nearly nothing (two waters) says nothing.
+APART = 0.5
 # The record a merged group shows: USDA first (its three data types in this
 # order), then the others. A fixed rule, not a choice per group.
 BASE_ORDER = ("foundation_food.csv", "sr_legacy_food.csv", "survey_fndds_food.csv", "usda",
@@ -92,6 +101,20 @@ def similarity(a: frozenset[str], b: frozenset[str]) -> float:
 def agree(nutrient: str, a: float, b: float) -> bool:
     absolute, relative = TOLERANCE[nutrient]
     return abs(a - b) <= max(absolute, relative * max(a, b))
+
+
+def median_energy(foods: list[dict]) -> float | None:
+    values = sorted(f["profile"]["energy_kcal"] for f in foods if "energy_kcal" in f["profile"])
+    if not values:
+        return None
+    mid = len(values) // 2
+    return values[mid] if len(values) % 2 else (values[mid - 1] + values[mid]) / 2
+
+
+def energy_apart(x: float | None, y: float | None) -> bool:
+    if x is None or y is None:
+        return False
+    return abs(x - y) > max(TOLERANCE["energy_kcal"][0], APART * max(x, y))
 
 
 def profiles_agree(a: dict, b: dict) -> bool:
@@ -174,7 +197,7 @@ def code_links(foods: list[dict]) -> list[tuple[str, str]]:
 # --- Grouping ----------------------------------------------------------------------
 
 
-def group(foods: list[dict]) -> tuple[list[list[dict]], list[dict]]:
+def group(foods: list[dict]) -> tuple[list[list[dict]], list[dict], list[dict]]:
     by_ref = {f["food_ref"]: f for f in foods}
     toks = {f["food_ref"]: tokens(f["name"]) for f in foods}
     parent = {ref: ref for ref in by_ref}
@@ -186,18 +209,22 @@ def group(foods: list[dict]) -> tuple[list[list[dict]], list[dict]]:
             ref = parent[ref]
         return ref
 
-    matches = []
+    matches, apart = [], []
 
-    def union(a: str, b: str, kind: str, score: float, check_profiles: bool) -> None:
+    def union(a: str, b: str, kind: str, score: float, check_profiles: bool) -> bool:
         ra, rb = find(a), find(b)
         if ra == rb:
-            return
+            return True
         if check_profiles and not all(profiles_agree(by_ref[x]["profile"], by_ref[y]["profile"])
                                       for x in members[ra] for y in members[rb]):
-            return
+            return False
+        if kind == "same" and energy_apart(median_energy([by_ref[x] for x in members[ra]]),
+                                           median_energy([by_ref[y] for y in members[rb]])):
+            return False
         parent[rb] = ra
         members[ra] += members.pop(rb)
         matches.append({"a": a, "b": b, "kind": kind, "score": round(score, 2)})
+        return True
 
     for a, b in code_links(foods):
         if a in by_ref and b in by_ref:
@@ -206,9 +233,13 @@ def group(foods: list[dict]) -> tuple[list[list[dict]], list[dict]]:
     by_name = defaultdict(list)
     for ref in sorted(by_ref):
         by_name[segments(by_ref[ref]["name"])].append(ref)
+    # Each food joins the first same-name group whose energy it fits; one that
+    # fits none starts its own, so a drink and a cream can each gather their own.
     for refs in by_name.values():
-        for other in refs[1:]:
-            union(refs[0], other, "same", 1.0, False)
+        for i, ref in enumerate(refs):
+            roots = list(dict.fromkeys(find(r) for r in refs[:i]))
+            if roots and not any(union(root, ref, "same", 1.0, False) for root in roots):
+                apart.append({"food_ref": ref, "others": [r for r in refs[:i]]})
 
     # Unsure: blocked on the first word, which every source here makes the food's head noun.
     blocks = defaultdict(list)
@@ -228,7 +259,7 @@ def group(foods: list[dict]) -> tuple[list[list[dict]], list[dict]]:
         union(a, b, "unsure", s, True)
 
     groups = [[by_ref[r] for r in sorted(refs)] for refs in members.values() if len(refs) > 1]
-    return sorted(groups, key=lambda g: g[0]["food_ref"]), matches
+    return sorted(groups, key=lambda g: g[0]["food_ref"]), matches, apart
 
 
 def base_of(group: list[dict]) -> dict:
@@ -253,7 +284,7 @@ def conflicts(group: list[dict]) -> list[dict]:
 
 def run(bundle: Path, merges_json: Path = MERGES_JSON, merge_log: Path = MERGE_LOG) -> dict:
     foods = read_foods(bundle)
-    groups, matches = group(foods)
+    groups, matches, apart = group(foods)
     records = []
     for g in groups:
         base = base_of(g)
@@ -274,6 +305,7 @@ def run(bundle: Path, merges_json: Path = MERGES_JSON, merge_log: Path = MERGE_L
         "matches: same name": sum(m["kind"] == "same" for m in matches),
         "matches: unsure": sum(m["kind"] == "unsure" for m in matches),
         "records with a conflict": sum(bool(r["conflicts"]) for r in records),
+        "same-name foods kept apart (energy differs by more than half)": len(apart),
     }
     merges_json.write_text(json.dumps({
         "bundleSHA256": sha256_file(bundle),
@@ -282,7 +314,8 @@ def run(bundle: Path, merges_json: Path = MERGES_JSON, merge_log: Path = MERGE_L
                     "score": max((x["score"] for x in by_member[m["food_ref"]]), default=1.0)}
                    for r in records for m in r["members"]],
     }, indent=1, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
-    write_log(merge_log, bundle, records, by_member, counts)
+    by_ref = {f["food_ref"]: f for f in foods}
+    write_log(merge_log, bundle, records, by_member, counts, apart, by_ref)
     return counts
 
 
@@ -290,7 +323,7 @@ def _fmt(v: float) -> str:
     return f"{v:g}"
 
 
-def write_log(path: Path, bundle: Path, records, by_member, counts) -> None:
+def write_log(path: Path, bundle: Path, records, by_member, counts, apart=(), by_ref=None) -> None:
     lines = [
         "# Food merge log",
         "",
@@ -300,7 +333,7 @@ def write_log(path: Path, bundle: Path, records, by_member, counts) -> None:
         "Rule (owner, 2026-10-19): one record per real food across every source. Foods are matched "
         "on USDA's own codes (**code**: a Foundation and an SR Legacy food with one NDB number, an "
         "FNDDS food whose only ingredient is an SR Legacy food), on equal normalised English names "
-        "(**same**), or on names that differ only by words naming nothing about the food ("
+        "(**same**, unless their energy per 100 g differs by more than half: owner, 2026-10-22), or on names that differ only by words naming nothing about the food ("
         + ", ".join(f"*{w}*" for w in sorted(NEUTRAL)) + ") and whose nutrient profiles agree "
         "(**unsure**; energy within 25 kcal or 12 %, protein, fat and carbohydrate within 1.5–2 g "
         "or 15 %, per 100 g). Every member keeps its own rows and licence; the search shows the "
@@ -322,6 +355,16 @@ def write_log(path: Path, bundle: Path, records, by_member, counts) -> None:
         for c in r["conflicts"]:
             vals = "; ".join(f"{_fmt(v['value'])} (`{v['food_ref']}`)" for v in c["values"])
             lines.append(f"| `{r['record']}` {name} | {c['nutrient']} | {vals} |")
+    lines += ["", "## Kept apart", "",
+              "Foods sharing a name whose energy differs by more than half of the larger value. Each "
+              "stays its own record.", "",
+              "| Food | kcal per 100 g | Same name as |", "|---|---:|---|"]
+    for a in apart:
+        food = by_ref[a["food_ref"]]
+        others = "<br>".join(f"`{r}` {_fmt(by_ref[r]['profile'].get('energy_kcal', float('nan')))} kcal"
+                             for r in a["others"])
+        lines.append(f"| `{a['food_ref']}` {food['name']} | "
+                     f"{_fmt(food['profile'].get('energy_kcal', float('nan')))} | {others} |")
     lines += ["", "## Merges", "", "| Record | Members | Matches |", "|---|---|---|"]
     for r in records:
         refs = [m["food_ref"] for m in r["members"]]

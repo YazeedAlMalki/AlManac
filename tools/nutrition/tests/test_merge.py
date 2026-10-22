@@ -36,7 +36,7 @@ BEEF = {"energy_kcal": 150, "protein": 22.0, "fat_total": 6.0, "carbohydrate_by_
 
 
 def records(path):
-    groups, matches = merge.group(merge.read_foods(path))
+    groups, matches, _ = merge.group(merge.read_foods(path))
     return {frozenset(f["food_ref"] for f in g) for g in groups}, matches, groups
 
 
@@ -74,6 +74,33 @@ class Matching(unittest.TestCase):
         groups, matches, _ = records(path)
         self.assertEqual(groups, {frozenset({"usda:1", "usda:2", "usda:3"})})
         self.assertEqual({m["kind"] for m in matches}, {"code"})
+
+    def test_same_name_with_energy_differing_by_more_than_half_is_kept_apart(self):
+        drink = {"energy_kcal": 22, "protein": 0.3, "fat_total": 0.3}
+        cream = {"energy_kcal": 199, "protein": 1.9, "fat_total": 19.2}
+        path = bundle(self, [
+            ("cofid:1", "Coconut milk", "", drink),
+            ("ciqual:1", "Coconut milk", "", cream),
+            ("afcd:1", "Coconut milk", "", {**cream, "energy_kcal": 190}),
+            ("afcd:2", "Honey", "", {"energy_kcal": 278}),
+            ("cofid:2", "Honey", "", {"energy_kcal": 331}),
+        ])
+        groups, _, _ = records(path)
+        self.assertEqual(groups, {frozenset({"ciqual:1", "afcd:1"}), frozenset({"afcd:2", "cofid:2"})})
+        _, _, apart = merge.group(merge.read_foods(path))
+        self.assertEqual([a["food_ref"] for a in apart], ["cofid:1"])
+
+    def test_an_outlier_or_a_tiny_difference_does_not_split_a_group(self):
+        def kcal(n):
+            return {"energy_kcal": n}
+        path = bundle(self, [
+            ("afcd:1", "Raspberries, raw", "", kcal(48)), ("ciqual:1", "Raspberries, raw", "", kcal(47.9)),
+            ("cofid:1", "Raspberries, raw", "", kcal(25)), ("usda:1", "Raspberries, raw", "", kcal(51.4)),
+            ("ciqual:2", "Bottled water", "", kcal(0.0017)), ("ciqual:3", "Bottled water", "", kcal(0.096)),
+        ])
+        groups, _, _ = records(path)
+        self.assertEqual(groups, {frozenset({"afcd:1", "ciqual:1", "cofid:1", "usda:1"}),
+                                  frozenset({"ciqual:2", "ciqual:3"})})
 
     def test_almanac_dishes_are_never_merged(self):
         path = bundle(self, [("almanac:x", "Falafel", "", BEEF), ("ciqual:1", "Falafel", "", BEEF)])
