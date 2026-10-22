@@ -27,13 +27,19 @@ final class AttributionsUITests: XCTestCase {
     /// a derived image is marked as modified with the change described.
     func testAttributionsPageCreditsEveryBundledSource() {
         openSettings()
-        scrollTo("Attributions")
-        app.buttons["Attributions"].tap()
-        XCTAssertTrue(app.navigationBars["Attributions"].waitForExistence(timeout: 10),
-                      "the Attributions page never appeared")
+        scrollTo("Data Sources & Licenses")
+        app.buttons["Data Sources & Licenses"].tap()
+        XCTAssertTrue(app.navigationBars["Data Sources & Licenses"].waitForExistence(timeout: 10),
+                      "the Data Sources & Licenses page never appeared")
 
-        // Title, author, source link and licence link, for workout-guide.
-        XCTAssertTrue(app.staticTexts["workout-guide exercise illustrations and exercise list"].exists)
+        // The page is grouped, and the nutrition sources come first.
+        XCTAssertTrue(app.staticTexts["USDA FoodData Central: Foundation Foods, SR Legacy and FNDDS"].exists,
+                      "the first group should be the nutrition data")
+
+        // Title, author, source link and licence link, for workout-guide. The exercise
+        // sources sit in a later group, so scroll to them.
+        let workoutGuide = app.staticTexts["workout-guide exercise illustrations and exercise list"]
+        XCTAssertTrue(app.reveal(workoutGuide, maxSwipes: 40), "the exercise group is missing")
         XCTAssertTrue(app.staticTexts["Bryl Lim"].exists)
         XCTAssertTrue(app.buttons["https://github.com/bryllim/workout-guide"].exists)
         XCTAssertTrue(app.buttons["CC BY-SA 4.0"].exists)
@@ -44,19 +50,17 @@ final class AttributionsUITests: XCTestCase {
 
         // Criterion 3: a modified image says so, and says what changed.
         let modified = app.staticTexts.containing(
-            NSPredicate(format: "label BEGINSWITH %@", "Modified:")).firstMatch
-        XCTAssertTrue(modified.exists, "a derived image must be marked as modified")
-        XCTAssertTrue(modified.label.contains("vector-traced"),
-                      "the modification must describe the change, got: \(modified.label)")
+            NSPredicate(format: "label BEGINSWITH %@ AND label CONTAINS %@", "Modified:", "vector-traced")).firstMatch
+        XCTAssertTrue(modified.exists, "a derived image must be marked as modified and say what changed")
     }
 
     /// The per-author list — the requirement's "alternatively" clause for
     /// row-level author attribution.
     func testAttributionsPageListsExerciseAuthors() {
         openSettings()
-        scrollTo("Attributions")
-        app.buttons["Attributions"].tap()
-        XCTAssertTrue(app.navigationBars["Attributions"].waitForExistence(timeout: 10))
+        scrollTo("Data Sources & Licenses")
+        app.buttons["Data Sources & Licenses"].tap()
+        XCTAssertTrue(app.navigationBars["Data Sources & Licenses"].waitForExistence(timeout: 10))
 
         // The nutrition notices and the Bristol scale's entry make the source
         // list longer, so the per-exercise author section is well below the

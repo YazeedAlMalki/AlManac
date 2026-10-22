@@ -1,7 +1,7 @@
 import SwiftUI
 import AlmanacCore
 
-/// Settings → About → Attributions.
+/// Settings → About → Data Sources & Licenses (formerly "Attributions").
 ///
 /// The source entries come from `AttributionCatalog`, which is compiled into
 /// the app, so the page needs no network. The per-author list is read from the
@@ -15,9 +15,17 @@ struct AttributionsView: View {
 
     var body: some View {
         List {
-            Section("Sources") {
-                ForEach(AttributionCatalog.entries, id: \.sourceId) { entry in
-                    entryView(entry)
+            Section {
+                Text("Almanac's food, recipe and exercise data come from the sources below. Each is shown with its author, its licence, and whether Almanac changed it.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            ForEach(AttributionCatalog.sections, id: \.title) { section in
+                Section(section.title) {
+                    ForEach(section.entries, id: \.sourceId) { entry in
+                        entryView(entry)
+                    }
                 }
             }
 
@@ -36,7 +44,7 @@ struct AttributionsView: View {
                 }
             }
         }
-        .navigationTitle("Attributions")
+        .navigationTitle("Data Sources & Licenses")
         .navigationBarTitleDisplayMode(.inline)
         .task { loadAuthors() }
     }

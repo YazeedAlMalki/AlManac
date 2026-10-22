@@ -41,6 +41,33 @@ public struct Attribution: Sendable, Hashable {
     }
 }
 
+/// One headed group on the Data Sources & Licenses page.
+public struct AttributionSection: Sendable, Hashable {
+    public let title: String
+    public let entries: [Attribution]
+}
+
+extension AttributionCatalog {
+    /// The page's groups, in display order. The ids are listed by hand so the order is a decision;
+    /// an entry no group names still shows, under "Other", so a credit can never drop off the page.
+    private static let sectionPlan: [(title: String, ids: [String])] = [
+        ("Nutrition data", ["usda", "ciqual", "cofid"]),
+        ("Packaged products", ["off"]),
+        ("Recipes", ["wikibooks-cookbook"]),
+        ("Exercises", ["workout-guide", "everkinetic", "free-exercise-db", "wger"]),
+    ]
+
+    public static var sections: [AttributionSection] {
+        let named = Set(sectionPlan.flatMap(\.ids))
+        var result = sectionPlan.map { plan in
+            AttributionSection(title: plan.title, entries: plan.ids.compactMap(entry(for:)))
+        }
+        let other = entries.filter { !named.contains($0.sourceId) }
+        if !other.isEmpty { result.append(AttributionSection(title: "Other", entries: other)) }
+        return result.filter { !$0.entries.isEmpty }
+    }
+}
+
 public struct MissingAttribution: Error, CustomStringConvertible, Sendable {
     public let sourceId: String
     public init(sourceId: String) { self.sourceId = sourceId }

@@ -131,6 +131,16 @@ struct AttributionTests {
         #expect(AttributionCatalog.licenseReference(forGroup: "not_a_licence") == nil)
     }
 
+    @Test("Every credit appears on the Data Sources & Licenses page exactly once, in a headed group")
+    func everyEntryIsInExactlyOneSection() {
+        let shown = AttributionCatalog.sections.flatMap { $0.entries.map(\.sourceId) }
+        #expect(shown.sorted() == AttributionCatalog.entries.map(\.sourceId).sorted())
+        #expect(Set(shown).count == shown.count)
+        #expect(AttributionCatalog.sections.map(\.title) == [
+            "Nutrition data", "Packaged products", "Recipes", "Exercises", "Other"])
+        #expect(AttributionCatalog.sections.first?.entries.map(\.sourceId) == ["usda", "ciqual", "cofid"])
+    }
+
     @Test("AFCD is share-alike, so it can never be a bundled source (docs/adr/0002)")
     func afcdIsNotShippable() {
         #expect(SourceIdentifier.Namespace.afcd.licenceGroup == .shareAlike)

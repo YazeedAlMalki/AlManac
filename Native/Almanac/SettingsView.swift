@@ -85,7 +85,7 @@ struct SettingsView: View {
                 .accessibilityIdentifier("notification-settings-link")
             }
             Section("About") {
-                NavigationLink("Attributions") {
+                NavigationLink("Data Sources & Licenses") {
                     AttributionsView(db: labModel.db)
                 }
             }

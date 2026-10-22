@@ -92,3 +92,11 @@ all publisher, notice and licence details in addition to running
 `AttributionAudit` over the real bundled-source list.
 
 *This is a product requirement based on a reading of the license terms, not legal advice.*
+
+### Data Sources & Licenses (2026-10-22)
+
+The page is now titled **Data Sources & Licenses** (Settings → About), grouped into Nutrition data,
+Packaged products, Recipes, Exercises and Other (`AttributionCatalog.sections`; a test fails if an
+entry is missing from or repeated in the groups). It is the same page, the same entries and the same
+build guard, not a second screen. Each entry still carries the publisher's own notice; the owner's
+separately supplied wording has not been given and is not in the repository.
