@@ -23,8 +23,10 @@ public struct SourceIdentifier: Codable, Sendable, Hashable, CustomStringConvert
             switch self {
             case .usda: return .permissive
             case .almanac: return .native
-            case .ciqual, .cofid, .afcd, .frida: return .attribution
-            case .openFoodFacts: return .shareAlike
+            case .ciqual, .cofid, .frida: return .attribution
+            // AFCD: FSANZ's Data User Licence Agreement is based on CC BY-SA 3.0 AU,
+            // so it is share-alike and never ships (docs/adr/0002).
+            case .openFoodFacts, .afcd: return .shareAlike
             case .sfda: return .restricted
             // Exercise sources carry per-entry licences (wger admits ODbL as a
             // possible value). They are never classified at source level —

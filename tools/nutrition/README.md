@@ -14,7 +14,7 @@ references below (§n) point there.
 | USDA FoodData Central 2026-04-30 | `usda` | A | Foundation Foods listed in `foundation_food.csv` (395), SR Legacy foods listed in `sr_legacy_food.csv`, FNDDS foods listed in `survey_fndds_food.csv`. Branded and the 74 unlisted Foundation records are left in raw or excluded, not canonicalised. |
 | ANSES-CIQUAL 2025 | `ciqual` | B | All 3,484 foods |
 | CoFID 2021 | `cofid` | B | All 2,887 rows of `1.3 Proximates` |
-| AFCD Release 3 | `afcd` | B | All 1,588 foods, per 100 g and (213 liquids) per 100 mL |
+| AFCD Release 3 | `afcd` | C | All 1,588 foods, per 100 g and (213 liquids) per 100 mL. **Never ships**: FSANZ's Data User Licence Agreement is based on CC BY-SA 3.0 AU, which is share-alike (`docs/adr/0002`). `all` skips it; `union` withholds it; `union --all-groups` keeps it for local research and `bundle` then refuses. |
 | Almanac-native | `almanac` | N | Regional dishes authored in `native/*.csv` (15 so far); see "Almanac-native dishes" |
 
 Canonical nutrients are only what calorie calculation needs (energy, protein,
@@ -22,7 +22,7 @@ fat, carbohydrate, fibre, alcohol). The dictionary splits some of these into
 more than one canonical nutrient where sources publish different quantities
 under the same name — see "Carbohydrate" below.
 
-`almanac` canonicalises recipes of the other four sources' canonical foods,
+`almanac` canonicalises recipes of the other shippable sources' canonical foods,
 so `all` runs it last; `canonicalise almanac` on its own needs them in place.
 
 Group C and D sources (Open Food Facts, SFDA, NEVO, TBCA, IFCT, FAO/INFOODS,
@@ -198,7 +198,7 @@ only ever comes from a cell that says 0**.
   ingredient as eaten. The food de-duplication stage reads these
   (`merge.py`).
 - Groups: Foundation and SR Legacy from `food_category.csv`; FNDDS from
-  `survey_fndds_food.wweia_category_number` → `wweia_food_category.csv`.
+  `survey_fndds_food.wweia_category_code` → `wweia_food_category.csv`.
 - Values per 100 g; qualifier from `derivation_id` → code →
   `derivation_qualifiers.csv`; `confidence` = the code. Blank code: Foundation
   and SR Legacy → `measured`; FNDDS → `calculated_recipe` (FNDDS values are
@@ -210,7 +210,8 @@ only ever comes from a cell that says 0**.
   "undetermined" and name the measure themselves, so the unit is
   `portion_description` (FNDDS: "1 cup") or else `modifier` (SR Legacy:
   "cup, chopped"). FNDDS leaves `amount` blank — the count is in the
-  description — so its amount is 1 (one "1 cup"). A 9999 row with neither
+  description — so its amount is 1 (one "1 cup"). SR Legacy writes `0.0` beside
+  a named measure (18 rows) and means one of it, so a zero amount there is 1. A 9999 row with neither
   word is not a portion; it is listed in `notes.portions_with_no_measure_name`.
 
 ### CIQUAL (`sources/ciqual.py`)

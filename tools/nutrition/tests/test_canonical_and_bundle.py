@@ -165,7 +165,12 @@ class UnionAndBundle(unittest.TestCase):
         sfda = Source("sfda", "sfda", "SFDA", "2026", "unclear", "D", "", "")
         restricted = dataclasses.replace(DICTIONARY, sources={**DICTIONARY.sources, "sfda": sfda})
         write_source(lake, "sfda", restricted)
-        bundle.union(lake, restricted)  # union may hold group D: it never ships
+        # The default union withholds a source that may not ship and says so ...
+        self.assertEqual(bundle.union(lake, restricted)["withheld"], {"sfda": "D"})
+        self.assertEqual(bundle.build(lake, restricted)["namespaces"], ["usda"])
+        before = lake.bundle.read_bytes()
+        # ... a research union keeps it, and the bundle step refuses that union.
+        bundle.union(lake, restricted, all_groups=True)
         with self.assertRaisesRegex(LicenceViolation, r"sfda:1-1 \(group D\)"):
             bundle.build(lake, restricted)
         self.assertEqual(lake.bundle.read_bytes(), before)

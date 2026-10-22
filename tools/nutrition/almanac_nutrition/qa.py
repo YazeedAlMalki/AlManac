@@ -185,6 +185,8 @@ def raw_usda_portions(lake: Lake) -> dict[tuple[str, str, str], tuple[str, str]]
             amount = r["amount"].strip()
             if not amount and foods[r["fdc_id"]] == "survey_fndds_food":
                 amount = "1"  # FNDDS: one of the portion its description names ("1 cup")
+            elif r["measure_unit_id"] == "9999" and foods[r["fdc_id"]] != "foundation_food" and _number(amount) == 0:
+                amount = "1"  # SR Legacy: 0.0 beside a named measure means one of it
             key = (f"usda:{r['fdc_id']}", "household_measure", f"food_portion.csv id={r['id']}")
             cells[key] = (r["gram_weight"].strip(), amount)
     return cells
@@ -439,7 +441,10 @@ def energy_and_plausibility(names, values) -> tuple[dict, dict]:
 def run(lake: Lake, dictionary: Dictionary) -> dict:
     union_foods, union_names, union_values, union_portions, _ = read_canonical(lake.union)
     report: dict = {"generated_at": utc_now(), "dictionary_sha256": dictionary.sha256, "sources": {}}
+    shipped = {f.namespace for f in union_foods}
     for ns in sorted(p.name for p in lake.canonical_root.iterdir() if p.is_dir() and not p.name.startswith(".")):
+        if ns not in shipped:
+            continue  # withheld from the union (licence group C or D): nothing ships, so nothing to check
         foods, _, values, _, manifest = read_canonical(lake.canonical(ns))
         entry = {"foods": len(foods), "values": len(values),
                  "qualifiers": dict(sorted(Counter(v.qualifier for v in values).items()))}
@@ -451,7 +456,9 @@ def run(lake: Lake, dictionary: Dictionary) -> dict:
     report["tokens"] = token_invariants(union_values)
     report["licence"] = licence(dictionary, union_foods, union_values, lake.bundle)
     report["energy"], report["plausibility"] = energy_and_plausibility(union_names, union_values)
-    report["portion_fidelity"] = portion_fidelity(lake, union_portions)
+    # Almanac-native portions are authored (native/portions.csv), not extracted: no raw cell to re-read.
+    report["portion_fidelity"] = portion_fidelity(
+        lake, [p for p in union_portions if not p.food_ref.startswith("almanac:")])
     report["passed"] = (all(e["fidelity"]["problems"] == 0 for e in report["sources"].values())
                         and report["tokens"]["problems"] == 0 and report["licence"]["problems"] == 0
                         and report["portion_fidelity"]["problems"] == 0)

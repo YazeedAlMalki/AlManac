@@ -5,9 +5,9 @@ CREATE TABLE bundle_meta (
     value TEXT NOT NULL
 ) STRICT;
 INSERT INTO "bundle_meta" VALUES('built_at','fixture');
-INSERT INTO "bundle_meta" VALUES('dictionary_sha256','144f12ca82f01e7b28f55220157c55299f3e9f1434dbc138fbc8135e44f38f0a');
+INSERT INTO "bundle_meta" VALUES('dictionary_sha256','7579f2fbd58ddf2a8c9c1181c6b466b81b5dccc330c5c7fad2ed52b74827d6fc');
 INSERT INTO "bundle_meta" VALUES('schema_version','1');
-INSERT INTO "bundle_meta" VALUES('sources','{"afcd": "Release 3", "almanac": "", "ciqual": "2025", "cofid": "2021", "usda": "2026-04-30"}');
+INSERT INTO "bundle_meta" VALUES('sources','{"almanac": "", "ciqual": "2025", "cofid": "2021", "usda": "2026-04-30"}');
 INSERT INTO "bundle_meta" VALUES('tool_revision','fixture');
 INSERT INTO "bundle_meta" VALUES('union_manifest_sha256','fixture');
 CREATE TABLE nutrition_food (
@@ -21,9 +21,9 @@ CREATE TABLE nutrition_food (
     UNIQUE (namespace, local_id),
     CHECK (food_ref = namespace || ':' || local_id)
 ) STRICT;
-INSERT INTO "nutrition_food" VALUES('afcd:F900001','afcd','F900001','B','31304','','fixture');
 INSERT INTO "nutrition_food" VALUES('almanac:fixture-dish','almanac','fixture-dish','N','native','Almanac native','fixture');
 INSERT INTO "nutrition_food" VALUES('ciqual:900001','ciqual','900001','B','0701','breads and similar','fixture');
+INSERT INTO "nutrition_food" VALUES('ciqual:900002','ciqual','900002','B','0801','soups and stocks','fixture');
 INSERT INTO "nutrition_food" VALUES('cofid:900-001','cofid','900-001','B','F','','fixture');
 INSERT INTO "nutrition_food" VALUES('cofid:900-002','cofid','900-002','B','QE','','fixture');
 INSERT INTO "nutrition_food" VALUES('cofid:900-003','cofid','900-003','B','MAA','','fixture');
@@ -36,11 +36,11 @@ CREATE TABLE nutrition_food_name (
     is_primary INTEGER NOT NULL CHECK (is_primary IN (0, 1)),
     PRIMARY KEY (food_ref, language)
 ) STRICT;
-INSERT INTO "nutrition_food_name" VALUES('afcd:F900001','en','Fixture stock, liquid',1);
 INSERT INTO "nutrition_food_name" VALUES('almanac:fixture-dish','ar','طبق تجريبي',0);
 INSERT INTO "nutrition_food_name" VALUES('almanac:fixture-dish','en','Fixture dish',1);
 INSERT INTO "nutrition_food_name" VALUES('ciqual:900001','en','Fixture bread, white',1);
 INSERT INTO "nutrition_food_name" VALUES('ciqual:900001','fr','Pain blanc (fixture)',0);
+INSERT INTO "nutrition_food_name" VALUES('ciqual:900002','en','Fixture stock, liquid',1);
 INSERT INTO "nutrition_food_name" VALUES('cofid:900-001','en','Fixture fruit, canned',1);
 INSERT INTO "nutrition_food_name" VALUES('cofid:900-002','en','Fixture wine, red',1);
 INSERT INTO "nutrition_food_name" VALUES('cofid:900-003','en','Fixture meat, lean',1);
@@ -109,7 +109,6 @@ CREATE TABLE nutrition_source (
     attribution   TEXT NOT NULL,
     url           TEXT NOT NULL
 ) STRICT;
-INSERT INTO "nutrition_source" VALUES('afcd','afcd_release3','Australian Food Composition Database, Release 3','Release 3','CC BY 4.0','B','Food Standards Australia New Zealand. Australian Food Composition Database, Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work.','https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd');
 INSERT INTO "nutrition_source" VALUES('almanac','almanac_native','Almanac native foods','','Almanac proprietary','N','Almanac.','https://almanac.invalid/');
 INSERT INTO "nutrition_source" VALUES('ciqual','ciqual_2025','ANSES-CIQUAL French food composition table 2025','2025','CC BY 4.0 and Etalab Open Licence 2.0','B','ANSES. Table de composition nutritionnelle des aliments Ciqual 2025. Licensed under CC BY 4.0.','https://doi.org/10.5281/zenodo.17550133');
 INSERT INTO "nutrition_source" VALUES('cofid','cofid_2021','McCance and Widdowson''s Composition of Foods Integrated Dataset 2021','2021','Open Government Licence v3.0','B','Contains public sector information licensed under the Open Government Licence v3.0. Source: McCance and Widdowson''s The Composition of Foods Integrated Dataset 2021, Public Health England.','https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid');
@@ -129,18 +128,6 @@ CREATE TABLE nutrition_value (
     CHECK ((qualifier IN ('not_analysed', 'trace')) = (amount IS NULL)),
     CHECK (qualifier <> 'zero_reported' OR amount = 0)
 ) STRICT;
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','alcohol','per_100g',0.0,'zero_reported','Recipe','0','Alcohol (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','alcohol','per_100ml',0.0,'zero_reported','Recipe','0','Alcohol (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','carbohydrate_available','per_100g',0.4,'calculated_recipe','Recipe','0.4','Available carbohydrate, with sugar alcohols (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','carbohydrate_available','per_100ml',0.42,'calculated_recipe','Recipe','0.42','Available carbohydrate, with sugar alcohols (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','energy_kcal','per_100g',4.30210325047801145e+00,'calculated_factor','Recipe','18','Energy with dietary fibre, equated (kJ)','kJ','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','energy_kcal','per_100ml',4.54110898661567841e+00,'calculated_factor','Recipe','19','Energy with dietary fibre, equated (kJ)','kJ','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','fat_total','per_100g',0.2,'calculated_recipe','Recipe','0.2','Fat, total (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','fat_total','per_100ml',0.21,'calculated_recipe','Recipe','0.21','Fat, total (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','fibre_total_dietary','per_100g',0.0,'zero_reported','Recipe','0','Total dietary fibre (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','fibre_total_dietary','per_100ml',0.0,'zero_reported','Recipe','0','Total dietary fibre (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','protein','per_100g',0.2,'calculated_recipe','Recipe','0.2','Protein (g)','g','B');
-INSERT INTO "nutrition_value" VALUES('afcd:F900001','protein','per_100ml',0.21,'calculated_recipe','Recipe','0.21','Protein (g)','g','B');
 INSERT INTO "nutrition_value" VALUES('almanac:fixture-dish','carbohydrate_available','per_100g',20.0,'calculated_recipe',NULL,'20','carbohydrate_available','g','N');
 INSERT INTO "nutrition_value" VALUES('almanac:fixture-dish','fat_total','per_100g',8.0,'calculated_recipe',NULL,'8','fat_total','g','N');
 INSERT INTO "nutrition_value" VALUES('almanac:fixture-dish','fibre_total_dietary','per_100g',2.0,'calculated_recipe',NULL,'2','fibre_total_dietary','g','N');
@@ -151,6 +138,18 @@ INSERT INTO "nutrition_value" VALUES('ciqual:900001','energy_kcal','per_100g',25
 INSERT INTO "nutrition_value" VALUES('ciqual:900001','fat_total','per_100g',0.5,'below_loq','A','< 0,5','40000','g','B');
 INSERT INTO "nutrition_value" VALUES('ciqual:900001','fibre_total_dietary','per_100g',3.1,'measured','B','3,1','34100','g','B');
 INSERT INTO "nutrition_value" VALUES('ciqual:900001','protein','per_100g',9.01,'measured','A','9,01','25000','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','alcohol','per_100g',0.0,'zero_reported','Recipe','0','Alcohol (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','alcohol','per_100ml',0.0,'zero_reported','Recipe','0','Alcohol (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','carbohydrate_available','per_100g',0.4,'calculated_recipe','Recipe','0.4','Available carbohydrate, with sugar alcohols (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','carbohydrate_available','per_100ml',0.42,'calculated_recipe','Recipe','0.42','Available carbohydrate, with sugar alcohols (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','energy_kcal','per_100g',4.302103250478011453e+00,'calculated_factor','Recipe','18','Energy with dietary fibre, equated (kJ)','kJ','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','energy_kcal','per_100ml',4.541108986615678412e+00,'calculated_factor','Recipe','19','Energy with dietary fibre, equated (kJ)','kJ','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','fat_total','per_100g',0.2,'calculated_recipe','Recipe','0.2','Fat, total (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','fat_total','per_100ml',0.21,'calculated_recipe','Recipe','0.21','Fat, total (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','fibre_total_dietary','per_100g',0.0,'zero_reported','Recipe','0','Total dietary fibre (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','fibre_total_dietary','per_100ml',0.0,'zero_reported','Recipe','0','Total dietary fibre (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','protein','per_100g',0.2,'calculated_recipe','Recipe','0.2','Protein (g)','g','B');
+INSERT INTO "nutrition_value" VALUES('ciqual:900002','protein','per_100ml',0.21,'calculated_recipe','Recipe','0.21','Protein (g)','g','B');
 INSERT INTO "nutrition_value" VALUES('cofid:900-001','carbohydrate_available_monosaccharide','per_100g',0.8,'measured',NULL,'0.8','CHO','g','B');
 INSERT INTO "nutrition_value" VALUES('cofid:900-001','energy_kcal','per_100g',151.0,'calculated_factor',NULL,'151','KCALS','kcal','B');
 INSERT INTO "nutrition_value" VALUES('cofid:900-001','fat_total','per_100g',15.2,'measured',NULL,'15.2','FAT','g','B');

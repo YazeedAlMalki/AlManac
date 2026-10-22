@@ -8,9 +8,10 @@ import Foundation
 public enum LicenceGroup: String, Codable, Sendable, CaseIterable, Hashable {
     /// Permissive core. Currently: USDA FoodData Central (CC0 1.0).
     case permissive = "A"
-    /// Attribution required. CIQUAL, CoFID, Frida, AFCD.
+    /// Attribution required. CIQUAL, CoFID, Frida.
     case attribution = "B"
-    /// Share-alike on the derived database. Open Food Facts (ODbL).
+    /// Share-alike on the derived database. Open Food Facts (ODbL); AFCD (FSANZ
+    /// Data User Licence Agreement, CC BY-SA 3.0 AU based).
     case shareAlike = "C"
     /// Restricted or unconfirmed rights. Quarantined.
     case restricted = "D"

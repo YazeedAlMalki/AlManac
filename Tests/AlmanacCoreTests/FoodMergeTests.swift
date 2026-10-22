@@ -86,13 +86,13 @@ struct FoodMergeTests {
             """).isEmpty)
     }
 
-    @Test("On the shipped reference, Honey from three sources is one search row")
+    @Test("On the shipped reference, Honey from four records is one search row")
     func shippedReferenceHoneyIsOneRow() throws {
         try NutritionReferenceBundle.installIfNeeded(into: db)
         try FoodMergeBundle.installIfNeeded(into: db)
         let honey = try catalog.search("honey", limit: 200).filter { $0.primaryName == "Honey" }
         #expect(honey.count == 1)
         let record = try #require(honey.first)
-        #expect(try catalog.members(of: record.ref).count == 3)
+        #expect(try catalog.members(of: record.ref).count == 4)  // USDA SR Legacy and FNDDS, CIQUAL, CoFID
     }
 }

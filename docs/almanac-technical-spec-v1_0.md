@@ -252,8 +252,8 @@ assertion), not by discipline.
 
 | Group | Rule | Sources |
 |---|---|---|
-| A / B | May ship in the bundle, attribution travels with B | USDA FDC (CC0), CIQUAL (CC BY), CoFID (OGL), AFCD (CC BY), Oman FCT 2024 (CC BY, Group B) |
-| C | Never ships (share‑alike attaches to the shipped database) | Open Food Facts (ODbL) |
+| A / B | May ship in the bundle, attribution travels with B | USDA FDC (CC0), CIQUAL (CC BY), CoFID (OGL), Oman FCT 2024 (CC BY, Group B) |
+| C | Never ships (share‑alike attaches to the shipped database) | Open Food Facts (ODbL); AFCD (FSANZ Data User Licence Agreement, based on CC BY‑SA 3.0 AU; ADR 0002) |
 | D | Never ships | SFDA, NEVO, TBCA, IFCT, FAO/INFOODS, Bahrain, Lebanon |
 | N (new, this phase) | Almanac‑native rows — Almanac's own IP, always ships | Native dish entries, once authored |
 
@@ -597,7 +597,7 @@ meanwhile.
 | USDA FoodData Central | CC0 1.0 | 2,101,280 | A |
 | ANSES‑CIQUAL 2025 | CC BY 4.0 + Etalab 2.0 | 3,484 | B |
 | CoFID 2021 | OGL v3.0 | 2,887 | B |
-| AFCD Release 3 | CC BY 4.0 | 1,588 | B |
+| AFCD Release 3 | FSANZ Data User Licence Agreement (based on CC BY‑SA 3.0 AU) | 1,588 | C, never ships (ADR 0002) |
 | Oman FCT 2024 | CC BY 4.0 | 221 | B |
 | Open Food Facts | ODbL | — | C, never ships |
 | SFDA, NEVO, TBCA, IFCT, FAO/INFOODS, Bahrain, Lebanon | various / unclear | — | D, never ships |

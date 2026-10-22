@@ -17,9 +17,9 @@ final class NutritionRealBundleTests: XCTestCase {
         let db = try Database.inMemory()
         try MigrationRunner(migrations: AlmanacMigrations.all).migrate(db)
         let report = try NutritionReferenceImporter(db: db).importBundle(at: (path as NSString).expandingTildeInPath)
-        XCTAssertEqual(report.namespaces, [.afcd, .almanac, .ciqual, .cofid, .usda])
-        XCTAssertEqual(report.foodCount, 8369)
-        XCTAssertEqual(report.valueCount, 49126)
+        XCTAssertEqual(report.namespaces, [.almanac, .ciqual, .cofid, .usda])
+        XCTAssertEqual(report.foodCount, 20006)
+        XCTAssertEqual(report.valueCount, 114708)
 
         let catalog = NutritionCatalog(db: db)
         func ref(_ text: String) -> SourceIdentifier { SourceIdentifier(parsing: text)! }

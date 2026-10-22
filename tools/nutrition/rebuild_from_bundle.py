@@ -28,7 +28,10 @@ src = sqlite3.connect(repo / "Sources/AlmanacCore/Nutrition/Resources/almanac.sq
 meta = dict(src.execute("select key, value from bundle_meta"))
 print("bundle dictionary", meta["dictionary_sha256"][:12], "current", dictionary.sha256[:12])
 lake = Lake(lake_root)
-for (ns,) in src.execute("select namespace from nutrition_source where namespace <> 'almanac'"):
+for (ns,) in src.execute("select namespace from nutrition_source where namespace <> 'almanac'").fetchall():
+    if dictionary.group_of(ns) not in dictionary.shippable_groups:
+        print("dropped", ns, "(licence group", dictionary.group_of(ns) + ", docs/adr/0002)")
+        continue
     foods = [Food(*r[1:]) for r in src.execute("select food_ref, namespace, local_id, licence_group, food_group_code, food_group_name, source_record from nutrition_food where namespace=?", (ns,))]
     like = ns + ":%"
     names = [FoodName(r[0], r[1], r[2], bool(r[3])) for r in src.execute("select * from nutrition_food_name where food_ref like ?", (like,))]

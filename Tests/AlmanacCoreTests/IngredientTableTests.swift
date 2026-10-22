@@ -133,16 +133,16 @@ struct IngredientTableTests {
 /// The rule against the lake that actually ships.
 @Suite("Ingredient table on the shipped lake")
 struct IngredientTableShippedLakeTests {
-    @Test("Chicken breast from four sources is one ingredient; the coated one is not")
+    @Test("Chicken breast from three sources is one ingredient; the coated one is not")
     func shippedLake() throws {
         let db = try TestDatabase()
         _ = try #require(try NutritionReferenceBundle.installIfNeeded(into: db))
         let table = IngredientTable(db: db)
         let mapped = try table.rebuild()
-        #expect(mapped > 7_000, "mapped \(mapped)")
+        #expect(mapped > 5_000, "mapped \(mapped)")
 
         let breast = IngredientNormaliser.id(forKey: "chicken breast")
-        for ref in ["usda:2646170", "cofid:18-307", "ciqual:36017", "afcd:F002594"] {
+        for ref in ["usda:2646170", "cofid:18-307", "ciqual:36017"] {
             #expect(try table.ingredient(of: SourceIdentifier(parsing: ref)!)?.id == breast, "\(ref)")
         }
         // CoFID's "Chicken breast/steak, coated, baked".

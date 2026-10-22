@@ -81,9 +81,10 @@ frames derived from its art. See `docs/exercise-sources.md` and
 
 ### Nutrition addendum (2026-09-25)
 
-The production nutrition bundle added four more required build-guard IDs:
-`usda`, `ciqual`, `cofid` and `afcd`. Their entries credit the USDA, ANSES,
-Public Health England and Food Standards Australia New Zealand, preserve each
+The production nutrition bundle added three more required build-guard IDs:
+`usda`, `ciqual` and `cofid`. (`afcd` was a fourth until 2026-10-21: FSANZ's licence is
+share-alike, so AFCD left the bundle and its entry went with it — `docs/adr/0002`.) Their
+entries credit the USDA, ANSES and Public Health England, preserve each
 publisher's source notice, link CC0, CC BY 4.0, Etalab Open Licence 2.0 or Open
 Government Licence v3.0 as applicable, and describe the normalized-schema changes
 made to the transformed releases. The existing `AttributionTests` suite now pins

@@ -19,12 +19,12 @@
 "line": "6 cups sliced, peeled, and cored baking apples"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 133.3,
 "line": "2/3 cup white granulated sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 88.9,
 "line": "6 Tbsp water (divided into 4 and 2)"
 },
@@ -34,12 +34,12 @@
 "line": "1 Tbsp cornstarch"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 25.0,
 "line": "2 Tbsp white granulated sugar"
 },
@@ -100,12 +100,12 @@
 "line": "1 teaspoon dried onion powder"
 },
 {
-"ref": "afcd:F010466",
+"ref": "cofid:13-893",
 "grams": 2.0,
 "line": "2 teaspoons dried thyme"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon sugar"
 },
@@ -136,7 +136,7 @@
 "line": "125 g (4.4 oz) butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 150.0,
 "line": "3/4 cup (165 g / 5.8 oz) caster sugar"
 },
@@ -151,7 +151,7 @@
 "line": "2 eggs"
 },
 {
-"ref": "afcd:F004009",
+"ref": "cofid:11-888",
 "grams": 250.0,
 "line": "2 cups (275 g / 9.7 oz) self-raising flour"
 },
@@ -199,12 +199,12 @@
 "line": "1 teaspoon vanilla extract"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 400.0,
 "line": "2 cups (450 g / 16 oz) white granulated sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups (400 g / 14 oz) all-purpose flour"
 },
@@ -242,12 +242,12 @@
 "line": "1 tablespoon olive oil"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 7.8,
 "line": "1 tablespoon flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups water, or as needed"
 },
@@ -276,7 +276,7 @@
 "servings": 4,
 "components": [
 {
-"ref": "afcd:F004931",
+"ref": "ciqual:21502",
 "grams": 680.4,
 "line": "1 1/2 lb (680 g) lamb"
 },
@@ -291,7 +291,7 @@
 "line": "2 tablespoons (30 ml) rice"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 7.8,
 "line": "1 tablespoon flour"
 },
@@ -332,7 +332,7 @@
 "line": "1.7 oz dry ground mustard"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 2.1,
 "line": "1/2 tsp sugar"
 },
@@ -360,12 +360,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F003230",
+"ref": "cofid:11-011",
 "grams": 122.0,
 "line": "1 cup cornmeal"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups water"
 }
@@ -388,12 +388,12 @@
 "line": "1 cup (250 ml/8.5 oz) fresh lemon juice"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 175.0,
 "line": "3/4–1 cup (160–225 g/5.6–7.9 oz) white or turbinado sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1303.5,
 "line": "5–6 cups (1.2–1.5 L) water"
 }
@@ -409,7 +409,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "500 g flour"
 },
@@ -419,7 +419,7 @@
 "line": "5 eggs"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 175.3,
 "line": "150–200 ml water"
 }
@@ -447,7 +447,7 @@
 "line": "1 1/2 cups fresh grated coconut"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon sugar"
 },
@@ -480,7 +480,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups (280 g) white wheat flour"
 },
@@ -495,7 +495,7 @@
 "line": "1/2 teaspoon baking powder"
 },
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 60.0,
 "line": "1/2 cup (120 g) powdered sugar"
 },
@@ -556,7 +556,7 @@
 "line": "1/8 tsp cayenne pepper (optional)"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 118.5,
 "line": "1/2 cup hot water"
 }
@@ -572,7 +572,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 453.6,
 "line": "1 pound (450 g) wheat flour"
 },
@@ -630,7 +630,7 @@
 "line": "1/2 lb dry red lentils"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1422.0,
 "line": "6 cups water or stock"
 }
@@ -648,12 +648,12 @@
 "servings": 12,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 177.8,
 "line": "3/4 cup water"
 },
@@ -689,7 +689,7 @@
 "line": "1 tbsp lemon juice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 14.8,
 "line": "1 tbsp water"
 },
@@ -753,7 +753,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
@@ -773,7 +773,7 @@
 "line": "2 cans (15 oz / 425 g) peaches"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup white granulated sugar"
 }
@@ -804,7 +804,7 @@
 "line": "1 egg"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 79.0,
 "line": "1/3 cup water or milk"
 },
@@ -819,12 +819,12 @@
 "line": "3 cup raw oats (rolled or quick/old fashioned)"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 tsp baking soda"
 },
@@ -894,12 +894,12 @@
 "line": "1/3 tsp cream of tartar"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup white granulated sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 93.8,
 "line": "3/4 cup flour"
 },
@@ -930,7 +930,7 @@
 "line": "4 cups of milk, warmed (80–95°F)"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon of white granulated sugar"
 },
@@ -955,7 +955,7 @@
 "line": "1 egg white"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 589.7,
 "line": "1.3 pounds (5 cups) of wheat flour"
 },
@@ -1037,7 +1037,7 @@
 "line": "2 cups basmati rice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups water"
 }
@@ -1058,7 +1058,7 @@
 "line": "1/2 cup (45 g) rolled oats or other grain"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 177.8,
 "line": "3/4 cup (180 ml) water"
 },
@@ -1084,7 +1084,7 @@
 "line": "1/2 cup (120 ml) milk"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 300.0,
 "line": "1 1/2 cups (350 g) white granulated sugar"
 },
@@ -1142,7 +1142,7 @@
 "line": "1/2 teaspoon salt"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 6.9,
 "line": "1 1/2 teaspoon (1/2 tablespoon) baking soda"
 },
@@ -1157,7 +1157,7 @@
 "line": "1 egg"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "4 cups (1 quart/ 500g) flour"
 }
@@ -1197,7 +1197,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (150 g) all-purpose flour"
 },
@@ -1207,7 +1207,7 @@
 "line": "2 teaspoons baking powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 teaspoon baking soda"
 },
@@ -1217,7 +1217,7 @@
 "line": "1/2 teaspoon salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 25.0,
 "line": "2 tablespoons sugar"
 },
@@ -1258,7 +1258,7 @@
 "line": "6 sweet potatoes"
 },
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 112.0,
 "line": "1/2 cup margarine"
 },
@@ -1273,7 +1273,7 @@
 "line": "2 tbsp vanilla extract"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 59.2,
 "line": "1/4 cup water"
 }
@@ -1335,7 +1335,7 @@
 "line": "1 egg yolk, egg white, or whole egg"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 22.2,
 "line": "1–2 tablespoons water or milk"
 }
@@ -1351,7 +1351,7 @@
 "servings": 8,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups (275 g/9.7 oz) all-purpose flour"
 },
@@ -1422,7 +1422,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups flour"
 },
@@ -1437,7 +1437,7 @@
 "line": "1 teaspoon salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 98.7,
 "line": "1/3–1/2 cups water"
 }
@@ -1453,12 +1453,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F003230",
+"ref": "cofid:11-011",
 "grams": 122.0,
 "line": "1 cup (140 g / 4.9 oz) cornmeal"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups (275 g / 9.7 oz) all-purpose flour"
 },
@@ -1514,7 +1514,7 @@
 "line": "1 cup (230 g) shortening or butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup (200 g) white granulated sugar"
 },
@@ -1524,7 +1524,7 @@
 "line": "2 tsp (10 g) baking powder"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 312.5,
 "line": "2–3 cups (250–375 g) flour"
 }
@@ -1594,7 +1594,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 310.0,
 "line": "310 g (2 1/2 cups) flour"
 },
@@ -1604,7 +1604,7 @@
 "line": "6 g (1 tsp) salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.0,
 "line": "4 g (1 tsp) white granulated sugar (optional)"
 },
@@ -1614,7 +1614,7 @@
 "line": "225 g (1 cup) cold butter"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 95.2,
 "line": "95 ml (1/3 cup + 1 tbsp) cold water"
 }
@@ -1640,7 +1640,7 @@
 "line": "2 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 75.0,
 "line": "1/4–1/2 cup (55–110 g / 1.9–3.9 oz) white granulated sugar"
 },
@@ -1655,7 +1655,7 @@
 "line": "1 tablespoon cornstarch (optional)"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 29.6,
 "line": "2 tablespoons water (optional)"
 }
@@ -1778,7 +1778,7 @@
 "servings": 4,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups (450 g) plain flour"
 },
@@ -1788,7 +1788,7 @@
 "line": "1 cup (240 ml) yogurt"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 4.6,
 "line": "1 teaspoon baking soda"
 },
@@ -1798,7 +1798,7 @@
 "line": "2 teaspoons salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 177.8,
 "line": "3/4 cup (180 ml) water"
 }
@@ -1814,7 +1814,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004009",
+"ref": "cofid:11-888",
 "grams": 250.0,
 "line": "2 cups self-raising flour"
 },
@@ -1824,7 +1824,7 @@
 "line": "1/4 teaspoon salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 8.3,
 "line": "2 teaspoons sugar"
 },
@@ -1891,12 +1891,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 218.8,
 "line": "1 3/4 cups (250 g) flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 66.7,
 "line": "1/3 cup (65 g) white granulated sugar"
 },
@@ -1973,7 +1973,7 @@
 "line": "110 g (120 ml / 1/2 cup / 4 oz) peanut butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 110.0,
 "line": "110 g (120 ml / 1/2 cup / 4 oz) white granulated sugar"
 },
@@ -1998,7 +1998,7 @@
 "line": "1/2 teaspoon vanilla essence"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 280.0,
 "line": "280 g (300 ml / 1 1/4 cup / 10 oz) all-purpose flour"
 },
@@ -2008,7 +2008,7 @@
 "line": "1/4 teaspoon salt"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 3.4,
 "line": "3/4 teaspoon baking soda"
 }
@@ -2034,7 +2034,7 @@
 "line": "1 1/2 cup (300 g) brown sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 79.0,
 "line": "1/3 cup (80 ml) water"
 },
@@ -2049,7 +2049,7 @@
 "line": "3 cups (275 g) rolled oats"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (145 g) white flour"
 },
@@ -2059,7 +2059,7 @@
 "line": "1 tsp salt"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 tsp baking soda"
 }
@@ -2085,7 +2085,7 @@
 "line": "1 1/2 cups milk"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 226.8,
 "line": "1/2 lb (about 1 3/4 cups) flour"
 },
@@ -2095,7 +2095,7 @@
 "line": "2 teaspoons baking powder"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon sugar"
 },
@@ -2160,7 +2160,7 @@
 "line": "2 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup (6 3/4 oz / 2.4 dl) white granulated sugar"
 },
@@ -2175,7 +2175,7 @@
 "line": "4 tbsp cocoa"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 93.8,
 "line": "3/4 cup (6 1/4oz / 180 g / 1.8 dl) flour"
 },
@@ -2211,7 +2211,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 110.0,
 "line": "110 g (1.2 dl or 1/2 cup or 4 oz) flour"
 },
@@ -2221,7 +2221,7 @@
 "line": "110 g (1.2 dl or 1/2 cup or 4 oz) unsalted butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 280.0,
 "line": "280 g (3 dl or 1 1/4 cups or 10 oz) granulated sugar"
 },
@@ -2356,12 +2356,12 @@
 "line": "2 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 133.3,
 "line": "2/3 cup sugar"
 },
 {
-"ref": "afcd:F004009",
+"ref": "cofid:11-888",
 "grams": 83.3,
 "line": "2/3 cup self-raising flour"
 },
@@ -2404,12 +2404,12 @@
 "servings": 36,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 400.0,
 "line": "2 cups (480 g) granulated sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1185.0,
 "line": "5 cups (1.2 L) boiling water"
 }
@@ -2430,7 +2430,7 @@
 "line": "4 egg whites"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup (250 ml) superfine sugar, powdered sugar, or granulated sugar (ideally a mixture of 50% superfine and 50% powdered sugar)"
 },
@@ -2456,7 +2456,7 @@
 "servings": 4,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 66.7,
 "line": "1/3 cup (80 g) white granulated sugar or sugar substitute"
 },
@@ -2507,7 +2507,7 @@
 "line": "6 eggs"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 62.5,
 "line": "1/2 cup (120 g) flour"
 },
@@ -2553,7 +2553,7 @@
 "line": "1 tbsp vinegar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1001.7,
 "line": "1 L water"
 },
@@ -2597,7 +2597,7 @@
 "line": "3 egg yolks"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 4.9,
 "line": "1 tsp water"
 },
@@ -2638,7 +2638,7 @@
 "servings": 6,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups flour"
 },
@@ -2658,7 +2658,7 @@
 "line": "2 Tbsp shortening"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 158.0,
 "line": "2/3 cup hot water"
 }
@@ -2684,7 +2684,7 @@
 "line": "1/2 cup shortening"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 133.3,
 "line": "2/3 cup white granulated sugar"
 },
@@ -2704,7 +2704,7 @@
 "line": "2 eggs"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 312.5,
 "line": "2 1/2 cups all-purpose flour"
 }
@@ -2725,7 +2725,7 @@
 "line": "1 cup raw (i.e. not roasted) rice flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup water (hot water preferred by some)"
 },
@@ -2804,7 +2804,7 @@
 "servings": 12,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 218.8,
 "line": "1 3/4 cup (250 g / 8.8 oz) all-purpose flour"
 },
@@ -2814,7 +2814,7 @@
 "line": "1 cup (80 g / 2.8 oz) chocolate chips"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 150.0,
 "line": "3/4 cup (175 g / 6.2 oz) granulated sugar"
 },
@@ -2870,7 +2870,7 @@
 "line": "1/2 cup brown sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 31.2,
 "line": "1/4 cup all-purpose flour"
 },
@@ -2885,7 +2885,7 @@
 "line": "1/4 cup butter or margarine, softened"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 187.5,
 "line": "1 1/2 cups all-purpose flour"
 },
@@ -2895,7 +2895,7 @@
 "line": "1 1/2 tsp cinnamon"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup white granulated sugar"
 },
@@ -2951,7 +2951,7 @@
 "line": "1 cup (240 g) brown sugar"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup (120 g) white sugar"
 },
@@ -2961,7 +2961,7 @@
 "line": "1 egg"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 59.2,
 "line": "1/4 cup (60 ml) water"
 },
@@ -2976,12 +2976,12 @@
 "line": "3 cups (700 g) rolled oats"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (240 g) all-purpose flour"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 teaspoon baking soda"
 },
@@ -3007,12 +3007,12 @@
 "servings": 20,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 400.0,
 "line": "2 cups (480 g) white sugar"
 },
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 112.0,
 "line": "1/2 cup (120 g) margarine or butter"
 },
@@ -3063,12 +3063,12 @@
 "line": "1 cup (240 g) brown sugar (packed)"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 187.5,
 "line": "1 1/2 cup (260 g) all-purpose flour"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 4.6,
 "line": "1 teaspoon baking soda"
 },
@@ -3093,7 +3093,7 @@
 "line": "1/2 cup (120 g) brown sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup (240 ml) water"
 },
@@ -3124,7 +3124,7 @@
 "line": "4 squares (4 oz / 115 g) unsweetened chocolate, melted"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 400.0,
 "line": "2 cups (480 ml) white granulated sugar"
 },
@@ -3139,7 +3139,7 @@
 "line": "2 tsp (10 ml) vanilla extract"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups (480 ml) all purpose flour"
 },
@@ -3154,7 +3154,7 @@
 "line": "1/2 tsp (2.5 ml) salt"
 },
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 120.0,
 "line": "1 cup (240 ml) confectioners' sugar"
 }
@@ -3206,12 +3206,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 400.0,
 "line": "2 cups (470 ml) white sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 218.8,
 "line": "1 3/4 cup (415 ml) flour"
 },
@@ -3221,7 +3221,7 @@
 "line": "1 3/4 cups (415 ml) baking cocoa powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 6.9,
 "line": "1 1/2 teaspoon (7 ml) baking soda"
 },
@@ -3256,7 +3256,7 @@
 "line": "2 teaspoons (10 ml) vanilla extract"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup (235 ml) boiling water"
 },
@@ -3271,12 +3271,12 @@
 "line": "7 oz (200 g) dark chocolate"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 29.6,
 "line": "1/8 cup (30 ml) boiling water"
 },
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 7.5,
 "line": "1/16 cup (15 ml) powdered sugar"
 },
@@ -3322,7 +3322,7 @@
 "line": "1/4 tsp salt"
 },
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 240.0,
 "line": "1–3 cup (240–700 g) icing sugar"
 }
@@ -3353,12 +3353,12 @@
 "line": "1 2/3 cup milk"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup plain flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup white granulated sugar"
 },
@@ -3379,7 +3379,7 @@
 "servings": 24,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups all-purpose flour"
 },
@@ -3389,7 +3389,7 @@
 "line": "1 teaspoon salt"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 4.6,
 "line": "1 teaspoon baking soda"
 },
@@ -3414,7 +3414,7 @@
 "line": "1 cup vegetable oil"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 450.0,
 "line": "2 1/4 cups white sugar"
 },
@@ -3455,7 +3455,7 @@
 "line": "1/2 cup (120 g) raisins, washed"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 10.4,
 "line": "2–3 teaspoons sugar"
 },
@@ -3495,12 +3495,12 @@
 "line": "6–7 tablespoons butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup (240 g) white granulated sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups (480 ml) water"
 }
@@ -3544,7 +3544,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (125 g) flour"
 },
@@ -3635,7 +3635,7 @@
 "line": "1 teaspoon baking powder"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 46.9,
 "line": "6 tablespoon flour"
 },
@@ -3682,17 +3682,17 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "4 cups (950 ml) whole wheat flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup (120 ml) white granulated sugar"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 9.2,
 "line": "2 tsp baking soda"
 },
@@ -3723,7 +3723,7 @@
 "servings": 8,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups all-purpose flour"
 },
@@ -3733,12 +3733,12 @@
 "line": "1 tablespoon baking powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 4.6,
 "line": "1 teaspoon baking soda"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 25.0,
 "line": "1/8 cup white sugar"
 },
@@ -3774,12 +3774,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F003230",
+"ref": "cofid:11-011",
 "grams": 122.0,
 "line": "1 cup (240 ml) cornmeal"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (240 ml) all-purpose flour"
 },
@@ -3809,12 +3809,12 @@
 "line": "1/4 cup (60 ml) shortening"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 50.0,
 "line": "1/4 cup (60 ml) sugar (optional)"
 },
 {
-"ref": "afcd:F003209",
+"ref": "usda:2710826",
 "grams": 106.3,
 "line": "1/2 can (7.5 ounces / 212 g) whole corn (optional), drained"
 }
@@ -3861,7 +3861,7 @@
 "servings": 36,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 344.0,
 "line": "344 g (2 3/4 cups or 24 oz) all-purpose flour"
 },
@@ -3871,7 +3871,7 @@
 "line": "1/4 tsp salt"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 4.6,
 "line": "1 tsp baking soda"
 },
@@ -3881,7 +3881,7 @@
 "line": "2 tsp cream of tartar"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 300.0,
 "line": "300 g (1 1/2 cups or 9 oz) superfine sugar"
 },
@@ -3906,7 +3906,7 @@
 "line": "1 tsp vanilla extract"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 37.5,
 "line": "3 tbsp sugar"
 },
@@ -3927,7 +3927,7 @@
 "servings": 10,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 656.2,
 "line": "5 1/4 cups (600 grams) all-purpose flour"
 },
@@ -3942,12 +3942,12 @@
 "line": "2 teaspoons (7 grams) dry yeast"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.2,
 "line": "1 teaspoon (4 grams) white granulated sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 296.2,
 "line": "1 1/4 cups (300 grams) water"
 },
@@ -3978,7 +3978,7 @@
 "line": "1 1/3 cup plain yoghurt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 395.0,
 "line": "1 2/3 cup water"
 }
@@ -4023,12 +4023,12 @@
 "line": "3 organic or unwaxed oranges (Sevilles are good)"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 90.0,
 "line": "90 g caster sugar (twice)"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 220.4,
 "line": "220 ml water (twice)"
 }
@@ -4049,7 +4049,7 @@
 "line": "250 ml milk"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 150.0,
 "line": "150 g flour (wheat or spelt)"
 },
@@ -4074,7 +4074,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (100 g) flour"
 },
@@ -4089,7 +4089,7 @@
 "line": "2 tbsp (30 g) butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tbsp (15 g) granulated sugar"
 },
@@ -4112,7 +4112,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups (500 ml) all-purpose flour"
 },
@@ -4143,7 +4143,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups (700 g) flour"
 },
@@ -4163,7 +4163,7 @@
 "line": "1 egg, beaten"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 79.0,
 "line": "1/3 cup (80 ml) cold water"
 },
@@ -4184,7 +4184,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 225.0,
 "line": "225 grams (1 cup) all-purpose flour"
 },
@@ -4199,7 +4199,7 @@
 "line": "230 ml (1 cup) cold vegetable shortening"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 30.1,
 "line": "30 ml (2 tablespoons) cold water (add 15 ml of water as needed)"
 }
@@ -4215,7 +4215,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup water"
 },
@@ -4225,7 +4225,7 @@
 "line": "3 tablespoons fresh lemon juice"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.2,
 "line": "1 teaspoon sugar"
 }
@@ -4245,7 +4245,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon white granulated sugar"
 },
@@ -4275,7 +4275,7 @@
 "line": "2 eggs, separated"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 218.8,
 "line": "1 3/4 cups (420 ml) flour"
 }
@@ -4291,7 +4291,7 @@
 "servings": 3,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 120.0,
 "line": "120 g (1 cup or 8 oz) wheat flour (white, whole grain or 1:1 mix of white and whole grain)"
 },
@@ -4311,7 +4311,7 @@
 "line": "1 egg, separated"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tbsp white sugar (optional; this will add a sweetness to your pancakes and is recommended if you are not using any sauces, syrups or ingredient such as bananas or blueberries that will add natural sugars to the mix)"
 }
@@ -4334,7 +4334,7 @@
 "line": "2 1/2 tablespoons butter"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 11.7,
 "line": "1 1/2 tablespoons flour"
 },
@@ -4354,7 +4354,7 @@
 "line": "1/2 cup grated cheddar cheese"
 },
 {
-"ref": "afcd:F002472",
+"ref": "usda:329370",
 "grams": 37.3,
 "line": "1/3 cup grated mozzarella cheese"
 },
@@ -4377,12 +4377,12 @@
 "servings": 4,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup (225 g/7.9 oz) granulated sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 23.4,
 "line": "3 tablespoons flour"
 },
@@ -4425,17 +4425,17 @@
 "line": "1 pound raisins"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 355.5,
 "line": "1 1/2 cups cold water"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 600.0,
 "line": "3 cups white granulated sugar, divided"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups flour"
 },
@@ -4471,7 +4471,7 @@
 "servings": 8,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 150.0,
 "line": "3/4 cup white granulated sugar"
 },
@@ -4481,7 +4481,7 @@
 "line": "1 egg"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 31.2,
 "line": "1/4 cup flour"
 },
@@ -4524,12 +4524,12 @@
 "line": "1 quart milk"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup cold water"
 },
 {
-"ref": "afcd:F003230",
+"ref": "cofid:11-011",
 "grams": 45.8,
 "line": "6 tablespoons cornmeal"
 },
@@ -4544,7 +4544,7 @@
 "line": "1 cup molasses"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 4.6,
 "line": "1 teaspoon baking soda"
 },
@@ -4621,12 +4621,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 224.0,
 "line": "1 cup margarine"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup white sugar"
 },
@@ -4636,7 +4636,7 @@
 "line": "1/2 tsp salt"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "4 cups all-purpose flour"
 },
@@ -4662,7 +4662,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F009499",
+"ref": "ciqual:11091",
 "grams": 64.0,
 "line": "1/4 cup balsamic vinegar"
 },
@@ -4716,7 +4716,7 @@
 "line": "3 medium onions, diced"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1185.0,
 "line": "5 cups water"
 },
@@ -4746,7 +4746,7 @@
 "line": "4 to 5 tablespoons butter"
 },
 {
-"ref": "afcd:F005581",
+"ref": "cofid:12-522",
 "grams": 368.5,
 "line": "1 (13-ounce) can evaporated milk"
 }
@@ -4764,17 +4764,17 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup white granulated sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 59.2,
 "line": "1/4 cup water or fish sauce"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup water or fish sauce"
 }
@@ -4790,7 +4790,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "375 g all-purpose flour"
 },
@@ -4800,7 +4800,7 @@
 "line": "3 g cream of tartar"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.0,
 "line": "2 g baking soda"
 },
@@ -4841,17 +4841,17 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004009",
+"ref": "cofid:11-888",
 "grams": 100.0,
 "line": "100 g self-raising flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "100 g caster sugar"
 },
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 100.0,
 "line": "100 g margarine"
 },
@@ -4874,12 +4874,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F007598",
+"ref": "ciqual:9340",
 "grams": 170.0,
 "line": "1 cup quinoa"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups water"
 }
@@ -4902,7 +4902,7 @@
 "line": "2 egg whites"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups (480 ml) all-purpose flour"
 },
@@ -4912,12 +4912,12 @@
 "line": "2 teaspoons (10 ml) baking powder"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon (15 ml) white sugar"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 teaspoon (5 ml) baking soda"
 },
@@ -4953,7 +4953,7 @@
 "servings": 6,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 83.3,
 "line": "2/3 cup () flour"
 },
@@ -5033,7 +5033,7 @@
 "servings": 12,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 380.0,
 "line": "380 g (1 1/2 cup / 13 1/2 oz) all-purpose flour"
 },
@@ -5048,7 +5048,7 @@
 "line": "220 g (1 cup / 8 oz) butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 110.0,
 "line": "110 g (1/2 cup / 4 oz) white granulated sugar"
 }
@@ -5100,12 +5100,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F003230",
+"ref": "cofid:11-011",
 "grams": 183.0,
 "line": "1 1/2 cups yellow corn meal"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
@@ -5115,7 +5115,7 @@
 "line": "1 teaspoon baking powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 teaspoon baking soda"
 },
@@ -5163,7 +5163,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour"
 },
@@ -5183,7 +5183,7 @@
 "line": "1/4 cup shortening"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 355.5,
 "line": "1 1/2 cup warm water"
 }
@@ -5236,7 +5236,7 @@
 "line": "1/2 teaspoon cumin"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups water"
 }
@@ -5273,12 +5273,12 @@
 "servings": 6,
 "components": [
 {
-"ref": "afcd:F003230",
+"ref": "cofid:11-011",
 "grams": 122.0,
 "line": "1 cup corn meal"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup flour"
 },
@@ -5288,7 +5288,7 @@
 "line": "2 teaspoons baking powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 teaspoon baking soda"
 },
@@ -5334,7 +5334,7 @@
 "line": "1/2 cup vegetable oil"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 50.0,
 "line": "1/4 cup white granulated sugar"
 },
@@ -5354,12 +5354,12 @@
 "line": "1 egg"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups all-purpose flour"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 6.9,
 "line": "1 1/2 tsp baking soda"
 },
@@ -5379,7 +5379,7 @@
 "line": "1/2 tsp salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup water"
 }
@@ -5475,7 +5475,7 @@
 "line": "500 g fresh spinach (or whole frozen spinach leaves)"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 200.3,
 "line": "2 dl water"
 },
@@ -5495,7 +5495,7 @@
 "line": "400 g of chopped spinach, fresh or frozen"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 11.7,
 "line": "1 1/2 tbsp flour"
 },
@@ -5529,7 +5529,7 @@
 "line": "1 cup (250 ml or 8.5 fl oz) dry rice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups water"
 },
@@ -5581,12 +5581,12 @@
 "line": "2 cups (500 ml) milk"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tbsp sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 187.5,
 "line": "1 1/2 cups (350 grams) flour"
 },
@@ -5650,7 +5650,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 100.0,
 "line": "100 g icing sugar"
 },
@@ -5660,7 +5660,7 @@
 "line": "50 g cream cheese or creamy cottage cheese"
 },
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 25.0,
 "line": "25 g margarine or butter"
 },
@@ -5670,7 +5670,7 @@
 "line": "2.5 ml vanilla essence"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 225.0,
 "line": "225 g flour"
 },
@@ -5680,7 +5680,7 @@
 "line": "225 g grated carrot"
 },
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 150.0,
 "line": "150 g margarine or butter"
 },
@@ -5739,7 +5739,7 @@
 "line": "1 tsp salt or soy sauce"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups water"
 }
@@ -5765,12 +5765,12 @@
 "line": "2 sticks butter, melted"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup granulated sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup flour"
 }
@@ -5788,27 +5788,27 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 150.0,
 "line": "150 g (1/2 cup) flour"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "500 g (1 pound) flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 300.0,
 "line": "300 g (1 cup) water"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 1600.0,
 "line": "1.6 kg (10 cups) flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 800.0,
 "line": "800 g (3 1/4 cups) water"
 },
@@ -5836,7 +5836,7 @@
 "line": "125 g (1/2 cup) plain yoghurt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 125.0,
 "line": "125 g (1/2 cup) water"
 },
@@ -5846,7 +5846,7 @@
 "line": "2 tsp honey"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "250 g (1 cup) all-purpose flour"
 }
@@ -5862,7 +5862,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 220.0,
 "line": "220 g (1 cup) flour"
 },
@@ -5922,7 +5922,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup (about 120 ml) granulated sugar"
 },
@@ -5947,12 +5947,12 @@
 "line": "1 teaspoon (5 ml) lemon juice"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (about 240 ml) all-purpose flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon sugar"
 },
@@ -6009,12 +6009,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 50.0,
 "line": "4 Tbsp granulated sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 31.3,
 "line": "4 Tbsp flour"
 },
@@ -6070,7 +6070,7 @@
 "line": "2 tablespoons olive oil"
 },
 {
-"ref": "afcd:F010466",
+"ref": "cofid:13-893",
 "grams": 0.5,
 "line": "1/2 teaspoon thyme"
 }
@@ -6094,7 +6094,7 @@
 "line": "5 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 50.0,
 "line": "1/4 cup white sugar"
 },
@@ -6104,7 +6104,7 @@
 "line": "1 teaspoon vegetable oil"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour"
 },
@@ -6119,7 +6119,7 @@
 "line": "1 teaspoon salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup white sugar"
 },
@@ -6166,7 +6166,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup white granulated sugar"
 },
@@ -6176,7 +6176,7 @@
 "line": "2 sticks (1 cup, 8 ounces, or 225 g) butter, melted"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups flour"
 }
@@ -6205,7 +6205,7 @@
 "line": "1 teaspoon cocoa powder"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.2,
 "line": "1 teaspoon sugar"
 }
@@ -6308,7 +6308,7 @@
 "line": "1 ml sea salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 10017.4,
 "line": "10 L water"
 }
@@ -6324,7 +6324,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 1000.0,
 "line": "1 kg all-purpose flour"
 },
@@ -6334,7 +6334,7 @@
 "line": "50 ml (4 tbsp) oil"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 350.6,
 "line": "300–400 ml (1 2/3–2 cups) hot water"
 }
@@ -6508,7 +6508,7 @@
 "line": "1 tsp dried rosemary"
 },
 {
-"ref": "afcd:F010466",
+"ref": "cofid:13-893",
 "grams": 1.0,
 "line": "1 tsp dried thyme"
 },
@@ -6590,7 +6590,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F009499",
+"ref": "ciqual:11091",
 "grams": 256.0,
 "line": "1 cup () balsamic vinegar"
 },
@@ -6686,12 +6686,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup white sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 62.5,
 "line": "1/2 cup all-purpose flour"
 },
@@ -6722,7 +6722,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 150.0,
 "line": "150 g flour"
 },
@@ -6742,7 +6742,7 @@
 "line": "1 egg"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "100 g granulated sugar"
 },
@@ -6778,7 +6778,7 @@
 "line": "1 tablespoon cornstarch"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 29.6,
 "line": "2 tablespoons cold water"
 }
@@ -6834,7 +6834,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 907.2,
 "line": "2 lb fine wheat flour"
 },
@@ -6864,7 +6864,7 @@
 "line": "1 oz yeast"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.2,
 "line": "1 teaspoon caster sugar"
 }
@@ -6890,7 +6890,7 @@
 "line": "5 ml (1 tsp) vanilla extract"
 },
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 450.0,
 "line": "450 g (4 cups) sifted powdered sugar"
 },
@@ -6916,7 +6916,7 @@
 "line": "1/2 cup oats"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 2003.5,
 "line": "2 liters water"
 }
@@ -6965,7 +6965,7 @@
 "line": "4 tablespoons olive oil"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1896.0,
 "line": "8 cups water"
 },
@@ -7013,7 +7013,7 @@
 "line": "10 g butter"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 10.0,
 "line": "10 g flour"
 },
@@ -7049,17 +7049,17 @@
 "servings": 4,
 "components": [
 {
-"ref": "afcd:F004009",
+"ref": "cofid:11-888",
 "grams": 800.0,
 "line": "800 g self-raising flour"
 },
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 200.0,
 "line": "200 g margarine"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "200 g white granulated sugar"
 },
@@ -7074,7 +7074,7 @@
 "line": "1 orange, zested"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 37.0,
 "line": "2–3 tablespoons water"
 },
@@ -7084,12 +7084,12 @@
 "line": "200 g pure ground almonds"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "100 g white granulated sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 125.2,
 "line": "125 ml water"
 }
@@ -7146,12 +7146,12 @@
 "line": "1/4 tsp salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.2,
 "line": "1 tsp sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups flour"
 },
@@ -7182,7 +7182,7 @@
 "line": "3 cups coconut milk"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup white granulated sugar"
 },
@@ -7210,7 +7210,7 @@
 "line": "57 g uncooked Basmati rice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 300.5,
 "line": "300 ml boiling water"
 }
@@ -7272,7 +7272,7 @@
 "line": "250 g desiccated coconut"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "200 g white sugar"
 },
@@ -7282,7 +7282,7 @@
 "line": "1 tsp vanilla extract"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 29.6,
 "line": "2 tbsp water (optional)"
 }
@@ -7303,7 +7303,7 @@
 "line": "1.5 lbs (1.25 kg / about 4–5 ea.) carrots"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 156.3,
 "line": "1 1/4 cups flour"
 },
@@ -7318,7 +7318,7 @@
 "line": "1/2 tsp baking powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 tsp baking soda"
 },
@@ -7338,7 +7338,7 @@
 "line": "1/3 cup brown sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 14.8,
 "line": "1 tbsp water"
 },
@@ -7384,7 +7384,7 @@
 "line": "1–2 tbsp butter"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 11.7,
 "line": "1–2 tbsp flour"
 }
@@ -7404,12 +7404,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups water"
 }
@@ -7425,7 +7425,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour, sifted"
 },
@@ -7445,7 +7445,7 @@
 "line": "1/2 cup (1 stick) butter, room temperature"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup white sugar"
 },
@@ -7486,7 +7486,7 @@
 "line": "3 cups whole milk"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 150.0,
 "line": "3/4 cup sugar"
 },
@@ -7496,7 +7496,7 @@
 "line": "1 tablespoon yoghurt, whisked"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 14.8,
 "line": "1 tablespoon water"
 }
@@ -7648,7 +7648,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008222",
+"ref": "cofid:11-903",
 "grams": 450.0,
 "line": "450 g fine semolina"
 },
@@ -7658,7 +7658,7 @@
 "line": "1 tbsp salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 240.0,
 "line": "240 g warm water"
 },
@@ -7679,12 +7679,12 @@
 "servings": 5,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 62.5,
 "line": "1/2 cup flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 250.0,
 "line": "250 g water"
 },
@@ -7710,7 +7710,7 @@
 "line": "6 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup white granulated sugar"
 },
@@ -7720,7 +7720,7 @@
 "line": "200 g butter, melted"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
@@ -7751,12 +7751,12 @@
 "line": "6 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup white granulated sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
@@ -7798,7 +7798,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 340.2,
 "line": "12 oz all-purpose flour"
 },
@@ -7818,7 +7818,7 @@
 "line": "2 tbsp vegetable oil"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 148.1,
 "line": "1/2–3/4 cup water"
 }
@@ -7834,7 +7834,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "100 g white granulated sugar"
 },
@@ -7875,12 +7875,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 375.0,
 "line": "3 cups sifted flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 300.0,
 "line": "1 1/2 cups white granulated sugar"
 },
@@ -7890,7 +7890,7 @@
 "line": "1 cup cocoa powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 9.2,
 "line": "2 tsp baking soda"
 },
@@ -7900,7 +7900,7 @@
 "line": "1 tsp salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups water"
 },
@@ -7936,12 +7936,12 @@
 "line": "227 g (2 cups or 16 oz) butter, softened (not melted)"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "100 g (1 cup) white granulated sugar"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 27.6,
 "line": "2 tbsp baking soda"
 },
@@ -7966,12 +7966,12 @@
 "line": "1/2 tsp vanilla"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 188.0,
 "line": "188 g (1 1/2 cups or 12 oz) all-purpose flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 25.0,
 "line": "2 tbsp (30 g) sugar"
 },
@@ -8025,12 +8025,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 400.0,
 "line": "400 g (2 cups) plain flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 30.0,
 "line": "30 g (1/4 cup) white granulated sugar"
 },
@@ -8095,7 +8095,7 @@
 "line": "1/2 medium-sized potato, preferably russet or sweet"
 },
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 780.0,
 "line": "5–8 cups powdered sugar"
 },
@@ -8140,7 +8140,7 @@
 "line": "1 cup () almonds"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups () water"
 }
@@ -8159,7 +8159,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 113.4,
 "line": "4 oz (125 ml) water"
 },
@@ -8169,7 +8169,7 @@
 "line": "8 oz (250 g) egg whites"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 453.6,
 "line": "1 lb (500 g) granulated sugar"
 }
@@ -8195,12 +8195,12 @@
 "line": "1/4 tsp cream of tartar or a few drops lemon juice"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 226.8,
 "line": "8 oz (250 g) granulated sugar"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 226.8,
 "line": "8 oz (250 g) superfine sugar or sifted confectioners' sugar"
 }
@@ -8221,7 +8221,7 @@
 "line": "8 oz (250 g) egg whites"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 453.6,
 "line": "1 lb (500 g) superfine sugar"
 }
@@ -8242,7 +8242,7 @@
 "line": "50 g (1/4 cup) butter"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 50.0,
 "line": "50 g (1/4 cup) white wheat flour (type 405)"
 },
@@ -8282,7 +8282,7 @@
 "line": "1 quart (950 ml / 4 cups) milk"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 56.7,
 "line": "2 oz (57 g / 1/4 cup) caster sugar"
 },
@@ -8313,7 +8313,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
@@ -8323,12 +8323,12 @@
 "line": "1 cup butter or margarine"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 250.0,
 "line": "1 1/4 cup granulated sugar"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1185.0,
 "line": "5 cups water"
 }
@@ -8344,7 +8344,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup (140 g / 4.9 oz) all-purpose flour, plus extra for dusting"
 },
@@ -8380,7 +8380,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 437.5,
 "line": "3 1/2 cups (475 g/1.05 lb) all-purpose flour"
 },
@@ -8390,7 +8390,7 @@
 "line": "2 sticks () unsalted butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup () caster sugar"
 },
@@ -8418,12 +8418,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 156.3,
 "line": "1 1/4 cups (175 g/6.2 oz) all-purpose flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 50.0,
 "line": "1/4 cup () caster sugar"
 },
@@ -8454,7 +8454,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 250.0,
 "line": "1 1/4 cups (280 g/9.9 oz) caster sugar"
 },
@@ -8555,7 +8555,7 @@
 "line": "1 teaspoon dried oregano"
 },
 {
-"ref": "afcd:F002472",
+"ref": "usda:329370",
 "grams": 168.0,
 "line": "1 1/2 cups (180 g / 6.5 oz) grated mozzarella cheese"
 }
@@ -8571,12 +8571,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008222",
+"ref": "cofid:11-903",
 "grams": 417.5,
 "line": "2 1/2 cups semolina"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 62.5,
 "line": "1/2 cup plain flour"
 },
@@ -8586,7 +8586,7 @@
 "line": "15 g instant yeast"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 15.0,
 "line": "15 g white granulated sugar"
 },
@@ -8601,7 +8601,7 @@
 "line": "1 egg"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups warm water"
 },
@@ -8627,12 +8627,12 @@
 "line": "1 whole egg"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 59.3,
 "line": "2–6 tablespoons water"
 },
@@ -8668,12 +8668,12 @@
 "line": "1 teaspoon salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 80.1,
 "line": "80 ml (1/4 cup) water"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 306.4,
 "line": "580 ml (2 cups) flour"
 },
@@ -8701,7 +8701,7 @@
 "line": "1 stick (125 g/4.4 oz) butter"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup () superfine sugar"
 },
@@ -8716,7 +8716,7 @@
 "line": "1 teaspoon vanilla extract"
 },
 {
-"ref": "afcd:F004009",
+"ref": "cofid:11-888",
 "grams": 312.5,
 "line": "2 1/2 cups () self-rising flour"
 }
@@ -8737,12 +8737,12 @@
 "line": "6 medium lemons, juiced to yield 1 cup (250 ml/8.5 oz) juice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 770.2,
 "line": "3 1/4 cups (850 ml/29 oz) water"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 150.0,
 "line": "3/4 cup superfine sugar (160 g/5.6 oz)"
 }
@@ -8787,7 +8787,7 @@
 "line": "8 quarts (950 ml) ripe tomatoes"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup (120 g) white granulated sugar"
 },
@@ -8857,7 +8857,7 @@
 "servings": 4,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups wheat flour"
 },
@@ -8877,7 +8877,7 @@
 "line": "1 teaspoon baking powder"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 118.5,
 "line": "1/2 cup water"
 },
@@ -8898,7 +8898,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "500 g all-purpose flour"
 },
@@ -8913,7 +8913,7 @@
 "line": "1 teaspoon salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 25.0,
 "line": "2 tablespoons sugar"
 },
@@ -8923,7 +8923,7 @@
 "line": "2 tablespoons vegetable oil"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 300.5,
 "line": "300 ml warm water"
 }
@@ -9090,7 +9090,7 @@
 "line": "4 cups milk"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup granulated sugar"
 },
@@ -9120,7 +9120,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008222",
+"ref": "cofid:11-903",
 "grams": 167.0,
 "line": "1 cup fine semolina"
 },
@@ -9135,7 +9135,7 @@
 "line": "1/2 cup unsalted butter, melted"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 150.0,
 "line": "3/4 cup granulated sugar"
 },
@@ -9155,12 +9155,12 @@
 "line": "1/2 teaspoon vanilla extract"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup water"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup granulated sugar"
 },
@@ -9297,7 +9297,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour"
 },
@@ -9307,7 +9307,7 @@
 "line": "1 1/2 teaspoons baking powder"
 },
 {
-"ref": "afcd:F000248",
+"ref": "cofid:17-356",
 "grams": 2.3,
 "line": "1/2 teaspoon baking soda"
 },
@@ -9327,7 +9327,7 @@
 "line": "1/2 cup unsalted butter, softened"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup granulated sugar"
 },
@@ -9363,12 +9363,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "500 g white flour"
 },
 {
-"ref": "afcd:F008222",
+"ref": "cofid:11-903",
 "grams": 20.9,
 "line": "2 tbsp semolina"
 },
@@ -9378,7 +9378,7 @@
 "line": "2 tsp instant dried yeast"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.2,
 "line": "1 tsp sugar"
 },
@@ -9388,7 +9388,7 @@
 "line": "1 tsp salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1001.7,
 "line": "1 litre (4 1/4 cups) water"
 }
@@ -9409,7 +9409,7 @@
 "line": "4 tablespoon ground allspice"
 },
 {
-"ref": "afcd:F010466",
+"ref": "cofid:13-893",
 "grams": 3.0,
 "line": "1 tablespoon ground dried thyme"
 },
@@ -9554,12 +9554,12 @@
 "line": "1 cup butter, softened"
 },
 {
-"ref": "afcd:F008222",
+"ref": "cofid:11-903",
 "grams": 334.0,
 "line": "2 cups semolina"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup granulated sugar"
 },
@@ -9732,7 +9732,7 @@
 "line": "3 cloves of garlic, minced"
 },
 {
-"ref": "afcd:F004931",
+"ref": "ciqual:21502",
 "grams": 500.0,
 "line": "500 grams (1 lb) boneless lamb or beef, cut into small cubes"
 },
@@ -9920,12 +9920,12 @@
 "line": "1 cup butter, softened"
 },
 {
-"ref": "afcd:F008980",
+"ref": "cofid:17-062",
 "grams": 60.0,
 "line": "1/2 cup powdered sugar"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour"
 },
@@ -9958,7 +9958,7 @@
 "line": "2 tablespoons olive oil"
 },
 {
-"ref": "afcd:F004931",
+"ref": "ciqual:21502",
 "grams": 500.0,
 "line": "500 grams (1 lb) lamb or beef, cut into small cubes"
 },
@@ -10208,7 +10208,7 @@
 "line": "1/4 teaspoon ground black pepper"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups water or chicken broth"
 }
@@ -10290,12 +10290,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups water"
 },
 {
-"ref": "afcd:F003230",
+"ref": "cofid:11-011",
 "grams": 244.0,
 "line": "2 cups cornmeal"
 }
@@ -10478,7 +10478,7 @@
 "line": "1/4 teaspoon ground black pepper"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup water"
 }
@@ -10501,7 +10501,7 @@
 "line": "2 pounds fresh fish (tilapia, snapper, or any firm white fish)"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
@@ -10605,7 +10605,7 @@
 "line": "1 egg, lightly beaten"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 31.2,
 "line": "1/4 cup all-purpose flour"
 },
@@ -10688,7 +10688,7 @@
 "line": "1/4 cup vinegar (white or apple cider vinegar)"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 59.2,
 "line": "1/4 cup water"
 }
@@ -11039,12 +11039,12 @@
 "line": "2 ripe bananas, mashed"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 125.0,
 "line": "1 cup all-purpose flour"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon sugar"
 },
@@ -11105,7 +11105,7 @@
 "line": "2 tablespoons honey or sugar (or to taste)"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 948.0,
 "line": "4 cups water"
 }
@@ -11293,7 +11293,7 @@
 "line": "460 g butter, divided into four equal portions"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 460.0,
 "line": "460 g all-purpose flour"
 }
@@ -11311,12 +11311,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 1000.0,
 "line": "1000 g flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 250.0,
 "line": "250 g water"
 },
@@ -11337,7 +11337,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 291.7,
 "line": "2 1/3 cups plain (non-self-raising) flour"
 },
@@ -11366,7 +11366,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 453.6,
 "line": "1 pound flour, sifted"
 },
@@ -11389,7 +11389,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 1000.0,
 "line": "1 kg (2 quarts) flour"
 },
@@ -11422,7 +11422,7 @@
 "line": "1/2 cup minced onions"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 50.0,
 "line": "1/4 cup white granulated sugar"
 },
@@ -11528,7 +11528,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 200.0,
 "line": "1 cup superfine sugar"
 },
@@ -11538,7 +11538,7 @@
 "line": "1 egg white"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 474.0,
 "line": "2 cups water"
 },
@@ -11613,7 +11613,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 1000.0,
 "line": "1 kg flour"
 },
@@ -11623,7 +11623,7 @@
 "line": "1 tbsp salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 829.5,
 "line": "3–4 cups water (at room temperature)"
 },
@@ -11644,12 +11644,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 1000.0,
 "line": "1 kg flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 400.7,
 "line": "400 ml water"
 },
@@ -11690,7 +11690,7 @@
 "line": "1 tablespoon lemon juice"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 41.7,
 "line": "1/3 cup all-purpose flour"
 },
@@ -11715,7 +11715,7 @@
 "line": "1 teaspoon cinnamon"
 },
 {
-"ref": "afcd:F005370",
+"ref": "cofid:12-500",
 "grams": 56.0,
 "line": "1/4 cup melted margarine or butter"
 }
@@ -11808,7 +11808,7 @@
 "line": "5 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 90.0,
 "line": "90 g white granulated sugar (adjust amount to taste)"
 },
@@ -11823,7 +11823,7 @@
 "line": "20 ml milk (adjust amount to taste)"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 150.0,
 "line": "150 g all-purpose flour, sifted"
 },
@@ -11847,12 +11847,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "4 cups wheat flour"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 711.0,
 "line": "3 cups water"
 },
@@ -11880,7 +11880,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "4 cups wheat flour"
 },
@@ -11895,7 +11895,7 @@
 "line": "1 1/2 teaspoon salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 12.5,
 "line": "1 tablespoon white sugar"
 },
@@ -11923,7 +11923,7 @@
 "line": "1/4 cup (60 g) softened butter"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 31.2,
 "line": "1/4 cup (30 g) all-purpose flour"
 }
@@ -11944,12 +11944,12 @@
 "line": "100 g washed spinach leaves"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 118.5,
 "line": "1/2 cup (125 ml) water"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 37.5,
 "line": "3 tablespoons white granulated sugar"
 },
@@ -12015,7 +12015,7 @@
 "line": "1 teaspoon ground ginger"
 },
 {
-"ref": "afcd:F010466",
+"ref": "cofid:13-893",
 "grams": 1.0,
 "line": "1 teaspoon thyme (or the equivalent amount of dried thyme)"
 },
@@ -12025,12 +12025,12 @@
 "line": "1/4 cup white vinegar or lemon juice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 59.2,
 "line": "1/4 cup water (or more if needed)"
 },
 {
-"ref": "afcd:F004931",
+"ref": "ciqual:21502",
 "grams": 680.4,
 "line": "1 1/2 pounds (about 700 g) lamb or goat meat, cut into large chunks or small pieces for skewering"
 }
@@ -12056,7 +12056,7 @@
 "line": "2 cups white rice, cleaned"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1185.0,
 "line": "5 cups water"
 },
@@ -12077,7 +12077,7 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour (you can use whole grain, but softer wheat is better here)"
 },
@@ -12092,7 +12092,7 @@
 "line": "1 tsp kosher salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 79.0,
 "line": "1/3 cup ice water"
 }
@@ -12113,12 +12113,12 @@
 "line": "1 1/2 tsp (7.5 ml) vanilla extract"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 118.5,
 "line": "1/2 cup (120 ml) water"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup (120 ml) white sugar"
 }
@@ -12136,7 +12136,7 @@
 "servings": 3,
 "components": [
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup (240 ml) water"
 },
@@ -12146,12 +12146,12 @@
 "line": "1/2 cup (120 ml) fresh or frozen ginger in 1/2 in (1.25 cm) dice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 118.5,
 "line": "1/2 cup (120 ml) water"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup (120 ml) white sugar"
 },
@@ -12184,7 +12184,7 @@
 "line": "4 whole limes, washed"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cup (120 ml) white sugar"
 },
@@ -12212,7 +12212,7 @@
 "line": "1 1/2 ea. oranges, washed"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 100.0,
 "line": "1/2 cups (120 ml) white sugar"
 },
@@ -12235,12 +12235,12 @@
 "servings": null,
 "components": [
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup (240 ml) water"
 },
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups (480 ml) all-purpose flour"
 }
@@ -12291,7 +12291,7 @@
 "line": "3/4 cup (180 ml) brown sugar"
 },
 {
-"ref": "afcd:F005581",
+"ref": "cofid:12-522",
 "grams": 756.0,
 "line": "3 cups (720 ml) unsweetened evaporated milk or coconut milk"
 }
@@ -12360,17 +12360,17 @@
 "servings": 1,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 500.0,
 "line": "500g (1lb, 3.5 cups) all purpose flour"
 },
 {
-"ref": "afcd:F005581",
+"ref": "cofid:12-522",
 "grams": 126.0,
 "line": "1/2 cup evaporated milk"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 66.7,
 "line": "1/3 cup sugar"
 },
@@ -12385,7 +12385,7 @@
 "line": "1/2 tsp salt"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 1001.7,
 "line": "1 litre (4.2 cups) water"
 }
@@ -12409,7 +12409,7 @@
 "line": "1 cup corn starch"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 701.2,
 "line": "700 ml (approx. 25 fl oz) cold water"
 }
@@ -12432,7 +12432,7 @@
 "line": "2 cups long-grain rice"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 711.0,
 "line": "3 cups water"
 },
@@ -12458,12 +12458,12 @@
 "servings": 8,
 "components": [
 {
-"ref": "afcd:F004007",
+"ref": "cofid:11-886",
 "grams": 250.0,
 "line": "2 cups all-purpose flour"
 },
 {
-"ref": "afcd:F008222",
+"ref": "cofid:11-903",
 "grams": 167.0,
 "line": "1 cup fine semolina"
 },
@@ -12473,7 +12473,7 @@
 "line": "1 teaspoon salt"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 4.2,
 "line": "1 teaspoon sugar"
 },
@@ -12483,7 +12483,7 @@
 "line": "1 teaspoon instant yeast"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 296.2,
 "line": "1 1/4 cups warm water"
 },
@@ -12519,7 +12519,7 @@
 "line": "2 eggs"
 },
 {
-"ref": "afcd:F008976",
+"ref": "cofid:17-063",
 "grams": 37.5,
 "line": "3 tbsp sugar"
 },
@@ -12607,7 +12607,7 @@
 "line": "1 teaspoon ginger (optional)"
 },
 {
-"ref": "afcd:F009527",
+"ref": "ciqual:18066",
 "grams": 237.0,
 "line": "1 cup water or stock"
 }

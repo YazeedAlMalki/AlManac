@@ -54,7 +54,7 @@ PROFILE = tuple(TOLERANCE)
 # The record a merged group shows: USDA first (its three data types in this
 # order), then the others. A fixed rule, not a choice per group.
 BASE_ORDER = ("foundation_food.csv", "sr_legacy_food.csv", "survey_fndds_food.csv", "usda",
-              "cofid", "ciqual", "afcd")
+              "cofid", "ciqual")
 
 STOP = {"and", "or", "with", "of", "the", "a", "an", "in", "as", "to", "for", "ns", "nfs",
         "var", "average"}
@@ -304,7 +304,7 @@ def write_log(path: Path, bundle: Path, records, by_member, counts) -> None:
         + ", ".join(f"*{w}*" for w in sorted(NEUTRAL)) + ") and whose nutrient profiles agree "
         "(**unsure**; energy within 25 kcal or 12 %, protein, fat and carbohydrate within 1.5–2 g "
         "or 15 %, per 100 g). Every member keeps its own rows and licence; the search shows the "
-        "record (USDA first, then CoFID, CIQUAL, AFCD). Almanac's own dishes are never merged.",
+        "record (USDA first, then CoFID, CIQUAL). Almanac's own dishes are never merged.",
         "",
         "| | Count |", "|---|---:|",
         *[f"| {k} | {v} |" for k, v in counts.items()],

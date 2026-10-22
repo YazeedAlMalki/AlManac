@@ -89,7 +89,7 @@ def rows(dictionary: Dictionary) -> dict[str, tuple[list, list, list]]:
             ("fibre_total_dietary", g, 3.1, "measured", "B", "3,1", "34100", "g"),
             ("alcohol", g, None, "not_analysed", "", "-", "60000", "g"),
         ], []),
-        ("afcd", "F900001", "31304", "", [("en", "Fixture stock, liquid")], [
+        ("ciqual", "900002", "0801", "soups and stocks", [("en", "Fixture stock, liquid")], [
             ("energy_kcal", g, 18 / 4.184, "calculated_factor", "Recipe", "18", kj, "kJ"),
             ("protein", g, 0.2, "calculated_recipe", "Recipe", "0.2", "Protein (g)", "g"),
             ("fat_total", g, 0.2, "calculated_recipe", "Recipe", "0.2", "Fat, total (g)", "g"),

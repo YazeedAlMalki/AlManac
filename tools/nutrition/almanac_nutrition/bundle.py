@@ -1,7 +1,10 @@
 """union and bundle — Processing Design v0.1 §5.
 
-union   Every canonical source present, re-validated and licence-tagged. It
-        may one day hold Group C or D rows: it is a local research artefact.
+union   Every canonical source present whose licence group is shippable,
+        re-validated and licence-tagged. Sources in a group that may not
+        ship (AFCD: group C, docs/adr/0002) are withheld and named in the
+        manifest; `all_groups=True` keeps them, for a local research union
+        that `bundle` will then refuse.
 bundle  The only filter, and it filters by asserting. Every row's licence
         group must be shippable (A, B or N) and must agree with sources.csv,
         or the build fails before a byte of output exists.
@@ -114,17 +117,21 @@ CREATE TABLE nutrition_portion (
 """
 
 
-def union(lake: Lake, dictionary: Dictionary) -> dict:
-    """Concatenates every canonical/{namespace}/ present. Deleting one removes that source."""
+def union(lake: Lake, dictionary: Dictionary, *, all_groups: bool = False) -> dict:
+    """Concatenates every shippable canonical/{namespace}/ present. Deleting one removes that source."""
     root = lake.canonical_root
     present = sorted(p.name for p in root.iterdir()
                      if p.is_dir() and not p.name.startswith(".")) if root.is_dir() else []
+    for namespace in present:
+        if namespace not in dictionary.sources:
+            raise CanonicalError(f"canonical/{namespace}: namespace is not in dictionary/sources.csv")
+    withheld = [] if all_groups else [ns for ns in present
+                                      if dictionary.group_of(ns) not in dictionary.shippable_groups]
+    present = [ns for ns in present if ns not in withheld]
     if not present:
         raise CanonicalError(f"{root}: no canonical sources to union")
     foods, names, values, portions, sources = [], [], [], [], {}
     for namespace in present:
-        if namespace not in dictionary.sources:
-            raise CanonicalError(f"canonical/{namespace}: namespace is not in dictionary/sources.csv")
         f, n, v, p, manifest = read_canonical(root / namespace)
         if manifest.get("namespace") != namespace:
             raise CanonicalError(f"canonical/{namespace}: manifest names {manifest.get('namespace')!r}")
@@ -147,6 +154,7 @@ def union(lake: Lake, dictionary: Dictionary) -> dict:
         manifest = {
             "stage": "union",
             "sources": sources,
+            "withheld": {ns: dictionary.group_of(ns) for ns in withheld},
             "dictionary_sha256": dictionary.sha256,
             "generated_at": utc_now(),
             "tool_revision": tool_revision(),

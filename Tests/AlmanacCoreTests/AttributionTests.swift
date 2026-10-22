@@ -36,12 +36,7 @@ struct AttributionTests {
                       "Public Health England",
                       "Contains public sector information licensed under the Open Government Licence v3.0. Source: McCance and Widdowson's The Composition of Foods Integrated Dataset 2021, Public Health England.",
                       "https://www.gov.uk/government/publications/composition-of-foods-integrated-dataset-cofid",
-                      ["Open Government Licence v3.0": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"], true),
-            "afcd": ("Australian Food Composition Database, Release 3",
-                     "Food Standards Australia New Zealand",
-                     "Food Standards Australia New Zealand. Australian Food Composition Database, Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work.",
-                     "https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd",
-                     ["CC BY 4.0": "https://creativecommons.org/licenses/by/4.0/"], true)
+                      ["Open Government Licence v3.0": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"], true)
         ]
 
         #expect(Set(expected.keys).isSubset(of: Set(AttributionCatalog.bundledSourceIds)))
@@ -136,6 +131,13 @@ struct AttributionTests {
         #expect(AttributionCatalog.licenseReference(forGroup: "not_a_licence") == nil)
     }
 
+    @Test("AFCD is share-alike, so it can never be a bundled source (docs/adr/0002)")
+    func afcdIsNotShippable() {
+        #expect(SourceIdentifier.Namespace.afcd.licenceGroup == .shareAlike)
+        #expect(SourceIdentifier.Namespace.afcd.licenceGroup.isShippable == false)
+        #expect(AttributionCatalog.bundledSourceIds.contains("afcd") == false)
+    }
+
     @Test("A food names its source as the Attributions page does, and Almanac's own as Almanac")
     func foodSourceNameMatchesItsCredit() {
         func food(_ namespace: SourceIdentifier.Namespace) -> NutritionFood {
@@ -143,7 +145,7 @@ struct AttributionTests {
                           licenceGroup: namespace.licenceGroup, foodGroupCode: "", foodGroupName: "",
                           sourceRecord: "", names: [:], primaryName: "")
         }
-        for namespace: SourceIdentifier.Namespace in [.usda, .ciqual, .cofid, .afcd] {
+        for namespace: SourceIdentifier.Namespace in [.usda, .ciqual, .cofid] {
             #expect(food(namespace).sourceName == AttributionCatalog.entry(for: namespace.rawValue)?.title)
         }
         #expect(food(.ciqual).sourceName == "ANSES-CIQUAL French food composition table 2025")

@@ -30,7 +30,9 @@ def main(argv: list[str] | None = None) -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("extract", "canonicalise"):
         commands.add_parser(name).add_argument("source", choices=sorted(sources))
-    commands.add_parser("union")
+    commands.add_parser("union").add_argument(
+        "--all-groups", action="store_true",
+        help="research only: keep sources whose licence group may not ship (AFCD); bundle will refuse it")
     commands.add_parser("bundle")
     commands.add_parser("all", help="extract and canonicalise every source, then union and bundle")
     commands.add_parser("qa", help="re-read every raw cell and check the canonical, union and bundle stages")
@@ -48,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "canonicalise":
             print(f"canonical {args.source}: {_summary(sources[args.source].canonicalise(lake, dictionary))}")
         elif args.command == "union":
-            print(f"union: {_summary(bundle.union(lake, dictionary))}")
+            print(f"union: {_summary(bundle.union(lake, dictionary, all_groups=args.all_groups))}")
         elif args.command == "fixture":
             print(f"fixture -> {fixture.write(dictionary)}")
         elif args.command == "merge":
@@ -65,6 +67,10 @@ def main(argv: list[str] | None = None) -> int:
         else:
             # almanac reduces recipes of the others' canonical foods, so it goes last.
             for namespace, module in sorted(sources.items(), key=lambda item: item[0] == "almanac"):
+                if dictionary.group_of(namespace) not in dictionary.shippable_groups:
+                    print(f"skipped {namespace}: licence group {dictionary.group_of(namespace)} "
+                          "may not ship (docs/adr/0002)")
+                    continue
                 module.extract(lake)
                 print(f"canonical {namespace}: {_summary(module.canonicalise(lake, dictionary))}")
             print(f"union: {_summary(bundle.union(lake, dictionary))}")

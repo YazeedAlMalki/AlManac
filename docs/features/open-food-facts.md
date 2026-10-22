@@ -14,7 +14,7 @@ Read at <https://world.openfoodfacts.org/terms-of-use> and the ODbL summary at
 |---|---|---|
 | The database | Open Database License (ODbL) 1.0 | Attribute any public use, keep the licence notice, and offer any adapted database publicly used under the ODbL (share-alike); a DRM'd copy must come with an unrestricted one. Commercial use is allowed. |
 | Individual contents | Database Contents License (DbCL) 1.0 | No conditions beyond the database's. |
-| Product photos | CC BY-SA, plus third-party rights in packaging | **Not used.** |
+| Product photos | CC BY-SA, plus third-party rights in packaging | **Not used.** No image column is read from the export or stored, and the app never loads a remote image. `tools/openfoodfacts/tests/test_text_only.py` fails if an image field appears in the builder, the schema or the shipped database. |
 
 Open Food Facts' own re-use terms add: name Open Food Facts with a link to
 openfoodfacts.org (or the product page), mention the licence, and share

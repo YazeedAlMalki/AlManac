@@ -32,13 +32,13 @@ def fixture_lake(case, extra_nutrient_rows=(), derivations=None):
     write_table(base / "foundation_food.csv", ["fdc_id", "NDB_number", "footnote"],
                 [["1001", "20038", ""], ["1004", "4053", ""]])
     write_table(base / "sr_legacy_food.csv", ["fdc_id", "NDB_number"], [["2001", "20038"]])
-    write_table(base / "survey_fndds_food.csv", ["fdc_id", "food_code", "wweia_category_number",
+    write_table(base / "survey_fndds_food.csv", ["fdc_id", "food_code", "wweia_category_code",
                                                  "start_date", "end_date"],
                 [["3001", "56203000", "4802", "2021-01-01", "2023-12-31"],
                  ["3002", "63101000", "6002", "2021-01-01", "2023-12-31"]])
     write_table(base / "wweia_food_category.csv", ["wweia_food_category", "wweia_food_category_description"],
                 [["4802", "Oatmeal"], ["6002", "Apples"]])
-    write_table(base / "input_food.csv", ["id", "fdc_id", "fdc_id_of_input_food", "seq_num", "amount",
+    write_table(base / "input_food.csv", ["id", "fdc_id", "fdc_of_input_food", "seq_num", "amount",
                                           "sr_code", "sr_description", "unit", "portion_code",
                                           "portion_description", "gram_weight", "retention_code",
                                           "survey_flag"],
@@ -81,7 +81,8 @@ def fixture_lake(case, extra_nutrient_rows=(), derivations=None):
                  ["2", "1003", "1", "1.0", "9999", "", "bar", "40.0", "", "", ""],
                  ["3", "2001", "1", "1.0", "9999", "", "cup", "81.0", "", "", ""],
                  ["4", "3001", "1", "", "9999", "1 cup", "10205", "234.0", "", "", ""],
-                 ["5", "3002", "1", "", "9999", "", "", "182.0", "", "", ""]])
+                 ["5", "3002", "1", "", "9999", "", "", "182.0", "", "", ""],
+                 ["6", "2001", "2", "0.0", "9999", "", "cup", "142.0", "", "", ""]])
     register(lake, "usda", LOCAL, [f"{FOLDER}/{t}" for t in usda.SCOPED_TABLES + usda.WHOLE_TABLES],
              release="2026-04-30")
     return lake
@@ -107,7 +108,7 @@ class Extract(unittest.TestCase):
         self.assertEqual([r["fdc_id"] for r in read_csv(out / "food.csv")], kept)
         self.assertEqual({r["fdc_id"] for r in read_csv(out / "food_nutrient.csv")}, set(kept))
         self.assertEqual([r["fdc_id"] for r in read_csv(out / "food_portion.csv")],
-                         ["1001", "2001", "3001", "3002"])
+                         ["1001", "2001", "3001", "3002", "2001"])
         self.assertEqual([r["fdc_id"] for r in read_csv(out / "input_food.csv")], ["3001", "3001", "3002"])
         with open(out / "food.csv", newline="") as f:
             self.assertEqual(next(csv.reader(f))[0], "fdc_id")
@@ -184,6 +185,9 @@ class Canonicalise(unittest.TestCase):
         sr, fndds = portions["food_portion.csv id=3"], portions["food_portion.csv id=4"]
         self.assertEqual((sr.unit, sr.amount, sr.value), ("cup", 1.0, 81.0))
         self.assertEqual((fndds.unit, fndds.amount, fndds.value, fndds.modifier), ("1 cup", 1.0, 234.0, "10205"))
+        # The real SR Legacy file writes 0.0 beside a named measure: one of it, not zero of it.
+        self.assertEqual((portions["food_portion.csv id=6"].unit, portions["food_portion.csv id=6"].amount),
+                         ("cup", 1.0))
         self.assertNotIn("food_portion.csv id=5", portions)
         self.assertEqual(self.manifest["notes"]["portions_with_no_measure_name"], ["food_portion.csv id=5"])
 
@@ -250,7 +254,9 @@ class AgainstTheRealLake(unittest.TestCase):
             link.symlink_to(REAL_LAKE.root / local_path)
             usda.extract(scratch)
             manifest = usda.canonicalise(scratch, DICTIONARY)
-        self.assertEqual(manifest["counts"]["foods"], 395)
+        self.assertEqual(manifest["notes"]["foods_by_data_type"],
+                         {"foundation_food": 395, "sr_legacy_food": 7793, "survey_fndds_food": 5432})
+        self.assertEqual(manifest["counts"]["foods"], 13620)
         self.assertEqual(len(manifest["notes"]["excluded"]), 74)
         self.assertNotIn("trace", manifest["counts"]["values_by_qualifier"])
 

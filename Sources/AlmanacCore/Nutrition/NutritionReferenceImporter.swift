@@ -210,8 +210,11 @@ public struct NutritionReferenceImporter: @unchecked Sendable {
                             modifier.map { SQLValue.text($0) } ?? .null, .real(row.double("value") ?? 0),
                             .text(row.string("licence_group") ?? ""), .text(row.string("source_value") ?? "")]
                 }
+            // OR IGNORE: SR Legacy repeats a few measures under two `food_portion` ids (same food,
+            // unit, amount and grams), which the identity index of Migration011 refuses; keeping
+            // the first is the same collapse that migration applies to a duplicate already stored.
             try db.run("""
-                INSERT INTO nutrition_portion
+                INSERT OR IGNORE INTO nutrition_portion
                     (id, food_ref, amount, unit_text, unit_fold, modifier_text,
                      gram_weight, sequence, licence_group, source_value)
                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?);

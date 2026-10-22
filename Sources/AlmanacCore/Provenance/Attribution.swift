@@ -102,7 +102,7 @@ public enum AttributionCatalog {
     /// Sources the build ships. Append-only; adding an id here without a
     /// matching `entries` row fails `AttributionAudit`.
     public static let bundledSourceIds: [String] = [
-        "workout-guide", "everkinetic", "free-exercise-db", "wger", "usda", "ciqual", "cofid", "afcd",
+        "workout-guide", "everkinetic", "free-exercise-db", "wger", "usda", "ciqual", "cofid",
         "bristol-stool-form-scale", "loinc", "wikibooks-cookbook", "off"
     ]
 
@@ -212,19 +212,6 @@ public enum AttributionCatalog {
                 + "values are preserved.",
             sourceNotice: "Contains public sector information licensed under the Open Government Licence v3.0. "
                 + "Source: McCance and Widdowson's The Composition of Foods Integrated Dataset 2021, Public Health England."
-        ),
-        Attribution(
-            sourceId: "afcd",
-            title: "Australian Food Composition Database, Release 3",
-            author: "Food Standards Australia New Zealand",
-            sourceURL: "https://www.foodstandards.gov.au/science-data/food-nutrient-databases/afcd",
-            licenses: [ccBy40],
-            isModified: true,
-            modificationNote: "Converted into Almanac's normalized nutrition schema; only mapped foods, "
-                + "nutrients and portions are retained. Published energy values were converted from kJ "
-                + "to kcal.",
-            sourceNotice: "Food Standards Australia New Zealand. Australian Food Composition Database, "
-                + "Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work."
         ),
         // The seven type names in the digestion screens are the scale's
         // published wording (`BristolType.displayName`), so the scale is a

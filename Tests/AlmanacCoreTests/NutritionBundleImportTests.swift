@@ -36,7 +36,7 @@ final class NutritionBundleImportTests: XCTestCase {
         let db = try migrated()
 
         let report = try XCTUnwrap(NutritionReferenceBundle.installIfNeeded(into: db))
-        XCTAssertEqual(report.namespaces, [.afcd, .almanac, .ciqual, .cofid, .usda])
+        XCTAssertEqual(report.namespaces, [.almanac, .ciqual, .cofid, .usda])
         XCTAssertGreaterThan(report.foodCount, 1_000)
         let catalog = NutritionCatalog(db: db)
         XCTAssertFalse(try catalog.search("apple").isEmpty)
@@ -88,7 +88,7 @@ final class NutritionBundleImportTests: XCTestCase {
     func testEveryBundledFoodIsReadableThroughTheCatalog() throws {
         let db = try migrated()
         let report = try NutritionReferenceImporter(db: db).importBundle(at: bundle())
-        XCTAssertEqual(report.namespaces, [.afcd, .almanac, .ciqual, .cofid, .usda])
+        XCTAssertEqual(report.namespaces, [.almanac, .ciqual, .cofid, .usda])
         XCTAssertEqual(report.foodCount, 8)
 
         let catalog = NutritionCatalog(db: db)
@@ -126,7 +126,7 @@ final class NutritionBundleImportTests: XCTestCase {
         XCTAssertEqual(try catalog.energy(for: ref("cofid:900-002"), basis: .per100ml)?.kilocalories ?? 0,
                        75.65, accuracy: 1e-9)
         XCTAssertNil(try catalog.energy(for: ref("cofid:900-002"), basis: .per100g))
-        XCTAssertEqual(try catalog.bases(for: ref("afcd:F900001")), [.per100g, .per100ml])
+        XCTAssertEqual(try catalog.bases(for: ref("ciqual:900002")), [.per100g, .per100ml])
     }
 
     func testNativeRowsShipAsGroupN() throws {
@@ -226,7 +226,7 @@ final class NutritionBundleImportTests: XCTestCase {
             DELETE FROM nutrition_source WHERE namespace = 'cofid';
             """)
         let report = try NutritionReferenceImporter(db: db).importBundle(at: withoutCoFID)
-        XCTAssertEqual(report.namespaces, [.afcd, .almanac, .ciqual, .usda])
+        XCTAssertEqual(report.namespaces, [.almanac, .ciqual, .usda])
         XCTAssertNil(try NutritionCatalog(db: db).food(ref("cofid:900-001")))
         XCTAssertEqual(try db.query("SELECT COUNT(*) AS n FROM nutrition_reference_import;").first?.int("n"), 2)
     }

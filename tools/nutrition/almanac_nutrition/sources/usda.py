@@ -112,7 +112,7 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
     wweia = {_column(r, "wweia_food_category.csv", "wweia_food_category"):
              _column(r, "wweia_food_category.csv", "wweia_food_category_description")
              for r in read_csv(ext / "wweia_food_category.csv")}
-    survey_categories = {r["fdc_id"]: _column(r, "survey_fndds_food.csv", "wweia_category_number")
+    survey_categories = {r["fdc_id"]: _column(r, "survey_fndds_food.csv", "wweia_category_code")
                          for r in read_csv(ext / "survey_fndds_food.csv")}
     inputs_by_food: dict[str, list[dict]] = defaultdict(list)
     for r in read_csv(ext / "input_food.csv"):
@@ -151,7 +151,7 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
             ingredients = inputs_by_food.get(fdc_id, [])
             if len(ingredients) == 1:
                 sole = ingredients[0]
-                record += (f"; input_food.csv sole input fdc_id={sole['fdc_id_of_input_food'].strip()}"
+                record += (f"; input_food.csv sole input fdc_id={_column(sole, 'input_food.csv', 'fdc_of_input_food')}"
                            f" sr_code={sole['sr_code'].strip()}")
         else:
             category = categories.get(row["food_category_id"], {})
@@ -233,7 +233,8 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
             raise CanonicalError(f"usda:{row['fdc_id']} food_portion.csv id={row['id']}: measure_unit_id "
                                  f"{row['measure_unit_id']!r} is not in measure_unit.csv")
         data_type = data_type_of[row["fdc_id"]]
-        if unit_name == "undetermined" and data_type != "foundation_food":
+        was_undetermined = unit_name == "undetermined" and data_type != "foundation_food"
+        if was_undetermined:
             # SR Legacy names its measure in `modifier` ("cup, chopped"), FNDDS in
             # `portion_description` ("1 cup"): the publisher's own words are the unit.
             unit_name = row["portion_description"].strip() or row["modifier"].strip()
@@ -243,6 +244,10 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
         amount_text = row["amount"].strip()
         if not amount_text and data_type == "survey_fndds_food":
             # FNDDS states the count inside its description ("1 cup"): one of that portion.
+            amount_text = "1"
+        elif was_undetermined and _is_zero(amount_text):
+            # SR Legacy gives a named measure ("cup") an amount of 0.0 when the gram weight is for
+            # one of it: 18 such rows. A zero amount would make the portion unusable.
             amount_text = "1"
         try:
             qualified = qualify(row["gram_weight"], tokens={})
@@ -261,6 +266,13 @@ def canonicalise(lake: Lake, dictionary: Dictionary) -> dict:
                                   "rejected_values": rejected,
                                   "unmapped_duplicates": unmapped_duplicates,
                                   "portions_with_no_measure_name": unnamed_portions})
+
+
+def _is_zero(text: str) -> bool:
+    try:
+        return float(text) == 0
+    except ValueError:
+        return False
 
 
 def _column(row: dict, file: str, column: str) -> str:

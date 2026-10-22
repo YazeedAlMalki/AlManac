@@ -726,7 +726,7 @@ benchmark), and keeps D6 and D7 as built. D3 (how many dishes count as full
 coverage) is still open. The *Overrule by:* lines stay, to show where each one lives.
 
 **A regional dish is a recipe of reference foods, never typed-in values.** Each
-dish lists USDA, CIQUAL, CoFID or AFCD foods by weight, and its values are that
+dish lists USDA, CIQUAL or CoFID foods by weight (never AFCD: it is share-alike, `docs/adr/0002`), and its values are that
 recipe reduced per 100 g (`calculated_recipe`). A figure copied from a cookbook
 or a label has nowhere to go. *Overrule by:* adding a values file to
 `tools/nutrition/native/` and reading it in `sources/almanac.py`.
@@ -1055,7 +1055,7 @@ How the build applies that; **none of these has been confirmed:**
   description names.
 - **A merge is a search-time map, not a rewrite.** Every member keeps its rows,
   values and licence; the search lists the record (USDA first, then CoFID,
-  CIQUAL, AFCD) and finds it by any member's name (Migration 067). A logged
+  CIQUAL) and finds it by any member's name (Migration 067). A logged
   food keeps pointing at the row that was logged.
 - **"Unsure" is narrow.** Names may differ only by neutral words ("fresh",
   "average", "standard"…) with agreeing nutrient profiles. A name-overlap

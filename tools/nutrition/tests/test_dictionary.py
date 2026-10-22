@@ -23,9 +23,15 @@ class TheShippedDictionary(unittest.TestCase):
     def test_shippable_groups_are_a_b_and_n(self):
         self.assertEqual(DICTIONARY.shippable_groups, {"A", "B", "N"})
 
+    def test_afcd_is_share_alike_and_never_ships(self):
+        # FSANZ's Data User Licence Agreement is based on CC BY-SA 3.0 AU (docs/adr/0002).
+        self.assertEqual(DICTIONARY.group_of("afcd"), "C")
+        self.assertNotIn(DICTIONARY.group_of("afcd"), DICTIONARY.shippable_groups)
+        self.assertIn("CC BY-SA 3.0 AU", DICTIONARY.sources["afcd"].licence)
+
     def test_source_groups(self):
         self.assertEqual({ns: s.licence_group for ns, s in DICTIONARY.sources.items()},
-                         {"usda": "A", "ciqual": "B", "cofid": "B", "afcd": "B", "almanac": "N"})
+                         {"usda": "A", "ciqual": "B", "cofid": "B", "afcd": "C", "almanac": "N"})
 
     def test_carbohydrate_definitions_stay_apart(self):
         def target(source, source_id):

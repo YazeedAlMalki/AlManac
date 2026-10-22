@@ -75,6 +75,20 @@ class Matching(unittest.TestCase):
         self.assertEqual(groups, {frozenset({"usda:1", "usda:2", "usda:3"})})
         self.assertEqual({m["kind"] for m in matches}, {"code"})
 
+    def test_foundation_is_the_record_over_sr_legacy_and_fndds_whatever_their_order(self):
+        # SR Legacy has the lower id and FNDDS lists a sole SR input: Foundation still wins.
+        path = bundle(self, [
+            ("usda:1", "Egg, whole, raw, fresh", SR.format(id=1, code="1123"), EGG),
+            ("usda:2", "Eggs, Grade A, Large, egg whole", FDN.format(id=2, code="01123"), EGG),
+            ("usda:3", "Egg, whole, fried", "food.csv fdc_id=3; survey_fndds_food.csv food_code=31105005; "
+                                            "input_food.csv sole input fdc_id=1 sr_code=1123", EGG),
+        ])
+        out = Path(path.parent)
+        merge.run(path, out / "merges.json", out / "log.md")
+        merges = json.loads((out / "merges.json").read_text())["merges"]
+        self.assertEqual({m["foodRef"]: m["recordRef"] for m in merges},
+                         {"usda:1": "usda:2", "usda:2": "usda:2", "usda:3": "usda:2"})
+
     def test_almanac_dishes_are_never_merged(self):
         path = bundle(self, [("almanac:x", "Falafel", "", BEEF), ("ciqual:1", "Falafel", "", BEEF)])
         self.assertEqual(records(path)[0], set())
