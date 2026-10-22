@@ -12850,6 +12850,116 @@
           }
         }
       }
+    },
+    "A shared backup is encrypted with a passphrase you choose.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُشفَّر النسخة الاحتياطية المشتركة بعبارة مرور تختارها."
+          }
+        }
+      }
+    },
+    "Passphrase": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عبارة المرور"
+          }
+        }
+      }
+    },
+    "Repeat passphrase": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أعد كتابة عبارة المرور"
+          }
+        }
+      }
+    },
+    "Use at least 8 characters. Almanac does not keep the passphrase: without it, this backup cannot be restored.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدم ٨ أحرف على الأقل. لا يحتفظ Almanac بعبارة المرور: من دونها لا يمكن استعادة هذه النسخة الاحتياطية."
+          }
+        }
+      }
+    },
+    "The two passphrases do not match.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عبارتا المرور غير متطابقتين."
+          }
+        }
+      }
+    },
+    "Share encrypted backup": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مشاركة النسخة الاحتياطية المشفّرة"
+          }
+        }
+      }
+    },
+    "Encrypt": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تشفير"
+          }
+        }
+      }
+    },
+    "Encrypt backup": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تشفير النسخة الاحتياطية"
+          }
+        }
+      }
+    },
+    "This backup is encrypted. Enter the passphrase it was shared with.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذه النسخة الاحتياطية مشفّرة. أدخل عبارة المرور التي شُفّرت بها."
+          }
+        }
+      }
+    },
+    "Unlock": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "فتح"
+          }
+        }
+      }
+    },
+    "Encrypted backup": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نسخة احتياطية مشفّرة"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

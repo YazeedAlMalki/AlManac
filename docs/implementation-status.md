@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-20 (latest): re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
+Updated 2026-10-22 (latest): shared backups are passphrase-encrypted (`BackupEncryption`, CONTEXT.md "Backup encryption"); not re-scored.
+Updated 2026-10-20: re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
 Updated 2026-10-19: the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
 Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
