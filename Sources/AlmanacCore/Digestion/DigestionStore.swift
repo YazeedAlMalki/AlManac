@@ -8,27 +8,29 @@ import Foundation
 public enum BristolType: Int, Sendable, Codable, CaseIterable {
     case type1 = 1, type2, type3, type4, type5, type6, type7
 
-    /// The type's name on the scale, after Lewis & Heaton (1997), *Stool form
+    /// The type's name on the scale devised by Lewis & Heaton (1997), *Stool form
     /// scale as a useful guide to intestinal transit time*, Scand J
     /// Gastroenterol 32(9):920–924.
     ///
     /// A picker of `1 2 3 4 5 6 7` is not a reference scale — the number only
     /// means something against its description, and the description is what the
-    /// user is actually being asked to recognise. The seven names are the
-    /// standard published wording rather than anything written here.
+    /// user is actually being asked to recognise.
     ///
-    /// Credited on the Attributions screen (`AttributionCatalog`,
-    /// `bristol-stool-form-scale`, 2026-10-15). Its licence is not identified;
-    /// see `CONTEXT.md`.
+    /// **The words are Almanac's own** (rewritten 2026-10-22, audit P0-1): the
+    /// seven types and their order are the scale; the names and summaries here
+    /// describe each type in new wording, because the published wording had no
+    /// identified licence. The paper is still credited (`AttributionCatalog`,
+    /// `bristol-stool-form-scale`). Rewording lowers that risk; it does not remove
+    /// the need to confirm it with whoever advises on the app's content.
     public var displayName: String {
         switch self {
-        case .type1: return localized("Separate hard lumps")
-        case .type2: return localized("Lumpy, sausage-shaped")
-        case .type3: return localized("Sausage-shaped, smooth")
-        case .type4: return localized("Smooth, soft sausage")
-        case .type5: return localized("Soft blobs with clear edges")
-        case .type6: return localized("Mushy pieces")
-        case .type7: return localized("Entirely liquid")
+        case .type1: return localized("Hard pellets")
+        case .type2: return localized("Hard, knobbly log")
+        case .type3: return localized("Firm log with cracks")
+        case .type4: return localized("Smooth, soft log")
+        case .type5: return localized("Soft, separate lumps")
+        case .type6: return localized("Mushy, ragged pieces")
+        case .type7: return localized("Watery")
         }
     }
 
@@ -37,13 +39,13 @@ public enum BristolType: Int, Sendable, Codable, CaseIterable {
     /// pieces" alone does not say whether that is a lot or a little.
     public var summary: String {
         switch self {
-        case .type1: return localized("Like nuts, hard to pass")
-        case .type2: return localized("Lumpy and hard to pass")
-        case .type3: return localized("Like a sausage, smooth")
-        case .type4: return localized("Like a snake, smooth and soft")
-        case .type5: return localized("Soft blobs, clearly separated")
-        case .type6: return localized("Fluffy, shapeless pieces")
-        case .type7: return localized("No solid pieces at all")
+        case .type1: return localized("Dry and hard to pass")
+        case .type2: return localized("Bumpy and hard to pass")
+        case .type3: return localized("Formed, with a cracked surface")
+        case .type4: return localized("Formed, smooth and easy to pass")
+        case .type5: return localized("Clearly divided, passed easily")
+        case .type6: return localized("Loose, with ragged edges")
+        case .type7: return localized("Liquid, with no solid pieces")
         }
     }
 

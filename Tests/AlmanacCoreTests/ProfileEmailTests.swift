@@ -2,8 +2,9 @@ import Foundation
 import Testing
 @testable import AlmanacCore
 
-/// The profile's email address and the backup it unlocks (owner, 2026-10-20:
-/// backups are for a person "registered with a valid email").
+/// The profile's optional email address. It no longer gates anything: backups
+/// used to need one (owner, 2026-10-20), and that requirement was removed on
+/// 2026-10-22 after the security audit.
 @Suite("Profile email")
 struct ProfileEmailTests {
 
@@ -28,22 +29,19 @@ struct ProfileEmailTests {
         }
     }
 
-    @Test("A new profile has no email, so it cannot create a backup")
-    func freshProfileCannotBackUp() throws {
+    @Test("A new profile has no email, and that is fine")
+    func freshProfileHasNoEmail() throws {
         let profile = try ProfileStore(db: try migrated()).profile()
         #expect(profile.email == nil)
-        #expect(profile.mayCreateBackup == false)
     }
 
-    @Test("A saved email round-trips and unlocks backups; clearing it locks them again")
+    @Test("A saved email round-trips; clearing it removes it")
     func emailRoundTrips() throws {
         let store = ProfileStore(db: try migrated())
         try store.updateEmail("  name@example.com ")
         #expect(try store.profile().email == "name@example.com")
-        #expect(try store.profile().mayCreateBackup)
         try store.updateEmail("")
         #expect(try store.profile().email == nil)
-        #expect(try store.profile().mayCreateBackup == false)
     }
 
     @Test("A malformed email is refused and the saved one is kept")

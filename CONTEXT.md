@@ -530,12 +530,17 @@ clinician-reviewed". *Overrule by:* `UrineColourHydrationFeedback.darkGrades`,
 `.raiseStepMilliliters`, or `.evaluate`; to apply the raise automatically, call
 `HydrationModel.saveDailyGoal` from `refresh()` instead of showing the button.
 
-**The Bristol scale is credited with "No licence identified".** The seven type
-names are the published wording of Lewis & Heaton (1997). No licence or
-permission for reproducing them was found, so the Attributions entry says so
-rather than naming one. *Overrule by:* recording the licence or permission in
-the `bristol-stool-form-scale` entry of `AttributionCatalog`, or rewording the
-type names in Almanac's own words.
+**The Bristol scale's wording is Almanac's own (owner, 2026-10-22).** The seven
+type names were the published wording of Lewis & Heaton (1997), with no licence
+or permission found; the security audit (P0-1) flagged it, and the owner chose to
+rewrite them. `BristolType.displayName` and `.summary` now describe the seven
+types in new words (Arabic is a draft needing native review), and the
+`bristol-stool-form-scale` Attributions entry credits the scale's origin and says
+nothing is reproduced. The types, their numbers and their order are unchanged, so
+no stored data and no advisory rule changes. This lowers the risk; it does not
+remove the need to confirm it with whoever advises on the app's content.
+*Overrule by:* restoring the published names, which needs the licence or a
+permission first.
 
 ### Body and wellness (2026-10-15)
 
@@ -1112,6 +1117,55 @@ How it was built (Migration 068, `ProfileEmail`, `ProfileView`, `BackupView`).
   iCloud needs an iCloud entitlement the app does not have, and the owner's
   second answer named only the email. *Overrule by:* asking for it.
 - **The four new Arabic strings are drafts**, not reviewed by a native speaker.
+
+### Security audit remediation, P0 and P1 (2026-10-22)
+
+**Decided by the owner, 2026-10-22**, authorising P0 and P1 of the plan in
+`SECURITY_PRIVACY_AUDIT.md` §8 and answering four questions. Everything below was
+written without a Swift toolchain and has **not been compiled or run**; CI is the
+first check. **None of the implementation choices has been confirmed.**
+
+- **Repository licence: all rights reserved** (`LICENSE`). Third-party data and
+  code keep their own licences. *Overrule by:* replacing `LICENSE`.
+- **Bristol scale wording rewritten in Almanac's own words.** See "The Bristol
+  scale's wording is Almanac's own" above.
+- **Exercise photos: keep free-exercise-db's photos, risk re-confirmed.** Their
+  publisher still does not say where the photos come from
+  (`docs/exercise-sources.md`). *Overrule by:* removing the free-exercise-db
+  photos (~19 MB) and rebuilding `exercise-library.json` with `tools/exercises`.
+- **Shared backups are encrypted; this supersedes "Backups (2026-10-20)".** The
+  owner's earlier "backups will not be encrypted" is reversed for any backup that
+  *leaves the app*. A backup kept in the app's own Backups folder stays plain, is
+  excluded from iCloud and computer backups, and is not shared. Sharing asks for a
+  passphrase (8+ characters, typed twice) and shares an encrypted copy made in the
+  temporary directory (`EncryptedBackup`, `CryptoKitBackupCipher`, `BackupView`).
+  Format: AES-256-GCM, PBKDF2-HMAC-SHA256 at 600,000 rounds, random salt and nonce
+  per file, the whole header authenticated. A forgotten passphrase cannot be
+  recovered. Import accepts an encrypted file (asking for its passphrase), a plain
+  container, and a plain `.zip` from earlier versions. The old plaintext `.zip`
+  twins left in the Backups folder are deleted when Backup & restore opens.
+  *Overrule by:* offering a plain share again in `BackupView`.
+- **Backups no longer need an email; this supersedes "Backups need a valid email".**
+  `UserProfile.mayCreateBackup` is gone. The email field stays on the profile as an
+  optional value that nothing uses and nothing sends. *Overrule by:* restoring the
+  gate in `BackupView` and `ProfileEmail`.
+- **Restore refuses any schema the migrations do not define.** It compares every
+  object in `sqlite_master` (not only triggers and views) before it runs a statement
+  against the payload (`BackupBundle.schemaObjects(of:)`). A legitimate backup is
+  made by the same migrations, so only rows differ. The consequence to know: a
+  backup from a build whose migrations were *edited in place* without a new version
+  number would be refused. *Overrule by:* loosening `schemaObjects(of:)`.
+- **SQLite build: FTS5 removed, extension loading omitted** (`Package.swift`).
+  Nothing used FTS5. The SQLite upgrade itself is **not done**, because sqlite.org
+  was unreachable from the audit environment; the steps are in
+  `docs/vendored-sqlite.md`.
+- **Privacy:** `PrivacyInfo.xcprivacy` added; the HealthKit read purpose now names
+  every type read; Settings gets a Privacy screen, "Export my data" (a readable,
+  unencrypted JSON of the person's own records, `DataExport`) and "Erase all data"
+  (`LocalDataEraser` + `AppDataEraser`; Apple Health data is not Almanac's to erase).
+  `docs/PRIVACY.md` is a draft for legal review. The InfoPlist purpose strings are
+  English only (no `InfoPlist.xcstrings` exists); the Arabic strings added are
+  drafts for a native speaker.
 
 ### Scoring the 2026-10-20 re-score
 

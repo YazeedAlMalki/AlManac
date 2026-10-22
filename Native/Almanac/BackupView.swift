@@ -7,9 +7,16 @@ import Darwin
 ///
 /// Backups are `*.almanac-backup` files: one SQLite container holding the
 /// live database and every laboratory document, written by `BackupService`.
-/// Sharing wraps the container in a `.zip` (BRD §6.18) so any mail client,
-/// OS or archive tool accepts it; import accepts both the raw container and a
-/// `.zip` and unwraps the latter before adopting it.
+///
+/// **What stays and what leaves.** A backup created here stays in the app's
+/// backups folder, unencrypted, and that folder is excluded from iCloud and
+/// computer backups. A backup that is *shared* is always an encrypted copy
+/// (`EncryptedBackup`, passphrase chosen by the person), made on demand in the
+/// temporary directory and removed when the share sheet closes. No plaintext
+/// copy is ever handed to the share sheet (audit finding S-02).
+///
+/// Import accepts an encrypted backup (asking for its passphrase), the raw
+/// container, and a plain `.zip` made by earlier versions of the app.
 /// The list is read from the backups folder, not from `backup_manifest`,
 /// because that table lives inside the database a restore replaces — files
 /// created after the snapshot point would otherwise vanish from the list the
@@ -20,14 +27,16 @@ struct BackupView: View {
 
     @State private var bundles: [BackupBundleInfo] = []
     @State private var latest: BackupBundleInfo?
-    @State private var latestZipPath: String?
     @State private var pendingRestore: BackupBundleInfo?
     @State private var error: String?
     @State private var isWorking = false
     @State private var importPresented = false
-    /// A backup needs a valid email on the profile (owner, 2026-10-20).
-    /// Read on every visit, so an email saved in Profile counts at once.
-    @State private var mayCreateBackup = false
+    /// The backup whose encrypted copy is being made for sharing.
+    @State private var sharing: BackupBundleInfo?
+    /// An encrypted backup picked for import, waiting for its passphrase, and the
+    /// staging folder to remove when the sheet closes.
+    @State private var encryptedImport: EncryptedImport?
+    @State private var importStaging: URL?
 
     private var fileManager: FileManager { .default }
     private var supportRoot: URL {
@@ -55,17 +64,13 @@ struct BackupView: View {
                 } label: {
                     Label("Create backup", systemImage: "externaldrive.badge.plus")
                 }
-                .disabled(isWorking || !mayCreateBackup)
-                if mayCreateBackup {
-                    Text("Saves the database and every laboratory document into one file on this device.")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
-                    Text("Add a valid email address in Profile to create backups. Restoring a backup does not need one.")
-                        .font(.caption).foregroundStyle(AlmanacPalette.warning)
-                        .accessibilityIdentifier("backup-needs-email")
-                }
-                if let latest {
-                    ShareLink(item: shareItem(for: latest)) {
+                .disabled(isWorking)
+                Text("Saves the database and every laboratory document into one file on this device.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if let shareable = latest ?? bundles.first {
+                    Button {
+                        sharing = shareable
+                    } label: {
                         Label("Share latest backup", systemImage: "square.and.arrow.up")
                     }
                 }
@@ -83,6 +88,8 @@ struct BackupView: View {
                     case .failure(let e): error = String(describing: e)
                     }
                 }
+            } footer: {
+                Text("Backups kept on this device are not encrypted and are left out of iCloud and computer backups. A backup you share is always encrypted with a passphrase you choose.")
             }
 
             Section("Backups on this device") {
@@ -115,7 +122,19 @@ struct BackupView: View {
         } message: {
             Text("Your current records are replaced with the backup. The app restarts when the restore finishes.")
         }
-        .task { reload() }
+        .sheet(item: $sharing, onDismiss: { BackupShareFiles.removeAll() }) { bundle in
+            BackupShareSheet(bundle: bundle)
+        }
+        .sheet(item: $encryptedImport, onDismiss: discardEncryptedImport) { pending in
+            BackupImportPassphraseSheet { passphrase in
+                await finishEncryptedImport(pending, passphrase: passphrase)
+            }
+        }
+        .task {
+            // A share that was interrupted (app killed) can leave its copy behind.
+            BackupShareFiles.removeAll()
+            reload()
+        }
     }
 
     private var restorePresented: Binding<Bool> {
@@ -126,42 +145,46 @@ struct BackupView: View {
     }
 
     private func reload() {
-        mayCreateBackup = (try? ProfileStore(db: db).profile().mayCreateBackup) ?? false
         do {
             try fileManager.createDirectory(at: backupsDirectory, withIntermediateDirectories: true)
+            keepOutOfDeviceBackups()
+            removeLegacyZipTwins()
             bundles = try service.listBundles(in: backupsDirectory.path)
         } catch {
             self.error = String(describing: error)
         }
     }
 
+    /// The backups folder holds the whole health record in clear. It is already
+    /// inside the app's sandbox; this keeps it out of iCloud and computer backups too.
+    private func keepOutOfDeviceBackups() {
+        var url = backupsDirectory
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? url.setResourceValues(values)
+    }
+
+    /// Earlier versions wrote a plaintext `.zip` twin next to every backup and
+    /// never removed it (audit finding S-02). Nothing reads them, so they go.
+    private func removeLegacyZipTwins() {
+        let entries = (try? fileManager.contentsOfDirectory(at: backupsDirectory, includingPropertiesForKeys: nil)) ?? []
+        for url in entries where url.pathExtension.lowercased() == "zip" {
+            try? fileManager.removeItem(at: url)
+        }
+    }
+
     private func createBackup() {
-        guard mayCreateBackup else { return }
         isWorking = true
         defer { isWorking = false }
         do {
             try fileManager.createDirectory(at: backupsDirectory, withIntermediateDirectories: true)
             let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
             let target = backupsDirectory.appendingPathComponent("almanac-\(stamp).almanac-backup")
-            let info = try service.writeBundle(to: target.path, documentsRoot: documentsDirectory, note: nil)
-            latest = info
-            // A `.zip` twin for sharing (BRD §6.18): the raw container stays in
-            // the backups folder for restore; the zip is what leaves the app.
-            latestZipPath = try BackupZipper.zip(bundlePath: info.filePath)
+            latest = try service.writeBundle(to: target.path, documentsRoot: documentsDirectory, note: nil)
             reload()
         } catch {
             self.error = String(describing: error)
         }
-    }
-
-    /// What a share hands out: the `.zip` envelope (any mail client, OS or
-    /// archive tool accepts it), falling back to the raw container if the twin
-    /// is missing.
-    private func shareItem(for bundle: BackupBundleInfo) -> URL {
-        if let latestZipPath, latest?.filePath == bundle.filePath {
-            return URL(fileURLWithPath: latestZipPath)
-        }
-        return URL(fileURLWithPath: bundle.filePath)
     }
 
     private func importBackup(from url: URL) {
@@ -173,12 +196,20 @@ struct BackupView: View {
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         let tmp = fileManager.temporaryDirectory
             .appendingPathComponent("AlmanacImport-\(UUID().uuidString)", isDirectory: true)
-        defer { try? fileManager.removeItem(at: tmp) }
+        var keepStaging = false
+        defer { if !keepStaging { try? fileManager.removeItem(at: tmp) } }
         do {
-            try fileManager.createDirectory(at: backupsDirectory, withIntermediateDirectories: true)
             try fileManager.createDirectory(at: tmp, withIntermediateDirectories: true)
-            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
-            let target = backupsDirectory.appendingPathComponent("imported-\(stamp).almanac-backup")
+            if EncryptedBackup.isEncrypted(fileAt: url.path) {
+                // Copied now, while access to the picked file is open: the
+                // passphrase is asked for afterwards, outside that window.
+                let copy = tmp.appendingPathComponent("candidate.enc")
+                try fileManager.copyItem(at: url, to: copy)
+                importStaging = tmp
+                encryptedImport = EncryptedImport(file: copy, staging: tmp)
+                keepStaging = true
+                return
+            }
             let bundleURL: URL
             if url.pathExtension.lowercased() == "zip" {
                 // Unzip to a temp dir first; the validated container then lands
@@ -193,15 +224,46 @@ struct BackupView: View {
                 bundleURL = tmp.appendingPathComponent("candidate.almanac-backup")
                 try fileManager.copyItem(at: url, to: bundleURL)
             }
-            // Validate before adopting: a non-bundle (or a foreign zip that
-            // unzipped but still is not one) must not land in the folder.
-            _ = try service.readBundleInfo(at: bundleURL.path)
-            for suffix in ["-wal", "-shm"] { try? fileManager.removeItem(atPath: bundleURL.path + suffix) }
-            try fileManager.moveItem(at: bundleURL, to: target)
-            reload()
+            try adopt(bundleURL)
         } catch {
             self.error = String(describing: error)
         }
+    }
+
+    /// Validates a plain container before it is adopted: a non-bundle (or a
+    /// foreign zip that unzipped but still is not one) must not land in the
+    /// folder. Then moves it into the backups folder.
+    private func adopt(_ bundleURL: URL) throws {
+        try fileManager.createDirectory(at: backupsDirectory, withIntermediateDirectories: true)
+        _ = try service.readBundleInfo(at: bundleURL.path)
+        for suffix in ["-wal", "-shm"] { try? fileManager.removeItem(atPath: bundleURL.path + suffix) }
+        let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let target = backupsDirectory.appendingPathComponent("imported-\(stamp).almanac-backup")
+        try fileManager.moveItem(at: bundleURL, to: target)
+        reload()
+    }
+
+    /// Decrypts the picked file with `passphrase` and adopts the result. Returns a
+    /// message for the passphrase sheet to show, or `nil` on success.
+    private func finishEncryptedImport(_ pending: EncryptedImport, passphrase: String) async -> String? {
+        let opened = pending.staging.appendingPathComponent("candidate.almanac-backup")
+        do {
+            // Key derivation is deliberately slow; keep it off the main actor.
+            try await Task.detached(priority: .userInitiated) {
+                try EncryptedBackup.decryptFile(at: pending.file.path, to: opened.path,
+                                                passphrase: passphrase, using: CryptoKitBackupCipher())
+            }.value
+            try adopt(opened)
+            return nil
+        } catch {
+            try? fileManager.removeItem(at: opened)
+            return String(describing: error)
+        }
+    }
+
+    private func discardEncryptedImport() {
+        if let importStaging { try? fileManager.removeItem(at: importStaging) }
+        importStaging = nil
     }
 
     private func performRestore() {

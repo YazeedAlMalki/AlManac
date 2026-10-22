@@ -1,5 +1,6 @@
 # Almanac implementation status
 
+Updated 2026-10-22 (latest): security audit remediation P0/P1 written, **not compiled or run** (see the first entry below); not re-scored.
 Updated 2026-10-20 (latest): re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
 Updated 2026-10-19: the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
@@ -40,6 +41,32 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-22 — Security audit remediation, P0 and P1 (written, not compiled)
+
+The plan is `SECURITY_PRIVACY_AUDIT.md` §8; the decisions are in `CONTEXT.md`
+("Security audit remediation, P0 and P1"). **Written without a Swift toolchain:
+nothing below has been compiled, run or scored. The first CI run is the first
+check, and any red it shows is a finding about this entry, not noise.** Not scored;
+no rubric line.
+
+- **Restore** compares the whole schema before it touches the payload
+  (`BackupBundle.schemaObjects(of:)`); `RestoreSchemaTrustTests` pins it.
+- **Shared backups are encrypted** (`EncryptedBackup`, `CryptoKitBackupCipher`,
+  `BackupShareSheet`); the plaintext `.zip` twin is gone and the Backups folder is
+  excluded from device backups. `EncryptedBackupTests` cover the envelope with a
+  stand-in cipher; the real cipher has **no automated test** (device check 4).
+- **Backups no longer need an email.** This **supersedes** the next entry.
+  `mayCreateBackup` was removed; `ProfileEmailTests` and `PhoneMigrationUITests`
+  changed with it.
+- **Privacy:** `PrivacyInfo.xcprivacy`, the HealthKit purpose string, a Privacy
+  screen, Export my data (`DataExport`) and Erase all data (`LocalDataEraser`,
+  `AppDataEraser`); `docs/PRIVACY.md` is a draft for legal review.
+- **Licence and content:** `LICENSE` (all rights reserved); the Bristol scale
+  wording is Almanac's own; the free-exercise-db photo risk is re-confirmed.
+- **SQLite:** FTS5 removed and extension loading omitted. **The version upgrade
+  is not done** (`docs/vendored-sqlite.md`).
+- New UI tests: `PrivacyUITests`, and two in `PhoneMigrationUITests`.
 
 ## 2026-10-20 — Re-score after the Oct 19 work; App Intents driven; audit merged; backups need an email
 

@@ -24,8 +24,8 @@ public struct UserProfile: Sendable, Hashable {
     /// install has these yet and a migration cannot invent them.
     public let firstName: String?
     public let lastName: String?
-    /// Well formed whenever it is set (`ProfileEmail`). Creating a backup
-    /// needs one (`mayCreateBackup`). Stays on this phone.
+    /// Optional, and well formed whenever it is set (`ProfileEmail`). Nothing
+    /// depends on it and nothing sends it. Stays on this phone.
     public let email: String?
 
     public let dateOfBirth: String?

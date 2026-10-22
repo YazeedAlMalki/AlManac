@@ -12821,16 +12821,6 @@
         }
       }
     },
-    "Creating a backup needs a valid email address. It stays on this phone and is not sent anywhere.": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "يتطلب إنشاء نسخة احتياطية عنوان بريد إلكتروني صالحًا. يبقى على هذا الهاتف ولا يُرسَل إلى أي مكان."
-          }
-        }
-      }
-    },
     "Enter a valid email address, like name@example.com.": {
       "localizations": {
         "ar": {
@@ -12841,12 +12831,352 @@
         }
       }
     },
-    "Add a valid email address in Profile to create backups. Restoring a backup does not need one.": {
+    "Optional. The app does not use it and never sends it anywhere; it stays on this phone.": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "أضف عنوان بريد إلكتروني صالحًا في الملف الشخصي لإنشاء النسخ الاحتياطية. لا تحتاج استعادة نسخة احتياطية إليه."
+            "value": "اختياري. لا يستخدمه التطبيق ولا يُرسَل إلى أي مكان، ويبقى على هذا الهاتف."
+          }
+        }
+      }
+    },
+    "Share backup": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مشاركة النسخة الاحتياطية"
+          }
+        }
+      }
+    },
+    "Choose a passphrase": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اختر عبارة مرور"
+          }
+        }
+      }
+    },
+    "Passphrase": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عبارة المرور"
+          }
+        }
+      }
+    },
+    "Repeat passphrase": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كرّر عبارة المرور"
+          }
+        }
+      }
+    },
+    "Anyone who has this file and the passphrase can read your health records. Almanac cannot recover a lost passphrase.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يستطيع أي شخص يملك هذا الملف وعبارة المرور قراءة سجلاتك الصحية. لا يستطيع Almanac استرداد عبارة مرور مفقودة."
+          }
+        }
+      }
+    },
+    "Use at least %lld characters.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدم %lld أحرف على الأقل."
+          }
+        }
+      }
+    },
+    "The passphrases do not match.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عبارتا المرور غير متطابقتين."
+          }
+        }
+      }
+    },
+    "Encrypt": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تشفير"
+          }
+        }
+      }
+    },
+    "Share encrypted backup": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مشاركة النسخة المشفّرة"
+          }
+        }
+      }
+    },
+    "Keep the passphrase somewhere safe. Without it this file cannot be opened.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "احتفظ بعبارة المرور في مكان آمن. لا يمكن فتح هذا الملف بدونها."
+          }
+        }
+      }
+    },
+    "Encrypted backup": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نسخة احتياطية مشفّرة"
+          }
+        }
+      }
+    },
+    "This backup is encrypted": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذه النسخة الاحتياطية مشفّرة"
+          }
+        }
+      }
+    },
+    "Enter the passphrase you chose when you shared it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أدخل عبارة المرور التي اخترتها عند مشاركتها."
+          }
+        }
+      }
+    },
+    "Backups kept on this device are not encrypted and are left out of iCloud and computer backups. A backup you share is always encrypted with a passphrase you choose.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النسخ الاحتياطية المحفوظة على هذا الجهاز غير مشفّرة ولا تُضمَّن في نسخ iCloud أو الكمبيوتر الاحتياطية. أما النسخة التي تشاركها فتُشفَّر دائمًا بعبارة مرور تختارها."
+          }
+        }
+      }
+    },
+    "Privacy": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الخصوصية"
+          }
+        }
+      }
+    },
+    "Where your data lives": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أين تُحفَظ بياناتك"
+          }
+        }
+      }
+    },
+    "Everything you record stays on this phone. Almanac has no account, no server and no analytics, and it makes no network requests of its own. A link to a source opens in your browser only when you tap it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل ما تسجّله يبقى على هذا الهاتف. ليس لدى Almanac حساب ولا خادم ولا تحليلات، ولا يُجري أي طلبات شبكة بنفسه. لا يُفتح رابط مصدر في متصفحك إلا عندما تنقر عليه."
+          }
+        }
+      }
+    },
+    "What Almanac keeps": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ما يحتفظ به Almanac"
+          }
+        }
+      }
+    },
+    "The records you enter, or choose to bring in from Apple Health: meals, water, training, body measurements, sleep, laboratory results, mood, digestion, fasting and prayer settings, and the profile details you give it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "السجلات التي تدخلها أو تختار جلبها من تطبيق «الصحة» من Apple: الوجبات والماء والتمارين وقياسات الجسم والنوم ونتائج المختبر والمزاج والهضم وإعدادات الصيام والصلاة، وبيانات الملف الشخصي التي تقدّمها له."
+          }
+        }
+      }
+    },
+    "Permissions": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأذونات"
+          }
+        }
+      }
+    },
+    "Apple Health: Almanac reads and writes only the kinds of data you allow. Location: used once, when you ask for it, to work out prayer times; the coordinates are kept on this phone. Notifications: reminders are scheduled on this phone.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تطبيق «الصحة» من Apple: يقرأ Almanac ويكتب فقط أنواع البيانات التي تسمح بها. الموقع: يُستخدم مرة واحدة عندما تطلبه لحساب مواقيت الصلاة، وتبقى الإحداثيات على هذا الهاتف. الإشعارات: تُجدوَل التذكيرات على هذا الهاتف."
+          }
+        }
+      }
+    },
+    "Sharing": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المشاركة"
+          }
+        }
+      }
+    },
+    "Nothing leaves your phone unless you share it. A backup you share is encrypted with a passphrase you choose. An export of your data is a readable file and is not encrypted, so share it only with people and apps you trust.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا يغادر شيء هاتفك إلا إذا شاركته. النسخة الاحتياطية التي تشاركها تُشفَّر بعبارة مرور تختارها. أما تصدير بياناتك فهو ملف مقروء وغير مشفّر، فلا تشاركه إلا مع أشخاص وتطبيقات تثق بهم."
+          }
+        }
+      }
+    },
+    "Your choices": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "خياراتك"
+          }
+        }
+      }
+    },
+    "You can export your data, or erase everything, from Settings. You can change permissions in iOS Settings, or delete the app. Data already in Apple Health stays there until you remove it in the Health app.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يمكنك تصدير بياناتك أو مسح كل شيء من الإعدادات. ويمكنك تغيير الأذونات من إعدادات iOS أو حذف التطبيق. تبقى البيانات الموجودة بالفعل في تطبيق «الصحة» فيه إلى أن تزيلها من هناك."
+          }
+        }
+      }
+    },
+    "Food, exercise and laboratory reference data comes from public datasets credited under Attributions.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تأتي بيانات المراجع الغذائية وبيانات التمارين والمختبر من مجموعات بيانات عامة مذكورة ضمن «حقوق المصادر»."
+          }
+        }
+      }
+    },
+    "Export my data…": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير بياناتي…"
+          }
+        }
+      }
+    },
+    "Export my data": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تصدير بياناتي"
+          }
+        }
+      }
+    },
+    "Erase all data…": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح كل البيانات…"
+          }
+        }
+      }
+    },
+    "Erase everything?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح كل شيء؟"
+          }
+        }
+      }
+    },
+    "Erase everything and restart": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مسح كل شيء وإعادة التشغيل"
+          }
+        }
+      }
+    },
+    "All your records, backups and settings on this phone are deleted and cannot be recovered. Data already in Apple Health stays there; remove it in the Health app. Backups you shared with others are not affected.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُحذَف كل سجلاتك ونسخك الاحتياطية وإعداداتك على هذا الهاتف ولا يمكن استرجاعها. تبقى البيانات الموجودة بالفعل في تطبيق «الصحة» فيه، فأزلها من هناك. لا تتأثر النسخ الاحتياطية التي شاركتها مع الآخرين."
+          }
+        }
+      }
+    },
+    "Share export": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مشاركة التصدير"
+          }
+        }
+      }
+    },
+    "This file is a readable copy of your records. It is not encrypted. Share it only with people and apps you trust.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "هذا الملف نسخة مقروءة من سجلاتك وهو غير مشفّر. لا تشاركه إلا مع أشخاص وتطبيقات تثق بهم."
           }
         }
       }

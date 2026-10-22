@@ -133,12 +133,14 @@ invented here**, and defining one needs a product decision, not a migration.
 ## 5. Vocabularies, and what is missing from them
 
 - **`BristolType.displayName` / `.summary` / `.accessibilityLabel`** — the seven
-  standard names after Heaton & Lewis (1997), with a one-clause summary each and
-  a label carrying the number *and* the name. **Credited 2026-10-15** on the
-  Attributions page: Lewis SJ, Heaton KW, *Stool form scale as a useful guide to
-  intestinal transit time*, Scand J Gastroenterol 1997;32(9):920–924. No
-  licence for reproducing the wording was identified, and the entry says "No
-  licence identified" rather than naming one (logged in `CONTEXT.md`).
+  types of the scale devised by Lewis & Heaton (1997), each with a name and a
+  one-clause summary, and a label carrying the number *and* the name. **The
+  wording is Almanac's own since 2026-10-22** (security audit P0-1): the
+  published wording had no identified licence. The scale's origin is still
+  **credited** on the Attributions page: Lewis SJ, Heaton KW, *Stool form scale
+  as a useful guide to intestinal transit time*, Scand J Gastroenterol
+  1997;32(9):920–924. The entry says no text or images are reproduced (logged in
+  `CONTEXT.md`). Rewording lowers the risk; it is not a legal opinion.
 - **`StoolColor`** — BRD §6.3's own six (`brown, pale, yellow, green, black,
   red`), as a closed enum rather than the column's free `String?`. They are the
   values an escalation rule would key on, and a query over a spelling nobody
@@ -180,7 +182,7 @@ Modules → Records → Digestion. A range control (7, 30, 90 days), then:
 - a bar per day for each kind, one neutral colour each, with the counts in
   the bars' accessibility values;
 - counts **by Bristol type** — all seven, in scale order, zeros included, each
-  row reading "Type 4, Smooth, soft sausage";
+  row reading "Type 4, Smooth, soft log";
 - counts **by colour** — only colours that occur; "Colour not recorded" for
   entries without one, and a hand-written spelling kept as written;
 - counts **by urine grade** — all eight, each reading "Colour grade 8 of 8,

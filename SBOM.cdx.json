@@ -1,0 +1,101 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-10-21T00:00:00Z",
+    "tools": { "components": [ { "type": "application", "name": "manual review (no SBOM generator available in the audit environment)" } ] },
+    "component": {
+      "type": "application",
+      "name": "Almanac",
+      "version": "0.1.0",
+      "bom-ref": "almanac-app",
+      "description": "Local-first iOS health/wellness app (Swift/SwiftUI/SQLite). Repository HEAD 8b3cfb0.",
+      "licenses": [ { "license": { "name": "NONE DECLARED (no LICENSE file in repository root)" } } ]
+    },
+    "properties": [
+      { "name": "audit:completeness", "value": "Hand-compiled from Package.swift, project.pbxproj, Sources/*/VENDORED.md, Attribution.swift, ci.yml and tools/. Versions marked 'unverified' were taken from repository text and not checked against upstream (network egress to upstream hosts was refused)." }
+    ]
+  },
+  "components": [
+    {
+      "type": "library", "bom-ref": "csqlite", "name": "SQLite (amalgamation, vendored as CSQLite)", "version": "3.45.1",
+      "description": "Vendored in Sources/CSQLite/sqlite3.c. SQLITE_SOURCE_ID 2024-01-30 16:01:20 e876e51a0ed5c5b3126f52e532044363a014bc594cfefa87ffb5b82257cc467a. Byte-for-byte match with the upstream release is UNVERIFIED.",
+      "licenses": [ { "license": { "name": "Public domain" } } ],
+      "externalReferences": [ { "type": "website", "url": "https://www.sqlite.org/" } ]
+    },
+    {
+      "type": "library", "bom-ref": "adhan-swift", "name": "adhan-swift (vendored as Adhan)", "version": "0bc10007aa215ead55e8ee294f9254f0dc2f9a7d",
+      "description": "Prayer-time astronomy; vendored source, claimed unmodified (Sources/Adhan/VENDORED.md). Diff against upstream UNVERIFIED.",
+      "licenses": [ { "license": { "id": "MIT" } } ],
+      "externalReferences": [ { "type": "vcs", "url": "https://github.com/batoulapps/adhan-swift" } ]
+    },
+    {
+      "type": "data", "bom-ref": "font-fraunces", "name": "Fraunces (variable font)", "licenses": [ { "license": { "id": "OFL-1.1" } } ],
+      "description": "Native/Almanac/Resources/Fonts/Fraunces-Variable.ttf"
+    },
+    {
+      "type": "data", "bom-ref": "font-almarai", "name": "Almarai (Regular, Bold)", "licenses": [ { "license": { "id": "OFL-1.1" } } ],
+      "description": "Native/Almanac/Resources/Fonts/Almarai-*.ttf"
+    },
+    {
+      "type": "data", "name": "free-exercise-db (exercise data + photos)", "version": "f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5",
+      "licenses": [ { "license": { "name": "Unlicense (per repo Attribution.swift; photo provenance not established - owner accepted risk)" } } ],
+      "externalReferences": [ { "type": "vcs", "url": "https://github.com/yuhonas/free-exercise-db" } ]
+    },
+    {
+      "type": "data", "name": "wger exercise data", "licenses": [ { "license": { "name": "CC BY-SA 3.0 / CC BY-SA 4.0 / CC BY 4.0 / CC0 (per exercise)" } } ],
+      "externalReferences": [ { "type": "vcs", "url": "https://github.com/wger-project/wger" } ]
+    },
+    {
+      "type": "data", "name": "workout-guide (bryllim) and Everkinetic exercise art/data", "licenses": [ { "license": { "name": "CC BY-SA 4.0 (per repo Attribution.swift; unverified)" } } ],
+      "externalReferences": [ { "type": "vcs", "url": "https://github.com/bryllim/workout-guide" }, { "type": "vcs", "url": "https://github.com/everkinetic/data" } ]
+    },
+    {
+      "type": "data", "name": "USDA FoodData Central (SR Legacy / FNDDS), release 2026-04-30", "licenses": [ { "license": { "name": "CC0 1.0" } } ]
+    },
+    {
+      "type": "data", "name": "Open Food Facts (adapted subset, open-food-facts.sqlite)", "licenses": [ { "license": { "name": "ODbL 1.0 (database) / DbCL 1.0 (contents) - share-alike on the adapted database" } } ]
+    },
+    {
+      "type": "data", "name": "ANSES CIQUAL 2025", "licenses": [ { "license": { "name": "CC BY 4.0 / Etalab Open Licence 2.0" } } ]
+    },
+    {
+      "type": "data", "name": "McCance & Widdowson CoFID 2021", "licenses": [ { "license": { "name": "Open Government Licence v3.0" } } ]
+    },
+    {
+      "type": "data", "name": "FSANZ AFCD Release 3", "licenses": [ { "license": { "name": "CC BY 4.0" } } ]
+    },
+    {
+      "type": "data", "name": "LOINC codes (lab catalog)", "licenses": [ { "license": { "name": "LOINC License (accepted by owner 2026-10-16 per repo; notice required)" } } ]
+    },
+    {
+      "type": "data", "name": "Wikibooks Cookbook recipes (wikibooks-recipes.json)", "licenses": [ { "license": { "name": "CC BY-SA 4.0 (per repo; share-alike)" } } ]
+    },
+    {
+      "type": "data", "name": "Bristol Stool Form Scale wording", "licenses": [ { "license": { "name": "NO LICENCE IDENTIFIED (repo's own attribution entry says so)" } } ]
+    },
+    {
+      "type": "data", "name": "Bundled seed databases", "description": "almanac.sqlite sha256 0877c29145436f70e35c01c0a8c5e60d0baa0ed160c80f6122bb835720355902 (bundle_meta.tool_revision ends '+dirty'); open-food-facts.sqlite sha256 0fb4c4a969a2042087132117bde94565e55e3aa97fa09a59383eb02e9a453fb8. No triggers or views present (checked read-only)."
+    },
+    {
+      "type": "application", "name": "xcodebuildmcp (npm, developer tooling only)", "version": "2.7.0", "scope": "excluded",
+      "description": "Launched via 'npx -y' from opencode.json. Not shipped. Transitive dependencies not enumerated (not installed/inspected)."
+    },
+    {
+      "type": "application", "name": "openpyxl, lxml (pip, CI/tooling only)", "scope": "excluded", "version": "unpinned",
+      "description": "Installed unpinned in .github/workflows/ci.yml for the nutrition tool tests."
+    },
+    {
+      "type": "application", "name": "swift Docker image", "version": "6.0.3-jammy", "scope": "excluded",
+      "description": "CI container for the Linux build job (tag-pinned, not digest-pinned)."
+    },
+    {
+      "type": "application", "name": "GitHub Actions: actions/checkout@v5, actions/cache@v4, actions/upload-artifact@v4", "scope": "excluded",
+      "description": "Referenced by mutable tag, not commit SHA."
+    }
+  ],
+  "dependencies": [
+    { "ref": "almanac-app", "dependsOn": ["csqlite", "adhan-swift", "font-fraunces", "font-almarai"] }
+  ]
+}

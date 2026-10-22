@@ -37,13 +37,9 @@ final class PhoneMigrationUITests: XCTestCase {
         openProfile()
         let original = sports()
         setSports(before)
-        // A backup needs a valid email on the profile (owner, 2026-10-20).
-        openProfile()
-        if email().isEmpty { saveEmail("a4@example.com") }
-        back(from: "Profile")
 
         // Export: the backup is made, listed with its summary, and offered for
-        // sharing as the zip a new phone would receive.
+        // sharing (encrypted with a passphrase; see the sharing test below).
         openBackups()
         let create = app.buttons["Create backup"]
         XCTAssertTrue(create.waitForExistence(timeout: 10), "Backup & restore offers no Create backup")
@@ -81,11 +77,11 @@ final class PhoneMigrationUITests: XCTestCase {
         setSports(original)
     }
 
-    /// The owner's rule (2026-10-20): creating a backup needs a valid email on
-    /// the profile. With none, Create backup is offered but disabled and says
-    /// why; a malformed one is refused at Save; a valid one enables it.
-    /// Restore is not gated, so a new phone can restore before it has a profile.
-    func testCreatingABackupNeedsAValidEmail() {
+    /// The profile's email is optional and gates nothing: backups used to need one
+    /// (owner, 2026-10-20), and the requirement was removed on 2026-10-22 after the
+    /// security audit. With none, Create backup is enabled. A malformed address is
+    /// still refused at Save, and a valid one is kept.
+    func testBackupsDoNotNeedAnEmailAndAMalformedOneIsRefused() {
         openProfile()
         let original = email()
         saveEmail("")
@@ -94,9 +90,9 @@ final class PhoneMigrationUITests: XCTestCase {
         openBackups()
         let create = app.buttons["Create backup"]
         XCTAssertTrue(create.waitForExistence(timeout: 10), "Backup & restore offers no Create backup")
-        XCTAssertFalse(create.isEnabled, "Create backup is enabled with no email on the profile")
-        XCTAssertTrue(app.element("backup-needs-email").waitForExistence(timeout: 5),
-                      "Backup & restore does not say a backup needs an email")
+        XCTAssertTrue(create.isEnabled, "Create backup is disabled with no email on the profile")
+        XCTAssertFalse(app.element("backup-needs-email").exists,
+                       "Backup & restore still says a backup needs an email")
         back(from: "Backup & restore")
         back(from: "Settings")
 
@@ -114,16 +110,53 @@ final class PhoneMigrationUITests: XCTestCase {
         saveEmail("name@example.com")
         back(from: "Profile")
 
-        openBackups()
-        XCTAssertTrue(create.waitForExistence(timeout: 10))
-        XCTAssertTrue(create.isEnabled, "Create backup stays disabled with a valid email on the profile")
-        XCTAssertFalse(app.element("backup-needs-email").exists)
-        back(from: "Backup & restore")
-        back(from: "Settings")
-
         openProfile()
-        saveEmail(original.isEmpty ? "name@example.com" : original)
+        XCTAssertEqual(email(), "name@example.com", "a valid email was not kept")
+        saveEmail(original)
         back(from: "Profile")
+    }
+
+    /// Sharing never hands out the plaintext container (audit finding S-02): the
+    /// share sheet asks for a passphrase of at least 8 characters, typed twice, and
+    /// only then offers an encrypted copy. What this cannot do: read the file back
+    /// (a UI test cannot see the file), so the envelope is covered by
+    /// `EncryptedBackupTests` in the core, and the real cipher by a device check.
+    func testSharingABackupAsksForAPassphraseAndOffersAnEncryptedCopy() {
+        openBackups()
+        let create = app.buttons["Create backup"]
+        XCTAssertTrue(create.waitForExistence(timeout: 10), "Backup & restore offers no Create backup")
+        create.tap()
+        let share = app.buttons["Share latest backup"]
+        XCTAssertTrue(share.waitForExistence(timeout: 20), "a backup was created but is not offered for sharing")
+        share.tap()
+
+        let encrypt = app.buttons["backup-encrypt"]
+        XCTAssertTrue(encrypt.waitForExistence(timeout: 10), "sharing did not ask for a passphrase")
+        XCTAssertFalse(encrypt.isEnabled, "Encrypt is enabled before a passphrase is typed")
+        XCTAssertFalse(app.buttons["backup-share-encrypted"].exists, "a share link was offered before any passphrase")
+
+        let first = app.secureTextFields["backup-passphrase"]
+        let second = app.secureTextFields["backup-passphrase-repeat"]
+        type("short\n", into: first)
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.keyboards.count == 0 }, "the keyboard did not close")
+        XCTAssertFalse(encrypt.isEnabled, "Encrypt accepts a passphrase under 8 characters")
+
+        type("a-long-enough-passphrase\n", into: first)
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.keyboards.count == 0 }, "the keyboard did not close")
+        type("a-different-passphrase\n", into: second)
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.keyboards.count == 0 }, "the keyboard did not close")
+        XCTAssertFalse(encrypt.isEnabled, "Encrypt accepts two passphrases that do not match")
+
+        type("a-long-enough-passphrase\n", into: second)
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.keyboards.count == 0 }, "the keyboard did not close")
+        XCTAssertTrue(encrypt.isEnabled, "Encrypt stays disabled with a good, repeated passphrase")
+        encrypt.tap()
+
+        // 600,000 rounds of key derivation take a moment, longer on a CI simulator.
+        XCTAssertTrue(app.buttons["backup-share-encrypted"].waitForExistence(timeout: 90),
+                      "no encrypted copy was offered after a passphrase was chosen")
+        app.buttons["Done"].tap()
+        XCTAssertTrue(app.buttons["backup-share-encrypted"].waitForNonExistence(timeout: 10))
     }
 
     // MARK: - Helpers

@@ -45,7 +45,7 @@ final class DigestionHistoryUITests: XCTestCase {
         openHistory()
         let row = countRow("digestion.history.bristol.4")
         XCTAssertTrue(app.reveal(row), "the Type 4 row is missing")
-        XCTAssertTrue(row.label.contains("Type 4, Smooth, soft sausage"),
+        XCTAssertTrue(row.label.contains("Type 4, Smooth, soft log"),
                       "the Type 4 row does not carry its number and name: \(row.label)")
         XCTAssertEqual(count(in: row.label), before + 1,
                        "the logged entry was not counted under Type 4: \(row.label)")

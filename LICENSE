@@ -1,0 +1,27 @@
+Copyright (c) 2026 Yazeed AlMalki. All rights reserved.
+
+This repository and everything in it that was written for Almanac (the Swift
+source code, tests, build tools, documentation and design assets) is proprietary.
+No licence is granted to use, copy, modify, merge, publish, distribute, sublicense
+or sell any part of it, except where the copyright holder has given permission in
+writing.
+
+Third-party material in this repository is NOT covered by the statement above.
+It stays under the licence its authors chose, which applies to that material only:
+
+  - SQLite (Sources/CSQLite)              public domain; see docs/vendored-sqlite.md
+  - adhan-swift (Sources/Adhan)           MIT; see Sources/Adhan/LICENSE
+  - Fraunces and Almarai fonts            SIL OFL 1.1; see Native/Almanac/Resources/Fonts/
+  - Datasets, exercise data and images    their own licences (CC0, CC BY, CC BY-SA, ODbL,
+    bundled in the app                    Unlicense, OGL v3, LOINC licence, and others),
+                                          listed with their obligations in
+                                          Sources/AlmanacCore/Provenance/Attribution.swift
+                                          and shown in the app under
+                                          Settings > About > Attributions
+
+Some of those licences (CC BY-SA, ODbL) require that adapted material be shared
+under the same terms. Those terms apply to the adapted material, such as the
+bundled databases and images, not to the source code of the app.
+
+This file records the owner's choice of 2026-10-22 and is not legal advice. The
+copyright holder's name and year should be confirmed before any release.

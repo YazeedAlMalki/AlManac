@@ -70,7 +70,7 @@ struct ProfileView: View {
             } header: {
                 Text("Email")
             } footer: {
-                Text("Creating a backup needs a valid email address. It stays on this phone and is not sent anywhere.")
+                Text("Optional. The app does not use it and never sends it anywhere; it stays on this phone.")
             }
 
             // Split from "Profile" because these three change *what the app
