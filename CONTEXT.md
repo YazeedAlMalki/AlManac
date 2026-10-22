@@ -1073,7 +1073,38 @@ How the build applies that; **none of these has been confirmed:**
 *Overrule by:* `NEUTRAL`, `TOLERANCE`, `APART`, `BASE_ORDER` in
 `tools/nutrition/almanac_nutrition/merge.py`, then `python3 -m almanac_nutrition merge`.
 
+### Backup encryption (2026-10-22)
+
+**The owner overruled the 2026-10-20 entry below: "add encryption to the
+backups" (in chat, 2026-10-22).** Built as that entry's *overrule by* named it:
+passphrase encryption, in `BackupEncryption` (AlmanacCore) and `BackupView`.
+
+- **What is encrypted:** every backup that is *shared*. "Share latest backup"
+  asks for a passphrase twice (8 characters at least), encrypts the container,
+  zips it, and only then opens the share sheet. No unencrypted copy is offered
+  any more, and the unencrypted `.zip` twins earlier versions left in the
+  backups folder are deleted.
+- **What is not:** the containers in the app's own backups folder. They sit in
+  the app sandbox under iOS file protection, beside the live database, which
+  is not encrypted either; a key for them would live on the same phone.
+- **The passphrase is never stored** — not in the database, the Keychain or the
+  file. A forgotten passphrase loses that shared file; the sheet says so.
+- **Import** recognises an encrypted file (raw or inside a `.zip`) and asks for
+  its passphrase before anything is validated or adopted. Unencrypted backups
+  made before this still import.
+- **Format:** ChaCha20-Poly1305 with the header authenticated, key from
+  PBKDF2-HMAC-SHA256 (600,000 iterations, 16-byte salt). CryptoKit and
+  CommonCrypto on the phone, as the technical spec's stack table names; a
+  plain-Swift copy (`PortableCrypto`) exists only so Linux CI tests the format,
+  and both are pinned to the RFC test vectors. Layout in `BackupEncryption.swift`.
+
+**Mine, not the owner's, and not confirmed:** encrypting shared copies only
+rather than the local ones too; the 8-character minimum; no "share without
+encryption" option.
+
 ### Backups (2026-10-20)
+
+*Superseded on 2026-10-22 by the entry above; kept for the record.*
 
 **Decided by the owner (in chat, relayed by the 2026-10-20 handoff): backups
 will not be encrypted.** This closes the audit's open question "Backups are not

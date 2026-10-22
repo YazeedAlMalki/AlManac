@@ -965,6 +965,7 @@ final class TrainingProgramUITests: XCTestCase {
         addExercise.tap()
         XCTAssertTrue(app.navigationBars["Choose Exercise"].waitForExistence(timeout: 5),
                       "the exercise catalog did not open")
+        narrowCatalog(to: id)
         let row = app.buttons["exercise-row-\(id)"]
         XCTAssertTrue(app.reveal(row), "exercise \(id) is missing from the catalog")
         row.tap()
@@ -1072,6 +1073,27 @@ final class TrainingProgramUITests: XCTestCase {
                       "putting the session down did not return to the day")
     }
 
+    /// The catalog's names for the exercises these tests add.
+    private static let exerciseNames: [Int64: String] = [1: "Bench Press", 69: "Ab Wheel Rollout"]
+
+    /// Types `id`'s name into the open catalog's search field, so its row is
+    /// one of a handful rather than one of 1,085.
+    ///
+    /// Scrolling for it was the failure "exercise 1 is missing from the
+    /// catalog" (CI 2026-10-19, and again 2026-10-21/22 after `02ebecb`): the
+    /// list is lazy, so when the first check ran before the rows loaded, the
+    /// sweep scrolled away from a row that was at the top, and the way back
+    /// is shorter than 1,085 rows. Searching is also how a person finds one.
+    private func narrowCatalog(to id: Int64) {
+        guard let name = Self.exerciseNames[id] else {
+            return XCTFail("no catalog name recorded for exercise \(id)")
+        }
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the exercise catalog has no search field")
+        field.tap()
+        field.typeText(name)
+    }
+
     /// Opens the progress screen for exercise `id` through the Add exercise
     /// sheet's history chevron — the one place the graphs live.
     private func openExerciseHistory(_ id: Int64, named name: String) {
@@ -1080,6 +1102,7 @@ final class TrainingProgramUITests: XCTestCase {
         addExercise.tap()
         XCTAssertTrue(app.navigationBars["Choose Exercise"].waitForExistence(timeout: 5),
                       "the exercise catalog did not open")
+        narrowCatalog(to: id)
         let history = app.buttons["exercise-history-\(id)"]
         XCTAssertTrue(app.reveal(history), "the catalog offers no history chevron for \"\(name)\"")
         history.tap()

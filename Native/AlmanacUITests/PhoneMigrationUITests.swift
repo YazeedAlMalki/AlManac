@@ -50,6 +50,7 @@ final class PhoneMigrationUITests: XCTestCase {
         create.tap()
         XCTAssertTrue(app.buttons["Share latest backup"].waitForExistence(timeout: 20),
                       "a backup was created but is not offered for sharing")
+        shareEncrypted()
         let restore = app.buttons["Restore"].firstMatch  // newest first: the one just made
         XCTAssertTrue(restore.waitForExistence(timeout: 10),
                       "the new backup is not listed as restorable")
@@ -149,6 +150,34 @@ final class PhoneMigrationUITests: XCTestCase {
                       "Profile never opened after tapping its row; navigation bars: "
                       + "\(app.navigationBars.allElementsBoundByIndex.map(\.identifier)), "
                       + "keyboard shown: \(app.keyboards.count > 0)")
+    }
+
+    /// Sharing encrypts (owner, 2026-10-22): the passphrase is asked for
+    /// twice, a mismatch is said and blocks Encrypt, and only an encrypted
+    /// file is offered to the share sheet. The share sheet itself is the
+    /// system's and is not driven.
+    private func shareEncrypted() {
+        app.buttons["Share latest backup"].tap()
+        let passphrase = app.secureTextFields["backup-passphrase"]
+        XCTAssertTrue(passphrase.waitForExistence(timeout: 5), "sharing did not ask for a passphrase")
+        passphrase.tap()
+        passphrase.typeText("a4-passphrase")
+        let repeated = app.secureTextFields["backup-passphrase-repeat"]
+        repeated.tap()
+        repeated.typeText("a4-passphrasf")
+        XCTAssertTrue(app.element("backup-passphrase-mismatch").waitForExistence(timeout: 5),
+                      "two different passphrases were not called out")
+        let encrypt = app.buttons["encrypt-backup"]
+        XCTAssertFalse(encrypt.isEnabled, "Encrypt is offered for two different passphrases")
+        repeated.typeText(XCUIKeyboardKey.delete.rawValue + "e\n")
+        XCTAssertTrue(app.waitUntil(timeout: 5) { app.keyboards.count == 0 }, "the keyboard did not close")
+        XCTAssertTrue(app.reveal(encrypt), "the sheet offers no Encrypt")
+        XCTAssertTrue(encrypt.isEnabled, "Encrypt stays disabled for matching passphrases")
+        encrypt.tap()
+        XCTAssertTrue(app.element("share-encrypted-backup").waitForExistence(timeout: 30),
+                      "encrypting did not produce a file to share")
+        app.navigationBars["Encrypt backup"].buttons["Done"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 5) { !passphrase.exists }, "the passphrase sheet did not close")
     }
 
     private func openBackups() {
