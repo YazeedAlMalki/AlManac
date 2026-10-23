@@ -78,12 +78,14 @@ struct DataRightsRows: View {
                 Label("Erase all data…", systemImage: "trash")
             }
             .accessibilityIdentifier("settings-erase-data")
-        }
-        .confirmationDialog("Erase everything?", isPresented: $confirmErase, titleVisibility: .visible) {
-            Button("Erase everything and restart", role: .destructive) { erase() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("All your records, backups and settings on this phone are deleted and cannot be recovered. Data already in Apple Health stays there; remove it in the Health app. Backups you shared with others are not affected.")
+            // An alert rather than a confirmation dialog: its Cancel button is
+            // reliably in the accessibility tree, which the UI test relies on.
+            .alert("Erase everything?", isPresented: $confirmErase) {
+                Button("Erase everything and restart", role: .destructive) { erase() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("All your records, backups and settings on this phone are deleted and cannot be recovered. Data already in Apple Health stays there; remove it in the Health app. Backups you shared with others are not affected.")
+            }
         }
         .sheet(item: $exportedFile, onDismiss: { DataExportFiles.removeAll() }) { exported in
             DataExportSheet(file: exported.url)

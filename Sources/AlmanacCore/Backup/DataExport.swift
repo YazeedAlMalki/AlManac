@@ -101,18 +101,15 @@ public struct DataExport {
             throw ExportError.cannotWrite(path)
         }
         defer { try? handle.close() }
-        let encoder = JSONEncoder()
-        func text(_ value: String) throws -> String {
-            String(decoding: try encoder.encode(value), as: UTF8.self)
-        }
+        func text(_ value: String) -> String { Self.jsonString(value) }
         func put(_ string: String) throws { try handle.write(contentsOf: Data(string.utf8)) }
 
         let schemaVersion = try db.query("SELECT COALESCE(MAX(version), 0) AS v FROM schema_migrations;")
             .first?.int("v") ?? 0
         let exportedAt = ISO8601DateFormatter().string(from: clock.now)
         try put("{\n\"format\": \"almanac-export\",\n\"formatVersion\": 1,\n")
-        try put("\"exportedAt\": \(try text(exportedAt)),\n\"schemaVersion\": \(schemaVersion),\n")
-        try put("\"notes\": \(try text(Self.notes)),\n\"tables\": {")
+        try put("\"exportedAt\": \(text(exportedAt)),\n\"schemaVersion\": \(schemaVersion),\n")
+        try put("\"notes\": \(text(Self.notes)),\n\"tables\": {")
 
         var tableCount = 0
         var rowCount = 0
@@ -127,11 +124,11 @@ public struct DataExport {
             var lines: [String] = []
             lines.reserveCapacity(rows.count)
             for row in rows {
-                let cells = try columns.map { try cell(row[$0], encoder: encoder) }
+                let cells = columns.map { cell(row[$0]) }
                 lines.append("[" + cells.joined(separator: ",") + "]")
             }
             try put(tableCount == 0 ? "\n" : ",\n")
-            try put("\(try text(table)): {\"columns\": [\(try columns.map(text).joined(separator: ","))], ")
+            try put("\(text(table)): {\"columns\": [\(columns.map(text).joined(separator: ","))], ")
             try put("\"rowCount\": \(rows.count), \"rows\": [\n" + lines.joined(separator: ",\n") + "\n]}")
             tableCount += 1
             rowCount += rows.count
@@ -162,7 +159,28 @@ public struct DataExport {
         "\"" + identifier.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
-    private func cell(_ value: SQLValue?, encoder: JSONEncoder) throws -> String {
+    /// A JSON string literal. Written by hand because `JSONEncoder` per cell made a
+    /// populated database take over a minute to export. Escapes what JSON requires
+    /// (quote, backslash, control characters); everything else, including non-ASCII
+    /// text, is written as UTF-8.
+    static func jsonString(_ value: String) -> String {
+        var out = "\""
+        for scalar in value.unicodeScalars {
+            switch scalar {
+            case "\"": out += "\\\""
+            case "\\": out += "\\\\"
+            case "\n": out += "\\n"
+            case "\r": out += "\\r"
+            case "\t": out += "\\t"
+            case _ where scalar.value < 0x20:
+                out += String(format: "\\u%04x", scalar.value)
+            default: out.unicodeScalars.append(scalar)
+            }
+        }
+        return out + "\""
+    }
+
+    private func cell(_ value: SQLValue?) -> String {
         switch value {
         case .none, .some(.null):
             return "null"
@@ -171,7 +189,7 @@ public struct DataExport {
         case .some(.real(let number)):
             return number.isFinite ? String(number) : "null"
         case .some(.text(let string)):
-            return String(decoding: try encoder.encode(string), as: UTF8.self)
+            return Self.jsonString(string)
         case .some(.blob(let bytes)):
             return "{\"base64\":\"" + Data(bytes).base64EncodedString() + "\"}"
         }
