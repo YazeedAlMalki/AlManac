@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
+Updated 2026-10-17 (latest): PR #20 green on both runs at `203384e` (1,126 / 1,200).
+Updated 2026-10-17 (earlier, Readiness): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
 Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
 Updated 2026-10-17 (earlier yet): `5893597` green on both runs; Hydration 92 (1,088 / 1,200).
 Updated 2026-10-17 (earlier still): the merged head's CI; Hydration held at 90 (1,086 / 1,200).
@@ -38,6 +39,25 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-17 — PR #20 green on both runs at `203384e`
+
+**Outcome.** Every job passed in both runs of `203384e`: push 39067306010 and
+pull request 39067309977. That includes the UI suite and the Arabic pass. The
+tracker is unchanged at **1,126 of 1,200 (93.8 %)**.
+
+This is the first run with "run a failed UI test once more"
+(`-retry-tests-on-failure`, `CONTEXT.md` "Failed UI tests run once more").
+Which tests needed their second try:
+
+| Run | Tests run | Needed a retry |
+|---|---:|---|
+| Pull request | 108 | none |
+| Push | 108 + 1 | `TrainingProgramUITests.testEquipmentVariantPickerOffersTheFiveAnswers`: "saving the pool item did not close the editor" (TrainingProgramUITests.swift:975), then passed |
+
+**Watch:** if that Training test keeps needing its retry, treat it as a real
+timing fault in the pool editor's save, not as runner noise. "Summarise
+failures" names it on every run.
 
 ## 2026-10-17 — Readiness back to 98: the owner accepts the retried tap
 
