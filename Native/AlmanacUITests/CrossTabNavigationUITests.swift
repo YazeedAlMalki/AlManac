@@ -48,9 +48,9 @@ final class CrossTabNavigationUITests: XCTestCase {
             // reads as a broken app rather than as a navigation bug.
             XCTAssertTrue(app.navigationBars[feature].firstMatch.waitForExistence(timeout: 10),
                           "tapping \(feature) on Today did not open \(feature)")
-            XCTAssertTrue(tab("modules").waitForExistence(timeout: 5))
-            XCTAssertTrue(tab("modules").isSelected,
-                          "after tapping \(feature) the Modules tab is not selected, so the "
+            XCTAssertTrue(tab("journal").waitForExistence(timeout: 5))
+            XCTAssertTrue(tab("journal").isSelected,
+                          "after tapping \(feature) the Journal tab is not selected, so the "
                           + "screen was pushed without the tab changing")
         }
     }
@@ -76,7 +76,7 @@ final class CrossTabNavigationUITests: XCTestCase {
     /// The promise that makes cross-tab navigation safe: switching tabs to
     /// follow a link does not silently reset where you were.
     ///
-    /// Before this change the only way to reach a feature was the Modules tab,
+    /// Before this change the only way to reach a feature was the Journal tab,
     /// so this could not regress. Now that a link can move you there, it can —
     /// and "I went to Hydration from Today and Trends reset" is exactly the kind
     /// of quiet bug nobody reports until much later.
@@ -102,38 +102,61 @@ final class CrossTabNavigationUITests: XCTestCase {
 
     // MARK: - The menu and the router are one list
 
-    /// Every screen the Modules menu offers must be reachable by tapping it.
+    /// Every screen the Journal index offers must be reachable by tapping it.
     ///
     /// The menu is generated from the same `AppRoute` list the router uses, so
     /// this is really a check that the *destination switch* covers every case —
     /// a route with a menu row and no screen would build cleanly (the switch is
     /// exhaustive) but push nothing, and only this catches it.
-    func testEveryModulesRowOpensItsScreen() {
-        for feature in ["Training", "Hydration", "Nutrition", "Fasting", "Prayer", "Laboratory", "Profile"] {
+    func testEveryJournalRowOpensItsScreen() {
+        for feature in ["Training", "Hydration", "Nutrition", "Fasting", "Prayer", "Laboratory"] {
             app.terminate()
             app.launch()
-            openModules()
+            openJournal()
 
             let row = app.buttons[feature]
             XCTAssertTrue(app.reveal(row), "\(feature) has a menu row but cannot be reached")
             row.tap()
             XCTAssertTrue(app.navigationBars[feature].firstMatch.waitForExistence(timeout: 10),
-                          "tapping \(feature) in the Modules menu did not open it")
+                          "tapping \(feature) in the Journal index did not open it")
         }
+    }
+
+    /// VoiceOver reads the bar in its visual order: Today, Trends, the
+    /// action, Journal, Settings. A query's elements come back in
+    /// accessibility-tree order, which is the order VoiceOver walks.
+    func testTheBarReadsInOrder() {
+        XCTAssertTrue(tab("today").waitForExistence(timeout: 10))
+        let bar = ["tab-today", "tab-trends", "quick-log", "tab-journal", "tab-settings"]
+        let order = app.buttons.allElementsBoundByIndex.map(\.identifier).filter(bar.contains)
+        XCTAssertEqual(order, bar)
+        XCTAssertEqual(app.buttons["quick-log"].label, "Add a record")
+    }
+
+    /// Profile is a route the Settings tab owns, pushed on Settings' stack from
+    /// its first row — the one way in since it left the Journal index.
+    func testProfileOpensFromSettings() {
+        tab("settings").tap()
+        XCTAssertTrue(app.navigationBars["Settings"].firstMatch.waitForExistence(timeout: 10),
+                      "the Settings tab did not open")
+        app.buttons["settings-profile"].tap()
+        XCTAssertTrue(app.navigationBars["Profile"].firstMatch.waitForExistence(timeout: 10),
+                      "Profile did not open from Settings")
+        XCTAssertTrue(tab("settings").isSelected, "Profile was pushed without Settings selected")
     }
 
     // MARK: - Helpers
 
-    /// One of the bar's three destinations, addressed by identifier.
+    /// One of the bar's four destinations, addressed by identifier.
     ///
     /// Not by label, which is the obvious choice and is wrong. The bar is
-    /// hand-built, so it has no `tabBar` to scope a query to, and "Modules"
+    /// hand-built, so it has no `tabBar` to scope a query to, and "Journal"
     /// names two buttons the moment a screen is pushed: this tab, and the
     /// navigation bar's back button, which is labelled with the screen it came
     /// from. Querying by label fails with "multiple matching elements" at
     /// exactly the moment the test has something interesting to say.
     /// `AppTab`'s raw value, spelled out because the UI test target does not
-    /// link `AlmanacCore` and cannot read the enum. The three values are fixed
+    /// link `AlmanacCore` and cannot read the enum. The four values are fixed
     /// by the bar's layout, so this cannot drift without the identifier scheme
     /// changing — and if it does, every test in this file fails loudly rather
     /// than quietly passing against a stale string.
@@ -186,9 +209,9 @@ final class CrossTabNavigationUITests: XCTestCase {
                       "Today never finished loading")
     }
 
-    private func openModules() {
-        tab("modules").tap()
-        XCTAssertTrue(app.navigationBars["Modules"].firstMatch.waitForExistence(timeout: 10),
-                      "the Modules menu did not open")
+    private func openJournal() {
+        tab("journal").tap()
+        XCTAssertTrue(app.navigationBars["Journal"].firstMatch.waitForExistence(timeout: 10),
+                      "the Journal index did not open")
     }
 }

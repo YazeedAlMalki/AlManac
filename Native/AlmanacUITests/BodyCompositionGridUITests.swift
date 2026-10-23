@@ -110,15 +110,15 @@ final class BodyCompositionGridUITests: XCTestCase {
     // MARK: - Helpers
 
     private func openBodyComposition() {
-        let modules = app.buttons["tab-modules"].exists ? app.buttons["tab-modules"] : app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Modules tab")
+        let modules = app.buttons["tab-journal"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Journal tab")
         modules.tap()
 
         let row = app.buttons["Body composition"]
         for _ in 0..<12 where !row.exists {
             app.swipeUp()
         }
-        XCTAssertTrue(row.waitForExistence(timeout: 5), "no Body composition row in Modules")
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no Body composition row in Journal")
         row.tap()
         XCTAssertTrue(app.navigationBars["Body composition"].waitForExistence(timeout: 10),
                       "the screen never appeared: \(app.navigationBars.allElementsBoundByIndex.map(\.identifier))")

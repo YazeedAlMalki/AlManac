@@ -358,22 +358,22 @@ final class KitchenUITests: XCTestCase {
         result.tap()
     }
 
-    /// Modules → Nutrition → Recipes, waiting for the catalogue: the button is
+    /// Journal → Nutrition → Recipes, waiting for the catalogue: the button is
     /// disabled until the reference bundle has installed.
     private func openRecipes() throws {
         try nutritionToolbarButton("Recipes").tap()
         XCTAssertTrue(app.navigationBars["Recipes"].waitForExistence(timeout: 10), "Recipes never opened")
     }
 
-    /// Modules → Nutrition, then the named toolbar button once it is enabled:
+    /// Journal → Nutrition, then the named toolbar button once it is enabled:
     /// Recipes and Saved meals are both disabled until the reference bundle has
     /// installed.
     private func nutritionToolbarButton(_ title: String) throws -> XCUIElement {
-        let modules = app.buttons["tab-modules"].exists ? app.buttons["tab-modules"] : app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 15), "no Modules tab")
+        let modules = app.buttons["tab-journal"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 15), "no Journal tab")
         modules.tap()
         let nutrition = app.buttons["Nutrition"]
-        XCTAssertTrue(app.reveal(nutrition), "Nutrition is not reachable from Modules")
+        XCTAssertTrue(app.reveal(nutrition), "Nutrition is not reachable from Journal")
         nutrition.tap()
         XCTAssertTrue(app.navigationBars["Nutrition"].waitForExistence(timeout: 10), "Nutrition never opened")
 

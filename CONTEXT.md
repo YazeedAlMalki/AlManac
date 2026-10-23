@@ -119,6 +119,19 @@ _Avoid_: lockout, restriction
 
 ### Navigation
 
+**The bar**:
+Four tabs — Today, Trends, Journal, Settings — and one action, the quick-log
+`+`, third of five equal columns. Owner's decision of 2026-10-22
+(`docs/features/owner-decisions-2026-10-22.md`). Tapping the tab already
+showing pops it to its root.
+_Avoid_: tab bar (it is not a `TabView`), Modules tab
+
+**Journal**:
+The tab holding the index of modules (Training, Hydration, Laboratory, …). Was
+"Modules" until 2026-10-22. A **module** is still one of the things inside it.
+Profile and Settings are not in it: Settings is a tab, Profile is inside it.
+_Avoid_: Modules (as the tab's name), More
+
 **Destination**:
 A screen a person can be sent to from anywhere, naming both the tab that owns
 it and the route inside that tab.
@@ -511,7 +524,7 @@ The two owner gates for this slice (the medical advisory and the digestion ring'
 fill rule) were left blank and are **not** decided here; see
 `docs/features/digestion.md` §3–§4.
 
-**History lives at Modules → Records → Digestion, over 7, 30 or 90 days.** It
+**History lives at Journal → Records → Digestion, over 7, 30 or 90 days.** It
 lists counts by Bristol type (all seven, zeros included), by urine grade (all
 eight), by colour name (only colours that occur), a bar per day, and each day's
 entries. It interprets nothing. *Overrule by:* `AppRoute.digestion`'s section,

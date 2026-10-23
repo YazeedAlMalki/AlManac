@@ -1,6 +1,6 @@
 import XCTest
 
-/// Shifts & rhythm, reached from the Modules menu (BRD §6.11, §13).
+/// Shifts & rhythm, reached from the Journal index (BRD §6.11, §13).
 ///
 /// What these cover is the part the core tests cannot see: that the screen is
 /// reachable, that a person with no shifts is told so plainly instead of shown
@@ -35,7 +35,7 @@ final class ShiftsAndRhythmUITests: XCTestCase {
 
     // MARK: - Reaching it
 
-    func testShiftsAndRhythmIsInTheModulesMenu() {
+    func testShiftsAndRhythmIsInTheJournalMenu() {
         launch(seeding: "none")
         openShiftsAndRhythm()
     }
@@ -132,13 +132,13 @@ final class ShiftsAndRhythmUITests: XCTestCase {
     // MARK: - Helpers
 
     private func openShiftsAndRhythm(menuRow: String = "Shifts & rhythm", title: String = "Shifts & rhythm") {
-        let modules = app.buttons["tab-modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
+        let modules = app.buttons["tab-journal"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Journal tab is missing")
         modules.tap()
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10),
-                      "the Modules menu did not open")
+                      "the Journal index did not open")
         let row = app.buttons[menuRow]
-        XCTAssertTrue(app.reveal(row), "\(menuRow) has no row in the Modules menu")
+        XCTAssertTrue(app.reveal(row), "\(menuRow) has no row in the Journal index")
         row.tap()
         XCTAssertTrue(app.navigationBars[title].firstMatch.waitForExistence(timeout: 10),
                       "tapping \(menuRow) did not open it")

@@ -1,12 +1,17 @@
 import Foundation
 
-/// The three bottom-bar destinations. Public and `CaseIterable` because the bar
-/// itself is generated from this list — a fourth tab is a case here plus a
-/// column in the bar, not an edit in two files.
+/// The four bottom-bar destinations. Public and `CaseIterable` because the bar
+/// itself is generated from this list — through `AppBar.slots` — so a fifth tab
+/// is a case here, not an edit in two files.
+///
+/// Journal is where the modules live; it was called Modules until the owner's
+/// 2026-10-22 decision, which also made Settings a destination of its own
+/// rather than a row inside that index.
 public enum AppTab: String, Sendable, Hashable, CaseIterable, Identifiable {
     case today
     case trends
-    case modules
+    case journal
+    case settings
 
     public var id: String { rawValue }
 
@@ -14,7 +19,8 @@ public enum AppTab: String, Sendable, Hashable, CaseIterable, Identifiable {
         switch self {
         case .today: return localized("Today")
         case .trends: return localized("Trends")
-        case .modules: return localized("Modules")
+        case .journal: return localized("Journal")
+        case .settings: return localized("Settings")
         }
     }
 
@@ -22,29 +28,43 @@ public enum AppTab: String, Sendable, Hashable, CaseIterable, Identifiable {
         switch self {
         case .today: return AlmanacIcon.today
         case .trends: return AlmanacIcon.trends
-        case .modules: return AlmanacIcon.modules
-        }
-    }
-
-    /// The bar is laid out around the quick-log action: Today and Trends share
-    /// one half, Modules takes the other. Expressed as a property so adding a
-    /// tab is a value in the bar's arithmetic rather than a new `case` in a
-    /// layout function — and so a fourth tab cannot be added somewhere the
-    /// layout does not expect it.
-    public enum BarGroup: Sendable, Hashable {
-        case leadingHalf
-        case trailingHalf
-    }
-
-    public var barGroup: BarGroup {
-        switch self {
-        case .today, .trends: return .leadingHalf
-        case .modules: return .trailingHalf
+        case .journal: return AlmanacIcon.journal
+        case .settings: return AlmanacIcon.settings
         }
     }
 }
 
-/// Where a route lives in the Modules menu.
+/// One column of the bottom bar: a destination, or the quick-log action.
+public enum AppBarSlot: Hashable, Sendable, Identifiable {
+    case destination(AppTab)
+    case quickAdd
+
+    public var id: String {
+        switch self {
+        case .destination(let tab): return tab.rawValue
+        case .quickAdd: return "quick-add"
+        }
+    }
+}
+
+/// The bar's columns, in reading order.
+///
+/// Every column is the same width, so the order is the whole layout. The old
+/// bar put Today and Trends in one half and Modules in the other with a fixed
+/// column between them, which left the targets unevenly spaced; five equal
+/// columns put them at 10 / 30 / 50 / 70 / 90% with no arithmetic at all.
+public enum AppBar {
+    /// Generated from `AppTab.allCases` with the action inserted in the middle,
+    /// so the action stays on the bar's centreline — the third of five slots —
+    /// and a tab cannot be added that the bar does not show.
+    public static let slots: [AppBarSlot] = {
+        var slots = AppTab.allCases.map(AppBarSlot.destination)
+        slots.insert(.quickAdd, at: slots.count / 2)
+        return slots
+    }()
+}
+
+/// Where a route lives in the Journal index.
 ///
 /// Data, not a hand-written `Section` per group, because the menu is generated
 /// from `AppRoute.allCases` and a hand-written section cannot be checked against
@@ -64,14 +84,13 @@ public struct AppRouteSection: Sendable, Hashable, Identifiable {
     public static let track = AppRouteSection(title: localized("Track"), order: 0)
     public static let dailyContext = AppRouteSection(title: localized("Daily context"), order: 1)
     public static let records = AppRouteSection(title: localized("Records"), order: 2)
-    public static let app = AppRouteSection(title: localized("App"), order: 3)
     /// Not shown. The roots and the pushed-only routes live here so that
     /// `section` is total without inventing a group for them.
     public static let hidden = AppRouteSection(title: "", order: 99)
 
 }
 
-/// One group of the Modules menu: a section and the rows under it.
+/// One group of the Journal index: a section and the rows under it.
 ///
 /// A named type rather than a tuple, because `ForEach` needs `Identifiable` and
 /// a tuple cannot conform to anything.
@@ -89,7 +108,7 @@ public struct AppRouteGroup: Sendable, Hashable, Identifiable {
 
 /// One place a person can be sent to, from anywhere.
 ///
-/// **This one enum is both the menu and the router.** `ModulesView` builds its
+/// **This one enum is both the menu and the router.** `JournalView` builds its
 /// list from `allCases`, and every cross-tab link names a case. That is what
 /// stops the two drifting: a screen in the menu that no route names is
 /// unreachable from anywhere else, and a route no menu row shows is unreachable
@@ -97,7 +116,7 @@ public struct AppRouteGroup: Sendable, Hashable, Identifiable {
 /// thing.
 ///
 /// Every case carries its own `tab`, so a caller writes `go(to: .bodyComposition)`
-/// and does not know or care that Body composition lives on Modules.
+/// and does not know or care that Body composition lives on Journal.
 public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     /// The screen a tab shows when nothing is pushed onto it. Present as a
     /// value rather than implied by an empty path, because an empty path and a
@@ -122,8 +141,10 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     case timeline
     case bodyComposition
     case digestion
+    /// Owned by Settings and reached only from inside it, so it has no row in
+    /// the Journal index.
     case profile
-    case settings
+    case settingsRoot
 
     public var id: String { String(describing: self) }
 
@@ -139,8 +160,10 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .trendsRoot, .trendsDetail: return .trends
         case .training, .hydration, .nutrition, .fasting, .supplements, .context,
              .prayer, .circadian, .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
-             .timeline, .bodyComposition, .digestion, .profile, .settings:
-            return .modules
+             .timeline, .bodyComposition, .digestion:
+            return .journal
+        case .settingsRoot, .profile:
+            return .settings
         }
     }
 
@@ -166,7 +189,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .bodyComposition: return localized("Body composition")
         case .digestion: return localized("Digestion")
         case .profile: return localized("Profile")
-        case .settings: return localized("Settings")
+        case .settingsRoot: return localized("Settings")
         }
     }
 
@@ -190,13 +213,13 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .bodyComposition: return AlmanacIcon.bodyComposition
         case .digestion: return AlmanacIcon.digestion
         case .profile: return AlmanacIcon.profile
-        case .settings: return AlmanacIcon.settings
+        case .settingsRoot: return AlmanacIcon.settings
         }
     }
 
-    /// Which group of the Modules menu this appears under.
+    /// Which group of the Journal index this appears under.
     ///
-    /// Only meaningful for routes that are *shown*; the three roots and
+    /// Only meaningful for routes that are *shown*; the roots, `profile` and
     /// `laboratoryImportHistory` are reached by pushing, not by a menu row of
     /// their own. They still name a section so the enum stays total and
     /// `AppRouteSection` never has to be optional — a `nil` here would be a
@@ -210,19 +233,19 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
              .timeline, .bodyComposition, .digestion, .profile:
             return .records
-        case .settings:
-            return .app
-        case .todayRoot, .trendsRoot, .trendsDetail:
+        case .todayRoot, .trendsRoot, .trendsDetail, .settingsRoot:
             return .hidden
         }
     }
 
     /// Whether the menu shows a row for this route. `laboratoryImportHistory` is
-    /// reached by pushing from Laboratory, so it has no row — but it is still a
-    /// route, because a link to it from anywhere is a reasonable thing to want.
+    /// reached by pushing from Laboratory, and `profile` from Settings, so
+    /// neither has a row — but both are still routes, because a link to them
+    /// from anywhere is a reasonable thing to want.
     public var appearsInMenu: Bool {
         switch self {
-        case .laboratoryImportHistory, .todayRoot, .trendsRoot, .trendsDetail: return false
+        case .laboratoryImportHistory, .profile,
+             .todayRoot, .trendsRoot, .trendsDetail, .settingsRoot: return false
         default: return true
         }
     }
@@ -264,7 +287,7 @@ public enum TabRouting {
     /// Three rules, and each of them is a behaviour somebody would otherwise
     /// have to decide at a call site:
     /// 1. **The tab you leave is untouched.** Navigating back to where you were
-    ///    is the promise; resetting Trends because you tapped a Modules link
+    ///    is the promise; resetting Trends because you tapped a Journal link
     ///    would break it invisibly.
     /// 2. **Tapping the route already on top does nothing.** A duplicate push
     ///    leaves a Back button pointing at an identical screen, which reads as
@@ -303,9 +326,8 @@ public enum TabRouting {
         return Plan(selection: selection, paths: updated)
     }
 
-    /// Clear a tab's stack, keeping the tab. This is what the Modules menu
-    /// tapping the row you are already on should do — "take me to the list" is
-    /// not "push the list onto itself".
+    /// Clear a tab's stack, keeping the tab. "Take me to the list" is not
+    /// "push the list onto itself".
     public static func plan(selection: AppTab,
                             paths: [AppTab: [AppRoute]],
                             poppingToRoot: Bool) -> Plan {
@@ -319,6 +341,21 @@ public enum TabRouting {
                             paths: [AppTab: [AppRoute]],
                             goingToTab tab: AppTab) -> Plan {
         Plan(selection: tab, paths: paths)
+    }
+
+    /// A tap on the bar's `tab`.
+    ///
+    /// Tapping the tab already showing clears its stack: inside Laboratory,
+    /// tapping Journal returns to the index rather than leaving Laboratory on
+    /// screen under a highlighted Journal. Tapping any other tab is
+    /// `goingToTab` — switching tabs still leaves every stack alone.
+    public static func plan(selection: AppTab,
+                            paths: [AppTab: [AppRoute]],
+                            reselecting tab: AppTab) -> Plan {
+        guard tab == selection else {
+            return plan(selection: selection, paths: paths, goingToTab: tab)
+        }
+        return plan(selection: selection, paths: paths, poppingToRoot: true)
     }
 
     private static func path(for tab: AppTab, in paths: [AppTab: [AppRoute]]) -> [AppRoute] {

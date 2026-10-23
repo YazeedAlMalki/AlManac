@@ -30,7 +30,6 @@
 "Allergen warning: this names %@, which you have recorded as an allergen." = "تحذير من مسبّبات الحساسية: يذكر هذا %@، وقد سجّلته مسبّبًا للحساسية لديك.";
 "Almond, cashew, walnut, hazelnut, pistachio, and their oils." = "اللوز والكاجو والجوز والبندق والفستق الحلبي وزيوتها.";
 "Any fish, including fish sauce and anchovy paste." = "أي نوع من السمك، ومنه صلصة السمك ومعجون الأنشوجة.";
-"App" = "التطبيق";
 "Apple Juice" = "عصير تفاح";
 "As many rounds as possible" = "أكبر عدد ممكن من الجولات";
 "Backup is damaged: %@" = "النسخة الاحتياطية تالفة: %@";
@@ -129,6 +128,7 @@
 "Intermediate" = "متوسط";
 "Interval block" = "كتلة فترات";
 "Intervals" = "فترات";
+"Journal" = "المفكرة";
 "Kilograms (kg)" = "كيلوغرام (كغ)";
 "Kombucha" = "كومبوتشا";
 "Laboratory" = "المختبر";
@@ -161,7 +161,6 @@
 "Missing: %@" = "ناقص: %@";
 "Moderate recovery — train at reduced intensity" = "تعافٍ متوسط — تدرّب بشدة مخفَّضة";
 "Moderately active" = "نشط باعتدال";
-"Modules" = "الأقسام";
 "Molluscs" = "الرخويات";
 "Mood" = "المزاج";
 "Morning check-in" = "تسجيل الحالة الصباحي";

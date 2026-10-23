@@ -23,6 +23,15 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            // First, because Profile left the Journal index when Settings
+            // became a tab; it is pushed on this tab's stack as a route, so a
+            // link from anywhere else lands here too.
+            Section("Profile") {
+                NavigationLink(value: AppRoute.profile) {
+                    Label("Profile", systemImage: AlmanacIcon.profile)
+                }
+                .accessibilityIdentifier("settings-profile")
+            }
             Section("Appearance") {
                 Picker("Appearance", selection: $appearanceRaw) {
                     ForEach(AlmanacAppearance.allCases) { option in

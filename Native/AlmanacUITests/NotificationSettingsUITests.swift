@@ -147,12 +147,7 @@ final class NotificationSettingsUITests: XCTestCase {
     }
 
     private func openReminders() {
-        app.openModulesTab()
-
-        let settings = app.buttons["Settings"]
-        XCTAssertTrue(app.reveal(settings), "Settings is not offered")
-        settings.tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        app.openSettingsTab()
 
         // Opening Settings must not ask for anything. It used to: loading the
         // saved water-reminder settings fired `.onChange`, which re-saved them and

@@ -85,7 +85,7 @@ struct QuickLogView: View {
                         destination: .digestion
                     )
                 }
-                .frame(maxWidth: 760, alignment: .leading)
+                .frame(maxWidth: AlmanacMetrics.contentWidth, alignment: .leading)
                 .padding(.horizontal, AlmanacMetrics.screenInset)
                 .padding(.top, 22)
                 .padding(.bottom, 32)

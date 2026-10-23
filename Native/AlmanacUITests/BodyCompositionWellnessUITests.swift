@@ -35,9 +35,9 @@ final class BodyCompositionWellnessUITests: XCTestCase {
     /// reaching the "Add plan" button says nothing about whether plans exist. The
     /// prominent card is at the top and always rendered.
     func testSupplementsScreenOpensAndItsEmptyStateMatchesItsHeadline() {
-        openModules()
+        openJournal()
         let supplements = app.buttons["Supplements"]
-        XCTAssertTrue(app.reveal(supplements), "Supplements is missing from Modules")
+        XCTAssertTrue(app.reveal(supplements), "Supplements is missing from Journal")
         supplements.tap()
 
         XCTAssertTrue(app.navigationBars["Supplements"].waitForExistence(timeout: 5))
@@ -99,9 +99,9 @@ final class BodyCompositionWellnessUITests: XCTestCase {
 
     /// The screen opens on a day and the two states cannot both be true.
     func testContextScreenOpensAndItsEmptyStateMatchesItsHistory() {
-        openModules()
+        openJournal()
         let context = app.buttons["Context"]
-        XCTAssertTrue(app.reveal(context), "Context is missing from Modules")
+        XCTAssertTrue(app.reveal(context), "Context is missing from Journal")
         context.tap()
 
         XCTAssertTrue(app.navigationBars["Context"].waitForExistence(timeout: 5))
@@ -238,15 +238,15 @@ final class BodyCompositionWellnessUITests: XCTestCase {
         return toggles.firstMatch
     }
 
-    private func openModules() {
-        let modules = app.buttons["Modules"]
+    private func openJournal() {
+        let modules = app.buttons["tab-journal"]
         XCTAssertTrue(modules.waitForExistence(timeout: 10))
         modules.tap()
-        XCTAssertTrue(app.navigationBars["Modules"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Journal"].waitForExistence(timeout: 5))
     }
 
     private func openSupplements() {
-        openModules()
+        openJournal()
         let link = app.buttons["Supplements"]
         XCTAssertTrue(app.reveal(link))
         link.tap()
@@ -254,7 +254,7 @@ final class BodyCompositionWellnessUITests: XCTestCase {
     }
 
     private func openContext() {
-        openModules()
+        openJournal()
         let link = app.buttons["Context"]
         XCTAssertTrue(app.reveal(link))
         link.tap()

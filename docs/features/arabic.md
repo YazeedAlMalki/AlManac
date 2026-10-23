@@ -127,13 +127,16 @@ places it is shown (`Drink.displayName`, `DrinkAttachment.displayName`).
 ## Tests
 
 - `ArabicUITests.testTheAppRunsInArabicRightToLeft` launches in Arabic. It
-  checks that the tab bar reads اليوم / الاتجاهات / الأقسام (AlmanacCore's
-  path), that the bar runs right to left, and that the Modules screen's title
-  is Arabic (the app catalog's path). Every other UI suite pins
+  checks that the bar reads اليوم / الاتجاهات / إضافة سجل / المفكرة /
+  الإعدادات — Today, Trends, the action, Journal, Settings (the tabs through
+  AlmanacCore's path, the action through the app catalog) — that the five run
+  right to left in that order, and that the Journal screen's title is Arabic
+  (the app catalog's path). المفكرة and إضافة سجل are the build's proposals of
+  2026-10-22, awaiting the owner's read (`owner-decisions-2026-10-22.md`). Every other UI suite pins
   `-AppleLanguages (en)`.
 - `ArabicUITests.testScreenshotEveryScreenInArabic` is the screenshot pass.
-  It opens Today, the quick-log sheet, Trends, Insights, the Modules menu and
-  every module in Arabic, scrolls each, and writes nothing. Each page's
+  It opens Today, the quick-log sheet, Trends, Insights, the Journal index,
+  Settings, Profile and every module in Arabic, scrolls each, and writes nothing. Each page's
   screenshot is kept. CI uploads them as plain PNGs in the `arabic-screenshots`
   artifact. Each page's Latin-script text, any element outside the window and
   any system alert are printed as `ARABIC-PASS` lines, which the "Arabic pass

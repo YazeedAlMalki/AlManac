@@ -1853,6 +1853,16 @@
         }
       }
     },
+    "Add a record": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة سجل"
+          }
+        }
+      }
+    },
     "Add a tag or a note before saving.": {
       "localizations": {
         "ar": {
@@ -3003,12 +3013,12 @@
         }
       }
     },
-    "Choose water, food, training, or a body measurement": {
+    "Choose water, food, training, a body measurement, or digestion": {
       "localizations": {
         "ar": {
           "stringUnit": {
             "state": "translated",
-            "value": "اختر الماء أو الطعام أو التدريب أو قياسًا للجسم"
+            "value": "اختر الماء أو الطعام أو التدريب أو قياسًا للجسم أو الهضم"
           }
         }
       }
@@ -5773,6 +5783,26 @@
         }
       }
     },
+    "Journal": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المفكرة"
+          }
+        }
+      }
+    },
+    "Journal unavailable": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المفكرة غير متاحة"
+          }
+        }
+      }
+    },
     "Keep them on": {
       "localizations": {
         "ar": {
@@ -6539,26 +6569,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "عُدّل: %@"
-          }
-        }
-      }
-    },
-    "Modules": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "الأقسام"
-          }
-        }
-      }
-    },
-    "Modules unavailable": {
-      "localizations": {
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "الأقسام غير متاحة"
           }
         }
       }

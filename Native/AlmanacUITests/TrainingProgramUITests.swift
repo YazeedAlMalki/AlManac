@@ -15,7 +15,7 @@ import XCTest
 /// scales the session for today's band and names what moved (7.10), and a
 /// very-low band presents as a rest day rather than a smaller session (7.11) —
 /// both of which need a score first, so both type today's vitals through
-/// Modules → Vitals and plant a multi-day baseline behind them by launch
+/// Journal → Vitals and plant a multi-day baseline behind them by launch
 /// argument (`seedReadinessBaseline`, and `XCUIApplication.seedVitals` for why
 /// the editor's own date picker cannot be driven). `testAReadingCanBePlantedOnADayOtherThanToday`
 /// is that mechanism's own test. Then skip-for-today re-offers the
@@ -173,7 +173,7 @@ final class TrainingProgramUITests: XCTestCase {
     /// Choosing **Yes** scales the session for today's band, and every field
     /// that moved is named (7.10).
     ///
-    /// The score is hand-entered first, through Modules → Vitals, because that
+    /// The score is hand-entered first, through Journal → Vitals, because that
     /// is the whole of §6.7's "manual fallback" and it is what gives a person
     /// without a watch — and the simulator — a score to scale by. Until that
     /// screen existed the Yes leg had no band behind it and this row could not
@@ -190,7 +190,7 @@ final class TrainingProgramUITests: XCTestCase {
         XCTAssertTrue(app.element("vitals-today-hrv").label.contains("53 ms"),
                       "the hand-entered HRV did not reach today's card")
 
-        settleModulesHome()
+        settleJournalHome()
         openPrograms()
         let dayLabel = unique("Scaled day")
         ensureDay(named: dayLabel)
@@ -229,7 +229,7 @@ final class TrainingProgramUITests: XCTestCase {
         seedReadinessBaseline()
         enterTodaysReadiness(rhr: "64", hrv: "34")
 
-        settleModulesHome()
+        settleJournalHome()
         openPrograms()
         let dayLabel = unique("Rest day")
         ensureDay(named: dayLabel)
@@ -618,14 +618,14 @@ final class TrainingProgramUITests: XCTestCase {
                      "today's training sessions did not all delete")
 
         // Back to the day: the deleted session's pass is free again. The Programs→Day
-        // stack is pushed inside the Modules tab, and switching tabs resets that
+        // stack is pushed inside the Journal tab, and switching tabs resets that
         // inner stack — returning resumes on the pushed Training screen, never
         // on the day — so the route is re-driven from the tab's home.
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        let modules = app.buttons["Modules"].firstMatch
-        XCTAssertTrue(modules.waitForExistence(timeout: 5), "the Modules destination is missing")
+        let modules = app.buttons["tab-journal"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 5), "the Journal tab is missing")
         modules.tap()
-        settleModulesHome()
+        settleJournalHome()
         openPrograms()
         openDay(named: dayLabel)
         startCurrentDay()
@@ -636,11 +636,11 @@ final class TrainingProgramUITests: XCTestCase {
 
     // MARK: - Helpers
 
-    /// Modules → Training → Start workout → Programs.
+    /// Journal → Training → Start workout → Programs.
     ///
-    /// The tab is only tapped when the Modules home is not already on screen, and
+    /// The tab is only tapped when the Journal home is not already on screen, and
     /// the direction of the search depends on which of the two that is. Popping
-    /// back out of a pushed Modules screen restores the list to wherever it was
+    /// back out of a pushed Journal screen restores the list to wherever it was
     /// when that screen was opened — which is *below* "Training", the row being
     /// looked for — and `reveal` only ever scrolls one way, so from there it has
     /// to be scrolled towards the top instead of away from it. Tapping the
@@ -648,17 +648,17 @@ final class TrainingProgramUITests: XCTestCase {
     /// same place by accident; asking for the row directly is the honest version.
     private func openPrograms() {
         let training = app.buttons["Training"]
-        if app.navigationBars["Modules"].firstMatch.exists {
+        if app.navigationBars["Journal"].firstMatch.exists {
             // Three swipes each way before committing to a full pass, because
             // one of the two directions is a wasted 24 and the other finds the
             // row in the first or second.
             XCTAssertTrue(app.reveal(training, maxSwipes: 3)
                                 || app.reveal(training, maxSwipes: 3, direction: .down)
                                 || app.reveal(training),
-                          "Training is missing from Modules")
+                          "Training is missing from Journal")
         } else {
-            app.openModulesTab()
-            XCTAssertTrue(app.reveal(training), "Training is missing from Modules")
+            app.openJournalTab()
+            XCTAssertTrue(app.reveal(training), "Training is missing from Journal")
         }
         training.tap()
         XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 5),
@@ -677,32 +677,32 @@ final class TrainingProgramUITests: XCTestCase {
                       "the program picker did not open")
     }
 
-    /// Puts the Modules stack back at its home screen.
+    /// Puts the Journal stack back at its home screen.
     ///
-    /// The Programs→Day stack is pushed *inside* the Modules tab, and switching
-    /// tabs resets that inner stack, so returning to Modules can resume on a
+    /// The Programs→Day stack is pushed *inside* the Journal tab, and switching
+    /// tabs resets that inner stack, so returning to Journal can resume on a
     /// pushed screen (usually Training) rather than the home. Popping until the
     /// home's "Training" card is visible makes the normal route re-drivable.
-    private func settleModulesHome() {
+    private func settleJournalHome() {
         for _ in 0..<4 {
             if app.buttons["Training"].firstMatch.exists { return }
             let back = app.navigationBars.buttons.element(boundBy: 0)
             guard back.exists else { break }
             back.tap()
             XCTAssertTrue(app.waitUntil(timeout: 5) { !back.exists },
-                          "a back tap out of the Modules stack did not settle")
+                          "a back tap out of the Journal stack did not settle")
         }
         XCTAssertTrue(app.buttons["Training"].firstMatch.waitForExistence(timeout: 5),
-                      "the Modules home is unreachable after returning to the tab")
+                      "the Journal home is unreachable after returning to the tab")
     }
 
-    /// Modules → Vitals, the screen §6.7's "manual fallback" lives on.
+    /// Journal → Vitals, the screen §6.7's "manual fallback" lives on.
     private func openVitals() {
-        let modules = app.buttons["Modules"].firstMatch
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
+        let modules = app.buttons["tab-journal"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Journal tab is missing")
         modules.tap()
         let vitals = app.buttons["Vitals"].firstMatch
-        XCTAssertTrue(app.reveal(vitals), "Vitals is missing from Modules")
+        XCTAssertTrue(app.reveal(vitals), "Vitals is missing from Journal")
         vitals.tap()
         XCTAssertTrue(app.navigationBars["Vitals"].waitForExistence(timeout: 5),
                       "the Vitals screen did not open")

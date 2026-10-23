@@ -76,7 +76,7 @@ final class AttributionsUITests: XCTestCase {
     /// graphic" — the rendering half. The rule is enforced against the bundle
     /// by `ExerciseGraphicAudit`; this checks the rows actually draw one.
     func testEveryOfferedExerciseShowsADemonstrationGraphic() {
-        openModules()
+        app.openJournalTab()
         let training = app.buttons["Training"]
         XCTAssertTrue(training.waitForExistence(timeout: 5))
         training.tap()
@@ -102,8 +102,8 @@ final class AttributionsUITests: XCTestCase {
 
     // MARK: - Editorial shell
 
-    func testEditorialShellQuickLogTrendsAndModules() {
-        let quickLog = app.buttons["Quick log"]
+    func testEditorialShellQuickLogTrendsAndJournal() {
+        let quickLog = app.buttons["quick-log"]
         XCTAssertTrue(quickLog.waitForExistence(timeout: 5))
         quickLog.tap()
 
@@ -118,10 +118,7 @@ final class AttributionsUITests: XCTestCase {
         trends.tap()
         XCTAssertTrue(app.staticTexts["Trends"].waitForExistence(timeout: 5))
 
-        let modules = app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 5))
-        modules.tap()
-        XCTAssertTrue(app.navigationBars["Modules"].waitForExistence(timeout: 5))
+        app.openJournalTab()
     }
 
     // MARK: - Health
@@ -170,19 +167,22 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testMorePageContainsTheRequestedDestinations() {
-        let more = app.buttons["Modules"]
-        XCTAssertTrue(more.waitForExistence(timeout: 5))
-        more.tap()
+        app.openJournalTab()
 
         scrollTo("Laboratory", maxSwipes: 12)
-        XCTAssertTrue(app.staticTexts["Laboratory"].exists, "Laboratory is missing from Modules")
-        // The bar now takes its own layout space, and the Records section
-        // gained a row, so the later destinations have to be scrolled to.
-        for destination in ["Profile", "Body composition", "Settings"] {
+        XCTAssertTrue(app.staticTexts["Laboratory"].exists, "Laboratory is missing from Journal")
+        // The bar now takes its own layout space, so the later destinations
+        // have to be scrolled to.
+        for destination in ["Body composition", "Timeline"] {
             scrollTo(destination, maxSwipes: 12)
             XCTAssertTrue(app.staticTexts[destination].exists,
-                          "\(destination) is missing from Modules")
+                          "\(destination) is missing from Journal")
         }
+        // Profile and Settings left the index on 2026-10-22: Settings is a tab
+        // and Profile is inside it. A row for either here would be a second
+        // way in that the decision removed.
+        XCTAssertFalse(app.staticTexts["Profile"].exists, "Profile is still listed in Journal")
+        app.openProfile()
     }
 
     func testTodayShowsTheActivityRingsCalendar() {
@@ -268,21 +268,8 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testMoreDestinationsOpen() {
-        let more = app.buttons["Modules"]
-        XCTAssertTrue(more.waitForExistence(timeout: 5))
-        more.tap()
-
-        let profile = app.buttons["Profile"]
-        scrollTo("Profile")
-        XCTAssertTrue(profile.waitForExistence(timeout: 5))
-        profile.tap()
-        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
-        let back = app.navigationBars.buttons["More"]
-        if back.exists {
-            back.tap()
-        } else {
-            app.navigationBars.buttons.firstMatch.tap()
-        }
+        app.openProfile()
+        app.openJournalTab()
 
         // "Body composition", not "Measurements". The route's title already said so
         // and the screen's own `navigationTitle` did not, so the menu row and the
@@ -295,9 +282,7 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testFastingScreenOpensFromMore() {
-        let more = app.buttons["Modules"]
-        XCTAssertTrue(more.waitForExistence(timeout: 5))
-        more.tap()
+        app.openJournalTab()
 
         let fasting = app.buttons["Fasting"]
         XCTAssertTrue(fasting.waitForExistence(timeout: 5))
@@ -309,9 +294,7 @@ final class AttributionsUITests: XCTestCase {
     }
 
     func testPrayerScreenOpensFromMore() {
-        let more = app.buttons["Modules"]
-        XCTAssertTrue(more.waitForExistence(timeout: 5))
-        more.tap()
+        app.openJournalTab()
 
         let prayer = app.buttons["Prayer"]
         XCTAssertTrue(prayer.waitForExistence(timeout: 5))
@@ -343,37 +326,51 @@ final class AttributionsUITests: XCTestCase {
 
     /// The custom bottom bar is laid out in flow, not attached as a safe-area
     /// inset. A navigation stack swallowed that inset, every scroll view kept
-    /// the full screen height, and the last row of a long list — Settings —
-    /// was pinned behind the bar with no way to scroll it clear.
-    func testTheLastModulesRowClearsTheBottomBar() {
-        openModules()
-        let settings = app.buttons["Settings"]
-        XCTAssertTrue(app.reveal(settings),
-                      "Settings must be reachable, not trapped behind the bar")
+    /// the full screen height, and the last row of a long list was pinned
+    /// behind the bar with no way to scroll it clear. Settings is the longest
+    /// list, so its last row is the one checked.
+    func testTheLastSettingsRowClearsTheBottomBar() {
+        openSettings()
+        let last = app.buttons["Backup & restore"]
+        XCTAssertTrue(app.reveal(last),
+                      "Settings' last row must be reachable, not trapped behind the bar")
 
         // The bar's own buttons give its top edge; the row has to end above it.
-        let todayTab = app.buttons["Today"]
+        let todayTab = app.buttons["tab-today"]
         XCTAssertTrue(todayTab.exists)
-        XCTAssertLessThan(settings.frame.maxY, todayTab.frame.minY,
-                          "Settings is still covered by the bottom bar")
-        settings.tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10),
-                      "Settings did not open from Modules")
+        XCTAssertLessThan(last.frame.maxY, todayTab.frame.minY,
+                          "Settings' last row is still covered by the bottom bar")
+        last.tap()
+        XCTAssertTrue(app.navigationBars["Backup & restore"].waitForExistence(timeout: 10),
+                      "Backup & restore did not open from Settings")
     }
 
-    /// Modules is the app-owned full-module index in the new shell.
-    private func openModules() {
-        let modules = app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 5), "the Modules destination is missing")
-        modules.tap()
+    /// Re-tapping the tab that is showing pops it to its root, including a
+    /// screen pushed by a plain link that no coordinator path holds.
+    func testRetappingSettingsReturnsToItsRoot() {
+        openSettings()
+        let attributions = app.buttons["Attributions"]
+        XCTAssertTrue(app.reveal(attributions), "Attributions is not reachable in Settings")
+        attributions.tap()
+        XCTAssertTrue(app.navigationBars["Attributions"].waitForExistence(timeout: 10))
+        app.buttons["tab-settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5),
+                      "re-tapping Settings left \(app.navigationBars.allElementsBoundByIndex.map(\.identifier)) on screen")
+        XCTAssertFalse(app.navigationBars["Attributions"].exists)
+    }
+
+    /// Re-tapping Journal from inside a module returns to the index.
+    func testRetappingJournalReturnsToTheIndex() {
+        app.openJournalTab()
+        let laboratory = app.buttons["Laboratory"]
+        XCTAssertTrue(app.reveal(laboratory), "Laboratory is not reachable in Journal")
+        laboratory.tap()
+        XCTAssertTrue(app.waitUntil(timeout: 10) { !self.app.navigationBars["Journal"].exists },
+                      "Laboratory did not open")
+        app.openJournalTab()
     }
 
     private func openSettings() {
-        openModules()
-        scrollTo("Settings")
-        let settings = app.buttons["Settings"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 5),
-                      "Settings is not reachable from Modules")
-        settings.tap()
+        app.openSettingsTab()
     }
 }

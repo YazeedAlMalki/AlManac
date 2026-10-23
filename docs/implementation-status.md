@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-20 (latest): re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
+Updated 2026-10-22 (latest): the bottom bar — Today, Trends, [+], Journal, Settings; not re-scored.
+Updated 2026-10-20: re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
 Updated 2026-10-19: the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
 Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
@@ -40,6 +41,49 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-22 — The bottom bar: Today, Trends, [+], Journal, Settings
+
+**Outcome.** The owner's 2026-10-22 roster is built
+(`docs/features/owner-decisions-2026-10-22.md`). Five equal columns, the action
+third; Modules is renamed Journal; Settings is a tab and Profile is inside it;
+tapping the tab already showing pops it to its root; on iPad the bar's row is
+capped at the content column's 760pt and centred. The capture path is
+unchanged. **Not re-scored**: no rubric line covers the bar. Supersedes the
+2026-09-27 entry's roster below.
+
+- **Core.** `AppTab` is `today, trends, journal, settings`; `AppBar.slots` is
+  generated from it with the action inserted in the middle. `AppTab.BarGroup`
+  is gone. `AppRoute.settings` is now `.settingsRoot` (hidden), `.profile`
+  belongs to `.settings` and has no index row, and `AppRouteSection.app` is
+  removed. `TabRouting.plan(…reselecting:)` clears the tapped tab's stack only
+  when it is the one showing. `AlmanacIcon.journal = "book.closed"`.
+- **App.** The bar renders `AppBar.slots`; the action keeps its accent and its
+  sheet, its label is "Add a record" and its hint names all five quick-log
+  destinations. The xLarge clamp on the captions keeps, with its reason
+  written. Re-tap clears the coordinator path *and* gives the tab root a new
+  identity, because a plain `NavigationLink { … }` push is in no path.
+  `ModulesView` is `JournalView`; Settings has its own `NavigationStack` on
+  the coordinator's path, with Profile as its first row.
+  `AlmanacMetrics.contentWidth` (760) replaces four literals.
+- **Strings.** Journal is **المفكرة**, the action إضافة سجل — both proposals
+  for the owner's read. "Modules" and "App" leave the core table; "Modules",
+  "Modules unavailable" and the old hint leave the app catalog.
+
+### What was run
+
+| Check | Result |
+|---|---|
+| `swift test` | **PASS** — 1,215 tests in 133 suites, 0 failures (23 routing tests, 7 new) |
+| App + UI-test build | **PASS** — `build-for-testing`, generic iOS Simulator |
+| Full UI suite, a fresh iPhone 16e simulator (iOS 26.3) | **113 run, 106 passed, 7 failed.** Every test touching the bar, Journal, Settings or Profile passed, including the new `testRetappingSettingsReturnsToItsRoot`, `testRetappingJournalReturnsToTheIndex`, `testTheLastSettingsRowClearsTheBottomBar`, `testProfileOpensFromSettings`, and both `ArabicUITests` |
+| The 7 failures | 2 × `AllergenFilterUITests` ("the food search never opened", the quick-log Food sheet): **both passed on rerun alone.** 5 × `TrainingProgramUITests` ("exercise 1 is missing from the catalog", line 969): one passed on rerun; four failed again. **Master `8b3cfb0` fails the same way on the same simulator** (`testEnteringActualsUpdatesBothGraphs`, `testVariantModeToggleAppliesToBothGraphsAndShowsTheNote`, both line 969): `reveal` drags the day screen's list beneath the catalog sheet. Pre-existing, not this change |
+| VoiceOver order | **PASS** — `testTheBarReadsInOrder`: Today, Trends, Add a record, Journal, Settings |
+| `capture.sh` + `measure.sh` (light, dark, largest type) | Largest type: **no findings**. Light 0.9 % and dark 1.6 % off-token: the status bar and Today's system switches — a pixel count puts **none** of those colours inside the bar. Rules one weight, 1.00pt |
+| Arabic, by eye | The bar mirrors (اليوم, الاتجاهات, +, المفكرة, الإعدادات from the right); nothing truncates |
+| iPad Pro 11-inch, by eye | Capped and centred: slots 152pt apart (760 ÷ 5), the action on the screen's midline |
+| Device | **UNRUN** — simulator only |
+| XcodeBuildMCP walk (Today → Journal → Settings → Quick Log) | **UNRUN** as a hand-driven walk; the same path is covered by the UI tests above |
 
 ## 2026-10-20 — Re-score after the Oct 19 work; App Intents driven; audit merged; backups need an email
 

@@ -215,13 +215,13 @@ final class TrainingHistoryUITests: XCTestCase {
     // MARK: - Helpers
 
     private func openTraining() {
-        let modules = app.buttons["Modules"]
+        let modules = app.buttons["tab-journal"]
         XCTAssertTrue(modules.waitForExistence(timeout: 10))
         modules.tap()
-        XCTAssertTrue(app.navigationBars["Modules"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Journal"].waitForExistence(timeout: 5))
 
         let training = app.buttons["Training"]
-        XCTAssertTrue(app.reveal(training), "Training is missing from Modules")
+        XCTAssertTrue(app.reveal(training), "Training is missing from Journal")
         training.tap()
         XCTAssertTrue(app.navigationBars["Training"].waitForExistence(timeout: 5))
     }
