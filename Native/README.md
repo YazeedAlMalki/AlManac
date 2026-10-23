@@ -8,8 +8,9 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
 
 - Navigation: a compact root shell with Today, Trends, a central Quick Log
   action and Modules. The app-owned Modules page links to Training, Hydration,
-  Nutrition, Fasting, Prayer, Laboratory, Profile, Measurements and Settings,
-  so the domain screens are not system-overflow tabs.
+  Nutrition, Fasting, Prayer, Laboratory, Profile and Settings, so the domain
+  screens are not system-overflow tabs. Profile links to Shifts & rhythm,
+  Measurements (Body composition), Body circumferences and the body logger.
 - Today includes a native graphical tracking calendar. Selecting a past date
   shows a read-only, chronologically merged history from the module-provided
   `Timeline` providers; the 04:00 Almanac logical-day boundary is shown in the UI.
@@ -22,7 +23,7 @@ separately deployed service. The target supports iPhone and iPad on iOS 17+.
   for things Almanac recorded. Fraunces is used only for the screen title and
   the readiness number; everything else is the system sans until licensed
   Neue Montreal files are supplied.
-- Quick Log provides water presets plus focused food, training and body entry;
+- Quick Log provides water presets plus focused food, training and digestion entry;
   the Settings appearance picker persists System/Light/Dark across launches.
   Fraunces and Almarai ship with their OFL files; Neue Montreal remains a
   licensed-font dependency until approved files are supplied.

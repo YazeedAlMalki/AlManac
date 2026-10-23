@@ -1,6 +1,6 @@
 import XCTest
 
-/// Shifts & rhythm, reached from the Modules menu (BRD §6.11, §13).
+/// Shifts & rhythm, reached from Profile (BRD §6.11, §13).
 ///
 /// What these cover is the part the core tests cannot see: that the screen is
 /// reachable, that a person with no shifts is told so plainly instead of shown
@@ -35,7 +35,7 @@ final class ShiftsAndRhythmUITests: XCTestCase {
 
     // MARK: - Reaching it
 
-    func testShiftsAndRhythmIsInTheModulesMenu() {
+    func testShiftsAndRhythmIsAProfileRow() {
         launch(seeding: "none")
         openShiftsAndRhythm()
     }
@@ -121,7 +121,7 @@ final class ShiftsAndRhythmUITests: XCTestCase {
     /// would fail on them too.
     func testTheScreenReadsInArabic() {
         launch(seeding: "night:-4,night:-3,night:-2,night:-1,night:0", language: "ar", locale: "ar_SA")
-        openShiftsAndRhythm(menuRow: "المناوبات والإيقاع", title: "المناوبات والإيقاع")
+        openShiftsAndRhythm(menuRow: "المناوبات والإيقاع", title: "المناوبات والإيقاع", profile: "الملف الشخصي")
 
         XCTAssertTrue(app.staticTexts["إيقاع ليلي مستقر."].waitForExistence(timeout: 10),
                       "the settled-night sentence is not in Arabic")
@@ -131,16 +131,8 @@ final class ShiftsAndRhythmUITests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func openShiftsAndRhythm(menuRow: String = "Shifts & rhythm", title: String = "Shifts & rhythm") {
-        let modules = app.buttons["tab-modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
-        modules.tap()
-        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10),
-                      "the Modules menu did not open")
-        let row = app.buttons[menuRow]
-        XCTAssertTrue(app.reveal(row), "\(menuRow) has no row in the Modules menu")
-        row.tap()
-        XCTAssertTrue(app.navigationBars[title].firstMatch.waitForExistence(timeout: 10),
-                      "tapping \(menuRow) did not open it")
+    private func openShiftsAndRhythm(menuRow: String = "Shifts & rhythm", title: String = "Shifts & rhythm",
+                                     profile: String = "Profile") {
+        app.openProfileRow(menuRow, title: title, profile: profile)
     }
 }

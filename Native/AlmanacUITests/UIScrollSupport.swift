@@ -495,4 +495,31 @@ extension XCUIApplication {
                       "the Modules tab did not open; navigation bars: \(navigationBars.allElementsBoundByIndex.map(\.identifier))",
                       file: file, line: line)
     }
+
+    /// Modules → Profile → `row`, checked at each step. Shifts & rhythm, Body
+    /// composition, Body circumferences and the body logger are Profile rows,
+    /// not Modules rows.
+    ///
+    /// The Modules bar is waited on by `firstMatch`, not by its title, and the
+    /// two labels are parameters, so the Arabic run can use it too.
+    func openProfileRow(_ row: String, title: String? = nil, profile: String = "Profile",
+                        file: StaticString = #filePath, line: UInt = #line) {
+        let modules = buttons["tab-modules"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Modules tab", file: file, line: line)
+        modules.tap()
+        XCTAssertTrue(navigationBars.firstMatch.waitForExistence(timeout: 10),
+                      "the Modules menu did not open", file: file, line: line)
+        let profileRow = buttons[profile]
+        XCTAssertTrue(reveal(profileRow), "no \(profile) row in Modules", file: file, line: line)
+        profileRow.tap()
+        XCTAssertTrue(navigationBars[profile].waitForExistence(timeout: 10),
+                      "\(profile) did not open", file: file, line: line)
+        let link = buttons[row]
+        XCTAssertTrue(reveal(link), "\(row) has no row on \(profile)", file: file, line: line)
+        link.tap()
+        XCTAssertTrue(navigationBars[title ?? row].firstMatch.waitForExistence(timeout: 10),
+                      "tapping \(row) on \(profile) did not open it; navigation bars: "
+                      + "\(navigationBars.allElementsBoundByIndex.map(\.identifier))",
+                      file: file, line: line)
+    }
 }

@@ -50,6 +50,17 @@ struct ProfileView: View {
 
     var body: some View {
         Form {
+            // Rows, each pushing its own screen onto the Modules stack this
+            // screen is on. Built from `AppRoute.profileRows`, the same way the
+            // Modules menu is built from `AppRoute.menu`.
+            Section {
+                ForEach(AppRoute.profileRows) { route in
+                    NavigationLink(value: route) {
+                        Label(route.title, systemImage: route.icon)
+                    }
+                }
+            }
+
             Section("Profile") {
                 TextField("Display name", text: $displayName)
                     .textContentType(.name)

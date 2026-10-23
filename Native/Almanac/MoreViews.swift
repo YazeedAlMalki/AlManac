@@ -115,6 +115,8 @@ struct ModulesView: View {
             DayTimelineView(db: db)
         case .bodyComposition:
             MeasurementsView(db: db, trackingModel: trackingModel)
+        case .bodyLog:
+            QuickBodyLogView(db: db, trackingModel: trackingModel, isFastDay: fastingModel.isFastDay)
         case .digestion:
             DigestionHistoryView(db: db)
         case .profile:

@@ -130,8 +130,7 @@ struct AlmanacApp: App {
                     hydrationModel: hydrationModel,
                     nutritionModel: nutritionModel,
                     trainingModel: trainingModel,
-                    trackingModel: trackingModel,
-                    fastingModel: fastingModel
+                    trackingModel: trackingModel
                 )
             }
             .onChange(of: tabs.selected) { _, tab in
