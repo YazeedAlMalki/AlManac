@@ -218,6 +218,7 @@ struct NotificationSettingsView: View {
         case .contextualSnack: return String(localized: "Pre-workout snack")
         case .contextualHydration: return String(localized: "Pre-meal drink")
         case .prayer: return String(localized: "Prayer times")
+        case .shiftPattern: return String(localized: "Shift pattern ends")
         }
     }
 
@@ -235,6 +236,7 @@ struct NotificationSettingsView: View {
         case .contextualSnack: return String(localized: "When a long gap opens before a planned workout.")
         case .contextualHydration: return String(localized: "About an hour before a meal you usually eat.")
         case .prayer: return String(localized: "At each prayer you choose in Prayer. Maghrib on a fast day is the iftar reminder.")
+        case .shiftPattern: return String(localized: "The evening before a saved pattern's week or month ends. With it off, the pattern you set as next starts by itself.")
         }
     }
 }

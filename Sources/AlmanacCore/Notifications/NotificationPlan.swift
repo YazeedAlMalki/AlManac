@@ -122,6 +122,14 @@ public enum NotificationText {
         localized("It is time for %@ (%@).", PrayerTime.displayName(name), timeText)
     }
 
+    public static var shiftPatternTitle: String { localized("Pick your next shift pattern") }
+
+    /// The pattern's name is the person's own, so it is shown as they wrote it.
+    public static func shiftPatternBody(patternName: String) -> String {
+        localized("“%@” starts again tomorrow. Pick what runs next in Shifts & rhythm; until you do, it keeps running.",
+                  patternName)
+    }
+
     public static func mealTitle(_ mealType: NutritionMealType) -> String {
         switch mealType {
         case .breakfast: return localized("Time for breakfast")

@@ -384,3 +384,5 @@
 "%@ foods are not in the food catalogue" = "أطعمة عددها %@ غير موجودة في فهرس الأطعمة";
 "1 food has no calorie figure" = "طعام واحد بلا قيمة سعرات";
 "%@ foods have no calorie figure" = "أطعمة عددها %@ بلا قيمة سعرات";
+"Pick your next shift pattern" = "اختر نمط مناوباتك التالي";
+"“%@” starts again tomorrow. Pick what runs next in Shifts & rhythm; until you do, it keeps running." = "يبدأ «%@» من جديد غدًا. اختر ما يليه في المناوبات والإيقاع، وإلى أن تختار يستمر كما هو.";

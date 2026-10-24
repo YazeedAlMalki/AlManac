@@ -12850,6 +12850,326 @@
           }
         }
       }
+    },
+    "%@ · every month from %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · كل شهر ابتداءً من %@"
+          }
+        }
+      }
+    },
+    "%@ · every week from %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · كل أسبوع ابتداءً من %@"
+          }
+        }
+      }
+    },
+    "%lld × %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld × %@"
+          }
+        }
+      }
+    },
+    "1 day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم واحد"
+          }
+        }
+      }
+    },
+    "Add a block": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة مجموعة"
+          }
+        }
+      }
+    },
+    "Block %lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المجموعة %lld"
+          }
+        }
+      }
+    },
+    "Blocks": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المجموعات"
+          }
+        }
+      }
+    },
+    "Don't run next": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا تجعله التالي"
+          }
+        }
+      }
+    },
+    "Every block needs at least one day.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحتاج كل مجموعة إلى يوم واحد على الأقل."
+          }
+        }
+      }
+    },
+    "Every month": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل شهر"
+          }
+        }
+      }
+    },
+    "Every week": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل أسبوع"
+          }
+        }
+      }
+    },
+    "Give the pattern a name.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أعطِ النمط اسمًا."
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التالي"
+          }
+        }
+      }
+    },
+    "Pattern: %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النمط: %@"
+          }
+        }
+      }
+    },
+    "Remind me before it starts again": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ذكّرني قبل أن يبدأ من جديد"
+          }
+        }
+      }
+    },
+    "Remove last block": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حذف آخر مجموعة"
+          }
+        }
+      }
+    },
+    "Repeats": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التكرار"
+          }
+        }
+      }
+    },
+    "Run next": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اجعله التالي"
+          }
+        }
+      }
+    },
+    "Running": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قيد التشغيل"
+          }
+        }
+      }
+    },
+    "Saved pattern": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نمط محفوظ"
+          }
+        }
+      }
+    },
+    "Saved patterns": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأنماط المحفوظة"
+          }
+        }
+      }
+    },
+    "Shift pattern ends": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "انتهاء نمط المناوبات"
+          }
+        }
+      }
+    },
+    "Start using it": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ابدأ باستخدامه"
+          }
+        }
+      }
+    },
+    "Starts %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبدأ %@"
+          }
+        }
+      }
+    },
+    "Starts again %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبدأ من جديد %@"
+          }
+        }
+      }
+    },
+    "That pattern is no longer saved.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يعد هذا النمط محفوظًا."
+          }
+        }
+      }
+    },
+    "The blocks repeat inside each week or month and start again from the first block when a new one begins. A day you change yourself keeps your change, and the pattern's shift is kept as a note.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتكرر المجموعات داخل كل أسبوع أو شهر، وتبدأ من جديد من المجموعة الأولى عند بداية أسبوع أو شهر جديد. اليوم الذي تغيّره بنفسك يحتفظ بتغييرك، وتُحفظ مناوبة النمط ملاحظةً."
+          }
+        }
+      }
+    },
+    "The evening before a saved pattern's week or month ends. With it off, the pattern you set as next starts by itself.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مساء اليوم السابق لانتهاء أسبوع النمط المحفوظ أو شهره. عند إيقافه يبدأ النمط الذي جعلته التالي من تلقاء نفسه."
+          }
+        }
+      }
+    },
+    "The evening before a week or month ends, Almanac asks you to pick what runs next. Until you pick, the running pattern keeps going.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في مساء اليوم السابق لانتهاء الأسبوع أو الشهر، يطلب منك Almanac اختيار ما يليه. وإلى أن تختار يستمر النمط الحالي."
+          }
+        }
+      }
+    },
+    "The run length must be at least one night.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يجب أن يكون طول السلسلة ليلة واحدة على الأقل."
+          }
+        }
+      }
+    },
+    "Use now": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدمه الآن"
+          }
+        }
+      }
+    },
+    "With the reminder off, the pattern you set as next starts when the week or month ends. With none set, the running pattern keeps going.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عند إيقاف التذكير يبدأ النمط الذي جعلته التالي عند انتهاء الأسبوع أو الشهر. وإن لم تحدد نمطًا تاليًا يستمر النمط الحالي."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

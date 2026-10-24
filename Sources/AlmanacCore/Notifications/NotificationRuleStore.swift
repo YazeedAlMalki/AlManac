@@ -98,7 +98,7 @@ public struct NotificationRuleStore: @unchecked Sendable {
     public static func defaultRule(for type: NotificationType) -> NotificationRule {
         let enabled: Bool
         switch type {
-        case .readiness, .water, .suhoor, .iftar: enabled = true
+        case .readiness, .water, .suhoor, .iftar, .shiftPattern: enabled = true
         case .meal, .bedtime, .supplement, .contextualSnack, .contextualHydration, .prayer: enabled = false
         }
         return NotificationRule(type: type, isEnabled: enabled)

@@ -15,6 +15,9 @@ public enum NotificationType: String, Sendable, Hashable, CaseIterable {
     /// A prayer's time has come (Migration050). Not in Appendix B, which
     /// predates it; see the matrix below for why nothing suppresses it.
     case prayer
+    /// A saved shift pattern's week or month ends tomorrow (Migration069).
+    /// Not in Appendix B either; nothing suppresses it.
+    case shiftPattern = "shift_pattern"
 }
 
 /// The five state axes Appendix B suppresses against, at the moment a
@@ -96,6 +99,11 @@ public enum NotificationSuppressionMatrix {
             // to be told it — muting Dhuhr because they are asleep after a night
             // shift is a decision about their prayer the app has no standing to
             // make. The per-prayer list is where they choose.
+            return false
+        case .shiftPattern:
+            // Not an Appendix B row. It asks the person to pick what runs
+            // next, and with it off the next pattern starts by itself, so
+            // muting it would change their schedule without asking.
             return false
         }
     }

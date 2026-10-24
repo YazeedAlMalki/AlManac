@@ -112,6 +112,39 @@ final class ShiftsAndRhythmUITests: XCTestCase {
         XCTAssertEqual(lastDay.label, "Day shift")
     }
 
+    /// A saved pattern sits beside Rotation in the editor. Saved with its
+    /// defaults (5 day shifts then 2 rest days, every week from today) it
+    /// runs at once, is listed as running, and starts again on day 8.
+    func testSavingAPatternRunsItAndListsIt() {
+        launch(seeding: "none")
+        openShiftsAndRhythm()
+
+        app.buttons["circadian-add-shifts"].tap()
+        let mode = app.segmentedControls["shift-editor-mode"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 10), "the shift editor did not open")
+        XCTAssertTrue(mode.buttons["Rotation"].exists, "Rotation is no longer offered")
+        mode.buttons["Saved pattern"].tap()
+        let name = app.textFields["shift-pattern-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5), "the saved pattern form has no name field")
+        name.tap()
+        name.typeText("Work week\n")
+        app.buttons["shift-editor-save"].tap()
+
+        XCTAssertTrue(app.staticTexts["circadian-shift-0"].waitForExistence(timeout: 10),
+                      "the saved pattern wrote no shifts")
+        XCTAssertEqual(app.staticTexts["circadian-shift-0"].label, "Day shift")
+        let rest = app.staticTexts["circadian-shift-5"]
+        XCTAssertTrue(app.reveal(rest), "day 6 is not on the screen")
+        XCTAssertEqual(rest.label, "Rest day")
+        let restart = app.staticTexts["circadian-shift-7"]
+        XCTAssertTrue(app.reveal(restart), "day 8 is not on the screen")
+        XCTAssertEqual(restart.label, "Day shift", "the week did not start again from the first block")
+
+        let status = app.staticTexts["saved-pattern-status-Work week"]
+        XCTAssertTrue(app.reveal(status), "the saved pattern is not listed")
+        XCTAssertEqual(status.label, "Running")
+    }
+
     // MARK: - Arabic
 
     /// The catalog gate proves each string has an Arabic entry; this proves the

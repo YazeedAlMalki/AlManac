@@ -39,6 +39,9 @@ public struct NotificationPlanner: @unchecked Sendable {
     public static let defaultWaterIntervalMinutes = 90
     /// §14.2 — "~60 min before usual meal time".
     public static let contextualHydrationLeadMinutes: Double = 60
+    /// The period-end reminder's time when the person has not set one: 18:00,
+    /// the evening before the new week or month starts.
+    public static let defaultShiftPatternReminderMinute = 18 * 60
 
     private let db: Database
     private let timeModel: TimeModel
@@ -143,6 +146,7 @@ public struct NotificationPlanner: @unchecked Sendable {
         try appendMeals(day: day, into: &candidates)
         try appendSupplements(day: day, into: &candidates)
         try appendContextualHydration(day: day, into: &candidates)
+        try appendShiftPatternReminder(day: day, into: &candidates)
     }
 
     private func appendReadiness(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
@@ -296,9 +300,32 @@ public struct NotificationPlanner: @unchecked Sendable {
     /// fallback (readiness, bedtime). A time before the 04:00 boundary belongs
     /// to the end of the logical day, so a 00:30 bedtime is the night after
     /// the day's evening, not the night before its morning.
+    /// On the last day of the running saved pattern's week or month, a
+    /// reminder to pick what runs next. Nothing changes until the person picks.
+    private func appendShiftPatternReminder(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
+        guard try rules.isEnabled(.shiftPattern), let tomorrow = timeModel.day(after: day) else { return }
+        let patterns = SavedShiftPatternStore(db: db, timeModel: timeModel)
+        let selection = try patterns.selection()
+        guard let id = selection.currentId, let anchor = selection.anchor, tomorrow > anchor,
+              let pattern = try patterns.pattern(id: id),
+              SavedShiftPatternStore.nextPeriodStart(pattern.cadence, anchor: anchor, after: day) == tomorrow,
+              let fireAt = try fallbackTime(.shiftPattern, on: day)
+                ?? time(Self.defaultShiftPatternReminderMinute, on: day) else { return }
+        candidates.append(PlannedNotification(
+            identifier: "almanac.shift_pattern.\(day.value)", type: .shiftPattern, fireAt: fireAt,
+            title: NotificationText.shiftPatternTitle,
+            body: NotificationText.shiftPatternBody(patternName: pattern.name)))
+    }
+
     private func fallbackTime(_ type: NotificationType, on day: LogicalDay) throws -> Date? {
-        guard let minute = try rules.rule(for: type).scheduledMinuteOfDay,
-              let bounds = timeModel.bounds(of: day) else { return nil }
+        guard let minute = try rules.rule(for: type).scheduledMinuteOfDay else { return nil }
+        return time(minute, on: day)
+    }
+
+    /// The instant `minute` past midnight falls inside `day`: on its own date,
+    /// or for a minute before the 04:00 boundary, on the next calendar date.
+    private func time(_ minute: Int, on day: LogicalDay) -> Date? {
+        guard let bounds = timeModel.bounds(of: day) else { return nil }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeModel.timeZone
         let boundaryMinute = timeModel.boundary.offsetHours * 60

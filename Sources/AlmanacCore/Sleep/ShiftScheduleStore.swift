@@ -60,14 +60,18 @@ public struct ShiftRecurrencePatternDraft: Sendable {
     public var shiftSequence: String
     public var startDate: String  // YYYY-MM-DD
     public var endDate: String?
+    /// The saved pattern this rule was written for, when it was. A saved
+    /// pattern's rule is the only kind that has a weekly or monthly cadence.
+    public var savedPatternId: Int64?
 
     public init(scheduleId: Int64, patternType: String, shiftSequence: String,
-                startDate: String, endDate: String? = nil) {
+                startDate: String, endDate: String? = nil, savedPatternId: Int64? = nil) {
         self.scheduleId = scheduleId
         self.patternType = patternType
         self.shiftSequence = shiftSequence
         self.startDate = startDate
         self.endDate = endDate
+        self.savedPatternId = savedPatternId
     }
 }
 
@@ -170,14 +174,15 @@ public struct ShiftScheduleStore: @unchecked Sendable {
     public func createRecurrencePattern(_ draft: ShiftRecurrencePatternDraft) throws -> Int64 {
         try db.run("""
         INSERT INTO shift_recurrence_pattern
-            (scheduleId, patternType, shiftSequence, startDate, endDate, createdAt)
-        VALUES (?, ?, ?, ?, ?, ?);
+            (scheduleId, patternType, shiftSequence, startDate, endDate, savedPatternId, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?);
         """, [
             .integer(draft.scheduleId),
             .text(draft.patternType),
             .text(draft.shiftSequence),
             .text(draft.startDate),
             draft.endDate.map { SQLValue.text($0) } ?? .null,
+            draft.savedPatternId.map { SQLValue.integer($0) } ?? .null,
             .text(iso(Date()))
         ])
         guard let row = try db.query("SELECT last_insert_rowid() as id;").first,
@@ -210,6 +215,45 @@ public struct ShiftScheduleStore: @unchecked Sendable {
             }
             return patternId
         }
+    }
+
+    /// A one-day entry: `shift` on `date`, as a manual override. When a saved
+    /// pattern had a shift on that day, the entry still wins, and the
+    /// pattern's shift is kept as its note (`SavedShiftPatternNote`).
+    @discardableResult
+    public func logOneDay(scheduleId: Int64, date: String, shift: ShiftType) throws -> Int64 {
+        let source = try newestSource(on: date)
+        let patternShift: ShiftType?
+        if source?.record.isManualOverride == true {
+            // Replacing an earlier one-day entry: the pattern's shift it kept
+            // is still the pattern's shift.
+            patternShift = SavedShiftPatternNote.shift(in: source?.record.notes)
+        } else {
+            patternShift = source?.savedPatternId == nil ? nil : source?.record.shiftType
+        }
+        return try logOccurrence(ShiftOccurrenceDraft(
+            scheduleId: scheduleId, date: date, shiftType: shift, isManualOverride: true,
+            notes: patternShift.map(SavedShiftPatternNote.text(for:))))
+    }
+
+    /// The newest occurrence on `date`, and the saved pattern its rule was
+    /// written for, if it was.
+    func newestSource(on date: String) throws -> (record: ShiftOccurrenceRecord, savedPatternId: Int64?)? {
+        guard let row = try db.query("""
+        SELECT o.id, o.scheduleId, o.date, o.shiftType, o.shiftStartTime, o.shiftEndTime,
+               o.expectedSleepWindowStart, o.expectedSleepWindowEnd, o.expectedWakeTime,
+               o.isManualOverride, o.recurrencePatternId, o.notes, o.createdAt, r.savedPatternId
+        FROM shift_occurrence o
+        LEFT JOIN shift_recurrence_pattern r ON r.id = o.recurrencePatternId
+        WHERE o.date = ? ORDER BY o.id DESC LIMIT 1;
+        """, [.text(date)]).first, let record = rowToOccurrence(row) else { return nil }
+        return (record, row.int("savedPatternId"))
+    }
+
+    /// Writes `notes` onto an existing occurrence.
+    func setNotes(_ notes: String?, onOccurrence id: Int64) throws {
+        try db.run("UPDATE shift_occurrence SET notes = ? WHERE id = ?;",
+                   [notes.map { SQLValue.text($0) } ?? .null, .integer(id)])
     }
 
     /// The schedule the shift editor writes into: the newest active one, or a

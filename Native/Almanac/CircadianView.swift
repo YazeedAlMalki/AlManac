@@ -15,11 +15,23 @@ import Foundation
 /// week.** §6.11 makes that the ordinary case and requires it to stay fully
 /// supported: there is no claim to make about a rhythm nobody entered, so none
 /// is made.
+///
+/// **Saved patterns are listed here, and picked here.** Nothing changes at a
+/// period end until the person picks; with the period-end reminder off, the
+/// pattern set as next starts by itself (`SavedShiftPatternStore.refresh`).
 @MainActor
 struct CircadianView: View {
     let db: Database
+    var notificationModel: NotificationModel?
 
     @State private var days: [CircadianContext] = []
+    /// The saved pattern's shift on a day a one-day entry replaced, by date.
+    @State private var patternNotes: [String: ShiftType] = [:]
+    @State private var patterns: [SavedShiftPattern] = []
+    @State private var selection = SavedShiftPatternSelection.none
+    @State private var nextPeriodStart: LogicalDay?
+    @State private var reminderOn = true
+    @State private var choosing: SavedShiftPattern?
     @State private var addingShifts = false
     @State private var error: String?
 
@@ -45,6 +57,9 @@ struct CircadianView: View {
             } else {
                 emptyState
             }
+            if !patterns.isEmpty {
+                patternsSection
+            }
         }
         .listStyle(.insetGrouped)
         .almanacModuleSurface()
@@ -63,7 +78,118 @@ struct CircadianView: View {
         .sheet(isPresented: $addingShifts) {
             ShiftEditorView(db: db) { reload() }
         }
+        .confirmationDialog(choosing?.name ?? "", isPresented: Binding(
+            get: { choosing != nil }, set: { if !$0 { choosing = nil } }
+        ), titleVisibility: .visible, presenting: choosing) { pattern in
+            if selection.currentId != pattern.id {
+                Button("Use now") { act { try $0.use(pattern.id, today: today) } }
+                if selection.nextId == pattern.id {
+                    Button("Don't run next") { act { try $0.setNext(nil, today: today) } }
+                } else {
+                    Button("Run next") { act { try $0.setNext(pattern.id, today: today) } }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
         .editorError($error)
+    }
+
+    // MARK: - Saved patterns
+
+    private var patternsSection: some View {
+        Section {
+            ForEach(patterns) { pattern in
+                Button { choosing = pattern } label: { patternRow(pattern) }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("saved-pattern-\(pattern.name)")
+            }
+            if selection.currentId != nil {
+                Toggle(isOn: Binding(get: { reminderOn }, set: setReminder)) {
+                    Text("Remind me before it starts again")
+                        .font(AlmanacTypography.font(.body))
+                }
+                .accessibilityIdentifier("saved-pattern-reminder")
+            }
+        } header: {
+            AlmanacSectionHeader(title: String(localized: "Saved patterns"))
+        } footer: {
+            Text(reminderOn
+                 ? "The evening before a week or month ends, Almanac asks you to pick what runs next. Until you pick, the running pattern keeps going."
+                 : "With the reminder off, the pattern you set as next starts when the week or month ends. With none set, the running pattern keeps going.")
+        }
+    }
+
+    private func patternRow(_ pattern: SavedShiftPattern) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(pattern.name)
+                    .font(AlmanacTypography.font(.bodyMedium))
+                    .foregroundStyle(AlmanacPalette.textPrimary)
+                Text(summary(pattern))
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if selection.currentId == pattern.id, let next = nextPeriodStart {
+                    Text("Starts again \(dateText(next))")
+                        .font(AlmanacTypography.font(.caption))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                } else if selection.nextId == pattern.id, let starts = selection.nextStartsOn {
+                    Text("Starts \(dateText(starts))")
+                        .font(AlmanacTypography.font(.caption))
+                        .foregroundStyle(AlmanacPalette.textSecondary)
+                }
+            }
+            Spacer()
+            if let status = status(of: pattern) {
+                Text(status)
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.textPrimary)
+                    .accessibilityIdentifier("saved-pattern-status-\(pattern.name)")
+            }
+        }
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+    }
+
+    private func status(of pattern: SavedShiftPattern) -> String? {
+        if selection.currentId == pattern.id { return String(localized: "Running") }
+        if selection.nextId == pattern.id { return String(localized: "Next") }
+        return nil
+    }
+
+    /// "5 × Day shift, 2 × Rest day · every week from Wed 21 Oct".
+    private func summary(_ pattern: SavedShiftPattern) -> String {
+        let blocks = pattern.blocks
+            .map { String(localized: "\($0.days) × \(ShiftPresentation.title(for: $0.shift))") }
+            .joined(separator: String(localized: ", "))
+        let from = dateText(pattern.startDate)
+        switch pattern.cadence {
+        case .weekly: return String(localized: "\(blocks) · every week from \(from)")
+        case .monthly: return String(localized: "\(blocks) · every month from \(from)")
+        }
+    }
+
+    private var today: LogicalDay { timeModel.logicalDay(Date()) }
+
+    private func act(_ change: (SavedShiftPatternStore) throws -> Void) {
+        do {
+            try change(SavedShiftPatternStore(db: db, timeModel: timeModel))
+            reload()
+            Task { await notificationModel?.reconcileNotifications() }
+        } catch {
+            self.error = String(describing: error)
+        }
+    }
+
+    private func setReminder(_ on: Bool) {
+        do {
+            try NotificationRuleStore(db: db).setEnabled(on, for: .shiftPattern)
+            try SavedShiftPatternStore(db: db, timeModel: timeModel).refresh(today: today)
+            reload()
+            Task { await notificationModel?.reconcileNotifications() }
+        } catch {
+            self.error = String(describing: error)
+        }
     }
 
     // MARK: - Empty
@@ -102,6 +228,12 @@ struct CircadianView: View {
                                      ? AlmanacPalette.textSecondary : AlmanacPalette.textPrimary)
                     .accessibilityIdentifier("circadian-shift-\(offset)")
             }
+            if let planned = patternNotes[context.date.value] {
+                Text("Pattern: \(ShiftPresentation.title(for: planned))")
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
+                    .accessibilityIdentifier("circadian-pattern-note-\(offset)")
+            }
             if let line = CircadianPresentation.line(for: context.contextType,
                                                      transitionDayN: context.transitionDayN) {
                 Text(line)
@@ -120,6 +252,10 @@ struct CircadianView: View {
     /// still names the month the data is filed under (docs/features/arabic.md).
     private func dateText(_ day: LogicalDay, offset: Int) -> String {
         if offset == 0 { return String(localized: "Today") }
+        return dateText(day)
+    }
+
+    private func dateText(_ day: LogicalDay) -> String {
         guard let start = timeModel.start(of: day) else { return day.value }
         return start.formatted(.almanacDateTime.weekday(.abbreviated).month(.abbreviated).day())
     }
@@ -129,9 +265,21 @@ struct CircadianView: View {
     private func reload() {
         do {
             let today = timeModel.logicalDay(Date())
+            let saved = SavedShiftPatternStore(db: db, timeModel: timeModel)
+            try saved.refresh(today: today)
             let first = step(today, by: -Self.daysBefore)
             let last = step(today, by: Self.daysAfter)
             days = try CircadianTimeline(db: db, timeModel: timeModel).days(from: first, through: last)
+            let shifts = ShiftScheduleStore(db: db)
+            patternNotes = try days.reduce(into: [:]) { notes, context in
+                if let planned = SavedShiftPatternNote.shift(in: try shifts.occurrence(for: context.date.value)?.notes) {
+                    notes[context.date.value] = planned
+                }
+            }
+            patterns = try saved.patterns()
+            selection = try saved.selection()
+            nextPeriodStart = try saved.nextPeriodStart(after: today)
+            reminderOn = try NotificationRuleStore(db: db).isEnabled(.shiftPattern)
             error = nil
         } catch {
             self.error = String(describing: error)
