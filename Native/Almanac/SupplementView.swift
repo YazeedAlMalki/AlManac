@@ -32,6 +32,9 @@ struct SupplementView: View {
     @State private var readProblem: String?
     /// Set when a reminder was turned on but notifications are not allowed.
     @State private var reminderProblem: String?
+    /// A log entry a swipe asked to remove, held until confirmed. A plan is not
+    /// deleted — it is discontinued — so only the adherence record needs asking.
+    @State private var pendingDelete: SupplementLogEntry?
 
     private let timeModel = TimeModel(timeZone: .current)
 
@@ -96,6 +99,16 @@ struct SupplementView: View {
         .sheet(item: $editingPlan) { plan in
             SupplementPlanEditor(db: db, plan: plan) { saved(reminderTurnedOn: $0) }
         }
+        .almanacDestructiveConfirmation(
+            pendingDelete.map { String(localized: "Delete the \(planName($0.planId).lowercased()) entry?") } ?? "",
+            message: String(localized: "It is removed from your adherence history. The plan itself is kept."),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: { if let entry = pendingDelete { delete(entry); pendingDelete = nil } }
+        )
         .editorError($error)
     }
 
@@ -312,7 +325,7 @@ struct SupplementView: View {
         }
         .frame(minHeight: AlmanacMetrics.minimumControl)
         .swipeActions {
-            Button("Delete", role: .destructive) { delete(entry) }
+            Button("Delete", role: .destructive) { pendingDelete = entry }
         }
     }
 

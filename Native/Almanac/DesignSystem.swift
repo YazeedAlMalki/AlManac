@@ -719,6 +719,82 @@ struct AlmanacSecondaryButtonStyle: ButtonStyle {
     }
 }
 
+/// One thing a confirmation dialog can do.
+///
+/// A confirmation is not decoration: the doctrine is that a destructive action
+/// "uses a role and a confirmation where the result cannot be undone"
+/// (`.opencode/skills/almanac-design-system/SKILL.md`, "Native iOS
+/// conventions"). Before this existed the app confirmed a backup restore and no
+/// delete at all — every row's swipe-to-delete wrote to the database on the
+/// first tap, with no way back. A logged meal, water entry or training session is health
+/// data; losing it to a stray swipe is the failure mode this removes.
+struct AlmanacConfirmationAction {
+    let title: String
+    /// One sentence naming the object and what happens to it. The alert's own
+    /// title asks the question, so this answers "what exactly am I deleting".
+    var detail: String?
+    /// `true` for the action that removes the record. Cancel is added by the
+    /// caller and is never destructive.
+    var isDestructive: Bool = false
+    let perform: () -> Void
+
+    init(title: String, detail: String? = nil, isDestructive: Bool = false, perform: @escaping () -> Void) {
+        self.title = title
+        self.detail = detail
+        self.isDestructive = isDestructive
+        self.perform = perform
+    }
+}
+
+extension View {
+    /// Ask before doing something that cannot be undone.
+    ///
+    /// An `alert` rather than a `confirmationDialog`, deliberately. On iOS 26 a
+    /// dialog presented from a source without an anchor becomes a popover that
+    /// has no Cancel button and no visible way out — the accepted-checklist note
+    /// for `KitchenUITests` records exactly that bug being fixed by moving the
+    /// kitchen's warning to an alert. The destructive action here is reached
+    /// from a swipe, which has no anchor either, so an alert is the only form
+    /// that always shows Cancel.
+    func almanacDestructiveConfirmation(
+        _ question: String,
+        message: String?,
+        isPresented: Binding<Bool>,
+        confirmTitle: String,
+        perform: @escaping () -> Void
+    ) -> some View {
+        alert(question, isPresented: isPresented) {
+            Button(confirmTitle, role: .destructive, action: perform)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if let message { Text(message) }
+        }
+    }
+
+    /// Present a queued `AlmanacConfirmationAction`. The action carries its own
+    /// wording, so a row that already knows what it would delete only has to
+    /// hand it over.
+    @ViewBuilder
+    func almanacConfirmation(_ action: Binding<AlmanacConfirmationAction?>) -> some View {
+        alert(
+            String(localized: "Delete this record?"),
+            isPresented: Binding(
+                get: { action.wrappedValue != nil },
+                set: { if !$0 { action.wrappedValue = nil } }
+            ),
+            presenting: action.wrappedValue
+        ) { queued in
+            Button(queued.title, role: queued.isDestructive ? .destructive : nil) {
+                queued.perform()
+                action.wrappedValue = nil
+            }
+            Button("Cancel", role: .cancel) { action.wrappedValue = nil }
+        } message: { queued in
+            if let detail = queued.detail { Text(detail) }
+        }
+    }
+}
+
 extension View {
     @ViewBuilder
     func almanacNavigationHost(_ embedded: Bool) -> some View {

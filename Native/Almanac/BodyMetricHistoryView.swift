@@ -15,6 +15,7 @@ struct BodyMetricHistoryView: View {
     @State private var readings: [BodyCompositionMeasurement] = []
     @State private var correcting: BodyCompositionMeasurement?
     @State private var error: String?
+    @State private var pendingDelete: BodyCompositionMeasurement?
 
     var body: some View {
         List {
@@ -52,6 +53,16 @@ struct BodyMetricHistoryView: View {
                 onChanged()
             }
         }
+        .almanacDestructiveConfirmation(
+            deleteQuestion,
+            message: String(localized: "It is removed from Almanac. A copy already sent to Apple Health is left as it was."),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: { if let reading = pendingDelete { delete(reading); pendingDelete = nil } }
+        )
         .editorError($error)
     }
 
@@ -71,14 +82,14 @@ struct BodyMetricHistoryView: View {
         .accessibilityIdentifier("body-reading-\(reading.id)")
         .swipeActions {
             if reading.source == "manual" {
-                Button("Delete", role: .destructive) { delete(reading) }
+                Button("Delete", role: .destructive) { pendingDelete = reading }
                 Button("Edit") { correcting = reading }
             }
         }
         .contextMenu {
             if reading.source == "manual" {
                 Button("Edit") { correcting = reading }
-                Button("Delete", role: .destructive) { delete(reading) }
+                Button("Delete", role: .destructive) { pendingDelete = reading }
             }
         }
     }
@@ -94,6 +105,14 @@ struct BodyMetricHistoryView: View {
         } catch {
             self.error = String(describing: error)
         }
+    }
+
+    /// Names the metric and the reading, so the question says *what* is going,
+    /// not just that something is.
+    private var deleteQuestion: String {
+        guard let reading = pendingDelete else { return "" }
+        let value = "\(AlmanacNumber.compact(reading.value)) \(metric.displayUnit)"
+        return String(localized: "Delete the \(value) \(metric.title.lowercased()) reading?")
     }
 
     private func delete(_ reading: BodyCompositionMeasurement) {

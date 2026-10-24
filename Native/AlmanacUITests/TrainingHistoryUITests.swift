@@ -180,6 +180,7 @@ final class TrainingHistoryUITests: XCTestCase {
         let delete = app.buttons["Delete"]
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "today's bout offers no delete")
         delete.tap()
+        XCTAssertTrue(app.confirmDeletion(), "the delete was not confirmed")
         XCTAssertTrue(app.waitUntil(timeout: 5) { !app.element(wheelID).exists },
                       "the deleted exercise is still on today")
         XCTAssertTrue(app.element(benchID).label.contains("3 x 6"), "deleting one exercise changed another")

@@ -12850,6 +12850,286 @@
           }
         }
       }
+    },
+    "Delete this record?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف هذا السجل؟"
+          }
+        }
+      }
+    },
+    "Delete this entry?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف هذا الإدخال؟"
+          }
+        }
+      }
+    },
+    "Delete this session?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف هذه الجلسة؟"
+          }
+        }
+      }
+    },
+    "Delete %lld entries?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف %lld من الإدخالات؟"
+          }
+        }
+      }
+    },
+    "Delete %lld sessions?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف %lld من الجلسات؟"
+          }
+        }
+      }
+    },
+    "Delete %@ from %@?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف %1$@ من %2$@؟"
+          }
+        }
+      }
+    },
+    "Delete %@ from today?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف %@ من اليوم؟"
+          }
+        }
+      }
+    },
+    "Delete the %@ %@ reading?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف قراءة %2$@ البالغة %1$@؟"
+          }
+        }
+      }
+    },
+    "Delete the %@ entry?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف إدخال %@؟"
+          }
+        }
+      }
+    },
+    "Delete the %@ template?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف قالب %@؟"
+          }
+        }
+      }
+    },
+    "Delete this %@ reading?": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أتحذف قراءة %@ هذه؟"
+          }
+        }
+      }
+    },
+    "%@ mL is removed from this day's water total.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف %@ مل من مجموع الماء لهذا اليوم."
+          }
+        }
+      }
+    },
+    "This nutrition entry is removed from the day.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف إدخال التغذية هذا من اليوم."
+          }
+        }
+      }
+    },
+    "The session and every exercise logged in it are removed.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُحذف الجلسة وكل تمرين سُجّل فيها."
+          }
+        }
+      }
+    },
+    "Every exercise logged in it is removed, and today's load is recalculated without it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف كل تمرين سُجّل فيها، ويُعاد حساب حمل اليوم من دونها."
+          }
+        }
+      }
+    },
+    "It is removed from Almanac and no longer counts towards today's readiness.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُحذف من Almanac ولا تعود تُحتسب في جاهزية اليوم."
+          }
+        }
+      }
+    },
+    "It is removed from Almanac. A copy already sent to Apple Health is left as it was.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تُحذف من Almanac. أما النسخة التي أُرسلت إلى تطبيق الصحة فتبقى كما كانت."
+          }
+        }
+      }
+    },
+    "It is removed from the day's rotation. This one cannot be put back.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف من تناوب اليوم، ولا يمكن إعادته."
+          }
+        }
+      }
+    },
+    "It is removed from today's nutrition total.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف من مجموع تغذية اليوم."
+          }
+        }
+      }
+    },
+    "It is removed from today's water total. A copy already sent to Apple Health is left as it was.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف من مجموع الماء لليوم. أما النسخة التي أُرسلت إلى تطبيق الصحة فتبقى كما كانت."
+          }
+        }
+      }
+    },
+    "It is removed from your adherence history. The plan itself is kept.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُحذف من سجل التزامك. أما الخطة نفسها فتبقى."
+          }
+        }
+      }
+    },
+    "It leaves the template list. A past session keeps its record of using it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يخرج من قائمة القوالب. وتحتفظ الجلسات السابقة بسجل استخدامها له."
+          }
+        }
+      }
+    },
+    "“%@” will be removed.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيُحذف «%@»."
+          }
+        }
+      }
+    },
+    "“%@” and its one day will be removed.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيُحذف «%@» ويومه الوحيد."
+          }
+        }
+      }
+    },
+    "“%@” and its %lld days will be removed.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيُحذف «%@» ومعه %lld من أيامه."
+          }
+        }
+      }
+    },
+    "“%@” will be removed from this program.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سيُحذف «%@» من هذا البرنامج."
+          }
+        }
+      }
+    },
+    "Data Sources & Licenses": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مصادر البيانات والتراخيص"
+          }
+        }
+      }
+    },
+    "Almanac's food, recipe and exercise data come from the sources below. Each is shown with its author, its licence, and whether Almanac changed it.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تأتي بيانات الأطعمة والوصفات والتمارين في Almanac من المصادر أدناه. يُعرض كل منها مع مؤلفه وترخيصه، وما إذا كان Almanac قد غيّره."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

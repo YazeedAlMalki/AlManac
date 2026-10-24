@@ -48,6 +48,9 @@ struct DigestionQuickEntryView: View {
     @State private var confirmation: String?
     @State private var error: String?
     @State private var readProblem: String?
+    /// An entry a swipe asked to remove, held until confirmed. Digestion
+    /// deletions are hard deletes, so there is no undo behind them.
+    @State private var pendingDelete: (id: Int64, text: String)?
 
     private enum Kind: String, CaseIterable, Identifiable {
         case bowel, urination
@@ -156,6 +159,7 @@ struct DigestionQuickEntryView: View {
                       + [DigestionAdvisory.reviewNote]).joined(separator: "\n\n"))
             }
             .task { reload() }
+            .modifier(DeleteEntryConfirmation(pending: $pendingDelete, delete: delete))
         }
     }
 
@@ -296,7 +300,7 @@ struct DigestionQuickEntryView: View {
                     }
                     .frame(minHeight: AlmanacMetrics.minimumControl)
                     .swipeActions {
-                        Button("Delete", role: .destructive) { delete(entry.id) }
+                        Button("Delete", role: .destructive) { pendingDelete = (entry.id, entry.text) }
                     }
                 }
             }
@@ -414,6 +418,35 @@ struct DigestionQuickEntryView: View {
         var parts = [entry.colorGrade.displayName]
         if let note = entry.notes, !note.isEmpty { parts.append(note) }
         return parts.joined(separator: " · ")
+    }
+}
+
+/// Asks before deleting one of today's entries.
+///
+/// A separate `ViewModifier` rather than another modifier on `body` because the
+/// log form's body is already at the type-checker's limit, and the confirmation
+/// is a self-contained unit with its own state — which is what a modifier is
+/// for.
+private struct DeleteEntryConfirmation: ViewModifier {
+    @Binding var pending: (id: Int64, text: String)?
+    let delete: (Int64) -> Void
+
+    func body(content: Content) -> some View {
+        content.almanacDestructiveConfirmation(
+            String(localized: "Delete this entry?"),
+            message: pending?.text,
+            isPresented: Binding(
+                get: { pending != nil },
+                set: { if !$0 { pending = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: {
+                if let entry = pending {
+                    delete(entry.id)
+                    pending = nil
+                }
+            }
+        )
     }
 }
 

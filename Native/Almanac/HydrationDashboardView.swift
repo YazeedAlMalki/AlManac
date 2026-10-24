@@ -7,6 +7,10 @@ struct HydrationDashboardView: View {
     private let embedded: Bool
     @State private var logging = false
     @State private var error: String?
+    /// The entries a swipe asked to remove, held until the person confirms.
+    /// The list already knows the row it was swiped on; deleting from the
+    /// offsets directly is what made a stray swipe permanent.
+    @State private var pendingDelete: [HydrationEntry] = []
 
     init(model: HydrationModel, embedded: Bool = false) {
         self.model = model
@@ -104,6 +108,18 @@ struct HydrationDashboardView: View {
         .almanacModuleSurface()
         .toolbar { Button("Log a drink", systemImage: "plus") { logging = true } }
         .sheet(isPresented: $logging) { HydrationLoggingView(model: model) }
+        .almanacDestructiveConfirmation(
+            pendingDelete.count > 1
+                ? String(localized: "Delete \(pendingDelete.count) entries?")
+                : String(localized: "Delete this entry?"),
+            message: String(localized: "It is removed from today's water total. A copy already sent to Apple Health is left as it was."),
+            isPresented: Binding(
+                get: { !pendingDelete.isEmpty },
+                set: { if !$0 { pendingDelete = [] } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: confirmPendingDelete
+        )
         .task { model.refresh() }
         .editorError($error)
     }
@@ -138,10 +154,18 @@ struct HydrationDashboardView: View {
     }
 
     private func delete(at offsets: IndexSet) {
-        for index in offsets {
-            do { try model.delete(id: model.todaysEntries[index].id) }
+        // Queue rather than remove: `onDelete` fires the moment the row is
+        // dismissed, so writing here would be a delete with no confirmation.
+        pendingDelete = offsets.compactMap { model.todaysEntries.indices.contains($0) ? model.todaysEntries[$0] : nil }
+    }
+
+    private func confirmPendingDelete() {
+        for entry in pendingDelete {
+            do { try model.delete(id: entry.id) }
             catch { self.error = String(describing: error) }
         }
+        pendingDelete = []
+        model.refresh()
     }
 
     private func timeLabel(_ date: PartialDateTime) -> String {

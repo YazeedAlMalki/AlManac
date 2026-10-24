@@ -422,6 +422,27 @@ extension XCUIElement {
 }
 
 extension XCUIApplication {
+    /// Taps the destructive button in the confirmation an app-initiated delete
+    /// raises.
+    ///
+    /// Deletions of stored records now ask first (`almanacDestructiveConfirmation`
+    /// in `DesignSystem.swift`), so a swipe-to-delete is two taps: the row's
+    /// own Delete, then the alert's. The alert's confirm button is labelled the
+    /// same as the row's, so this looks for it in the alert rather than at
+    /// screen level — where both would match and the tap could land on the row
+    /// of the *next* swipe.
+    @discardableResult
+    func confirmDeletion(buttonLabel: String = "Delete", timeout: TimeInterval = 5) -> Bool {
+        let alert = alerts.firstMatch
+        guard alert.waitForExistence(timeout: timeout) else { return false }
+        let confirm = alert.buttons[buttonLabel].firstMatch
+        guard confirm.waitForExistence(timeout: timeout) else { return false }
+        confirm.tap()
+        return true
+    }
+}
+
+extension XCUIApplication {
     /// The element with `identifier`, whichever control type SwiftUI happened
     /// to expose it as.
     ///

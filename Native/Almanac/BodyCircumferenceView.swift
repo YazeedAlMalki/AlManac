@@ -10,6 +10,7 @@ struct BodyCircumferenceView: View {
     @State private var adding = false
     @State private var editing: BodyMeasurement?
     @State private var error: String?
+    @State private var pendingDelete: BodyMeasurement?
 
     var body: some View {
         List {
@@ -35,14 +36,14 @@ struct BodyCircumferenceView: View {
                     }
                     .swipeActions {
                         if entry.source == .manual {
-                            Button("Delete", role: .destructive) { delete(entry) }
+                            Button("Delete", role: .destructive) { pendingDelete = entry }
                             Button("Edit") { editing = entry }
                         }
                     }
                     .contextMenu {
                         if entry.source == .manual {
                             Button("Edit") { editing = entry }
-                            Button("Delete", role: .destructive) { delete(entry) }
+                            Button("Delete", role: .destructive) { pendingDelete = entry }
                         }
                     }
                 }
@@ -57,6 +58,18 @@ struct BodyCircumferenceView: View {
         .sheet(item: $editing) { entry in
             CircumferenceEditor(db: db, entry: entry, onSaved: saved)
         }
+        // A circumference is a measurement someone took. Removing it used to
+        // happen on the first tap of a swipe, with no way back.
+        .almanacDestructiveConfirmation(
+            pendingDelete.map { String(localized: "Delete this \($0.measurementType.rawValue.lowercased()) reading?") } ?? "",
+            message: String(localized: "It is removed from Almanac. A copy already sent to Apple Health is left as it was."),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: { if let entry = pendingDelete { delete(entry); pendingDelete = nil } }
+        )
         .editorError($error)
     }
 

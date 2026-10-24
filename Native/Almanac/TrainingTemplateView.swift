@@ -30,6 +30,10 @@ struct TrainingTemplateView: View {
     @State private var editing: PrescribedWorkoutEntry?
     @State private var error: String?
     @State private var readProblem: String?
+    /// A template a swipe asked to remove, held until confirmed. The delete is
+    /// soft (the footer says so), but the template still leaves the list with no
+    /// visible way back, so it asks first.
+    @State private var pendingDelete: PrescribedWorkoutEntry?
 
     var body: some View {
         List {
@@ -65,6 +69,16 @@ struct TrainingTemplateView: View {
         .sheet(item: $editing) { template in
             TemplateEditor(db: db, model: model, template: template) { reload() }
         }
+        .almanacDestructiveConfirmation(
+            pendingDelete.map { String(localized: "Delete the \($0.name) template?") } ?? "",
+            message: String(localized: "It leaves the template list. A past session keeps its record of using it."),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: { if let template = pendingDelete { delete(template); pendingDelete = nil } }
+        )
         .editorError($error)
     }
 
@@ -93,11 +107,11 @@ struct TrainingTemplateView: View {
         .onTapGesture { editing = template }
         .swipeActions(edge: .trailing) {
             Button("Edit") { editing = template }
-            Button("Delete", role: .destructive) { delete(template) }
+            Button("Delete", role: .destructive) { pendingDelete = template }
         }
         .contextMenu {
             Button("Edit") { editing = template }
-            Button("Delete", role: .destructive) { delete(template) }
+            Button("Delete", role: .destructive) { pendingDelete = template }
         }
     }
 

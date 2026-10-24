@@ -25,6 +25,10 @@ struct ProgramListView: View {
     @State private var editingDay: ProgramDayEntry?
     @State private var starting: StartingSession?
     @State private var error: String?
+    /// A program or day whose deletion has been asked for but not yet confirmed.
+    /// Both menus delete on the first tap otherwise, and a program carries its
+    /// days with it — the largest single loss a swipe can cause in this app.
+    @State private var pendingDeletion: AlmanacConfirmationAction?
 
     private var catalog: [ExerciseCatalogEntry] { trainingModel.exercises }
 
@@ -106,6 +110,7 @@ struct ProgramListView: View {
             }
         }
         .editorError($error)
+        .almanacConfirmation($pendingDeletion)
     }
 
     /// A day: its label, how many exercises are in rotation, and a Start button.
@@ -162,11 +167,31 @@ struct ProgramListView: View {
     }
 
     private func delete(_ program: TrainingProgramEntry) {
-        do { try model.deleteProgram(id: program.id) } catch { self.error = String(describing: error) }
+        let dayCount = model.days(of: program.id).count
+        // Three sentences rather than a pasted-on "s": the plural is the
+        // translator's to form, and Arabic forms it differently.
+        let detail = switch dayCount {
+        case 0: String(localized: "“\(program.name)” will be removed.")
+        case 1: String(localized: "“\(program.name)” and its one day will be removed.")
+        default: String(localized: "“\(program.name)” and its \(dayCount) days will be removed.")
+        }
+        pendingDeletion = AlmanacConfirmationAction(
+            title: String(localized: "Delete"),
+            detail: detail,
+            isDestructive: true
+        ) {
+            do { try model.deleteProgram(id: program.id) } catch { self.error = String(describing: error) }
+        }
     }
 
     private func delete(_ day: ProgramDayEntry) {
-        do { try model.deleteDay(id: day.id) } catch { self.error = String(describing: error) }
+        pendingDeletion = AlmanacConfirmationAction(
+            title: String(localized: "Delete"),
+            detail: String(localized: "“\(day.label)” will be removed from this program."),
+            isDestructive: true
+        ) {
+            do { try model.deleteDay(id: day.id) } catch { self.error = String(describing: error) }
+        }
     }
 }
 

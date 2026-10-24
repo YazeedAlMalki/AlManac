@@ -46,6 +46,7 @@ struct VitalsView: View {
     @State private var editing: VitalsRecord?
     @State private var error: String?
     @State private var readProblem: String?
+    @State private var pendingDelete: VitalsRecord?
 
     /// Days in the log, today included. A logbook, not an analytics screen —
     /// same bound `SupplementView` uses, and for the same reason.
@@ -95,6 +96,16 @@ struct VitalsView: View {
         .sheet(item: $editing) { record in
             VitalsEntryEditor(db: db, record: record, onSaved: saved)
         }
+        .almanacDestructiveConfirmation(
+            pendingDelete.map { String(localized: "Delete this \(name(for: $0.metric).lowercased()) reading?") } ?? "",
+            message: String(localized: "It is removed from Almanac and no longer counts towards today's readiness."),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: { if let record = pendingDelete { delete(record); pendingDelete = nil } }
+        )
         .editorError($error)
     }
 
@@ -172,7 +183,7 @@ struct VitalsView: View {
             // buttons are simply not offered, so the screen does not advertise an
             // action it would reject.
             if record.source == VitalsRecordStore.manualSource {
-                Button("Delete", role: .destructive) { delete(record) }
+                Button("Delete", role: .destructive) { pendingDelete = record }
                     .accessibilityIdentifier("vitals-delete")
                 Button("Edit") { editing = record }
                     .accessibilityIdentifier("vitals-edit")
@@ -181,7 +192,7 @@ struct VitalsView: View {
         .contextMenu {
             if record.source == VitalsRecordStore.manualSource {
                 Button("Edit") { editing = record }
-                Button("Delete", role: .destructive) { delete(record) }
+                Button("Delete", role: .destructive) { pendingDelete = record }
             }
         }
     }

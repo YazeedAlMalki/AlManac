@@ -20,6 +20,8 @@ struct NutritionQuickEntryView: View {
     @State private var showingSavedMeals = false
     @State private var showingRecipes = false
     @State private var error: String?
+    /// A meal entry a swipe asked to remove, held until confirmed.
+    @State private var pendingDelete: LoggedFood?
 
     init(model: NutritionModel, embedded: Bool = false, onSaved: @escaping () -> Void = {}) {
         self.model = model
@@ -80,7 +82,7 @@ struct NutritionQuickEntryView: View {
                         foodRow(logged)
                             .swipeActions {
                                 Button("Delete", role: .destructive) {
-                                    deleteEntry(logged.entry.id)
+                                    pendingDelete = logged
                                 }
                             }
                     }
@@ -121,7 +123,25 @@ struct NutritionQuickEntryView: View {
             }
         }
         .editorError($error)
+        .almanacDestructiveConfirmation(
+            deleteQuestion,
+            message: String(localized: "It is removed from today's nutrition total."),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: { if let logged = pendingDelete { deleteEntry(logged.entry.id); pendingDelete = nil } }
+        )
         .onAppear { model.refresh() }
+    }
+
+    /// Names the food, so the question says what is going rather than only that
+    /// something is.
+    private var deleteQuestion: String {
+        guard let logged = pendingDelete else { return "" }
+        let name = logged.entry.foodNameText ?? logged.food?.primaryName ?? logged.entry.foodRef.description
+        return String(localized: "Delete \(name) from today?")
     }
 
     private var totalsSection: some View {

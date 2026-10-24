@@ -191,6 +191,9 @@ struct ActivityRingDayEditor: View {
     @State private var nutritionEntries: [NutritionLogStore.PlacedLogEntry] = []
     @State private var trainingSessions: [WorkoutSessionEntry] = []
     @State private var error: String?
+    /// The action a swipe asked for, held until confirmed. One slot is enough
+    /// because a swipe resolves to exactly one row of exactly one kind.
+    @State private var pendingDelete: AlmanacConfirmationAction?
 
     var body: some View {
         List {
@@ -211,7 +214,13 @@ struct ActivityRingDayEditor: View {
                         }
                     }
                     .swipeActions {
-                        Button("Delete", role: .destructive) { deleteHydration(entry.id) }
+                        Button("Delete", role: .destructive) {
+                            pendingDelete = AlmanacConfirmationAction(
+                                title: String(localized: "Delete"),
+                                detail: String(localized: "\(ringFormat(entry.amount.value)) mL is removed from this day's water total."),
+                                isDestructive: true
+                            ) { deleteHydration(entry.id) }
+                        }
                     }
                 }
             }
@@ -234,7 +243,13 @@ struct ActivityRingDayEditor: View {
                         }
                     }
                     .swipeActions {
-                        Button("Delete", role: .destructive) { deleteNutrition(placed.entry.id) }
+                        Button("Delete", role: .destructive) {
+                            pendingDelete = AlmanacConfirmationAction(
+                                title: String(localized: "Delete"),
+                                detail: String(localized: "This nutrition entry is removed from the day."),
+                                isDestructive: true
+                            ) { deleteNutrition(placed.entry.id) }
+                        }
                     }
                 }
             }
@@ -257,7 +272,13 @@ struct ActivityRingDayEditor: View {
                         }
                     }
                     .swipeActions {
-                        Button("Delete", role: .destructive) { deleteTraining(session.id) }
+                        Button("Delete", role: .destructive) {
+                            pendingDelete = AlmanacConfirmationAction(
+                                title: String(localized: "Delete"),
+                                detail: String(localized: "The session and every exercise logged in it are removed."),
+                                isDestructive: true
+                            ) { deleteTraining(session.id) }
+                        }
                     }
                 }
             }
@@ -270,6 +291,7 @@ struct ActivityRingDayEditor: View {
         }
         .navigationTitle("Edit \(day.value)")
         .task { reload() }
+        .almanacConfirmation($pendingDelete)
         .editorError($error)
     }
 

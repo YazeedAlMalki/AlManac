@@ -28,6 +28,9 @@ struct ProgramDayView: View {
     @State private var editing: PoolEditTarget?
     @State private var promptReadiness = false
     @State private var error: String?
+    /// A pool item a swipe asked to remove, held until confirmed. The removal is
+    /// permanent (`deletePoolItem`), so it asks.
+    @State private var pendingDelete: PoolItemEntry?
 
     var body: some View {
         List {
@@ -73,6 +76,21 @@ struct ProgramDayView: View {
             PoolItemEditor(model: model, catalog: trainingModel.exercises, target: target)
         }
         .editorError($error)
+        .almanacDestructiveConfirmation(
+            pendingDelete.map { String(localized: "Delete \(name($0)) from \(day.label)?") } ?? "",
+            message: String(localized: "It is removed from the day's rotation. This one cannot be put back."),
+            isPresented: Binding(
+                get: { pendingDelete != nil },
+                set: { if !$0 { pendingDelete = nil } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: {
+                guard let item = pendingDelete else { return }
+                pendingDelete = nil
+                do { try model.deletePoolItem(id: item.id, programDayId: day.id) }
+                catch { self.error = String(describing: error) }
+            }
+        )
         .confirmationDialog("Factor in your readiness score?",
                             isPresented: $promptReadiness,
                             titleVisibility: .visible) {
@@ -154,8 +172,7 @@ struct ProgramDayView: View {
         .accessibilityIdentifier("pool-item-\(item.id)")
         .swipeActions(edge: .trailing) {
             Button("Delete", role: .destructive) {
-                do { try model.deletePoolItem(id: item.id, programDayId: day.id) }
-                catch { self.error = String(describing: error) }
+                pendingDelete = item
             }
             Button(item.isActive ? String(localized: "Remove") : String(localized: "Put back")) {
                 if item.isActive {

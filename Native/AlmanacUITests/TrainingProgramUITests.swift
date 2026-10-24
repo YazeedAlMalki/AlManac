@@ -99,6 +99,59 @@ final class TrainingProgramUITests: XCTestCase {
                        "the empty-state Add program button is hiding while programs exist")
     }
 
+    /// Deleting a program or a day asks first, Cancel keeps it, and confirming
+    /// is what removes it.
+    ///
+    /// Both menus used to delete on the first tap. A program takes its days
+    /// with it, so that was the largest single loss a stray tap could cause in
+    /// the app. Cancel is driven on a program; the confirmed delete is driven
+    /// on a day this run adds, because the shared database is never reset, the
+    /// other tests here build on its first program, and the list offers no way
+    /// to add a second program once one exists.
+    func testDeletingAProgramAsksFirstAndCancelKeepsIt() {
+        openPrograms()
+        createProgramIfNeeded(named: unique("Confirm Split"))
+
+        let options = app.firstElement(identifierPrefix: "program-options-")
+        XCTAssertTrue(app.reveal(options), "no program offers its options menu")
+        let programName = String(options.label.dropFirst("Options for ".count))
+        options.tap()
+
+        let deleteProgram = app.buttons["Delete program"]
+        XCTAssertTrue(deleteProgram.waitForExistence(timeout: 3),
+                      "the options menu offers no Delete program")
+        deleteProgram.tap()
+
+        // The alert must be up before anything is written.
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 5),
+                      "deleting a program did not ask for confirmation")
+        XCTAssertTrue(alert.buttons["Cancel"].exists,
+                      "the delete confirmation has no way to back out")
+        alert.buttons["Cancel"].tap()
+
+        // Cancel must leave the program exactly where it was.
+        XCTAssertTrue(app.waitUntil(timeout: 3) { !alert.exists && app.staticTexts[programName].exists },
+                      "Cancel removed \"\(programName)\" anyway")
+
+        // Confirming is what removes: on a day of this run's own.
+        let dayName = unique("Confirm Day")
+        addDay(named: dayName)
+        let dayOptions = app.buttons["Options for \(dayName)"]
+        XCTAssertTrue(app.reveal(dayOptions), "the new day offers no options menu")
+        dayOptions.tap()
+        let deleteDay = app.buttons["Delete day"]
+        XCTAssertTrue(deleteDay.waitForExistence(timeout: 3), "the day's menu offers no Delete day")
+        deleteDay.tap()
+        XCTAssertTrue(app.confirmDeletion(), "deleting a day did not ask for confirmation")
+        XCTAssertTrue(app.waitUntil(timeout: 5) { !app.staticTexts[dayName].exists },
+                      "\"\(dayName)\" survived a confirmed delete")
+        // The new day sits under every other day of the program, so its
+        // header may have scrolled out of the lazy list: scroll back to it.
+        XCTAssertTrue(app.reveal(app.staticTexts[programName], direction: .down),
+                      "deleting a day took its program with it")
+    }
+
     // MARK: - 7.4 / 7.5 / 7.6 / 7.9: starting a day builds the session
 
     /// The whole loop: author a day, add an exercise to its pool, start it,
@@ -609,6 +662,7 @@ final class TrainingProgramUITests: XCTestCase {
             let delete = app.buttons["Delete"]
             guard delete.waitForExistence(timeout: 2) else { break }
             delete.tap()
+            guard app.confirmDeletion() else { break }
             deleted += 1
             let rowLeft = app.waitUntil(timeout: 3) { !delete.exists }
             guard rowLeft else { break }
@@ -774,6 +828,7 @@ final class TrainingProgramUITests: XCTestCase {
             let remove = app.element("vitals-delete")
             guard remove.waitForExistence(timeout: 2) else { break }
             remove.tap()
+            guard app.confirmDeletion() else { break }
             XCTAssertTrue(app.waitUntil(timeout: 5) { !app.element("vitals-delete").exists },
                           "deleting a reading did not close its actions")
             deleted += 1

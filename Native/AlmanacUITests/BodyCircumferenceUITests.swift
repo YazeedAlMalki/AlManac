@@ -74,6 +74,7 @@ final class BodyCircumferenceUITests: XCTestCase {
         let delete = app.buttons["Delete"]
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "a manual row must offer deletion")
         delete.tap()
+        XCTAssertTrue(app.confirmDeletion(), "the delete was not confirmed")
         XCTAssertFalse(app.staticTexts[noteText].exists)
         app.navigationBars["Body circumferences"].buttons.firstMatch.tap()
     }

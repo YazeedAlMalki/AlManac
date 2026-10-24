@@ -17,6 +17,8 @@ struct TrainingDashboardView: View {
     @State private var pendingTemplate: PendingTemplate?
     @State private var editingBout: WorkoutBoutEntry?
     @State private var error: String?
+    /// Bouts a swipe asked to remove, held until confirmed.
+    @State private var pendingDelete: [WorkoutBoutEntry] = []
 
     private struct PendingTemplate: Identifiable {
         let template: PrescribedWorkoutEntry
@@ -139,6 +141,18 @@ struct TrainingDashboardView: View {
         }
         .task { model.refresh() }
         .refreshable { model.refresh() }
+        .almanacDestructiveConfirmation(
+            pendingDelete.count > 1
+                ? String(localized: "Delete \(pendingDelete.count) sessions?")
+                : String(localized: "Delete this session?"),
+            message: String(localized: "Every exercise logged in it is removed, and today's load is recalculated without it."),
+            isPresented: Binding(
+                get: { !pendingDelete.isEmpty },
+                set: { if !$0 { pendingDelete = [] } }
+            ),
+            confirmTitle: String(localized: "Delete"),
+            perform: confirmPendingDelete
+        )
         .editorError($error)
     }
 
@@ -243,10 +257,15 @@ struct TrainingDashboardView: View {
     }
 
     private func delete(at offsets: IndexSet) {
-        for index in offsets {
-            do { try model.deleteBout(id: model.todaysBouts[index].id) }
+        pendingDelete = offsets.compactMap { model.todaysBouts.indices.contains($0) ? model.todaysBouts[$0] : nil }
+    }
+
+    private func confirmPendingDelete() {
+        for bout in pendingDelete {
+            do { try model.deleteBout(id: bout.id) }
             catch { self.error = String(describing: error) }
         }
+        pendingDelete = []
     }
 }
 

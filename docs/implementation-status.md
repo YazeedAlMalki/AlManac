@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-20 (latest): re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
+Updated 2026-10-23 (latest): deleting a record asks first; not re-scored.
+Updated 2026-10-20: re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
 Updated 2026-10-19: the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
 Updated 2026-10-17 (earlier, scoring): the other session's work scored, Readiness back to 94 (1,122 / 1,200).
@@ -40,6 +41,58 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-10-23 — Deleting a record asks first
+
+**Outcome.** Not re-scored. Every swipe or menu delete of a stored record now
+raises an alert naming what goes, with Cancel, before anything is written.
+Until now no delete asked (a backup restore was the only confirmed action of
+its kind); a stray swipe on a meal, a water entry or a training session
+deleted it on the first tap. The design-system doctrine already required a confirmation where the
+result cannot be undone (`.opencode/skills/almanac-design-system/SKILL.md`,
+"Native iOS conventions").
+
+| Where | What asks |
+|---|---|
+| Hydration, Training (today's lists) | `onDelete` now queues the rows; the alert deletes them |
+| Nutrition, Digestion, Supplements (log entries), Vitals, Body composition, Body circumferences | the row's swipe and context-menu Delete |
+| Activity-ring day editor | water, nutrition and training rows |
+| Programs, program days, pool items, workout templates | the menu or swipe Delete |
+
+Left as they were, on purpose: removing a pantry item (it is re-added from
+search, and is not a health record), the in-editor exercise list of a template
+not yet saved, and a supplement plan, which is discontinued rather than deleted.
+
+The shared pieces are `almanacDestructiveConfirmation` and
+`almanacConfirmation` in `DesignSystem.swift`: an alert, not a
+`confirmationDialog`, because a swipe has no anchor and an unanchored dialog
+on iOS 26 is the Cancel-less popover `KitchenUITests` already hit. UI tests
+that delete go through `XCUIApplication.confirmDeletion()`, and
+`TrainingProgramUITests.testDeletingAProgramAsksFirstAndCancelKeepsIt` drives
+Cancel keeping the program and a confirm removing it.
+
+Every new string has Arabic in `Localizable.xcstrings`, and so do the two the
+Data Sources & Licenses page (`59a4e24`) added without it. The program's day
+count is three sentences (none, one, many) rather than an English "s" appended
+to "day", so Arabic can form its own plural.
+
+### What ran (iPhone 16e simulator, iOS 26.3)
+
+- App build with `SWIFT_EMIT_LOC_STRINGS=YES`, then
+  `check_catalog.py --strict`: no key outside `Native/Almanac/Prototypes/` is
+  without Arabic. The 14 that remain are the uncommitted Today prototypes'.
+- **Pass:** `testDeletingAProgramAsksFirstAndCancelKeepsIt` (Cancel on a
+  program, a confirmed delete on a day of the run's own),
+  `BodyCircumferenceUITests`, and the `TrainingProgramUITests` cases that
+  delete vitals readings through the alert.
+- **Fail, and not from this change:** every test that adds an exercise
+  through the picker, at "exercise 1 is missing from the catalog" (8 in
+  `TrainingProgramUITests`, 1 in `TrainingHistoryUITests`). Two of them were
+  run on a clean checkout of `59a4e24` and fail there at the same line. The
+  failure the 2026-10-20 entry calls rarer is now every run on this simulator.
+- **`UNRUN`:** the delete steps inside those picker tests (a bout from
+  Training's today list, the session clean-up helper), because each test
+  fails before reaching them.
 
 ## 2026-10-20 — Re-score after the Oct 19 work; App Intents driven; audit merged; backups need an email
 
