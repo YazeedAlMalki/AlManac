@@ -52,6 +52,13 @@ final class AllergenFilterUITests: XCTestCase {
         // `.exists` is false. Asserting before scrolling measures the form's
         // laziness, not what it offers.
         try openAllergySection()
+        // Back to the section's first row before sweeping. Revealing peanuts,
+        // the fifth row, can carry gluten and crustaceans off the top — it does
+        // once the Profile has rows above its sections (shifts-profile) — and
+        // the sweep below only moves down.
+        let first = app.switches.matching(identifier: "allergen-gluten").firstMatch
+        XCTAssertTrue(app.reveal(first, maxSwipes: 6, direction: .down),
+                      "the section's first row is not reachable")
 
         // By identifier, not by title text: the toggle's own label is its title
         // *and* its guidance sentence joined together, so a title query matches
