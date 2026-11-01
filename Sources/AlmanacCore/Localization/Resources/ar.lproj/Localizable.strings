@@ -389,3 +389,9 @@
 "A long run of night shifts" = "سلسلة طويلة من المناوبات الليلية";
 "Tomorrow is night %@ in a row, past your run length of %@." = "غدًا الليلة رقم %@ على التوالي، بعد طول السلسلة الذي حددته وهو %@.";
 "Tonight is night %@ in a row, past your run length of %@." = "الليلة هي الليلة رقم %@ على التوالي، بعد طول السلسلة الذي حددته وهو %@.";
+
+/* Backup encryption (BackupEncryption) */
+"The passphrase needs at least %@ characters." = "تحتاج عبارة المرور إلى %@ أحرف على الأقل.";
+"The passphrase is wrong, or the file was changed after it was encrypted." = "عبارة المرور غير صحيحة، أو تغيّر الملف بعد تشفيره.";
+"This backup was encrypted by a newer version of Almanac." = "شُفّرت هذه النسخة الاحتياطية بإصدار أحدث من Almanac.";
+"This backup is not encrypted." = "هذه النسخة الاحتياطية غير مشفّرة.";
