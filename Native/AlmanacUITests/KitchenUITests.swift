@@ -99,7 +99,8 @@ final class KitchenUITests: XCTestCase {
 
     /// A food logged on three of the last fourteen days is offered, never added
     /// on its own. Added, it is in the pantry and no longer offered; removed
-    /// again, it is offered again; dismissed, it is gone and stays gone.
+    /// again, it is offered again; dismissed, it is gone and stays gone. Both
+    /// decisions survive an app restart without reapplying the seed.
     func testAFoodLoggedOftenIsOfferedAndTheChoiceIsKept() throws {
         try openRecipes()
         openPantry()
@@ -108,29 +109,43 @@ final class KitchenUITests: XCTestCase {
         XCTAssertTrue(add.waitForExistence(timeout: 10),
                       "the oats, logged on each of the last three days, were not offered: "
                       + "\(app.staticTexts.allElementsBoundByIndex.map(\.label))")
+        let dismiss = anyElement("pantry-suggestion-dismiss-ui-kitchen-oats")
+        XCTAssertTrue(dismiss.exists, "the suggestion offers no Dismiss action")
+        XCTAssertTrue(app.staticTexts["Your pantry is empty"].exists,
+                      "the suggested food was added without approval")
         add.tap()
-        XCTAssertTrue(app.waitUntil(timeout: 5) { !add.exists }, "an added food is still offered")
+        XCTAssertTrue(app.waitUntil(timeout: 5) { !add.exists && !dismiss.exists },
+                      "an added food is still offered")
         let row = app.staticTexts[Self.oats]
         XCTAssertTrue(row.waitForExistence(timeout: 5), "the accepted food is not in the pantry")
+
+        relaunchWithoutKitchenSeed()
+        try openRecipes()
+        openPantry()
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "the accepted food was lost after restarting")
+        XCTAssertFalse(add.exists, "the accepted food was offered again after restarting")
 
         row.swipeLeft()
         let delete = app.buttons["Delete"]
         XCTAssertTrue(delete.waitForExistence(timeout: 5), "the pantry row offers no delete")
         delete.tap()
 
-        let dismiss = anyElement("pantry-suggestion-dismiss-ui-kitchen-oats")
         XCTAssertTrue(dismiss.waitForExistence(timeout: 5),
                       "a food taken out of the pantry, never dismissed, was not offered again")
         dismiss.tap()
-        XCTAssertTrue(app.waitUntil(timeout: 5) { !dismiss.exists && !app.staticTexts[Self.oats].exists },
+        XCTAssertTrue(app.waitUntil(timeout: 5) { !add.exists && !dismiss.exists && !row.exists },
                       "a dismissed food is still on screen: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
 
-        // Kept: closed and reopened, it is not offered.
-        app.navigationBars["Pantry"].buttons["Done"].tap()
-        XCTAssertTrue(app.navigationBars["Recipes"].waitForExistence(timeout: 10), "Done did not return to Recipes")
+        relaunchWithoutKitchenSeed()
+        try openRecipes()
         openPantry()
-        XCTAssertFalse(anyElement("pantry-suggestion-add-ui-kitchen-oats").waitForExistence(timeout: 3),
-                       "a dismissed food was offered again")
+        // Confirm the empty state, then watch for a delayed, reappearing offer.
+        XCTAssertTrue(app.staticTexts["Your pantry is empty"].waitForExistence(timeout: 10),
+                      "the empty pantry was not shown after restarting")
+        XCTAssertFalse(add.waitForExistence(timeout: 3),
+                       "a dismissed food was offered again after restarting")
+        XCTAssertFalse(dismiss.exists, "the dismissed suggestion still offers Dismiss after restarting")
+        XCTAssertFalse(row.exists, "dismissing added the food to the pantry")
     }
 
     // MARK: - Choosing
@@ -320,6 +335,16 @@ final class KitchenUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    /// The seed clears pantry entries and dismissals, so a persistence check
+    /// must remove both its flag and its spec before launching again.
+    private func relaunchWithoutKitchenSeed() {
+        app.terminate()
+        while let index = app.launchArguments.firstIndex(of: "-AlmanacSeedKitchen") {
+            app.launchArguments.removeSubrange(index..<min(index + 2, app.launchArguments.count))
+        }
+        app.launch()
+    }
 
     /// The first element of any type carrying `identifier`.
     private func anyElement(_ identifier: String) -> XCUIElement {
