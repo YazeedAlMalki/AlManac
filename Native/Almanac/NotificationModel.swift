@@ -112,7 +112,19 @@ final class NotificationModel: ObservableObject {
     /// settings screen's whole interaction with this feature.
     func setEnabled(_ enabled: Bool, for type: NotificationType) throws {
         guard let db else { throw EditorFailure(message: String(localized: "The database is unavailable.")) }
-        try NotificationRuleStore(db: db).setEnabled(enabled, for: type)
+        try Self.setEnabled(enabled, for: type, db: db)
+    }
+
+    /// The shift-pattern reminder decides whether a next saved pattern starts
+    /// by itself, so switching it also brings the running pattern up to date.
+    private static func setEnabled(_ enabled: Bool, for type: NotificationType, db: Database) throws {
+        guard type == .shiftPattern else {
+            try NotificationRuleStore(db: db).setEnabled(enabled, for: type)
+            return
+        }
+        let timeModel = TimeModel(timeZone: .current)
+        try SavedShiftPatternStore(db: db, timeModel: timeModel)
+            .setReminder(enabled, today: timeModel.logicalDay(Date()))
     }
 
     /// A readiness or bedtime clock time, used on a day with no sleep or shift
@@ -140,7 +152,7 @@ final class NotificationModel: ObservableObject {
             if let db {
                 let store = NotificationRuleStore(db: db)
                 for type in NotificationType.allCases where try store.isEnabled(type) {
-                    try store.setEnabled(false, for: type)
+                    try Self.setEnabled(false, for: type, db: db)
                 }
             }
             await scheduler.cancelAll()

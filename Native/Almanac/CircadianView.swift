@@ -223,8 +223,7 @@ struct CircadianView: View {
 
     private func setReminder(_ on: Bool) {
         do {
-            try NotificationRuleStore(db: db).setEnabled(on, for: .shiftPattern)
-            try SavedShiftPatternStore(db: db, timeModel: timeModel).refresh(today: today)
+            try SavedShiftPatternStore(db: db, timeModel: timeModel).setReminder(on, today: today)
             reload()
             Task { await notificationModel?.reconcileNotifications() }
         } catch {

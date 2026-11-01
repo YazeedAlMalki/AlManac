@@ -226,6 +226,17 @@ extension SavedShiftPatternStore {
 
     // MARK: - Period end
 
+    /// Switches the period-end reminder on or off and brings the running
+    /// pattern up to date in the same step. Every screen that changes this
+    /// reminder goes through here: left to the next refresh, a next pattern
+    /// would be counted from a later today and start a whole period late.
+    public func setReminder(_ on: Bool, today: LogicalDay) throws {
+        try db.transaction {
+            try NotificationRuleStore(db: db).setEnabled(on, for: .shiftPattern)
+            try refresh(today: today, force: false)
+        }
+    }
+
     /// The first day of the running pattern's next week or month, after
     /// `today`. Nil with no pattern running.
     public func nextPeriodStart(after today: LogicalDay) throws -> LogicalDay? {
@@ -314,6 +325,9 @@ extension SavedShiftPatternStore {
                 try shifts.logOccurrence(day)
                 continue
             }
+            // A day before today is history: not its shift, and not the note
+            // of whichever pattern ran then.
+            if LogicalDay(day.date) < today { continue }
             let record = existing.record
             if record.isManualOverride {
                 // Their entry wins. The note is only ever the pattern's: a
@@ -324,7 +338,6 @@ extension SavedShiftPatternStore {
                 }
                 continue
             }
-            if LogicalDay(day.date) < today { continue }
             if record.recurrencePatternId == ruleId, record.shiftType == day.shiftType { continue }
             if existing.savedPatternId == nil, !force { continue }
             try shifts.logOccurrence(day)

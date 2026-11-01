@@ -193,6 +193,29 @@ struct SavedShiftPatternStoreTests {
         #expect(try shift(on: "2026-10-25") == .day)
     }
 
+    @Test("Picking another pattern leaves a past one-day entry's note naming the pattern that ran then")
+    func switchingPatternsKeepsHistoricalNotes() throws {
+        let scheduleId = try shifts.defaultScheduleId()
+        let nights = try store.save(threeNights(start: "2026-10-21"))
+        try store.use(nights, today: LogicalDay("2026-10-21"))
+        // The 23rd and the 27th are both nights under this pattern.
+        try shifts.logOneDay(scheduleId: scheduleId, date: "2026-10-23", shift: .rest)
+        try shifts.logOneDay(scheduleId: scheduleId, date: "2026-10-27", shift: .rest)
+        #expect(try shifts.occurrence(for: "2026-10-23")?.notes == "Saved pattern: night")
+
+        var other = threeNights(start: "2026-10-21")
+        other.name = "Days"
+        other.blocks = [ShiftBlock(.day, days: 1)]
+        let days = try store.save(other)
+        try store.use(days, today: LogicalDay("2026-10-25"))
+
+        #expect(try shifts.occurrence(for: "2026-10-23")?.notes == "Saved pattern: night",
+                "the days pattern never governed the 23rd")
+        #expect(try shift(on: "2026-10-23") == .rest)
+        #expect(try shifts.occurrence(for: "2026-10-27")?.notes == "Saved pattern: day",
+                "a day from today on takes the new pattern's note")
+    }
+
     // MARK: - Period end
 
     private func days(start: String = "2026-10-21", cadence: ShiftCadence = .weekly) -> SavedShiftPatternDraft {
@@ -276,6 +299,31 @@ struct SavedShiftPatternStoreTests {
         #expect(try shift(on: "2026-10-28") == .night)
         try store.refresh(today: LogicalDay("2026-10-28"))
         #expect(try store.selection().currentId == a)
+    }
+
+    @Test("Switching the reminder off fixes the next start at once, so a late refresh does not push it a period on")
+    func switchingTheReminderOffFixesTheNextStartAtOnce() throws {
+        let a = try store.save(threeNights(start: "2026-10-21"))
+        let b = try store.save(days())
+        try store.use(a, today: LogicalDay("2026-10-22"))
+        try store.setNext(b, today: LogicalDay("2026-10-22"))
+        #expect(try store.selection().nextStartsOn == nil)
+
+        // Switched off on the 25th, from any screen; the app next opens on the 28th.
+        try store.setReminder(false, today: LogicalDay("2026-10-25"))
+        #expect(try NotificationRuleStore(db: db).isEnabled(.shiftPattern) == false)
+        #expect(try store.selection().nextStartsOn == LogicalDay("2026-10-28"))
+
+        try store.refresh(today: LogicalDay("2026-10-28"))
+        let selection = try store.selection()
+        #expect(selection.currentId == b)
+        #expect(selection.anchor == LogicalDay("2026-10-28"))
+        #expect(try shift(on: "2026-10-28") == .day)
+
+        // And back on: the store turns it on and the automatic start is dropped.
+        try store.setReminder(true, today: LogicalDay("2026-10-28"))
+        #expect(try NotificationRuleStore(db: db).isEnabled(.shiftPattern))
+        #expect(try store.selection().nextStartsOn == nil)
     }
 
     @Test("The running pattern's next period starts on its next week or month boundary")
