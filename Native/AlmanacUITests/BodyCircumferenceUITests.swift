@@ -103,11 +103,14 @@ final class BodyCircumferenceUITests: XCTestCase {
     }
 
     private func openCircumferences(_ app: XCUIApplication) {
-        let destination = app.buttons["Body circumferences"]
+        let profile = app.buttons["Profile"]
         // Upward, not downward: this is called straight after leaving Settings,
         // so the list is wherever Settings left it rather than at the top.
-        XCTAssertTrue(app.reveal(destination, direction: .down),
-                      "Body circumferences is not reachable from Modules")
+        XCTAssertTrue(app.reveal(profile, direction: .down), "Profile is not reachable from Modules")
+        profile.tap()
+        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 10), "Profile did not open")
+        let destination = app.buttons["Body circumferences"]
+        XCTAssertTrue(app.reveal(destination), "Body circumferences is not reachable from Profile")
         destination.tap()
         XCTAssertTrue(app.buttons["Log circumference"].waitForExistence(timeout: 5))
     }

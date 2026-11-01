@@ -178,7 +178,7 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Laboratory"].exists, "Laboratory is missing from Modules")
         // The bar now takes its own layout space, and the Records section
         // gained a row, so the later destinations have to be scrolled to.
-        for destination in ["Profile", "Body composition", "Settings"] {
+        for destination in ["Profile", "Settings"] {
             scrollTo(destination, maxSwipes: 12)
             XCTAssertTrue(app.staticTexts[destination].exists,
                           "\(destination) is missing from Modules")
@@ -277,14 +277,8 @@ final class AttributionsUITests: XCTestCase {
         XCTAssertTrue(profile.waitForExistence(timeout: 5))
         profile.tap()
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5))
-        let back = app.navigationBars.buttons["More"]
-        if back.exists {
-            back.tap()
-        } else {
-            app.navigationBars.buttons.firstMatch.tap()
-        }
 
-        // "Body composition", not "Measurements". The route's title already said so
+        // Body composition is a Profile row now. "Body composition", not "Measurements". The route's title already said so
         // and the screen's own `navigationTitle` did not, so the menu row and the
         // nav bar it pushed disagreed about which screen you were on.
         let bodyComposition = app.buttons["Body composition"]

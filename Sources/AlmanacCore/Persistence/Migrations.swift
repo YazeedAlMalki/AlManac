@@ -121,7 +121,9 @@ public enum AlmanacMigrations {
         Migration065_DrinkCaffeinePreset.self,
         Migration066_ExerciseSource.self,
         Migration067_FoodMerge.self,
-        Migration068_ProfileEmail.self
+        Migration068_ProfileEmail.self,
+        Migration069_SavedShiftPatterns.self,
+        Migration070_NightRuns.self
         // Technical Spec v1.0 was recovered on 2026-09-15 (see Migration014's
         // header). 014 transcribes the fourteen §5 tables Slice 2 needs, which
         // collide with nothing already here. Four spec tables DO collide with

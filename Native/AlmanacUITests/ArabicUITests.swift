@@ -55,6 +55,10 @@ final class ArabicUITests: XCTestCase {
         ("settings", "الإعدادات"),
     ]
 
+    /// The rows above that are Profile rows, not Modules rows: opened through
+    /// Profile. Kept in the list above so every later screen keeps its number.
+    private static let profileRows: Set<String> = ["body-composition", "body-circumferences"]
+
     /// Walks every screen in Arabic and keeps a screenshot of each page of it in
     /// the result bundle (`Attach the result bundle` in CI; "Arabic
     /// screenshots" there is the same images as plain PNGs).
@@ -118,6 +122,14 @@ final class ArabicUITests: XCTestCase {
         for (index, module) in Self.modules.enumerated() {
             let name = String(format: "%02d-%@", index + 10, module.name)
             openModulesRoot(app)
+            if Self.profileRows.contains(module.name) {
+                let profile = app.buttons["الملف الشخصي"]
+                guard app.reveal(profile) else {
+                    print("ARABIC-PASS\t\(tag(name))\tno Modules row reads الملف الشخصي")
+                    continue
+                }
+                profile.tap()
+            }
             let row = app.buttons[module.arabic]
             guard app.reveal(row) else {
                 print("ARABIC-PASS\t\(tag(name))\tno Modules row reads \(module.arabic)")

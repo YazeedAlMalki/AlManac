@@ -395,4 +395,70 @@ struct ReadinessAdjustmentTests {
         #expect(after.prescribedLoadKg == 100)
         #expect(after.updatedAt == storedItem.updatedAt)
     }
+
+    // MARK: - Night-shift days (shifts-profile spec, section 4)
+
+    @Test("On a night shift a session is one step easier and 20% shorter")
+    func nightShiftIsEasierAndShorter() {
+        // Good (78) as written is unchanged; on a night shift it is scored as
+        // Moderate (volume 0.85, complexity 0.9, rest 1.1) and sets are 20%
+        // fewer: 4 × 0.85 × 0.8 = 2.72 → 2 sets, 8 × 0.85 = 6.8 → 6 reps,
+        // 100 × 0.9 = 90 kg, 90 × 1.1 = 99 → 100 s rest.
+        let day = ReadinessAdjustment.prescription(for: item(.repsLoad), score: 78)
+        #expect(day.changes.isEmpty)
+        #expect(!day.nightShift)
+
+        let night = ReadinessAdjustment.prescription(for: item(.repsLoad), score: 78, nightShift: true)
+        #expect(night.nightShift)
+        #expect(night.sets == 2)
+        #expect(night.reps == 6)
+        #expect(night.loadKg == 90)
+        #expect(night.restSeconds == 100)
+        #expect(night.band == .good, "the band is still the score's")
+    }
+
+    @Test("A timed session on a night shift is 20% shorter on top of the easier step")
+    func timedSessionIsShorter() {
+        // 600 s × 0.9 × 0.8 = 432 → 430 s.
+        let night = ReadinessAdjustment.prescription(
+            for: item(.duration, sets: nil, reps: nil, loadKg: nil, duration: 600, rest: nil),
+            score: 78, nightShift: true)
+        #expect(night.durationSeconds == 430)
+    }
+
+    @Test("With no score, a night shift still changes the session: one step easier than as written")
+    func nightShiftWithoutAScore() {
+        let night = ReadinessAdjustment.prescription(for: item(.repsLoad), score: nil, nightShift: true)
+        #expect(night.sets == 2)
+        #expect(night.loadKg == 90)
+        #expect(night.band == nil)
+        #expect(ReadinessAdjustment.prescription(for: item(.repsLoad), score: nil).changes.isEmpty)
+    }
+
+    @Test("A night shift alone never turns a session into a rest day")
+    func nightShiftNeverMakesARestDay() {
+        // Poor (32) stays Poor rather than stepping to Very low, which rests:
+        // 4 × 0.5 × 0.8 = 1.6 → 1 set.
+        let poor = ReadinessAdjustment.prescription(for: item(.repsLoad), score: 32, nightShift: true)
+        #expect(!poor.isRestDay)
+        #expect(poor.sets == 1)
+        // A rest day the score already called stays one.
+        #expect(ReadinessAdjustment.prescription(for: item(.repsLoad), score: 20, nightShift: true).isRestDay)
+    }
+
+    @Test("On a night shift nothing but release ever asks for more than on a day shift",
+          arguments: PrescriptionKind.allCases)
+    func nightShiftNeverAsksForMore(kind: PrescriptionKind) {
+        guard kind != .release else { return }
+        let full = item(kind, sets: 5, reps: 10, loadKg: 80, duration: 300, rest: 60)
+        for band in ReadinessBand.allCases {
+            let day = ReadinessAdjustment.prescription(for: full, score: band.representativeScore)
+            let night = ReadinessAdjustment.prescription(for: full, score: band.representativeScore, nightShift: true)
+            if day.isRestDay { continue }
+            #expect((night.sets ?? 0) <= (day.sets ?? 0), "\(kind) \(band)")
+            #expect((night.reps ?? 0) <= (day.reps ?? 0), "\(kind) \(band)")
+            #expect((night.loadKg ?? 0) <= (day.loadKg ?? 0), "\(kind) \(band)")
+            #expect((night.durationSeconds ?? 0) <= (day.durationSeconds ?? 0), "\(kind) \(band)")
+        }
+    }
 }

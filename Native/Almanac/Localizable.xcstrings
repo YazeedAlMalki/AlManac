@@ -12851,6 +12851,526 @@
         }
       }
     },
+    "%@ · every month from %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · كل شهر ابتداءً من %@"
+          }
+        }
+      }
+    },
+    "%@ · every week from %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · كل أسبوع ابتداءً من %@"
+          }
+        }
+      }
+    },
+    "%lld × %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld × %@"
+          }
+        }
+      }
+    },
+    "1 day": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يوم واحد"
+          }
+        }
+      }
+    },
+    "Add a block": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إضافة مجموعة"
+          }
+        }
+      }
+    },
+    "Block %lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المجموعة %lld"
+          }
+        }
+      }
+    },
+    "Blocks": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المجموعات"
+          }
+        }
+      }
+    },
+    "Don't run next": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لا تجعله التالي"
+          }
+        }
+      }
+    },
+    "Every block needs at least one day.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحتاج كل مجموعة إلى يوم واحد على الأقل."
+          }
+        }
+      }
+    },
+    "Every month": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل شهر"
+          }
+        }
+      }
+    },
+    "Every week": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "كل أسبوع"
+          }
+        }
+      }
+    },
+    "Give the pattern a name.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أعطِ النمط اسمًا."
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التالي"
+          }
+        }
+      }
+    },
+    "Pattern: %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "النمط: %@"
+          }
+        }
+      }
+    },
+    "Remind me before it starts again": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ذكّرني قبل أن يبدأ من جديد"
+          }
+        }
+      }
+    },
+    "Remove last block": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حذف آخر مجموعة"
+          }
+        }
+      }
+    },
+    "Repeats": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "التكرار"
+          }
+        }
+      }
+    },
+    "Run next": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اجعله التالي"
+          }
+        }
+      }
+    },
+    "Running": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "قيد التشغيل"
+          }
+        }
+      }
+    },
+    "Saved pattern": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "نمط محفوظ"
+          }
+        }
+      }
+    },
+    "Saved patterns": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الأنماط المحفوظة"
+          }
+        }
+      }
+    },
+    "Shift pattern ends": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "انتهاء نمط المناوبات"
+          }
+        }
+      }
+    },
+    "Start using it": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ابدأ باستخدامه"
+          }
+        }
+      }
+    },
+    "Starts %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبدأ %@"
+          }
+        }
+      }
+    },
+    "Starts again %@": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبدأ من جديد %@"
+          }
+        }
+      }
+    },
+    "That pattern is no longer saved.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لم يعد هذا النمط محفوظًا."
+          }
+        }
+      }
+    },
+    "The blocks repeat inside each week or month and start again from the first block when a new one begins. A day you change yourself keeps your change, and the pattern's shift is kept as a note.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تتكرر المجموعات داخل كل أسبوع أو شهر، وتبدأ من جديد من المجموعة الأولى عند بداية أسبوع أو شهر جديد. اليوم الذي تغيّره بنفسك يحتفظ بتغييرك، وتُحفظ مناوبة النمط ملاحظةً."
+          }
+        }
+      }
+    },
+    "The evening before a saved pattern's week or month ends. With it off, the pattern you set as next starts by itself.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مساء اليوم السابق لانتهاء أسبوع النمط المحفوظ أو شهره. عند إيقافه يبدأ النمط الذي جعلته التالي من تلقاء نفسه."
+          }
+        }
+      }
+    },
+    "The evening before a week or month ends, Almanac asks you to pick what runs next. Until you pick, the running pattern keeps going.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في مساء اليوم السابق لانتهاء الأسبوع أو الشهر، يطلب منك Almanac اختيار ما يليه. وإلى أن تختار يستمر النمط الحالي."
+          }
+        }
+      }
+    },
+    "The run length must be at least one night.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يجب أن يكون طول السلسلة ليلة واحدة على الأقل."
+          }
+        }
+      }
+    },
+    "Use now": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدمه الآن"
+          }
+        }
+      }
+    },
+    "With the reminder off, the pattern you set as next starts when the week or month ends. With none set, the running pattern keeps going.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "عند إيقاف التذكير يبدأ النمط الذي جعلته التالي عند انتهاء الأسبوع أو الشهر. وإن لم تحدد نمطًا تاليًا يستمر النمط الحالي."
+          }
+        }
+      }
+    },
+    "%lld nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ليالٍ"
+          }
+        }
+      }
+    },
+    "1 night": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليلة واحدة"
+          }
+        }
+      }
+    },
+    "A run of night shifts longer than this is warned about. With none set, it is 3 nights.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُنبَّه إلى أي سلسلة من المناوبات الليلية أطول من هذا. وإن لم تحدده فهو ٣ ليالٍ."
+          }
+        }
+      }
+    },
+    "Long run of nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سلسلة ليالٍ طويلة"
+          }
+        }
+      }
+    },
+    "Most a run of nights takes off readiness: %lld%%": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أقصى ما تخصمه سلسلة الليالي من الجاهزية: %lld٪"
+          }
+        }
+      }
+    },
+    "Night %lld in a row: past your run length of %lld.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الليلة %lld على التوالي: بعد طول السلسلة الذي حددته وهو %lld."
+          }
+        }
+      }
+    },
+    "Night shift today. Factor it in for a session %lld%% shorter and one step easier.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة ليلية اليوم. احسبها لتكون الحصة أقصر بنسبة %lld٪ وأسهل بدرجة."
+          }
+        }
+      }
+    },
+    "Night shift today: the session is %lld%% shorter and one step easier.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة ليلية اليوم: الحصة أقصر بنسبة %lld٪ وأسهل بدرجة."
+          }
+        }
+      }
+    },
+    "Nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الليالي"
+          }
+        }
+      }
+    },
+    "Run length": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طول السلسلة"
+          }
+        }
+      }
+    },
+    "Set a run length": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حدّد طول السلسلة"
+          }
+        }
+      }
+    },
+    "Set run length": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحديد طول السلسلة"
+          }
+        }
+      }
+    },
+    "The evening before, and on the night, a run of night shifts passes its run length.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في المساء السابق، وفي الليلة نفسها، التي تتجاوز فيها سلسلة المناوبات الليلية طولها المحدد."
+          }
+        }
+      }
+    },
+    "Today is as usual.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم كالمعتاد."
+          }
+        }
+      }
+    },
+    "Today is higher than usual.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم أعلى من المعتاد."
+          }
+        }
+      }
+    },
+    "Today is lower than usual.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم أقل من المعتاد."
+          }
+        }
+      }
+    },
+    "Use the default": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدم الافتراضي"
+          }
+        }
+      }
+    },
+    "Usual on this shift: %@/%lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المعتاد في هذه المناوبة: %@/%lld"
+          }
+        }
+      }
+    },
+    "Warns after %lld nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ينبّه بعد %lld ليالٍ"
+          }
+        }
+      }
+    },
+    "Warns after 3 nights (the default)": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ينبّه بعد ٣ ليالٍ (الافتراضي)"
+          }
+        }
+      }
+    },
     "A shared backup is encrypted with a passphrase you choose.": {
       "localizations": {
         "ar": {

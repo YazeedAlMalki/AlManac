@@ -121,6 +121,9 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     case laboratoryImportHistory
     case timeline
     case bodyComposition
+    /// The body logger: one weight or other body measurement. A Profile row,
+    /// not a Modules one (`profileRows`).
+    case bodyLog
     case digestion
     case profile
     case settings
@@ -139,7 +142,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .trendsRoot, .trendsDetail: return .trends
         case .training, .hydration, .nutrition, .fasting, .supplements, .context,
              .prayer, .circadian, .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
-             .timeline, .bodyComposition, .digestion, .profile, .settings:
+             .timeline, .bodyComposition, .bodyLog, .digestion, .profile, .settings:
             return .modules
         }
     }
@@ -164,6 +167,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .laboratoryImportHistory: return localized("Import history")
         case .timeline: return localized("Timeline")
         case .bodyComposition: return localized("Body composition")
+        case .bodyLog: return localized("Log body")
         case .digestion: return localized("Digestion")
         case .profile: return localized("Profile")
         case .settings: return localized("Settings")
@@ -188,6 +192,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .laboratoryImportHistory: return AlmanacIcon.importHistory
         case .timeline: return AlmanacIcon.timeline
         case .bodyComposition: return AlmanacIcon.bodyComposition
+        case .bodyLog: return AlmanacIcon.body
         case .digestion: return AlmanacIcon.digestion
         case .profile: return AlmanacIcon.profile
         case .settings: return AlmanacIcon.settings
@@ -208,7 +213,7 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
         case .prayer, .fasting, .circadian:
             return .dailyContext
         case .bodyCircumference, .vitals, .laboratory, .laboratoryImportHistory,
-             .timeline, .bodyComposition, .digestion, .profile:
+             .timeline, .bodyComposition, .bodyLog, .digestion, .profile:
             return .records
         case .settings:
             return .app
@@ -220,12 +225,19 @@ public enum AppRoute: Hashable, Sendable, CaseIterable, Identifiable {
     /// Whether the menu shows a row for this route. `laboratoryImportHistory` is
     /// reached by pushing from Laboratory, so it has no row — but it is still a
     /// route, because a link to it from anywhere is a reasonable thing to want.
+    /// The Profile rows have no Modules row either: one row per screen.
     public var appearsInMenu: Bool {
         switch self {
         case .laboratoryImportHistory, .todayRoot, .trendsRoot, .trendsDetail: return false
+        case .circadian, .bodyComposition, .bodyCircumference, .bodyLog: return false
         default: return true
         }
     }
+
+    /// The rows Profile shows, in the order it shows them. Each one is a route,
+    /// so it pushes onto the Modules stack Profile is already on, and a link to
+    /// it from anywhere still works.
+    public static let profileRows: [AppRoute] = [.circadian, .bodyComposition, .bodyCircumference, .bodyLog]
 
     /// The menu, in the order it is read. Built by grouping `allCases` by their
     /// section, so adding a route adds its menu row; there is no second list to

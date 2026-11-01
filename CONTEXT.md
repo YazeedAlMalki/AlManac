@@ -1165,6 +1165,43 @@ How it was built (Migration 068, `ProfileEmail`, `ProfileView`, `BackupView`).
   of "Scoring the 2026-10-17 merge", not the handoff's estimate of +2.
   *Overrule by:* naming a different split.
 
+### Shifts on Profile, saved patterns and night runs (2026-11-01)
+
+**Decided by the owner, 2026-11-01:** each night of a run takes 3% of the
+readiness score, capped at 15% until the person sets their own cap; a run
+length is 3 nights unless the pattern sets one; a night-shift session is one
+band easier and 20% shorter. Where these are built: `docs/features/readiness.md`
+("Runs of night shifts") and `docs/features/notifications.md` ("Added
+2026-11-01").
+
+Choices made in building it (PR #24). **None of these has been confirmed.**
+
+- **A one-day entry wins over a saved pattern**, and keeps the pattern's shift
+  as a note. This follows the shifts-profile spec and contradicts wayfinder
+  decision 19. *Overrule by:* changing the manual-override branch of
+  `SavedShiftPatternStore.write`.
+- **A saved pattern never rewrites a day before today**: not its shift, and not
+  the note on a past one-day entry, which keeps naming the pattern that ran
+  then. A rotation entered over a pattern keeps its days. *Overrule by:* moving
+  the past-day guard in `SavedShiftPatternStore.write`.
+- **Only `.night` days count** toward a run and get the training change.
+  Evening shifts do not. *Overrule by:* widening `NightRunStore.night(on:)` and
+  the training check.
+- **One cap for every pattern**, not one per pattern. *Overrule by:* moving
+  `nightRunCapPercent` from `shift_schedule` to `saved_shift_pattern`.
+- **Both shift reminders default to 18:00** and neither is suppressed by any
+  Appendix B axis. *Overrule by:* `NotificationPlanner.defaultShiftEveningMinute`
+  and `NotificationSuppressionMatrix`.
+- **The usual mood compares whole numbers**, with no margin of its own. 6.4
+  rounds to 6, so a logged 7 is "higher". *Overrule by:* giving
+  `ShiftMoodExpectation.compare` a margin.
+- **Switching "Shift pattern ends" refreshes the running pattern at once**,
+  from every screen that can switch it. It was a fix for a pattern starting a
+  period late, not a choice between behaviours, and is recorded here because
+  it changes what the Reminders screen writes.
+- **The new Arabic strings are machine drafts**, not reviewed by a native
+  speaker.
+
 ### Weighing
 
 **Meter fraction**:

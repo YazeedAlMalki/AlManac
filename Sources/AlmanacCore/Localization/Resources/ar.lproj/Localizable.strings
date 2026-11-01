@@ -143,6 +143,7 @@
 "Like nuts, hard to pass" = "كحبات المكسرات، صعب الإخراج";
 "Limited comparable shift data" = "بيانات المناوبات القابلة للمقارنة محدودة";
 "Log a drink to stay on track." = "سجّل مشروبًا لتبقى على المسار.";
+"Log body" = "تسجيل الجسم";
 "Log your %@ to keep today's totals honest." = "سجّل %@ لتبقى مجاميع اليوم صادقة.";
 "Log your dose to keep today's adherence accurate." = "سجّل جرعتك ليبقى التزام اليوم دقيقًا.";
 "Lower together" = "ينخفضان معًا";
@@ -383,6 +384,11 @@
 "%@ foods are not in the food catalogue" = "أطعمة عددها %@ غير موجودة في فهرس الأطعمة";
 "1 food has no calorie figure" = "طعام واحد بلا قيمة سعرات";
 "%@ foods have no calorie figure" = "أطعمة عددها %@ بلا قيمة سعرات";
+"Pick your next shift pattern" = "اختر نمط مناوباتك التالي";
+"“%@” starts again tomorrow. Pick what runs next in Shifts & rhythm; until you do, it keeps running." = "يبدأ «%@» من جديد غدًا. اختر ما يليه في المناوبات والإيقاع، وإلى أن تختار يستمر كما هو.";
+"A long run of night shifts" = "سلسلة طويلة من المناوبات الليلية";
+"Tomorrow is night %@ in a row, past your run length of %@." = "غدًا الليلة رقم %@ على التوالي، بعد طول السلسلة الذي حددته وهو %@.";
+"Tonight is night %@ in a row, past your run length of %@." = "الليلة هي الليلة رقم %@ على التوالي، بعد طول السلسلة الذي حددته وهو %@.";
 
 /* Backup encryption (BackupEncryption) */
 "The passphrase needs at least %@ characters." = "تحتاج عبارة المرور إلى %@ أحرف على الأقل.";

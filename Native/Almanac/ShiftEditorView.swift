@@ -2,7 +2,7 @@ import SwiftUI
 import AlmanacCore
 import Foundation
 
-/// Enter a shift: one day, or a rotation that repeats.
+/// Enter a shift: one day, a rotation that repeats, or a saved pattern.
 ///
 /// This view decides nothing about shifts. It builds a draft and hands it to
 /// `ShiftScheduleStore`, whose behaviour — a day the person changed by hand
@@ -13,6 +13,10 @@ import Foundation
 /// the person saying "this day, specifically" (BRD §6.11's "record unplanned
 /// change"), so no rotation entered later may overwrite it. A rotation is a
 /// rule, and a rule gives way to a specific day.
+///
+/// **A saved pattern sits beside the rotation.** It has a name and blocks of
+/// days on one shift, and repeats every week or every month from its start
+/// date until the person picks another (`SavedShiftPatternStore`).
 @MainActor
 struct ShiftEditorView: View {
     let db: Database
@@ -21,12 +25,13 @@ struct ShiftEditorView: View {
     @Environment(\.dismiss) private var dismiss
 
     private enum Mode: String, CaseIterable, Identifiable {
-        case oneDay, rotation
+        case oneDay, rotation, pattern
         var id: String { rawValue }
         var title: String {
             switch self {
             case .oneDay: return String(localized: "One day")
             case .rotation: return String(localized: "Rotation")
+            case .pattern: return String(localized: "Saved pattern")
             }
         }
     }
@@ -38,6 +43,16 @@ struct ShiftEditorView: View {
     /// "Rotation, Save" already means something: day shifts, every day.
     @State private var sequence: [ShiftType] = [.day]
     @State private var until = Calendar.current.date(byAdding: .day, value: 27, to: ShiftEditorView.openingDate()) ?? Date()
+    @State private var patternName = ""
+    /// A working week to start from, so the form opens on something real.
+    @State private var blocks = [ShiftBlock(.day, days: 5), ShiftBlock(.rest, days: 2)]
+    @State private var cadence = ShiftCadence.weekly
+    /// On when no saved pattern is running: a first pattern is saved to be
+    /// used. Off otherwise, because saving is not picking.
+    @State private var startUsing = true
+    /// Off means no run length of its own: the default applies.
+    @State private var setsRunLength = false
+    @State private var runLength = NightRunStore.defaultRunLengthNights
     @State private var error: String?
 
     /// The date the pickers open on: the calendar date of the person's *current
@@ -63,6 +78,7 @@ struct ShiftEditorView: View {
                 switch mode {
                 case .oneDay: oneDaySection
                 case .rotation: rotationSections
+                case .pattern: patternSections
                 }
             }
             .navigationTitle("Add shifts")
@@ -77,6 +93,8 @@ struct ShiftEditorView: View {
                 }
             }
             .editorError($error)
+            .task { startUsing = (try? SavedShiftPatternStore(db: db, timeModel: TimeModel(timeZone: .current))
+                                    .selection().currentId) == nil }
         }
     }
 
@@ -112,6 +130,53 @@ struct ShiftEditorView: View {
         }
     }
 
+    @ViewBuilder
+    private var patternSections: some View {
+        Section {
+            TextField("Name", text: $patternName)
+                .accessibilityIdentifier("shift-pattern-name")
+        }
+
+        Section {
+            ForEach(blocks.indices, id: \.self) { index in
+                shiftPicker("Block \(index + 1)", selection: $blocks[index].shift)
+                Stepper(value: $blocks[index].days, in: 1...31) {
+                    Text(blocks[index].days == 1 ? String(localized: "1 day") : String(localized: "\(blocks[index].days) days"))
+                }
+            }
+            Button("Add a block") { blocks.append(ShiftBlock(.rest, days: 1)) }
+            if blocks.count > 1 {
+                Button("Remove last block", role: .destructive) { blocks.removeLast() }
+            }
+        } header: {
+            AlmanacSectionHeader(title: String(localized: "Blocks"))
+        }
+
+        Section {
+            Picker("Repeats", selection: $cadence) {
+                Text("Every week").tag(ShiftCadence.weekly)
+                Text("Every month").tag(ShiftCadence.monthly)
+            }
+            .pickerStyle(.segmented)
+            DatePicker("Starts", selection: $date, displayedComponents: .date)
+            Toggle("Start using it", isOn: $startUsing)
+        } footer: {
+            Text("The blocks repeat inside each week or month and start again from the first block when a new one begins. A day you change yourself keeps your change, and the pattern's shift is kept as a note.")
+        }
+
+        Section {
+            Toggle("Set a run length", isOn: $setsRunLength)
+            if setsRunLength {
+                Stepper(value: $runLength, in: 1...14) {
+                    Text(runLength == 1 ? String(localized: "1 night") : String(localized: "\(runLength) nights"))
+                }
+                .accessibilityIdentifier("shift-pattern-run-length")
+            }
+        } footer: {
+            Text("A run of night shifts longer than this is warned about. With none set, it is 3 nights.")
+        }
+    }
+
     private func shiftPicker(_ title: LocalizedStringKey, selection: Binding<ShiftType>) -> some View {
         Picker(title, selection: selection) {
             ForEach(ShiftPresentation.options, id: \.self) { option in
@@ -131,8 +196,7 @@ struct ShiftEditorView: View {
 
             switch mode {
             case .oneDay:
-                try store.logOccurrence(ShiftOccurrenceDraft(
-                    scheduleId: scheduleId, date: start.value, shiftType: shift, isManualOverride: true))
+                try store.logOneDay(scheduleId: scheduleId, date: start.value, shift: shift)
             case .rotation:
                 let end = LogicalDay(calendarDayOf: until, in: timeZone)
                 guard end >= start else {
@@ -142,11 +206,29 @@ struct ShiftEditorView: View {
                 try store.applyPattern(
                     ShiftRecurrencePatternDraft(scheduleId: scheduleId, shifts: sequence, startDate: start.value),
                     through: end, timeModel: TimeModel(timeZone: timeZone))
+            case .pattern:
+                let timeModel = TimeModel(timeZone: timeZone)
+                let patterns = SavedShiftPatternStore(db: db, timeModel: timeModel)
+                let id = try patterns.save(SavedShiftPatternDraft(
+                    name: patternName, blocks: blocks, startDate: start, cadence: cadence,
+                    runLengthNights: setsRunLength ? runLength : nil))
+                if startUsing { try patterns.use(id, today: timeModel.logicalDay(Date())) }
             }
             onSaved()
             dismiss()
+        } catch let failure as SavedShiftPatternError {
+            self.error = Self.message(for: failure)
         } catch {
             self.error = String(describing: error)
+        }
+    }
+
+    private static func message(for failure: SavedShiftPatternError) -> String {
+        switch failure {
+        case .missingName: return String(localized: "Give the pattern a name.")
+        case .noBlocks, .blockWithNoDays: return String(localized: "Every block needs at least one day.")
+        case .runLengthNotPositive: return String(localized: "The run length must be at least one night.")
+        case .unknownPattern: return String(localized: "That pattern is no longer saved.")
         }
     }
 }

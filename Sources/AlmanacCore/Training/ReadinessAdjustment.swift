@@ -25,6 +25,19 @@ public enum ReadinessBand: Int, Sendable, Hashable, CaseIterable {
             .max(by: { $0.rawValue < $1.rawValue })
             ?? .veryLow
     }
+
+    /// One band easier, for a night-shift day. Never down to `.veryLow` from
+    /// above it: that band rests, and a shift alone is not a reason to cancel
+    /// a session the score did not.
+    public var oneStepEasier: ReadinessBand {
+        switch self {
+        case .excellent: return .good
+        case .good: return .moderate
+        case .moderate: return .belowBaseline
+        case .belowBaseline, .poor: return .poor
+        case .veryLow: return .veryLow
+        }
+    }
 }
 
 /// What a readiness band does to a prescription, resolved against its type.
@@ -82,6 +95,9 @@ public struct AdjustedPrescription: Sendable, Hashable {
     /// that silently shows 3 sets where the program says 4 has changed the user's
     /// own plan without saying so.
     public let changes: [PrescriptionChange]
+    /// The day is a night shift, and the session was made one step easier
+    /// and shorter for it.
+    public let nightShift: Bool
 
     public var isAdjusted: Bool { !changes.isEmpty }
     public var isRestDay: Bool {
@@ -91,7 +107,7 @@ public struct AdjustedPrescription: Sendable, Hashable {
 
     public init(sets: Int?, reps: Int?, loadKg: Double?, durationSeconds: Double?,
                 restSeconds: Double?, band: ReadinessBand?,
-                policy: ReadinessAdjustmentPolicy, changes: [PrescriptionChange]) {
+                policy: ReadinessAdjustmentPolicy, changes: [PrescriptionChange], nightShift: Bool = false) {
         self.sets = sets
         self.reps = reps
         self.loadKg = loadKg
@@ -100,6 +116,7 @@ public struct AdjustedPrescription: Sendable, Hashable {
         self.band = band
         self.policy = policy
         self.changes = changes
+        self.nightShift = nightShift
     }
 }
 
@@ -175,6 +192,12 @@ public enum ReadinessAdjustment {
         .veryLow: BandRule(volume: nil, complexity: 0.6, rest: 1.5, release: nil),
     ]
 
+    // MARK: - Night-shift days
+
+    /// Owner, 2026-11-01: on a night shift a session is 20% shorter (fewer sets,
+    /// less time) and one step easier (`ReadinessBand.oneStepEasier`).
+    public static let nightShiftLengthFactor = 0.8
+
     // MARK: - Granularity
 
     /// Reconstructed: the finest load step worth suggesting without asking what
@@ -228,15 +251,20 @@ public enum ReadinessAdjustment {
     /// Fields the prescription does not use are not invented — a hold has no sets
     /// and no load, and scaling an absent field would put a number in front of the
     /// user for a question the exercise never asked.
-    public static func prescription(for item: PoolItemEntry, score: Int?) -> AdjustedPrescription {
-        guard let score else {
+    ///
+    /// On a night shift (`nightShift`) the session is one band easier and 20%
+    /// shorter. With no score the plan as written is the starting point: the
+    /// shift is a known fact even on a day with no score.
+    public static func prescription(for item: PoolItemEntry, score: Int?,
+                                    nightShift: Bool = false) -> AdjustedPrescription {
+        guard score != nil || nightShift else {
             return AdjustedPrescription(
                 sets: item.prescribedSets, reps: item.prescribedReps,
                 loadKg: item.prescribedLoadKg, durationSeconds: item.prescribedDurationSeconds,
                 restSeconds: item.prescribedRestSeconds,
                 band: nil, policy: .unchanged, changes: [])
         }
-        let band = ReadinessBand.band(for: score)
+        let band = score.map(ReadinessBand.band(for:))
         // A type this build has never heard of is left exactly as written. Its
         // numbers may not mean what we would assume they mean, and guessing is
         // worse than doing nothing.
@@ -247,19 +275,21 @@ public enum ReadinessAdjustment {
                 restSeconds: item.prescribedRestSeconds,
                 band: band, policy: .unchanged, changes: [])
         }
-        let policy = policy(for: kind, band: band)
+        let scoredBand = band ?? .good
+        let policy = policy(for: kind, band: nightShift ? scoredBand.oneStepEasier : scoredBand)
 
         guard case .scale(let volume, let complexity, let rest) = policy else {
             return AdjustedPrescription(
                 sets: nil, reps: nil, loadKg: nil, durationSeconds: nil, restSeconds: nil,
-                band: band, policy: policy, changes: [])
+                band: band, policy: policy, changes: [], nightShift: nightShift)
         }
 
-        let sets = item.prescribedSets.map { scaledCount(Double($0), by: volume) }
+        let length = nightShift ? nightShiftLengthFactor : 1
+        let sets = item.prescribedSets.map { scaledCount(Double($0), by: volume * length) }
         let reps = item.prescribedReps.map { scaledCount(Double($0), by: volume) }
         let loadKg = item.prescribedLoadKg.map { roundDown($0 * complexity, step: loadStepKg) }
         let durationSeconds = item.prescribedDurationSeconds.map {
-            max(durationStepSeconds, roundDown($0 * complexity, step: durationStepSeconds))
+            max(durationStepSeconds, roundDown($0 * complexity * length, step: durationStepSeconds))
         }
         let restSeconds = item.prescribedRestSeconds.map {
             roundUp($0 * rest, step: durationStepSeconds)
@@ -287,7 +317,7 @@ public enum ReadinessAdjustment {
 
         return AdjustedPrescription(
             sets: sets, reps: reps, loadKg: loadKg, durationSeconds: durationSeconds,
-            restSeconds: restSeconds, band: band, policy: policy, changes: changes)
+            restSeconds: restSeconds, band: band, policy: policy, changes: changes, nightShift: nightShift)
     }
 
     // MARK: - Arithmetic

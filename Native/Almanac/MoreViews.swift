@@ -102,7 +102,7 @@ struct ModulesView: View {
         case .prayer:
             PrayerView(model: prayerModel, notificationModel: notificationModel)
         case .circadian:
-            CircadianView(db: db)
+            CircadianView(db: db, notificationModel: notificationModel)
         case .bodyCircumference:
             BodyCircumferenceView(db: db, healthModel: healthModel)
         case .vitals:
@@ -115,6 +115,8 @@ struct ModulesView: View {
             DayTimelineView(db: db)
         case .bodyComposition:
             MeasurementsView(db: db, trackingModel: trackingModel)
+        case .bodyLog:
+            QuickBodyLogView(db: db, trackingModel: trackingModel, isFastDay: fastingModel.isFastDay)
         case .digestion:
             DigestionHistoryView(db: db)
         case .profile:

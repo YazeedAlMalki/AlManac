@@ -1,7 +1,7 @@
 import SwiftUI
 import AlmanacCore
 
-/// The icon every section on this sheet wears. It exists because the four
+/// The icon every section on this sheet wears. It exists because the
 /// section headers are the same kind of thing and had drifted: Water's was
 /// 22pt with no chip while the other three were 21pt in a 44pt `surfaceMuted`
 /// well, so the first header on the screen read as a different kind of thing
@@ -26,7 +26,6 @@ struct QuickLogView: View {
         case water
         case food
         case training
-        case body
         case digestion
 
         var id: String { rawValue }
@@ -37,7 +36,6 @@ struct QuickLogView: View {
     @ObservedObject var nutritionModel: NutritionModel
     @ObservedObject var trainingModel: TrainingModel
     @ObservedObject var trackingModel: TrackingCalendarModel
-    @ObservedObject var fastingModel: FastingModel
 
     @Environment(\.dismiss) private var dismiss
     @State private var destination: Destination?
@@ -73,12 +71,6 @@ struct QuickLogView: View {
                         destination: .training
                     )
                     destinationCard(
-                        icon: AlmanacIcon.body,
-                        title: String(localized: "Body"),
-                        detail: String(localized: "Add weight or another body measurement."),
-                        destination: .body
-                    )
-                    destinationCard(
                         icon: AlmanacIcon.digestion,
                         title: String(localized: "Digestion"),
                         detail: String(localized: "Record a bowel movement or a urination."),
@@ -110,9 +102,6 @@ struct QuickLogView: View {
                     NutritionQuickEntryView(model: nutritionModel, onSaved: finishFlow)
                 case .training:
                     LogBoutView(model: trainingModel, onSaved: finishFlow)
-                case .body:
-                    QuickBodyLogView(db: db, trackingModel: trackingModel,
-                                      isFastDay: fastingModel.isFastDay, onSaved: finishFlow)
                 case .digestion:
                     DigestionQuickEntryView(db: db, trackingModel: trackingModel, onSaved: finishFlow)
                 }
@@ -208,12 +197,13 @@ struct QuickLogView: View {
     }
 }
 
+/// The body logger. A Profile row (`AppRoute.bodyLog`), pushed onto the
+/// Modules stack, so it has no stack or Cancel of its own: Back cancels.
 @MainActor
-private struct QuickBodyLogView: View {
+struct QuickBodyLogView: View {
     let db: Database?
     @ObservedObject var trackingModel: TrackingCalendarModel
     let isFastDay: Bool?
-    let onSaved: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var metric = BodyMetric.weight.rawValue
@@ -236,49 +226,46 @@ private struct QuickBodyLogView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("Measurement") {
-                    Picker("Metric", selection: $metric) {
-                        // `BodyMetric.allCases`, not the list this file used to
-                        // carry. That list was the only definition of what may go
-                        // in `body_composition_measurement.metric`, and it lived
-                        // in the view target where the store could not check a
-                        // write against it.
-                        ForEach(BodyMetric.allCases) { option in
-                            Text(option.title).tag(option.rawValue)
-                        }
+        Form {
+            Section("Measurement") {
+                Picker("Metric", selection: $metric) {
+                    // `BodyMetric.allCases`, not the list this file used to
+                    // carry. That list was the only definition of what may go
+                    // in `body_composition_measurement.metric`, and it lived
+                    // in the view target where the store could not check a
+                    // write against it.
+                    ForEach(BodyMetric.allCases) { option in
+                        Text(option.title).tag(option.rawValue)
                     }
-                    TextField("Value", text: $value)
-                        .keyboardType(.decimalPad)
                 }
-                // Its own section, not a third field of the measurement. The
-                // owner asked (2026-09-26) that fasting state stop being
-                // lumped in with logging a body number: the two are different
-                // facts about different things, and a reader scanning this form
-                // should not see "conditions" as part of what was measured.
-                Section {
-                    Picker("Fasting state", selection: $conditions) {
-                        Text("Unknown").tag("unknown")
-                        Text("Fasted").tag("fasted")
-                        Text("Not fasted").tag("non_fasted")
-                    }
-                    .pickerStyle(.segmented)
-                } header: {
-                    Text("Conditions")
-                } footer: {
-                    Text("Body composition is only comparable between measurements taken in the same state. This is recorded separately from the measurement, and is not a fasting session — Fasting keeps that.")
+                TextField("Value", text: $value)
+                    .keyboardType(.decimalPad)
+            }
+            // Its own section, not a third field of the measurement. The
+            // owner asked (2026-09-26) that fasting state stop being
+            // lumped in with logging a body number: the two are different
+            // facts about different things, and a reader scanning this form
+            // should not see "conditions" as part of what was measured.
+            Section {
+                Picker("Fasting state", selection: $conditions) {
+                    Text("Unknown").tag("unknown")
+                    Text("Fasted").tag("fasted")
+                    Text("Not fasted").tag("non_fasted")
                 }
+                .pickerStyle(.segmented)
+            } header: {
+                Text("Conditions")
+            } footer: {
+                Text("Body composition is only comparable between measurements taken in the same state. This is recorded separately from the measurement, and is not a fasting session — Fasting keeps that.")
             }
-            .almanacModuleSurface()
-            .navigationTitle("Log body")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save", action: save) }
-            }
-            .editorError($error)
         }
+        .almanacModuleSurface()
+        .navigationTitle("Log body")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) { Button("Save", action: save) }
+        }
+        .editorError($error)
         .task { seedConditions(fromFasting: isFastDay) }
     }
 
@@ -311,7 +298,6 @@ private struct QuickBodyLogView: View {
                 logicalDay: day
             )
             trackingModel.refresh()
-            onSaved()
             dismiss()
         } catch {
             self.error = String(describing: error)
