@@ -443,6 +443,12 @@ final class LaboratoryModel: ObservableObject {
             if let plan = ReadinessHistorySeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
                 try plan.apply(into: db)
             }
+            // Same two gates, for a person rather than a test: months of
+            // history across every module, so the app can be looked at as it
+            // is after long use. See `DemoHistorySeedPlan`.
+            if let plan = DemoHistorySeedPlan.fromLaunchArguments(ProcessInfo.processInfo.arguments) {
+                try plan.apply(into: db)
+            }
             // Same two gates. The shift editor persists and the simulator's
             // database is shared across runs, so a UI test names the schedule
             // it starts from. See `ShiftSeedPlan`.

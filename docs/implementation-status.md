@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-23 (latest): deleting a record asks first; not re-scored.
+Updated 2026-11-01 (latest): months of demo history on request; not re-scored.
+Updated 2026-10-23: deleting a record asks first; not re-scored.
 Updated 2026-10-20: re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
 Updated 2026-10-19: the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
@@ -41,6 +42,36 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-11-01 — Months of demo history on request
+
+**Outcome.** Not re-scored; no rubric line covers it. A launch with
+`-AlmanacSeedDemoHistory <days>` (1–180) plants that many days of history
+in every module, so the app can be looked at as it is after long use:
+water, meals, training (push, pull, legs, run), sleep, resting heart rate
+and HRV, the morning readiness score, mood, weigh-ins and Sunday scans,
+circumferences, digestion and two supplements. The values come from a
+seeded generator, so the same window gets the same numbers; there are rest
+days and missed days, and weight drifts down, lifts creep up and resting
+heart rate eases. Today stops at the current hour.
+
+`DemoHistorySeedPlan` (`Sources/AlmanacCore/Demo/`) writes through the same
+stores a person's entries do. It is gated as `VitalsSeedPlan` is: a launch
+argument no ordinary launch carries, and `#if DEBUG` around its one call
+site in `LaboratoryModel`. It adds rows rather than replacing them, so it
+does nothing when a training session already exists in its window.
+
+### What ran
+
+- **Pass:** `swift test --filter DemoHistorySeedPlan` — no plan without the
+  argument, or with 0; a 28-day plan leaves none of the twelve tables empty;
+  a second apply plants nothing.
+- **Pass:** app build (iPhone 16e simulator, iOS 26).
+- **Run in the app, 2026-10-23:** 90 days on the simulator's database.
+  Before and after, from the two copies kept for it: training sessions 0 →
+  44, bouts 0 → 153, water 9 → 666, food 3 → 812, sleep 0 → 90, readiness
+  5 → 90, mood 0 → 83, body composition 1 → 85, circumferences 0 → 30, bowel
+  6 → 76, urination 0 → 151, supplements 2 → 147.
 
 ## 2026-10-23 — Deleting a record asks first
 
