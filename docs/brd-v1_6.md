@@ -379,7 +379,7 @@ All user logs support: edit, delete, undo, duplicate prevention, **move to corre
 - Explicit export-restore required; iCloud/CloudKit never guaranteed.
 - **Export = ZIP:** all app-owned data, programs, nutrition/hydration/caffeine/fasting, body measurements, local labs, readiness history/snapshots, settings, photos, schema version, manifest, checksums, timestamp, app version.
 - **Restore:** validate before applying; detect unsupported/corrupt; display summary; **transactional** with rollback; no partial, no duplicates, preserve IDs, rebuild derived, **HealthKit reconcile separately**, request permissions again, never treat cached as app-owned, never blindly rewrite imported.
-- Encryption deferred Pre-App Store Hardening. **Integrity, restoration, migration testing may NOT defer.**
+- Encryption: every shared export is passphrase-encrypted (owner, 2026-11-01); local backups stay in the app sandbox. **Integrity, restoration, migration testing may NOT defer.**
 
 ## 6.19 Security & Privacy — Personal-Use Phase (Now)
 
@@ -392,7 +392,7 @@ Required:
 - No CloudKit health-records; no backend; no external health processing.
 - Reliable backup/restore, archive validation, data-model migration.
 
-**Deferred to Pre-App Store Hardening (Section 8):** Face ID/device lock, app-switcher blur, notification privacy, export encryption. Progress photos/labs/digestion sensitivity doesn't make Face ID current requirement.
+**Deferred to Pre-App Store Hardening (Section 8):** Face ID/device lock, app-switcher blur, notification privacy. Export encryption is done (2026-11-01): every shared backup is passphrase-encrypted; local backups stay in the app sandbox. Progress photos/labs/digestion sensitivity doesn't make Face ID current requirement.
 
 ## 6.20 Accessibility & Internationalization Readiness
 
@@ -425,7 +425,7 @@ Architecture compatible with App Intents, Shortcuts, widgets, Siri. v1 deliberat
 
 ## 8. Pre-App Store Hardening (Separate; Outside v1 Build)
 
-Before public release: Face ID/device lock, app-switcher blur, notification privacy, export encryption, privacy policy, data-use wording, App Store health declarations, accessibility audit, **clinician review of medical advisories** (wording + escalation + emergency), legal review, analytics/crash assessment, App Store Guideline compliance. **Not v1 personal-use requirements.**
+Before public release: Face ID/device lock, app-switcher blur, notification privacy, privacy policy, data-use wording, App Store health declarations, accessibility audit, **clinician review of medical advisories** (wording + escalation + emergency), legal review, analytics/crash assessment, App Store Guideline compliance. **Not v1 personal-use requirements.** Export encryption was on this list and is closed (owner, 2026-11-01): shared backups are passphrase-encrypted.
 
 ## 12. Build Order (Risk-First Vertical Slices)
 

@@ -383,3 +383,9 @@
 "%@ foods are not in the food catalogue" = "أطعمة عددها %@ غير موجودة في فهرس الأطعمة";
 "1 food has no calorie figure" = "طعام واحد بلا قيمة سعرات";
 "%@ foods have no calorie figure" = "أطعمة عددها %@ بلا قيمة سعرات";
+
+/* Backup encryption (BackupEncryption) */
+"The passphrase needs at least %@ characters." = "تحتاج عبارة المرور إلى %@ أحرف على الأقل.";
+"The passphrase is wrong, or the file was changed after it was encrypted." = "عبارة المرور غير صحيحة، أو تغيّر الملف بعد تشفيره.";
+"This backup was encrypted by a newer version of Almanac." = "شُفّرت هذه النسخة الاحتياطية بإصدار أحدث من Almanac.";
+"This backup is not encrypted." = "هذه النسخة الاحتياطية غير مشفّرة.";
