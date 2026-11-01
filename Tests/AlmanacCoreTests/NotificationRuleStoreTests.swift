@@ -28,8 +28,9 @@ struct NotificationRuleStoreTests {
     @Test("The seeded defaults are the spec's §5.25 table")
     func seededDefaultsMatchSpec() throws {
         // `prayer` (Migration050) is not in §5.25 and starts off.
-        // `shift_pattern` (Migration069) is not in §5.25 either, and starts on.
-        let expectedEnabled: Set<NotificationType> = [.readiness, .water, .suhoor, .iftar, .shiftPattern]
+        // `shift_pattern` (Migration069) and `night_run` (Migration070) are not
+        // in §5.25 either, and start on.
+        let expectedEnabled: Set<NotificationType> = [.readiness, .water, .suhoor, .iftar, .shiftPattern, .nightRun]
         for rule in try store.allRules() {
             #expect(rule.isEnabled == expectedEnabled.contains(rule.type), "\(rule.type)")
         }
@@ -38,9 +39,9 @@ struct NotificationRuleStoreTests {
     @Test("The Swift default table and the migrations' INSERTs cannot drift apart")
     func swiftDefaultsMatchMigrationDefaults() throws {
         // Migration045 seeds the spec's nine; Migration050 seeds `prayer`;
-        // Migration069 seeds `shift_pattern`.
+        // Migration069 seeds `shift_pattern`; Migration070 seeds `night_run`.
         let seeded = Migration045_NotificationRule.defaults + Migration050_PrayerPreferences.defaults
-            + Migration069_SavedShiftPatterns.defaults
+            + Migration069_SavedShiftPatterns.defaults + Migration070_NightRuns.defaults
         #expect(seeded.count == NotificationType.allCases.count)
         #expect(Set(seeded.map(\.type)) == Set(NotificationType.allCases.map(\.rawValue)))
         for (rawType, isEnabled, _, _) in seeded {

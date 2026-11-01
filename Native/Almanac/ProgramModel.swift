@@ -83,6 +83,9 @@ final class ProgramModel: ObservableObject {
     /// means the prescription is shown exactly as written, and the UI says the
     /// adjustment is unavailable rather than pretending a score of zero.
     @Published private(set) var todayReadinessScore: Int?
+    /// Today is a night shift: a scaled session is then one step easier and
+    /// shorter (`ReadinessAdjustment.prescription(for:score:nightShift:)`).
+    @Published private(set) var todayIsNightShift = false
     /// Set when a read failed, cleared the moment one succeeds. Never a
     /// substitute for an empty state — "no programs yet" and "the programs could
     /// not be read" are different claims.
@@ -123,6 +126,8 @@ final class ProgramModel: ObservableObject {
             }
             daysByProgram = days
             todayReadinessScore = readTodaysReadiness()
+            todayIsNightShift = (try? ShiftScheduleStore(db: db!).occurrence(
+                for: timeModel.logicalDay(Date()).value)?.shiftType) == .night
             readProblem = nil
         } catch {
             readProblem = String(localized: "Could not read your training programs.")
@@ -299,7 +304,8 @@ final class ProgramModel: ObservableObject {
     /// `prescription(for:score:)` takes `nil` for exactly that and there is no
     /// third possibility worth a third code path.
     func prescription(for item: PoolItemEntry, readinessAdjusted: Bool) -> AdjustedPrescription {
-        ReadinessAdjustment.prescription(for: item, score: readinessAdjusted ? todayReadinessScore : nil)
+        ReadinessAdjustment.prescription(for: item, score: readinessAdjusted ? todayReadinessScore : nil,
+                                         nightShift: readinessAdjusted && todayIsNightShift)
     }
 
     /// Per-exercise progression suggestions for a generated sheet, in one query.

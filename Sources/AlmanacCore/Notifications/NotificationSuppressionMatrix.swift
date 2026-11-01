@@ -18,6 +18,9 @@ public enum NotificationType: String, Sendable, Hashable, CaseIterable {
     /// A saved shift pattern's week or month ends tomorrow (Migration069).
     /// Not in Appendix B either; nothing suppresses it.
     case shiftPattern = "shift_pattern"
+    /// A run of night shifts passes its run length (Migration070). Not in
+    /// Appendix B; nothing suppresses it.
+    case nightRun = "night_run"
 }
 
 /// The five state axes Appendix B suppresses against, at the moment a
@@ -104,6 +107,10 @@ public enum NotificationSuppressionMatrix {
             // Not an Appendix B row. It asks the person to pick what runs
             // next, and with it off the next pattern starts by itself, so
             // muting it would change their schedule without asking.
+            return false
+        case .nightRun:
+            // Not an Appendix B row. It is about the night shift itself, so
+            // the night-shift axis muting it would defeat it.
             return false
         }
     }

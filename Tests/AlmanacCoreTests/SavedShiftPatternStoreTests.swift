@@ -83,7 +83,7 @@ struct SavedShiftPatternStoreTests {
         """)
         let patternId: Int64 = 9
 
-        #expect(try MigrationRunner(migrations: AlmanacMigrations.all).migrate(existing) == [69])
+        #expect(try MigrationRunner(migrations: AlmanacMigrations.all).migrate(existing) == [69, 70])
 
         let after = ShiftScheduleStore(db: existing)
         #expect(try after.occurrence(for: "2026-09-01")?.shiftType == .night)

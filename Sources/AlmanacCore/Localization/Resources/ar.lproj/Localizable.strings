@@ -386,3 +386,6 @@
 "%@ foods have no calorie figure" = "أطعمة عددها %@ بلا قيمة سعرات";
 "Pick your next shift pattern" = "اختر نمط مناوباتك التالي";
 "“%@” starts again tomorrow. Pick what runs next in Shifts & rhythm; until you do, it keeps running." = "يبدأ «%@» من جديد غدًا. اختر ما يليه في المناوبات والإيقاع، وإلى أن تختار يستمر كما هو.";
+"A long run of night shifts" = "سلسلة طويلة من المناوبات الليلية";
+"Tomorrow is night %@ in a row, past your run length of %@." = "غدًا الليلة رقم %@ على التوالي، بعد طول السلسلة الذي حددته وهو %@.";
+"Tonight is night %@ in a row, past your run length of %@." = "الليلة هي الليلة رقم %@ على التوالي، بعد طول السلسلة الذي حددته وهو %@.";

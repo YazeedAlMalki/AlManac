@@ -361,6 +361,9 @@ struct ReadinessDashboardView: View {
                        missingValue: String(localized: "Not available"), identifier: "readiness-input-hrv")
             AlmanacRule()
             inputRow(String(localized: "Mood"), value: model.todayMood.map { String(localized: "\($0.score)/\(10)") }, missingValue: String(localized: "Not logged"))
+            if let expected = model.expectedMood {
+                expectedMoodLine(expected)
+            }
             AlmanacRule()
             inputRow(String(localized: "Soreness"), value: model.todaySoreness.map { String(localized: "\($0.overallScore)/\(10)") }, missingValue: String(localized: "Not logged"))
         }
@@ -399,6 +402,27 @@ struct ReadinessDashboardView: View {
                 }
             }
         }
+    }
+
+    /// The mood usually logged on today's shift, and how today's compares. The
+    /// logged mood above is the person's and is never changed by this.
+    private func expectedMoodLine(_ expected: ExpectedMood) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Usual on this shift: \(AlmanacNumber.compact(expected.average))/\(10)")
+            if let logged = model.todayMood?.score {
+                switch ShiftMoodExpectation.compare(logged: logged, with: expected) {
+                case .higher: Text("Today is higher than usual.")
+                case .asExpected: Text("Today is as usual.")
+                case .lower: Text("Today is lower than usual.")
+                }
+            }
+        }
+        .font(AlmanacTypography.font(.caption))
+        .foregroundStyle(AlmanacPalette.textSecondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.bottom, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("readiness-expected-mood")
     }
 
     private func inputRow(_ label: String, value: String?, missingValue: String?) -> some View {

@@ -112,7 +112,14 @@ public enum ReadinessEngine {
         }
 
         if state == .provisional { raw *= ReadinessFormula.provisionalCeiling }
-        let score = Int(raw.rounded())
+        var score = Int(raw.rounded())
+        // A run of night shifts takes a share of the score, from its first
+        // night, up to the cap: a percentage of the score the person would
+        // otherwise see, so 90 on night 2 is 85. Applied after the formula, so
+        // the formula, its bands and the baselines are untouched.
+        if let effect = context.nightRunEffectPercent {
+            score = Int((Double(score) * (1 - effect / 100)).rounded())
+        }
         // Owner, 2026-10-06: a missing personal baseline withholds the band
         // sentence rather than marking it preliminary. The score, its colour
         // and its confidence stand; only the advice drawn from them goes.
@@ -174,6 +181,9 @@ public enum ReadinessEngine {
         if context.plannedDeloadDay { suffixes.append("· Planned deload — continue reduced load") }
         if context.plannedRestDay { suffixes.append("· Planned rest day") }
         if let area = context.activeInjuryBodyArea { suffixes.append("· Active injury: \(area)") }
+        if let night = context.nightRunNight, let effect = context.nightRunEffectPercent {
+            suffixes.append("· Night \(night) of a run of night shifts (−\(Int(effect.rounded()))%)")
+        }
         if let day = context.calibrationDay {
             suffixes.append("· Score is preliminary (calibrating: \(day)/\(ReadinessFormula.calibrationValidDays))")
         }
@@ -258,6 +268,10 @@ public enum ReadinessEngine {
         if let v = baseline.restingHeartRate { payload["baselineRestingHeartRate"] = v }
         if let v = baseline.hrv { payload["baselineHRV"] = v }
         if let v = context.calibrationDay { payload["calibrationDay"] = v }
+        if let night = context.nightRunNight, let effect = context.nightRunEffectPercent {
+            payload["nightRunNight"] = night
+            payload["nightRunEffectPercent"] = effect
+        }
 
         guard let data = try? JSONSerialization.data(withJSONObject: payload,
                                                      options: [.sortedKeys]),

@@ -94,6 +94,14 @@ public struct SavedShiftPatternStore: @unchecked Sendable {
         return id
     }
 
+    /// Sets a pattern's run length in nights; nil goes back to the default.
+    public func setRunLength(_ nights: Int?, for id: Int64) throws {
+        if let nights, nights <= 0 { throw SavedShiftPatternError.runLengthNotPositive }
+        guard try pattern(id: id) != nil else { throw SavedShiftPatternError.unknownPattern(id) }
+        try db.run("UPDATE saved_shift_pattern SET runLengthNights = ?, updatedAt = ? WHERE id = ?;",
+                   [nights.map { SQLValue.integer(Int64($0)) } ?? .null, .text(now()), .integer(id)])
+    }
+
     /// Every saved pattern, oldest first.
     public func patterns() throws -> [SavedShiftPattern] {
         try db.query("""

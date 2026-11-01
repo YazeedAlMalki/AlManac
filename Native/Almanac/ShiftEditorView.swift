@@ -50,6 +50,9 @@ struct ShiftEditorView: View {
     /// On when no saved pattern is running: a first pattern is saved to be
     /// used. Off otherwise, because saving is not picking.
     @State private var startUsing = true
+    /// Off means no run length of its own: the default applies.
+    @State private var setsRunLength = false
+    @State private var runLength = NightRunStore.defaultRunLengthNights
     @State private var error: String?
 
     /// The date the pickers open on: the calendar date of the person's *current
@@ -160,6 +163,18 @@ struct ShiftEditorView: View {
         } footer: {
             Text("The blocks repeat inside each week or month and start again from the first block when a new one begins. A day you change yourself keeps your change, and the pattern's shift is kept as a note.")
         }
+
+        Section {
+            Toggle("Set a run length", isOn: $setsRunLength)
+            if setsRunLength {
+                Stepper(value: $runLength, in: 1...14) {
+                    Text(runLength == 1 ? String(localized: "1 night") : String(localized: "\(runLength) nights"))
+                }
+                .accessibilityIdentifier("shift-pattern-run-length")
+            }
+        } footer: {
+            Text("A run of night shifts longer than this is warned about. With none set, it is 3 nights.")
+        }
     }
 
     private func shiftPicker(_ title: LocalizedStringKey, selection: Binding<ShiftType>) -> some View {
@@ -195,7 +210,8 @@ struct ShiftEditorView: View {
                 let timeModel = TimeModel(timeZone: timeZone)
                 let patterns = SavedShiftPatternStore(db: db, timeModel: timeModel)
                 let id = try patterns.save(SavedShiftPatternDraft(
-                    name: patternName, blocks: blocks, startDate: start, cadence: cadence))
+                    name: patternName, blocks: blocks, startDate: start, cadence: cadence,
+                    runLengthNights: setsRunLength ? runLength : nil))
                 if startUsing { try patterns.use(id, today: timeModel.logicalDay(Date())) }
             }
             onSaved()

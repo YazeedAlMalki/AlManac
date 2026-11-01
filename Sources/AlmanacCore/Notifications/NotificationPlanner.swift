@@ -39,9 +39,11 @@ public struct NotificationPlanner: @unchecked Sendable {
     public static let defaultWaterIntervalMinutes = 90
     /// §14.2 — "~60 min before usual meal time".
     public static let contextualHydrationLeadMinutes: Double = 60
-    /// The period-end reminder's time when the person has not set one: 18:00,
-    /// the evening before the new week or month starts.
-    public static let defaultShiftPatternReminderMinute = 18 * 60
+    /// The time of the shift reminders when the person has not set one: 18:00.
+    /// The period-end reminder is the evening before the new week or month;
+    /// the night-run warnings are the evening before and the evening of the
+    /// night itself.
+    public static let defaultShiftEveningMinute = 18 * 60
 
     private let db: Database
     private let timeModel: TimeModel
@@ -147,6 +149,7 @@ public struct NotificationPlanner: @unchecked Sendable {
         try appendSupplements(day: day, into: &candidates)
         try appendContextualHydration(day: day, into: &candidates)
         try appendShiftPatternReminder(day: day, into: &candidates)
+        try appendNightRunWarnings(day: day, into: &candidates)
     }
 
     private func appendReadiness(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
@@ -310,11 +313,41 @@ public struct NotificationPlanner: @unchecked Sendable {
               let pattern = try patterns.pattern(id: id),
               SavedShiftPatternStore.nextPeriodStart(pattern.cadence, anchor: anchor, after: day) == tomorrow,
               let fireAt = try fallbackTime(.shiftPattern, on: day)
-                ?? time(Self.defaultShiftPatternReminderMinute, on: day) else { return }
+                ?? time(Self.defaultShiftEveningMinute, on: day) else { return }
         candidates.append(PlannedNotification(
             identifier: "almanac.shift_pattern.\(day.value)", type: .shiftPattern, fireAt: fireAt,
             title: NotificationText.shiftPatternTitle,
             body: NotificationText.shiftPatternBody(patternName: pattern.name)))
+    }
+
+    /// The night a run of night shifts passes its run length: a warning the
+    /// evening before (on `day`, when tomorrow is that night) and one on the
+    /// night itself (when `day` is). Once per run: later nights are past the
+    /// run length too, but the run passed it once.
+    private func appendNightRunWarnings(day: LogicalDay, into candidates: inout [PlannedNotification]) throws {
+        guard try rules.isEnabled(.nightRun) else { return }
+        let runs = NightRunStore(db: db, timeModel: timeModel)
+        let minute = try rules.rule(for: .nightRun).scheduledMinuteOfDay ?? Self.defaultShiftEveningMinute
+        if let tomorrow = timeModel.day(after: day), let passing = try passingNight(on: tomorrow, runs: runs),
+           let fireAt = time(minute, on: day) {
+            candidates.append(PlannedNotification(
+                identifier: "almanac.night_run.eve.\(tomorrow.value)", type: .nightRun, fireAt: fireAt,
+                title: NotificationText.nightRunTitle,
+                body: NotificationText.nightRunEveBody(night: passing.night, runLength: passing.runLengthNights)))
+        }
+        if let passing = try passingNight(on: day, runs: runs), let fireAt = time(minute, on: day) {
+            candidates.append(PlannedNotification(
+                identifier: "almanac.night_run.night.\(day.value)", type: .nightRun, fireAt: fireAt,
+                title: NotificationText.nightRunTitle,
+                body: NotificationText.nightRunNightBody(night: passing.night, runLength: passing.runLengthNights)))
+        }
+    }
+
+    private func passingNight(on day: LogicalDay, runs: NightRunStore) throws -> NightRunNight? {
+        let night = try runs.night(on: day)
+        guard night > 0 else { return nil }
+        let passing = NightRunNight(day: day, night: night, runLengthNights: try runs.runLength(on: day))
+        return passing.passesRunLength ? passing : nil
     }
 
     private func fallbackTime(_ type: NotificationType, on day: LogicalDay) throws -> Date? {

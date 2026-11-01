@@ -31,7 +31,12 @@ struct CircadianView: View {
     @State private var selection = SavedShiftPatternSelection.none
     @State private var nextPeriodStart: LogicalDay?
     @State private var reminderOn = true
+    /// Nights in the window, by date, with their place in their run.
+    @State private var runNights: [String: NightRunNight] = [:]
+    @State private var capPercent = NightRunStore.defaultCapPercent
     @State private var choosing: SavedShiftPattern?
+    @State private var editingRunLength: SavedShiftPattern?
+    @State private var runLengthText = ""
     @State private var addingShifts = false
     @State private var error: String?
 
@@ -89,7 +94,24 @@ struct CircadianView: View {
                     Button("Run next") { act { try $0.setNext(pattern.id, today: today) } }
                 }
             }
+            Button("Set run length") {
+                runLengthText = pattern.runLengthNights.map(String.init) ?? ""
+                editingRunLength = pattern
+            }
             Button("Cancel", role: .cancel) {}
+        }
+        .alert("Run length", isPresented: Binding(
+            get: { editingRunLength != nil }, set: { if !$0 { editingRunLength = nil } }
+        ), presenting: editingRunLength) { pattern in
+            TextField("Nights", text: $runLengthText)
+                .keyboardType(.numberPad)
+            Button("Save") {
+                act { try $0.setRunLength(Int(NumberInput.ascii(runLengthText)), for: pattern.id) }
+            }
+            Button("Use the default") { act { try $0.setRunLength(nil, for: pattern.id) } }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("A run of night shifts longer than this is warned about. With none set, it is 3 nights.")
         }
         .editorError($error)
     }
@@ -110,6 +132,11 @@ struct CircadianView: View {
                 }
                 .accessibilityIdentifier("saved-pattern-reminder")
             }
+            Stepper(value: Binding(get: { capPercent }, set: setCap), in: 1...50, step: 1) {
+                Text("Most a run of nights takes off readiness: \(Int(capPercent))%")
+                    .font(AlmanacTypography.font(.body))
+            }
+            .accessibilityIdentifier("saved-pattern-cap")
         } header: {
             AlmanacSectionHeader(title: String(localized: "Saved patterns"))
         } footer: {
@@ -129,6 +156,10 @@ struct CircadianView: View {
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
+                Text(pattern.runLengthNights.map { String(localized: "Warns after \($0) nights") }
+                     ?? String(localized: "Warns after 3 nights (the default)"))
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
                 if selection.currentId == pattern.id, let next = nextPeriodStart {
                     Text("Starts again \(dateText(next))")
                         .font(AlmanacTypography.font(.caption))
@@ -181,6 +212,15 @@ struct CircadianView: View {
         }
     }
 
+    private func setCap(_ percent: Double) {
+        do {
+            try NightRunStore(db: db, timeModel: timeModel).setCapPercent(percent)
+            capPercent = percent
+        } catch {
+            self.error = String(describing: error)
+        }
+    }
+
     private func setReminder(_ on: Bool) {
         do {
             try NotificationRuleStore(db: db).setEnabled(on, for: .shiftPattern)
@@ -227,6 +267,13 @@ struct CircadianView: View {
                     .foregroundStyle(context.shiftType == nil
                                      ? AlmanacPalette.textSecondary : AlmanacPalette.textPrimary)
                     .accessibilityIdentifier("circadian-shift-\(offset)")
+            }
+            if let run = runNights[context.date.value], run.isPastRunLength {
+                Text("Night \(run.night) in a row: past your run length of \(run.runLengthNights).")
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("circadian-run-warning-\(offset)")
             }
             if let planned = patternNotes[context.date.value] {
                 Text("Pattern: \(ShiftPresentation.title(for: planned))")
@@ -280,6 +327,10 @@ struct CircadianView: View {
             selection = try saved.selection()
             nextPeriodStart = try saved.nextPeriodStart(after: today)
             reminderOn = try NotificationRuleStore(db: db).isEnabled(.shiftPattern)
+            let runs = NightRunStore(db: db, timeModel: timeModel)
+            runNights = Dictionary(uniqueKeysWithValues: try runs.nights(from: first, through: last)
+                .map { ($0.day.value, $0) })
+            capPercent = try runs.capPercent()
             error = nil
         } catch {
             self.error = String(describing: error)

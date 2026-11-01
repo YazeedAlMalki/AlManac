@@ -31,7 +31,7 @@ final class NotificationSettingsUITests: XCTestCase {
         openReminders()
         for type in ["readiness", "water", "meal", "bedtime", "supplement",
                      "suhoor", "iftar", "contextual_snack", "contextual_hydration", "prayer",
-                     "shift_pattern"] {
+                     "shift_pattern", "night_run"] {
             let toggle = app.switches["notification-rule-\(type)"]
             XCTAssertTrue(bringOnScreen(toggle), "no switch for \(type); switches: "
                           + "\(app.switches.allElementsBoundByIndex.map { "\($0.identifier)=\($0.label)" })")

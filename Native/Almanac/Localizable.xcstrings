@@ -13170,6 +13170,206 @@
           }
         }
       }
+    },
+    "%lld nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld ليالٍ"
+          }
+        }
+      }
+    },
+    "1 night": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ليلة واحدة"
+          }
+        }
+      }
+    },
+    "A run of night shifts longer than this is warned about. With none set, it is 3 nights.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يُنبَّه إلى أي سلسلة من المناوبات الليلية أطول من هذا. وإن لم تحدده فهو ٣ ليالٍ."
+          }
+        }
+      }
+    },
+    "Long run of nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "سلسلة ليالٍ طويلة"
+          }
+        }
+      }
+    },
+    "Most a run of nights takes off readiness: %lld%%": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أقصى ما تخصمه سلسلة الليالي من الجاهزية: %lld٪"
+          }
+        }
+      }
+    },
+    "Night %lld in a row: past your run length of %lld.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الليلة %lld على التوالي: بعد طول السلسلة الذي حددته وهو %lld."
+          }
+        }
+      }
+    },
+    "Night shift today. Factor it in for a session %lld%% shorter and one step easier.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة ليلية اليوم. احسبها لتكون الحصة أقصر بنسبة %lld٪ وأسهل بدرجة."
+          }
+        }
+      }
+    },
+    "Night shift today: the session is %lld%% shorter and one step easier.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مناوبة ليلية اليوم: الحصة أقصر بنسبة %lld٪ وأسهل بدرجة."
+          }
+        }
+      }
+    },
+    "Nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الليالي"
+          }
+        }
+      }
+    },
+    "Run length": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "طول السلسلة"
+          }
+        }
+      }
+    },
+    "Set a run length": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حدّد طول السلسلة"
+          }
+        }
+      }
+    },
+    "Set run length": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحديد طول السلسلة"
+          }
+        }
+      }
+    },
+    "The evening before, and on the night, a run of night shifts passes its run length.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في المساء السابق، وفي الليلة نفسها، التي تتجاوز فيها سلسلة المناوبات الليلية طولها المحدد."
+          }
+        }
+      }
+    },
+    "Today is as usual.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم كالمعتاد."
+          }
+        }
+      }
+    },
+    "Today is higher than usual.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم أعلى من المعتاد."
+          }
+        }
+      }
+    },
+    "Today is lower than usual.": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اليوم أقل من المعتاد."
+          }
+        }
+      }
+    },
+    "Use the default": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "استخدم الافتراضي"
+          }
+        }
+      }
+    },
+    "Usual on this shift: %@/%lld": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "المعتاد في هذه المناوبة: %@/%lld"
+          }
+        }
+      }
+    },
+    "Warns after %lld nights": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ينبّه بعد %lld ليالٍ"
+          }
+        }
+      }
+    },
+    "Warns after 3 nights (the default)": {
+      "localizations": {
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ينبّه بعد ٣ ليالٍ (الافتراضي)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

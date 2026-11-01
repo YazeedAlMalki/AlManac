@@ -150,7 +150,7 @@ struct ProgramSessionView: View {
         Section {
             Toggle("Factor in today's readiness",
                    isOn: Binding(get: { readinessAdjusted }, set: { rebuild(readinessAdjusted: $0) }))
-                .disabled(model.todayReadinessScore == nil)
+                .disabled(model.todayReadinessScore == nil && !model.todayIsNightShift)
                 .accessibilityIdentifier("readiness-toggle")
             if let score = model.todayReadinessScore {
                 HStack(alignment: .firstTextBaseline) {
@@ -160,10 +160,19 @@ struct ProgramSessionView: View {
                         .foregroundStyle(AlmanacPalette.textSecondary)
                 }
                 .font(AlmanacTypography.font(.body))
-            } else {
+            } else if !model.todayIsNightShift {
                 Text("No readiness score for today, so there is nothing to scale by. The day runs as written.")
                     .font(AlmanacTypography.font(.caption))
                     .foregroundStyle(AlmanacPalette.textSecondary)
+            }
+            if model.todayIsNightShift {
+                let shorter = Int(((1 - ReadinessAdjustment.nightShiftLengthFactor) * 100).rounded())
+                Text(readinessAdjusted
+                     ? "Night shift today: the session is \(shorter)% shorter and one step easier."
+                     : "Night shift today. Factor it in for a session \(shorter)% shorter and one step easier.")
+                    .font(AlmanacTypography.font(.caption))
+                    .foregroundStyle(AlmanacPalette.textSecondary)
+                    .accessibilityIdentifier("night-shift-training-note")
             }
         } header: {
             Text("Readiness")
@@ -208,9 +217,9 @@ struct ProgramSessionView: View {
     /// this for how I read today", and a day with no reading has nothing to scale
     /// by — the question's own message says exactly that — so the honest reading
     /// of yes-with-no-score is the same as no, not a toggle switched on with
-    /// nothing behind it.
+    /// nothing behind it. A night shift is something to scale by, score or not.
     private var opensScaled: Bool {
-        startFactoringInReadiness && model.todayReadinessScore != nil
+        startFactoringInReadiness && (model.todayReadinessScore != nil || model.todayIsNightShift)
     }
 
     // MARK: - The generated list

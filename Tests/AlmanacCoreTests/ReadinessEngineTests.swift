@@ -86,6 +86,44 @@ final class ReadinessEngineTests: XCTestCase {
         XCTAssertTrue(outcome.missingInputs.isEmpty)
     }
 
+    // MARK: - Night-shift runs (shifts-profile spec, section 4)
+
+    private func onNight(_ night: Int?, cap: Double = 15) -> ReadinessOutcome {
+        ReadinessEngine.evaluate(state: .provisional, inputs: perfectInputs(), baseline: baseline,
+                                 context: ReadinessContext(nightRunNight: night, nightRunCapPercent: cap))
+    }
+
+    func testANightRunTakesThreePercentOfTheScoreFromTheFirstNight() {
+        // 90 with no run (the provisional ceiling): 87.3, 84.6, 81.9.
+        XCTAssertEqual(onNight(nil).score, 90)
+        XCTAssertEqual(onNight(1).score, 87)
+        XCTAssertEqual(onNight(2).score, 85)
+        XCTAssertEqual(onNight(3).score, 82)
+    }
+
+    func testTheRunEffectStopsAtTheCap() {
+        // 15% of 90 is 76.5, from night 5 on.
+        XCTAssertEqual(onNight(5).score, 77)
+        XCTAssertEqual(onNight(9).score, 77)
+        XCTAssertEqual(onNight(5, cap: 10).score, 81)
+        XCTAssertEqual(onNight(2, cap: 10).score, 85, "below the cap, the cap changes nothing")
+    }
+
+    func testTheRunEffectIsRecordedAndSaid() {
+        let outcome = onNight(2)
+        XCTAssertTrue(outcome.inputSnapshot.contains("\"nightRunNight\":2"), outcome.inputSnapshot)
+        XCTAssertTrue(outcome.inputSnapshot.contains("\"nightRunEffectPercent\":6"), outcome.inputSnapshot)
+        XCTAssertTrue(outcome.textDescription?.contains("· Night 2 of a run of night shifts (−6%)") == true,
+                      outcome.textDescription ?? "")
+        XCTAssertFalse(onNight(nil).inputSnapshot.contains("nightRun"))
+    }
+
+    func testTheBandFollowsTheScoreTheRunLeaves() {
+        // 90 is excellent; 77 is good. The bands themselves are not moved.
+        XCTAssertEqual(onNight(nil).recommendation, ReadinessFormula.bandText(for: 90))
+        XCTAssertEqual(onNight(5).recommendation, ReadinessFormula.bandText(for: 77))
+    }
+
     func testProvisionalDoesNotCountMoodAndSorenessAsMissing() {
         let outcome = ReadinessEngine.evaluate(state: .provisional, inputs: perfectInputs(),
                                                baseline: baseline)

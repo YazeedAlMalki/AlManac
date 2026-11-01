@@ -145,6 +145,21 @@ final class ShiftsAndRhythmUITests: XCTestCase {
         XCTAssertEqual(status.label, "Running")
     }
 
+    /// Five nights from yesterday. With no pattern the run length is 3, so the
+    /// run passes it on the fourth night (two days ahead) and the screen warns
+    /// on that night and the one after, not before.
+    func testARunPastItsRunLengthIsWarned() {
+        launch(seeding: "night:-1,night:0,night:1,night:2,night:3")
+        openShiftsAndRhythm()
+
+        XCTAssertTrue(app.staticTexts["circadian-shift-0"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["circadian-run-warning-1"].exists, "night 3 is within the run length")
+        let warning = app.staticTexts["circadian-run-warning-2"]
+        XCTAssertTrue(app.reveal(warning), "night 4 carries no warning")
+        XCTAssertEqual(warning.label, "Night 4 in a row: past your run length of 3.")
+        XCTAssertTrue(app.reveal(app.staticTexts["circadian-run-warning-3"]), "night 5 carries no warning")
+    }
+
     // MARK: - Arabic
 
     /// The catalog gate proves each string has an Arabic entry; this proves the
