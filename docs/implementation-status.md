@@ -183,9 +183,9 @@ registered with a valid email". Built (not scored; no rubric line):
 
 **None of these has been confirmed.**
 
-- "Backups will not be encrypted" (the owner's) is read as *for now*: BRD §6.18,
-  §6.19 and §8 still list export encryption before public release. *Overrule by:*
-  asking for passphrase-encrypted backups, or striking export encryption from BRD §8.
+- *Superseded:* "Backups will not be encrypted" was overruled on 2026-10-22, and
+  the owner confirmed on 2026-11-01 that encrypting shared copies closes BRD §8's
+  export-encryption item (CONTEXT.md, "Backup encryption").
 - The email stays on this phone; no account, no server. *Overrule by:* asking
   for an online account (a server, its cost, and a change to BRD principle 5).
 - "Valid" means well formed, not confirmed by mail. *Overrule by:* asking for a

@@ -1094,9 +1094,11 @@ passphrase encryption, in `BackupEncryption` (AlmanacCore) and `BackupView`.
   plain-Swift copy (`PortableCrypto`) exists only so Linux CI tests the format,
   and both are pinned to the RFC test vectors. Layout in `BackupEncryption.swift`.
 
-**Mine, not the owner's, and not confirmed:** encrypting shared copies only
-rather than the local ones too; the 8-character minimum; no "share without
-encryption" option.
+**Confirmed by the owner, 2026-11-01:** encrypting shared copies only rather
+than the local ones too; the 8-character minimum; no "share without
+encryption" option. This closes BRD §8's "export encryption" item: every copy
+that leaves the phone is encrypted. *Overrule by:* asking for local backups to
+be encrypted too, or for an unencrypted share.
 
 ### Backups (2026-10-20)
 
