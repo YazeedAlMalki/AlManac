@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-10-22 (latest): shared backups are passphrase-encrypted (`BackupEncryption`, CONTEXT.md "Backup encryption"); not re-scored.
+Updated 2026-11-03 (latest): fresh re-score of `ede0763`; nothing moves (1,130 / 1,200); Training picker failure root-caused.
+Updated 2026-10-22: shared backups are passphrase-encrypted (`BackupEncryption`, CONTEXT.md "Backup encryption"); not re-scored.
 Updated 2026-10-20: re-scored after the Oct 19 work; App Intents driven; audit merged; backups need an email (1,130 / 1,200).
 Updated 2026-10-19: the exercise library (free-exercise-db, wger) and Open Food Facts; not re-scored.
 Updated 2026-10-17 (latest): the owner accepts the retried tap; Readiness 98 (1,126 / 1,200).
@@ -41,6 +42,81 @@ Quick Log are also live.
 The canonical product requirements are now `docs/brd-v1_6.md`. The v1.5
 Monthly Achievement Calendar is superseded by the v1.6 Activity Rings Calendar
 and is not a current implementation target.
+
+## 2026-11-03 — Fresh re-score of `ede0763`; Training picker failure root-caused
+
+**Outcome.** The tracker stays at **1,130 of 1,200 (94.2 %)**. No phase
+moves. Work since 2026-10-20 (shared-backup encryption, PR #22; pantry
+persistence test, PR #23) has no rubric line, so it adds nothing. Two UI
+tests failed in a clean run and again on their retry; one is root-caused and
+fixed on this branch, the other is the known switch-tap flake and is not.
+
+### The table
+
+Formula: the total is the plain sum of the 12 phase scores; percent = total ÷ 1,200.
+
+| # | Phase | Was | Now | Evidence |
+|---|---|---:|---:|---|
+| 1 | Foundation | 100 | 100 | Core green (below) |
+| 2 | Readiness | 98 | 98 | |
+| 3 | Hydration & Caffeine | 92 | 92 | Device check outstanding |
+| 4 | Training | 98 | 98 (held) | `testApplyingATemplateFillsTodayAndStaysEditable` failed in the run and its retry ("exercise 1 is missing from the catalog"). Cause is the test helper, not the feature (Tasks 1). Fixed here: both Training suites 18 of 19 with the search fix alone, then the failing test 3 of 3 with the `isRevealed` fix |
+| 5 | Nutrition | 96 | 96 | Pantry persistence test (PR #23) has no rubric line; 98 still needs T07/T08 |
+| 6 | Fasting & Prayer | 96 | 96 | Cap until a device run |
+| 7 | Body & Wellness | 95 | 95 (held; a call) | `testSidedLoggingWarningAndPersistence` failed in the run and its retry ("the side switch did not turn off"), then 1 of 3 on `ede0763` at line 17 (the switch did not turn on). Passed 4 of 4 on this branch. Same switch-tap flake as 2026-10-17; not root-caused (Tasks 2). Not lowered: the switch works when the tap lands, and the value persists |
+| 8 | Regional Food Data | 87 | 87 | Assumes D_full = 30 (not confirmed; 82 at 50) |
+| 9 | Digestion & Urination | 95 | 95 | Advisory still a draft |
+| 10 | Insights | 95 | 95 | |
+| 11 | Notifications | 93 | 93 | Device check outstanding |
+| 12 | Migration & Completion | 85 | 85 | Backup encryption closes BRD §8's export item (owner, 2026-11-01) but has no rubric line. Device restore outstanding |
+| | **Total** | **1,130** | **1,130** | 1,130 ÷ 1,200 = 94.2 % |
+
+### What was run
+
+All on a clean export of `ede0763`, iPhone 16e simulator, no retries, local
+(not CI), unless named otherwise.
+
+| Check | Result |
+|---|---|
+| `swift test` (Swift Testing) | 1,209 tests in 133 suites passed |
+| `swift test` (XCTest) | 431 executed, 1 skipped (`NutritionRealBundleTests`, needs the real bundle), 0 failures |
+| UI suite, `ede0763` | 110 executed, 108 passed, 2 failed (the two above) |
+| Retry of the two, `ede0763` | Both failed again, same messages |
+| Training fix, both Training suites | `TrainingProgramUITests` 13 of 13; `TrainingHistoryUITests` 5 of 6 with the search only (exercise 69 then missing), 3 of 3 after the `isRevealed` change |
+| Body circumference ×3, `ede0763` | 2 passed, 1 failed (line 17) |
+| Body circumference, this branch | 1 of 1 with a debug probe, then 3 of 3 without |
+
+**Not run:** the Arabic-pass UI run (`.github/workflows/ci.yml`), CI on this
+branch, the whole UI suite on this branch, anything on a device.
+
+### Tasks
+
+**1. Training picker: root-caused.** Two causes, both in the test helpers.
+
+- `f776263` made the Training tests type the exercise's name into the
+  catalog's search instead of scrolling 1,085 lazy rows, but only in
+  `TrainingProgramUITests`. `TrainingHistoryUITests.addTemplateExercise` kept
+  scrolling. `narrowCatalog(to:)` now lives in `UIScrollSupport.swift` and both
+  suites call it.
+- With the search in place, exercise 69 (Ab Wheel Rollout, the only result)
+  was still "missing". A probe showed the row at y 123 and the navigation bars
+  `Templates` (ends at 153, beneath the sheet) and `New template` (ends at
+  111). `isRevealed` used the lowest bar as its ceiling, so a visible row
+  under the sheet's own bar counted as hidden. It now uses the last
+  (frontmost) bar. This touches every `reveal()` call; only the Training and
+  circumference tests were re-run, so the full suite on CI should confirm it.
+
+**2. Body circumference switch: not root-caused.** The tap lands (log shows two
+taps 4 s apart at `Switch[0.93, 0.50]`) and the value stays. A probe showed the
+switch at y 694–745, enabled, clear of the tab bar (747). With the probe in
+place the test passed, so timing between relaunch and the tap is the first
+hypothesis, not shown. No retry added, no points moved.
+
+### Owner-side, unchanged
+
+Three iPhone checks (`docs/device-checklist.md`); confirm D_full; review and
+merge PR #24 (shifts on Profile); native review of the Arabic drafts; licence
+emails on hold.
 
 ## 2026-10-20 — Re-score after the Oct 19 work; App Intents driven; audit merged; backups need an email
 

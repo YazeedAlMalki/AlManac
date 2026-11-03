@@ -338,11 +338,13 @@ extension XCUIApplication {
         let floor = todayTab.exists ? todayTab.frame.minY : frame.maxY
         guard frame.midY < floor - 8 else { return false }
 
-        // Below every navigation bar, the element is plain content and is
-        // tappable.
-        let ceiling = navigationBars.allElementsBoundByIndex
-            .map(\.frame.maxY)
-            .max() ?? frame.minY
+        // Below the frontmost navigation bar, the element is plain content and
+        // is tappable. The last bar, not the lowest: a sheet's list sits
+        // over the large-title bar of the screen beneath it, and measuring
+        // against that bar called the only search result in the exercise
+        // catalog (y 123, under a bar ending at 153 behind the sheet) hidden
+        // ("exercise 69 is missing from the catalog", 2026-11-03).
+        let ceiling = navigationBars.allElementsBoundByIndex.last?.frame.maxY ?? frame.minY
         if frame.midY > ceiling + 8 { return true }
 
         return isOwnedByNavigationBar(element)
@@ -494,5 +496,30 @@ extension XCUIApplication {
         XCTAssertTrue(navigationBars["Modules"].waitForExistence(timeout: 5),
                       "the Modules tab did not open; navigation bars: \(navigationBars.allElementsBoundByIndex.map(\.identifier))",
                       file: file, line: line)
+    }
+}
+
+extension XCUIApplication {
+    /// The catalog's names for the exercises the Training UI tests add.
+    private static let catalogExerciseNames: [Int64: String] = [1: "Bench Press", 69: "Ab Wheel Rollout"]
+
+    /// Types `id`'s name into the open catalog's search field, so its row is
+    /// one of a handful rather than one of 1,085.
+    ///
+    /// Scrolling for it was the failure "exercise 1 is missing from the
+    /// catalog" (CI 2026-10-19, and again 2026-10-21/22 after `02ebecb`): the
+    /// list is lazy, so when the first check ran before the rows loaded, the
+    /// sweep scrolled away from a row that was at the top, and the way back
+    /// is shorter than 1,085 rows. Searching is also how a person finds one.
+    /// Shared, because `TrainingHistoryUITests` hit the same failure after
+    /// `f776263` fixed it only in `TrainingProgramUITests` (fresh run, 2026-11-03).
+    func narrowCatalog(to id: Int64) {
+        guard let name = Self.catalogExerciseNames[id] else {
+            return XCTFail("no catalog name recorded for exercise \(id)")
+        }
+        let field = searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the exercise catalog has no search field")
+        field.tap()
+        field.typeText(name)
     }
 }

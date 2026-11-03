@@ -192,6 +192,7 @@ final class TrainingHistoryUITests: XCTestCase {
         add.tap()
         XCTAssertTrue(app.navigationBars["Choose Exercise"].waitForExistence(timeout: 5),
                       "the exercise catalog did not open")
+        app.narrowCatalog(to: id)
         let row = app.buttons["exercise-row-\(id)"]
         XCTAssertTrue(app.reveal(row), "exercise \(id) is missing from the catalog")
         row.tap()
