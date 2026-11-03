@@ -329,13 +329,21 @@ extension XCUIApplication {
         guard frame.width > 1, frame.height > 1 else { return false }
 
         // The bottom bar is the app's own chrome, laid out in flow, so its top
-        // edge comes from the "Today" tab rather than a hard-coded height.
+        // edge is read from the bar rather than a hard-coded height. The bar
+        // itself, not its "Today" tab: the bar's padding and the raised
+        // quick-log action put its top edge about 19 pt above the tab. A row
+        // whose middle sat in that band passed as revealed, and the tap landed
+        // on the bar — the body-circumference switch failing to turn, 2 of 6
+        // runs, exactly when its middle was 728 pt or lower (2026-11-03).
+        // The "Today" tab is kept as the fallback for a screen without the bar.
         // `firstMatch` because a screen can legitimately show more than one
         // element labelled "Today" — the readiness card names the day — and an
         // ambiguous query raises instead of answering, which would fail the test
         // for a reason that has nothing to do with what it is testing.
+        let bar = descendants(matching: .any)["almanac-tab-bar"].firstMatch
         let todayTab = buttons["Today"].firstMatch
-        let floor = todayTab.exists ? todayTab.frame.minY : frame.maxY
+        let floor = bar.exists ? bar.frame.minY
+            : todayTab.exists ? todayTab.frame.minY : frame.maxY
         guard frame.midY < floor - 8 else { return false }
 
         // Below the frontmost navigation bar, the element is plain content and
