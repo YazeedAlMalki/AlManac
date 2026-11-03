@@ -85,7 +85,7 @@ All on a clean export of `ede0763`, iPhone 16e simulator, no retries, local
 | Training fix, both Training suites | `TrainingProgramUITests` 13 of 13; `TrainingHistoryUITests` 5 of 6 with the search only (exercise 69 then missing), 3 of 3 after the `isRevealed` change |
 | Body circumference ×3, `ede0763` | 2 passed, 1 failed (line 17) |
 | Body circumference, this branch | 1 of 1 with a debug probe, then 3 of 3 without |
-| Body circumference ×6, `ede0763` with a probe | 4 passed, 2 failed; both failures had the switch's middle at 728.8 and 738.5 pt, every pass at 727.8 or above it |
+| Body circumference ×6, `ede0763` with a probe | 4 passed, 2 failed; both failures had the switch's middle at 728.8 and 738.5 pt, every pass at 727.8 or less |
 | Body circumference ×6, bar fix | Switch toggled every time; 1 failure at line 77 (a deleted row read too soon), fixed |
 | Body circumference suite ×5, both fixes | 5 of 5 |
 
