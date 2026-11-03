@@ -115,8 +115,8 @@ hypothesis, not shown. No retry added, no points moved.
 ### Owner-side, unchanged
 
 Three iPhone checks (`docs/device-checklist.md`); confirm D_full; review and
-merge PR #24 (shifts on Profile); native review of the Arabic drafts; licence
-emails on hold.
+merge PR #24 (shifts on Profile); native review of the Arabic drafts. The
+licence emails are dropped (owner, 2026-11-03: a better route was found).
 
 ## 2026-10-20 — Re-score after the Oct 19 work; App Intents driven; audit merged; backups need an email
 
