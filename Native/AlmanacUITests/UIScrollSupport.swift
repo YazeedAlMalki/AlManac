@@ -340,10 +340,14 @@ extension XCUIApplication {
         // element labelled "Today" — the readiness card names the day — and an
         // ambiguous query raises instead of answering, which would fail the test
         // for a reason that has nothing to do with what it is testing.
+        // Only a hittable bar counts: a full-screen cover leaves the bar in the
+        // tree, unhittable, and its 728 pt edge called the session's Finish
+        // button (middle 720.7 pt) hidden behind it (CI 2026-11-03, six
+        // Training tests). Without a visible bar the floor is the screen's edge.
         let bar = descendants(matching: .any)["almanac-tab-bar"].firstMatch
         let todayTab = buttons["Today"].firstMatch
-        let floor = bar.exists ? bar.frame.minY
-            : todayTab.exists ? todayTab.frame.minY : frame.maxY
+        let floor = bar.exists && bar.isHittable ? bar.frame.minY
+            : todayTab.exists && todayTab.isHittable ? todayTab.frame.minY : self.frame.maxY
         guard frame.midY < floor - 8 else { return false }
 
         // Below the frontmost navigation bar, the element is plain content and
