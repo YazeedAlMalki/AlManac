@@ -313,6 +313,8 @@ private struct AlmanacNavigationBar: View {
         // the safe area to keep the home indicator on the bar's own colour.
         .background(AlmanacPalette.surface.ignoresSafeArea(edges: .bottom))
         .accessibilityElement(children: .contain)
+        // The UI tests' `isRevealed` reads the bar's top edge from this.
+        .accessibilityIdentifier("almanac-tab-bar")
     }
 
     /// The quick-log action, in the bar's own flow rather than floated above

@@ -39,21 +39,45 @@ struct DigestionAdvisoryTests {
         #expect(level(entry(blood: "small", dizzy: true)) == .seekUrgentCare)
         #expect(level(entry(color: .black, dizzy: true)) == .seekUrgentCare)
         #expect(level(entry(color: .black, pain: true)) == .seekUrgentCare)
+        #expect(level(entry(color: .black)) == .seekUrgentCare)
+        #expect(level(entry(pain: true)) == .seekUrgentCare)
     }
 
-    @Test("Contact a professional: black, red without blood, a small amount, pain or dizziness alone")
+    @Test("Contact a professional: red, any small bleeding, or dizziness alone")
     func contact() {
-        #expect(level(entry(color: .black)) == .contactProfessional)
         #expect(level(entry(color: .red)) == .contactProfessional)
         #expect(level(entry(blood: "small")) == .contactProfessional)
-        #expect(level(entry(pain: true)) == .contactProfessional)
+        #expect(level(entry(blood: "streak")) == .contactProfessional)
         #expect(level(entry(dizzy: true)) == .contactProfessional)
     }
 
-    @Test("Informational: one streak of blood, one pale stool")
+    @Test("Informational: one pale stool")
     func informational() {
-        #expect(level(entry(blood: "streak")) == .informational)
         #expect(level(entry(color: .pale)) == .informational)
+    }
+
+    @Test("An unknown amount of blood is not described as a small streak")
+    func unknownBloodAmount() {
+        var unknown = entry(blood: "streak")
+        // Older and imported rows can record blood without an amount.
+        unknown = BowelMovementEntry(id: unknown.id, logicalDay: unknown.logicalDay,
+                                    timestamp: unknown.timestamp, bristolType: unknown.bristolType,
+                                    color: unknown.color, bloodPresent: true, bloodAmount: nil,
+                                    gas: nil, urgency: nil, notes: nil, clinicianEscalationLevel: nil,
+                                    createdAt: unknown.createdAt)
+        let advisory = DigestionAdvisory.assess(unknown, recent: [], timeModel: timeModel)
+        #expect(advisory?.level == .contactProfessional)
+        #expect(advisory?.reasons == [.unspecifiedBlood])
+        #expect(DigestionAdvisory.assess(entry(blood: "unrecognised"), recent: [],
+                                       timeModel: timeModel)?.reasons == [.unspecifiedBlood])
+    }
+
+    @Test("Action wording does not treat food or medicine as ruling out bleeding")
+    func actionWording() {
+        #expect(DigestionAdvisoryReason.black.sentence.contains("Do not assume"))
+        #expect(DigestionAdvisoryReason.streakOfBlood.sentence.contains("Contact a healthcare professional"))
+        #expect(DigestionAdvisoryLevel.seekUrgentCare.actionText.contains("local emergency number"))
+        #expect(DigestionAdvisoryLevel.contactProfessional.actionText.contains("Do not wait"))
     }
 
     @Test("Persistent: what is informational once is more when it repeats within 7 days")
@@ -62,7 +86,9 @@ struct DigestionAdvisoryTests {
         let earlier = entry("2026-10-12", blood: "streak", id: 2)
         let tooEarly = entry("2026-10-01", blood: "streak", id: 3)
         #expect(level(streak, recent: [earlier]) == .contactProfessional)
-        #expect(level(streak, recent: [tooEarly]) == .informational, "outside the 7 days it does not count")
+        let outside = DigestionAdvisory.assess(streak, recent: [tooEarly], timeModel: timeModel)
+        #expect(outside?.level == .contactProfessional)
+        #expect(outside?.reasons.contains(.repeatedBlood) == false, "outside the 7 days it does not count")
 
         let loose = [entry("2026-10-14", bristol: .type6, id: 4), entry("2026-10-15", bristol: .type7, id: 5)]
         #expect(level(entry(bristol: .type6, id: 6), recent: loose) == .contactProfessional)
@@ -74,6 +100,21 @@ struct DigestionAdvisoryTests {
         let advisory = DigestionAdvisory.assess(entry(bristol: .type1, id: 12), recent: hard, timeModel: timeModel)
         #expect(advisory?.level == .informational)
         #expect(advisory?.reasons == [.persistentHard])
+    }
+
+    @Test("History is bounded to seven logical days and does not count the same entry twice")
+    func historyBoundaries() {
+        let current = entry("2026-10-16", blood: "small", id: 9)
+        let inWindow = entry("2026-10-10", blood: "streak", id: 2)
+        let outside = entry("2026-10-09", blood: "streak", id: 3)
+        let future = entry("2026-10-17", blood: "streak", id: 4)
+        #expect(DigestionAdvisory.assess(current, recent: [inWindow], timeModel: timeModel)?
+            .reasons.contains(.repeatedBlood) == true)
+        #expect(DigestionAdvisory.assess(current, recent: [current, outside, future], timeModel: timeModel)?
+            .reasons.contains(.repeatedBlood) == false)
+        let sameDay = [entry(bristol: .type6, id: 5), entry(bristol: .type7, id: 6)]
+        #expect(level(entry(bristol: .type6, id: 7), recent: sameDay) == nil,
+                "multiple entries on one day are not three days of symptoms")
     }
 
     @Test("The reasons are listed highest level first, and the advisory takes the highest")

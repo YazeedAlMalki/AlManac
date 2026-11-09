@@ -1,11 +1,10 @@
 # Digestion & Urination — BRD §6.3
 
-**Status (2026-10-15):** logging (2026-09-28) and the read side are built:
+**Status (2026-11-09):** logging (2026-09-28) and the read side are built:
 history, counts and a per-day chart at Modules → Records → Digestion; urine
 colour feedback on the hydration target; the Bristol scale credited on the
-Attributions page. **Two items wait on the owner and are not built:** the
-medical advisory (gate G1, §3) and the digestion ring's fill rule (gate G2, §4).
-Both gates were blank on 2026-10-15.
+Attributions page. The advisory is built with draft wording and still awaits
+clinical review (§3). The owner removed the digestion ring from v1 (§4).
 
 ## 1. What exists
 
@@ -44,7 +43,7 @@ is "never rely on colour alone; numeric grades + text + VoiceOver", and a colour
 chip *is* relying on colour alone — it is invisible to a VoiceOver user, and
 "brown" and "pale yellow" are near-identical on screen at picker sizes.
 
-## 3. No advisory, and the BRD says why
+## 3. Draft advisory; clinical review still required
 
 **Owner gate G1 — closed 2026-10-16: built, with draft wording** (owner,
 `docs/features/owner-decisions-2026-10-16.md`). **Not clinician-reviewed.** The
@@ -57,16 +56,19 @@ are this build's reading of the BRD's triggers, not a clinician's:
 
 | Level | Raised by |
 |---|---|
-| 3 — Seek urgent medical attention | a large amount of blood; blood with very loose stool (Bristol 6–7); blood or black stool with dizziness or weakness; severe pain with blood or black stool |
-| 2 — Consider contacting a healthcare professional | black stool; red stool with no blood recorded; a small amount of blood; blood more than once in 7 days; severe pain; dizziness or weakness; very loose stool on 3+ days in 7; pale stool on 2+ days in 7 |
-| 1 — For your information | one streak of blood; one pale stool; hard stool (Bristol 1–2) on 3+ days in 7 |
+| 3 — Seek urgent medical attention | a large amount of blood; blood with very loose stool (Bristol 6–7); blood or black stool with dizziness or weakness; black stool; severe pain |
+| 2 — Consider contacting a healthcare professional | red stool with no blood recorded; small, streak or unspecified blood; blood more than once in 7 days; dizziness or weakness; very loose stool on 3+ days in 7; pale stool on 2+ days in 7 |
+| 1 — For your information | one pale stool; hard stool (Bristol 1–2) on 3+ days in 7 |
 
 Each reason is one calm sentence saying what was recorded, naming the common
-harmless explanation where there is one (iron tablets for black, beetroot for
-red, straining for a streak). Every advisory carries "Draft wording, not
+possible non-bleeding explanation where there is one, without using food or
+medicine to rule out bleeding. Every level has an explicit next step, and the
+urgent alert includes emergency action. Every advisory carries "Draft wording, not
 reviewed by a clinician. Almanac does not diagnose." It is **worked out when
 read and never stored**: `clinicianEscalationLevel` stays empty, kept for a
-classifier a clinician has approved.
+classifier a clinician has approved. The [clinical review packet](digestion-advisory-review.md)
+maps public sources to the revised 2026-11-09 wording and lists the existing
+thresholds that still need a clinician's decision. Source checks are not approval.
 
 Two inputs the BRD names had no field, so the logger now asks them (Migration
 060, nullable, "not stated" distinct from "no"): **severe pain** and
@@ -78,8 +80,8 @@ is also an alert at once. An ordinary entry raises nothing and the sheet closes
 as before. **Not shown yet:** in Digestion history, whose footer still says it
 does not interpret.
 
-Tests: `DigestionAdvisoryTests` (7), and
-`DigestionQuickEntryUITests.testALargeAmountOfBloodRaisesTheUrgentAdvisory`.
+Tests: `DigestionAdvisoryTests`, and the large-blood and black-stool cases in
+`DigestionQuickEntryUITests`.
 
 What stood here before the answer:
 

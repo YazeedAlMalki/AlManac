@@ -5,19 +5,11 @@ import Foundation
 /// Quick entry for the two things BRD §6.3 covers: a bowel movement and a
 /// urination.
 ///
-/// **No advisory, and that is deliberate.** BRD §6.3 asks for a three-level
-/// non-diagnostic advisory and then says its wording "requires clinician review
-/// before App Store release". `clinicianEscalationLevel` is therefore left NULL
-/// by every write here, and this screen displays no interpretation of any
-/// entry — no colour is called concerning, no grade is called dark, blood is
-/// shown as the fact the user recorded it as. The escalation rule that would
-/// key on "black" and "red" is the part of §6.3 that has not been written, and
-/// writing the *display* half of it is how the other half would get written by
-/// accident.
+/// Shows the draft, non-diagnostic advisory after saving (owner G1).
+/// Its clinical-review status stays visible; no escalation level is stored.
 ///
 /// **Today's entries, not a history.** This is a quick-entry surface: log it,
-/// see it, undo it. A multi-day view with trends is the read side and is not
-/// built (see `docs/features/digestion.md`).
+/// see it, undo it. Multi-day history is a separate screen.
 @MainActor
 struct DigestionQuickEntryView: View {
     let db: Database?
@@ -153,7 +145,8 @@ struct DigestionQuickEntryView: View {
                 Button("OK", role: .cancel) { urgentAdvisory = nil }
             } message: {
                 Text(((urgentAdvisory?.reasons.filter { $0.level == .seekUrgentCare }.map(\.sentence) ?? [])
-                      + [DigestionAdvisory.reviewNote]).joined(separator: "\n\n"))
+                      + [DigestionAdvisoryLevel.seekUrgentCare.actionText,
+                         DigestionAdvisory.reviewNote]).joined(separator: "\n\n"))
             }
             .task { reload() }
         }
@@ -526,6 +519,10 @@ struct DigestionAdvisoryNote: View {
                     .foregroundStyle(AlmanacPalette.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            Text(advisory.level.actionText)
+                .font(AlmanacTypography.font(.bodyMedium))
+                .foregroundStyle(AlmanacPalette.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
             Text(DigestionAdvisory.reviewNote)
                 .font(AlmanacTypography.font(.caption))
                 .foregroundStyle(AlmanacPalette.textSecondary)
