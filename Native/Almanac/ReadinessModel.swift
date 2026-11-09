@@ -47,6 +47,10 @@ final class ReadinessModel: ObservableObject {
     @Published private(set) var latestHRV: Double?
     @Published private(set) var sleepDurationMinutes: Int?
     @Published private(set) var todayMood: MoodLogEntry?
+    /// On a shift day, the mood the person usually logs on that shift
+    /// (`ShiftMoodExpectation`). Shown beside the logged mood, never in place
+    /// of it.
+    @Published private(set) var expectedMood: ExpectedMood?
     @Published private(set) var todaySoreness: SorenessLogEntry?
     /// §9.6's "manually selected recovery day" for today's logical day.
     @Published private(set) var isRecoveryDay = false
@@ -172,6 +176,7 @@ final class ReadinessModel: ObservableObject {
                 .flatMap { CircadianPresentation.line(for: $0.contextType, transitionDayN: $0.transitionDayN) }
 
             todayMood = try moodStore.logs(for: today.value).last
+            expectedMood = try ShiftMoodExpectation(db: db!, timeModel: timeModel).expected(on: today)
             todaySoreness = try sorenessStore.logs(for: today.value).last
             isRecoveryDay = try recoveryDayStore.isRecoveryDay(today.value)
 
@@ -194,6 +199,10 @@ final class ReadinessModel: ObservableObject {
                 soreness: todaySoreness?.overallScore,
                 totalSleepAcrossEpisodesMinutes: totalSleep
             )
+            // A run of night shifts changes the day's score, not only the
+            // Shifts & rhythm screen (shifts-profile spec, section 4).
+            let nightRuns = NightRunStore(db: db!, timeModel: timeModel)
+            let night = try nightRuns.night(on: today)
             let context = ReadinessContext(
                 activeInjuryBodyArea: injuries.first?.bodyArea,
                 injuryAffectsTraining: !injuries.isEmpty,
@@ -201,7 +210,9 @@ final class ReadinessModel: ObservableObject {
                 religiousFastDay: try ReligiousFastScheduleStore(db: db!).isFastDay(today.value),
                 fastedSessionPlanned: try isSessionPlannedBeforeIftar(day: today),
                 shiftTransition: try isCircadianTransition(day: today),
-                calibrationDay: resolution.calibrationDay
+                calibrationDay: resolution.calibrationDay,
+                nightRunNight: night > 0 ? night : nil,
+                nightRunCapPercent: try nightRuns.capPercent()
             )
             let state: ReadinessState = (todayMood != nil && todaySoreness != nil) ? .final : .provisional
             result = ReadinessEngine.evaluate(state: state, inputs: inputs, baseline: baseline, context: context)

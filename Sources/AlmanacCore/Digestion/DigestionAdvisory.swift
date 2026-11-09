@@ -5,10 +5,10 @@ import Foundation
 /// **Draft, not clinician-reviewed.** Built on the owner's G1 answer
 /// (2026-10-16): "build now, with draft wording". The BRD's own condition still
 /// stands — "Requires clinician review before App Store release" — so every
-/// screen that shows one also shows `reviewNote`. The rules below are this
-/// build's reading of the BRD's triggers ("amount/type of blood, black stool,
-/// persistent symptoms, bloody diarrhoea, severe pain, dizziness/weakness"),
-/// not a clinician's, and are recorded in `docs/features/digestion.md` §3.
+/// screen that shows one also shows `reviewNote`. Public guidance informs the
+/// wording and escalation, but does not validate this classifier. The source
+/// mapping and unresolved clinical questions are in
+/// `docs/features/digestion-advisory-review.md`.
 ///
 /// Worked out from the entries each time it is read and never stored:
 /// `clinicianEscalationLevel` stays empty for a classifier a clinician has
@@ -27,22 +27,35 @@ public enum DigestionAdvisoryLevel: Int, Sendable, Hashable, Comparable, CaseIte
         case .seekUrgentCare: return localized("Seek urgent medical attention")
         }
     }
+
+    /// An explicit next step, separate from the facts that raised the level.
+    public var actionText: String {
+        switch self {
+        case .informational:
+            return localized("If symptoms continue, change, or worry you, contact a healthcare professional. Do not wait for another Almanac entry to get help.")
+        case .contactProfessional:
+            return localized("Contact a healthcare professional for advice. Do not wait for more entries if symptoms continue or you feel unwell.")
+        case .seekUrgentCare:
+            return localized("Get urgent medical help now. If bleeding is heavy or does not stop, you feel faint, or you have severe pain with bleeding, go to an emergency department or call your local emergency number. Do not drive yourself if you feel faint or dizzy.")
+        }
+    }
 }
 
 /// What in the entries raised the advisory. Each carries its own level, and the
 /// advisory takes the highest.
 public enum DigestionAdvisoryReason: String, Sendable, Hashable, CaseIterable {
     case largeBlood, bloodWithLooseStool, bloodWithDizziness, blackWithDizziness, painWithBleeding
-    case black, red, smallBlood, repeatedBlood, severePain, dizziness, persistentLoose, persistentPale
+    case black, red, smallBlood, unspecifiedBlood, repeatedBlood, severePain, dizziness, persistentLoose, persistentPale
     case streakOfBlood, pale, persistentHard
 
     public var level: DigestionAdvisoryLevel {
         switch self {
-        case .largeBlood, .bloodWithLooseStool, .bloodWithDizziness, .blackWithDizziness, .painWithBleeding:
+        case .largeBlood, .bloodWithLooseStool, .bloodWithDizziness, .blackWithDizziness, .painWithBleeding,
+             .black, .severePain:
             return .seekUrgentCare
-        case .black, .red, .smallBlood, .repeatedBlood, .severePain, .dizziness, .persistentLoose, .persistentPale:
+        case .red, .smallBlood, .unspecifiedBlood, .streakOfBlood, .repeatedBlood, .dizziness, .persistentLoose, .persistentPale:
             return .contactProfessional
-        case .streakOfBlood, .pale, .persistentHard:
+        case .pale, .persistentHard:
             return .informational
         }
     }
@@ -56,15 +69,16 @@ public enum DigestionAdvisoryReason: String, Sendable, Hashable, CaseIterable {
         case .bloodWithDizziness: return localized("You recorded blood together with dizziness or weakness.")
         case .blackWithDizziness: return localized("You recorded black stool together with dizziness or weakness.")
         case .painWithBleeding: return localized("You recorded severe pain together with blood or black stool.")
-        case .black: return localized("You recorded black stool. Iron tablets and some stomach medicines can cause this; if neither applies, it is worth asking a professional.")
-        case .red: return localized("You recorded red stool. Beetroot and red food colouring can cause this; if neither applies, it is worth asking a professional.")
+        case .black: return localized("You recorded black stool. Foods, iron tablets and some medicines can darken stool, but bleeding can also cause it. Do not assume a food or medicine explains it; seek urgent medical advice.")
+        case .red: return localized("You recorded red stool. Foods such as beetroot can change its colour, but Almanac cannot tell whether it is blood. Ask a healthcare professional if the cause is unclear, it happens again, or you feel unwell.")
         case .smallBlood: return localized("You recorded a small amount of blood.")
+        case .unspecifiedBlood: return localized("You recorded blood without a recognised amount. Almanac cannot judge how much bleeding there is. If it is heavy or does not stop, get emergency help now.")
         case .repeatedBlood: return localized("You have recorded blood more than once in the last 7 days.")
         case .severePain: return localized("You recorded severe pain.")
         case .dizziness: return localized("You recorded dizziness or weakness.")
         case .persistentLoose: return localized("You have recorded very loose stool on 3 or more days in the last 7.")
         case .persistentPale: return localized("You have recorded pale stool on more than one day in the last 7.")
-        case .streakOfBlood: return localized("You recorded a streak of blood. This can come from straining or a small tear, and often settles.")
+        case .streakOfBlood: return localized("You recorded a streak of blood. Straining or a small tear can cause this, but Almanac cannot confirm the cause. Contact a healthcare professional for advice.")
         case .pale: return localized("You recorded pale stool. If it happens again, it is worth mentioning to a professional.")
         case .persistentHard: return localized("You have recorded hard stools on 3 or more days in the last 7. Fluids, fibre and movement often help.")
         }
@@ -106,6 +120,10 @@ public struct DigestionAdvisory: Sendable, Hashable {
         if color == .black { reasons.insert(.black) }
         if color == .red && !blood { reasons.insert(.red) }
         if blood && amount == "small" { reasons.insert(.smallBlood) }
+        if blood && amount == "streak" { reasons.insert(.streakOfBlood) }
+        if blood && amount != "large" && amount != "small" && amount != "streak" {
+            reasons.insert(.unspecifiedBlood)
+        }
         if pain { reasons.insert(.severePain) }
         if dizzy { reasons.insert(.dizziness) }
 
@@ -120,9 +138,6 @@ public struct DigestionAdvisory: Sendable, Hashable {
         if color == .pale && days({ $0.color == StoolColor.pale.rawValue }) >= 2 { reasons.insert(.persistentPale) }
         if entry.bristolType.rawValue <= 2 && days({ $0.bristolType.rawValue <= 2 }) >= 3 {
             reasons.insert(.persistentHard)
-        }
-        if blood && (amount == "streak" || amount == nil) && !reasons.contains(where: { $0.level > .informational }) {
-            reasons.insert(.streakOfBlood)
         }
         if color == .pale && !reasons.contains(.persistentPale) { reasons.insert(.pale) }
 

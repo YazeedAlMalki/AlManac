@@ -258,6 +258,48 @@ moved back and forth, and store to recommendation.
 `ReadinessRecoveryDayUITests` drives the switch on Today. Choices made without
 the owner are in `CONTEXT.md`.
 
+## Runs of night shifts, and the usual mood on a shift (2026-11-01)
+
+From the shifts-profile spec, sections 3 and 4 (PR #24). Owner's numbers,
+2026-11-01: 3% a night, a 15% cap, a 3-night run length.
+
+**What a run is.** `NightRunStore`: consecutive days whose shift is `.night`.
+Any other day, or a day with no shift, ends the run. Only `.night` counts:
+evening and day shifts never start or extend one. A run is followed back at
+most 60 days. Its run length is that of the saved pattern that wrote a night
+of the run, else the running pattern's (for nights entered by hand), else 3.
+
+**What it changes.** `ReadinessEngine` takes `night × 3%` off the rounded
+score, from the first night, up to the cap: 90 on night 2 is 85. It is a share
+of the score the person would otherwise see, applied after the formula, so the
+formula, its bands and the baselines are untouched. The score's description
+gains "Night N of a run of night shifts (−X%)", and the §9.9 snapshot payload
+records `nightRunNight` and `nightRunEffectPercent`. There is one cap for every
+pattern, set on Shifts & rhythm (`setCapPercent`, 0 < cap ≤ 100; nil returns to
+15).
+
+**Calibration is not reset.** Using or switching a saved pattern, or changing
+a shift, does not restart the 21-day calibration
+(`NightRunTests.patternChangesDoNotResetCalibration`).
+
+**Usual mood on a shift.** `ShiftMoodExpectation`: on a shift day other than
+rest, Today's readiness card shows the person's own average mood over the
+latest 28 past days of the same shift type, once there are 14 — the same
+window and threshold as a shift type's readiness baseline. Today's logged mood
+is compared as whole numbers: higher, as usual, or lower. No threshold of its
+own, and a logged mood is never changed (`readiness-expected-mood`).
+
+**Training.** With "Factor in today's readiness" on, a session on a night
+shift is one band easier (`ReadinessBand.oneStepEasier`, never down to
+`.veryLow`) and its sets and timed work 20% shorter
+(`ReadinessAdjustment.nightShiftLengthFactor`). With no score, the shift alone
+still applies the change.
+
+**Tests:** `NightRunTests`, `ShiftMoodExpectationTests`,
+`ReadinessAdjustmentTests`. **No UI test yet** for the expected-mood line, the
+night-shift training note, the cap control, or setting a run length on an
+existing pattern.
+
 ## The two design decisions worth arguing about
 
 **Calibration counts from the first valid day, not from a rolling window.**

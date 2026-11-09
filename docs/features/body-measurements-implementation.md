@@ -47,7 +47,7 @@ per-module table, existing `DrinkEntryStore` draft/log/query shape and
 - `HealthModel` runs the outbound/inbound paths when connected, on scene
   activation, and after a form save. Permission is requested through the
   existing Settings connection flow.
-- UI: **Modules → Body circumferences**, plus **Settings → Health → Track
+- UI: **Modules → Profile → Body circumferences**, plus **Settings → Health → Track
   left/right arms and thighs**. With tracking on, each side is logged separately.
   The recent-entry list exposes manual edit/delete; imported rows are read-only.
 

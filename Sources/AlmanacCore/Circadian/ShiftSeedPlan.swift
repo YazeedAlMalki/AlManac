@@ -56,6 +56,12 @@ public struct ShiftSeedPlan: Sendable, Equatable {
         try db.transaction {
             try db.run("DELETE FROM shift_occurrence;")
             try db.run("DELETE FROM shift_recurrence_pattern;")
+            // A schedule and its saved patterns point at each other, so the
+            // schedule lets go of them first.
+            try db.run("""
+            UPDATE shift_schedule SET currentSavedPatternId = NULL, nextSavedPatternId = NULL;
+            """)
+            try db.run("DELETE FROM saved_shift_pattern;")
             try db.run("DELETE FROM shift_schedule;")
             guard !entries.isEmpty else { return }
 

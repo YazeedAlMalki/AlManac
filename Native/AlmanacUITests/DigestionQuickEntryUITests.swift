@@ -193,6 +193,8 @@ final class DigestionQuickEntryUITests: XCTestCase {
         XCTAssertTrue(alert.waitForExistence(timeout: 5), "a large amount of blood raised no urgent alert")
         XCTAssertTrue(alert.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "not reviewed by a clinician"))
                         .firstMatch.exists, "the alert does not say its wording is unreviewed")
+        XCTAssertTrue(alert.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "local emergency number"))
+                        .firstMatch.exists, "the urgent alert must include an explicit next step")
         alert.buttons["OK"].tap()
 
         XCTAssertTrue(app.navigationBars["Log digestion"].exists, "the sheet closed on an entry that raised an advisory")
@@ -201,6 +203,7 @@ final class DigestionQuickEntryUITests: XCTestCase {
         XCTAssertTrue(note.exists, "the advisory is not shown under the saved entry")
         XCTAssertTrue(note.label.contains("Seek urgent medical attention"), note.label)
         XCTAssertTrue(note.label.contains("not reviewed by a clinician"), note.label)
+        XCTAssertTrue(note.label.contains("Get urgent medical help now"), note.label)
 
         app.navigationBars["Log digestion"].buttons["Done"].tap()
         XCTAssertTrue(app.waitUntil(timeout: 5) { !self.app.navigationBars["Log digestion"].exists },
@@ -208,6 +211,21 @@ final class DigestionQuickEntryUITests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    func testBlackStoolRaisesUrgentAdviceWithoutAnotherSymptom() {
+        openDigestion()
+        let color = app.element("stool-color")
+        XCTAssertTrue(app.reveal(color))
+        color.tap()
+        app.buttons["Black"].tap()
+        app.navigationBars["Log digestion"].buttons["Save"].tap()
+        let alert = app.alerts["Seek urgent medical attention"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 5))
+        XCTAssertTrue(alert.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Do not assume"))
+                        .firstMatch.exists, "food or medicine must not be treated as ruling out bleeding")
+        alert.buttons["OK"].tap()
+        app.navigationBars["Log digestion"].buttons["Done"].tap()
+    }
 
     private func expectContainsText(_ element: XCUIElement, _ fragment: String,
                                     file: StaticString = #filePath, line: UInt = #line) {

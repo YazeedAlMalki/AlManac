@@ -56,6 +56,24 @@ struct ShiftSeedPlanTests {
         #expect(try store.occurrence(for: "2026-09-05") == nil)
     }
 
+    @Test("A plan clears saved shift patterns too, running and next")
+    func clearsSavedPatterns() throws {
+        let patterns = SavedShiftPatternStore(db: db, timeModel: timeModel)
+        let a = try patterns.save(SavedShiftPatternDraft(name: "A", blocks: [ShiftBlock(.night, days: 2)],
+                                                         startDate: LogicalDay("2026-09-01"), cadence: .weekly))
+        let b = try patterns.save(SavedShiftPatternDraft(name: "B", blocks: [ShiftBlock(.day, days: 1)],
+                                                         startDate: LogicalDay("2026-09-01"), cadence: .monthly))
+        try patterns.use(a, today: LogicalDay("2026-09-05"))
+        try patterns.setNext(b, today: LogicalDay("2026-09-05"))
+
+        try #require(ShiftSeedPlan(spec: "night:0")).apply(into: db, now: now, timeModel: timeModel)
+
+        #expect(try patterns.patterns().isEmpty)
+        #expect(try patterns.selection() == .none)
+        #expect(try ShiftScheduleStore(db: db).occurrence(for: "2026-09-05")?.shiftType == .night)
+        #expect(try ShiftScheduleStore(db: db).occurrence(for: "2026-09-06") == nil)
+    }
+
     @Test("A seeded week reaches the timeline the screen reads")
     func seededShiftsReachTheTimeline() throws {
         let plan = try #require(ShiftSeedPlan(spec: "night:-4,night:-3,night:-2,night:-1,night:0"))

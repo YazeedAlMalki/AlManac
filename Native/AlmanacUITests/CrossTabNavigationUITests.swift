@@ -122,6 +122,36 @@ final class CrossTabNavigationUITests: XCTestCase {
         }
     }
 
+    /// Shifts & rhythm, the two body pages and the body logger are Profile rows,
+    /// each opening its own screen, and none of them is a Modules row any more.
+    func testEveryProfileRowOpensItsScreen() {
+        for row in ["Shifts & rhythm", "Body composition", "Body circumferences", "Log body"] {
+            app.terminate()
+            app.launch()
+            openModules()
+            XCTAssertFalse(app.staticTexts[row].exists || app.buttons[row].exists,
+                           "\(row) is still a Modules row")
+            app.openProfileRow(row)
+        }
+    }
+
+    /// Quick Log keeps four destinations: Water, Food, Training and Digestion.
+    /// The body logger moved to Profile.
+    func testQuickLogOffersFourDestinations() {
+        let quickLog = app.buttons["quick-log"]
+        XCTAssertTrue(quickLog.waitForExistence(timeout: 10), "no Quick log button")
+        quickLog.tap()
+        XCTAssertTrue(app.staticTexts["Quick log"].waitForExistence(timeout: 5))
+
+        XCTAssertTrue(app.staticTexts["Water"].exists, "Quick Log has no Water card")
+        for destination in ["food", "training", "digestion"] {
+            let card = app.buttons["quicklog-destination-\(destination)"]
+            XCTAssertTrue(app.reveal(card), "Quick Log does not offer \(destination)")
+        }
+        XCTAssertFalse(app.buttons["quicklog-destination-body"].exists,
+                       "Quick Log still offers the body logger")
+    }
+
     // MARK: - Helpers
 
     /// One of the bar's three destinations, addressed by identifier.

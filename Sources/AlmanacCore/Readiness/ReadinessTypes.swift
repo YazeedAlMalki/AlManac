@@ -136,6 +136,12 @@ public struct ReadinessContext: Sendable, Hashable, Codable {
     public var shiftTransition: Bool
     /// Valid days so far, while below 21. Nil once calibration is complete.
     public var calibrationDay: Int?
+    /// Which night of a run of night shifts the day is, from 1; nil when the
+    /// day is not a night shift (`NightRunStore`).
+    public var nightRunNight: Int?
+    /// The most a run may take off the score, in percent: one cap for every
+    /// saved pattern.
+    public var nightRunCapPercent: Double
 
     public init(activeInjuryBodyArea: String? = nil,
                 injuryAffectsTraining: Bool = false,
@@ -145,7 +151,9 @@ public struct ReadinessContext: Sendable, Hashable, Codable {
                 religiousFastDay: Bool = false,
                 fastedSessionPlanned: Bool = false,
                 shiftTransition: Bool = false,
-                calibrationDay: Int? = nil) {
+                calibrationDay: Int? = nil,
+                nightRunNight: Int? = nil,
+                nightRunCapPercent: Double = NightRunStore.defaultCapPercent) {
         self.activeInjuryBodyArea = activeInjuryBodyArea
         self.injuryAffectsTraining = injuryAffectsTraining
         self.manualRecoveryDay = manualRecoveryDay
@@ -155,6 +163,13 @@ public struct ReadinessContext: Sendable, Hashable, Codable {
         self.fastedSessionPlanned = fastedSessionPlanned
         self.shiftTransition = shiftTransition
         self.calibrationDay = calibrationDay
+        self.nightRunNight = nightRunNight
+        self.nightRunCapPercent = nightRunCapPercent
+    }
+
+    /// The share of the score the night-shift run takes, in percent.
+    public var nightRunEffectPercent: Double? {
+        nightRunNight.map { NightRunStore.effectPercent(night: $0, capPercent: nightRunCapPercent) }
     }
 }
 

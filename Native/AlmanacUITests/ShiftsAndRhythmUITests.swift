@@ -1,6 +1,6 @@
 import XCTest
 
-/// Shifts & rhythm, reached from the Modules menu (BRD §6.11, §13).
+/// Shifts & rhythm, reached from Profile (BRD §6.11, §13).
 ///
 /// What these cover is the part the core tests cannot see: that the screen is
 /// reachable, that a person with no shifts is told so plainly instead of shown
@@ -35,7 +35,7 @@ final class ShiftsAndRhythmUITests: XCTestCase {
 
     // MARK: - Reaching it
 
-    func testShiftsAndRhythmIsInTheModulesMenu() {
+    func testShiftsAndRhythmIsAProfileRow() {
         launch(seeding: "none")
         openShiftsAndRhythm()
     }
@@ -112,7 +112,73 @@ final class ShiftsAndRhythmUITests: XCTestCase {
         XCTAssertEqual(lastDay.label, "Day shift")
     }
 
+    /// A saved pattern sits beside Rotation in the editor. Saved with its
+    /// defaults (5 day shifts then 2 rest days, every week from today) it
+    /// runs at once, is listed as running, and starts again on day 8.
+    func testSavingAPatternRunsItAndListsIt() {
+        launch(seeding: "none")
+        openShiftsAndRhythm()
+
+        app.buttons["circadian-add-shifts"].tap()
+        let mode = app.segmentedControls["shift-editor-mode"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 10), "the shift editor did not open")
+        XCTAssertTrue(mode.buttons["Rotation"].exists, "Rotation is no longer offered")
+        mode.buttons["Saved pattern"].tap()
+        let name = app.textFields["shift-pattern-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5), "the saved pattern form has no name field")
+        name.tap()
+        name.typeText("Work week\n")
+        app.buttons["shift-editor-save"].tap()
+
+        XCTAssertTrue(app.staticTexts["circadian-shift-0"].waitForExistence(timeout: 10),
+                      "the saved pattern wrote no shifts")
+        XCTAssertEqual(app.staticTexts["circadian-shift-0"].label, "Day shift")
+        let rest = app.staticTexts["circadian-shift-5"]
+        XCTAssertTrue(app.reveal(rest), "day 6 is not on the screen")
+        XCTAssertEqual(rest.label, "Rest day")
+        let restart = app.staticTexts["circadian-shift-7"]
+        XCTAssertTrue(app.reveal(restart), "day 8 is not on the screen")
+        XCTAssertEqual(restart.label, "Day shift", "the week did not start again from the first block")
+
+        let status = app.staticTexts["saved-pattern-status-Work week"]
+        XCTAssertTrue(app.reveal(status), "the saved pattern is not listed")
+        XCTAssertEqual(status.label, "Running")
+    }
+
+    /// Five nights from yesterday. With no pattern the run length is 3, so the
+    /// run passes it on the fourth night (two days ahead) and the screen warns
+    /// on that night and the one after, not before.
+    func testARunPastItsRunLengthIsWarned() {
+        launch(seeding: "night:-1,night:0,night:1,night:2,night:3")
+        openShiftsAndRhythm()
+
+        XCTAssertTrue(app.staticTexts["circadian-shift-0"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.staticTexts["circadian-run-warning-1"].exists, "night 3 is within the run length")
+        let warning = app.staticTexts["circadian-run-warning-2"]
+        XCTAssertTrue(app.reveal(warning), "night 4 carries no warning")
+        XCTAssertEqual(warning.label, "Night 4 in a row: past your run length of 3.")
+        XCTAssertTrue(app.reveal(app.staticTexts["circadian-run-warning-3"]), "night 5 carries no warning")
+    }
+
     // MARK: - Arabic
+
+    func testManualNightShiftsOfferAReadinessCapWithoutASavedPattern() {
+        launch(seeding: "night:0")
+        openShiftsAndRhythm()
+        let cap = app.steppers["saved-pattern-cap"]
+        XCTAssertTrue(app.reveal(cap), "manual night shifts apply a cap, so its control must be reachable")
+        XCTAssertTrue(cap.label.contains("15%"), cap.label)
+        cap.buttons["saved-pattern-cap-Increment"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 3) { cap.label.contains("16%") }, cap.label)
+        app.terminate()
+        // Relaunch without the seed, which deliberately resets shift state.
+        app.launchArguments.removeLast(2)
+        app.launch()
+        openShiftsAndRhythm()
+        let restored = app.steppers["saved-pattern-cap"]
+        XCTAssertTrue(app.reveal(restored))
+        XCTAssertTrue(restored.label.contains("16%"), "the cap did not survive relaunch: \(restored.label)")
+    }
 
     /// The catalog gate proves each string has an Arabic entry; this proves the
     /// entries are the ones the screen looks up. Everything asserted is Arabic
@@ -121,7 +187,7 @@ final class ShiftsAndRhythmUITests: XCTestCase {
     /// would fail on them too.
     func testTheScreenReadsInArabic() {
         launch(seeding: "night:-4,night:-3,night:-2,night:-1,night:0", language: "ar", locale: "ar_SA")
-        openShiftsAndRhythm(menuRow: "المناوبات والإيقاع", title: "المناوبات والإيقاع")
+        openShiftsAndRhythm(menuRow: "المناوبات والإيقاع", title: "المناوبات والإيقاع", profile: "الملف الشخصي")
 
         XCTAssertTrue(app.staticTexts["إيقاع ليلي مستقر."].waitForExistence(timeout: 10),
                       "the settled-night sentence is not in Arabic")
@@ -131,16 +197,8 @@ final class ShiftsAndRhythmUITests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func openShiftsAndRhythm(menuRow: String = "Shifts & rhythm", title: String = "Shifts & rhythm") {
-        let modules = app.buttons["tab-modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "the Modules destination is missing")
-        modules.tap()
-        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10),
-                      "the Modules menu did not open")
-        let row = app.buttons[menuRow]
-        XCTAssertTrue(app.reveal(row), "\(menuRow) has no row in the Modules menu")
-        row.tap()
-        XCTAssertTrue(app.navigationBars[title].firstMatch.waitForExistence(timeout: 10),
-                      "tapping \(menuRow) did not open it")
+    private func openShiftsAndRhythm(menuRow: String = "Shifts & rhythm", title: String = "Shifts & rhythm",
+                                     profile: String = "Profile") {
+        app.openProfileRow(menuRow, title: title, profile: profile)
     }
 }

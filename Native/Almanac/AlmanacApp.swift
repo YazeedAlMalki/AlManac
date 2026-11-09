@@ -93,6 +93,15 @@ struct AlmanacApp: App {
                         // other: a dry fast it broke is re-derived now, before
                         // the reminders that depend on the fast are planned.
                         fastingModel.ensureToday()
+                        // A saved shift pattern runs on a week or month at a
+                        // time: bring its shifts up to date before readiness
+                        // and the reminders read today's shift. Idempotent, so
+                        // a pass that fails is repaired by the next foreground.
+                        if let db = model.db {
+                            let shiftTime = TimeModel(timeZone: .current)
+                            try? SavedShiftPatternStore(db: db, timeModel: shiftTime)
+                                .refresh(today: shiftTime.logicalDay(Date()))
+                        }
                         readinessModel.refresh()
                         trackingModel.refresh()
                         // §14.1's scheduling pass, after prayer times and today's
@@ -130,8 +139,7 @@ struct AlmanacApp: App {
                     hydrationModel: hydrationModel,
                     nutritionModel: nutritionModel,
                     trainingModel: trainingModel,
-                    trackingModel: trackingModel,
-                    fastingModel: fastingModel
+                    trackingModel: trackingModel
                 )
             }
             .onChange(of: tabs.selected) { _, tab in

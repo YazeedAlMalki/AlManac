@@ -169,12 +169,43 @@ struct TabRoutingTests {
         }
     }
 
-    @Test("Shifts & rhythm is a Modules screen, listed under Daily context")
-    func circadianLivesUnderDailyContext() {
-        #expect(AppRoute.circadian.tab == .modules)
+    // MARK: - Profile rows
+
+    @Test("Profile lists Shifts & rhythm, Body composition, Body circumferences and the Body logger, in that order")
+    func profileListsTheMovedPages() {
+        #expect(AppRoute.profileRows == [.circadian, .bodyComposition, .bodyCircumference, .bodyLog])
         #expect(AppRoute.circadian.title == "Shifts & rhythm")
-        let dailyContext = AppRoute.menu.first { $0.section == .dailyContext }
-        #expect(dailyContext?.routes.contains(.circadian) == true)
+        #expect(AppRoute.bodyLog.title == "Log body", "the row says what the screen's title says")
+    }
+
+    @Test("Each Profile row opens its own screen, pushed on top of Profile")
+    func eachProfileRowOpensItsScreen() {
+        for row in AppRoute.profileRows {
+            #expect(row.tab == .modules, "\(row) must live on the tab Profile lives on, or the push leaves Profile")
+            let plan = TabRouting.plan(selection: .modules, paths: [.modules: [.profile]], goingTo: row)
+            #expect(plan.selection == .modules)
+            #expect(plan.paths[.modules] == [.profile, row], "\(row) did not open on top of Profile")
+        }
+    }
+
+    @Test("A moved page has no Modules row, and Modules keeps every other row")
+    func movedPagesLeaveTheModulesMenu() {
+        let menu = AppRoute.menu.flatMap(\.routes)
+        for row in AppRoute.profileRows {
+            #expect(!menu.contains(row), "\(row) is still in the Modules menu")
+        }
+        for kept: AppRoute in [.training, .hydration, .nutrition, .fasting, .supplements, .context,
+                               .prayer, .vitals, .laboratory, .timeline, .digestion, .profile, .settings] {
+            #expect(menu.contains(kept), "\(kept) left the Modules menu")
+        }
+    }
+
+    @Test("The Body logger is reachable from Profile, from anywhere")
+    func bodyLoggerIsReachableFromProfile() {
+        #expect(AppRoute.profileRows.contains(.bodyLog))
+        let plan = TabRouting.plan(selection: .today, paths: [:], goingTo: .bodyLog)
+        #expect(plan.selection == .modules)
+        #expect(plan.paths[.modules] == [.bodyLog])
     }
 
     @Test("A route the menu does not show is reachable, because it is still a route")

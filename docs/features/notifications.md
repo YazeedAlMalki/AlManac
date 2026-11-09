@@ -50,6 +50,36 @@ date, at the planner too (`supplementSendsThroughOtherAxes`), alongside
 `editorReminderIsPlanned`, `editorReminderOff`, `discontinuedPlanIsNotPlanned`
 and `invalidReminderTime`. **Arrival on a device is UNRUN.**
 
+## Added 2026-11-01 — two shift reminders
+
+From the shifts-profile spec (PR #24). Both default to 18:00
+(`NotificationPlanner.defaultShiftEveningMinute`), and neither is an Appendix B
+row, so nothing suppresses them (`NotificationSuppressionMatrix`).
+
+- **Shift pattern ends** (`shift_pattern`, Migration 069). The evening of the
+  last day of the running saved pattern's week or month, asking what runs
+  next. Nothing changes until the person picks. No axis suppresses it: the
+  person switching it off is what lets the next pattern start by itself at the
+  period end, so a suppressed reminder would change the schedule without
+  asking. Identifier
+  `almanac.shift_pattern.<day>`.
+- **Long run of nights** (`night_run`, Migration 070). The evening before, and
+  the evening of, the night a run of night shifts passes its run length. Once
+  per run: later nights are past it too, but the run passed it once. Its time
+  is the rule's own clock time when set. Identifiers
+  `almanac.night_run.eve.<night>` and `almanac.night_run.night.<night>`. The
+  night-shift axis does not mute it, since the warning is about that shift.
+
+**Switching "Shift pattern ends" brings the running pattern up to date in the
+same step**, from any screen: Shifts & rhythm, the Reminders screen, or
+turning every reminder off. All three go through
+`SavedShiftPatternStore.setReminder`. Before 2026-11-01 only Shifts & rhythm
+did; switched off from Reminders, the next pattern was counted from the day
+the app next refreshed and could start a whole period late
+(`SavedShiftPatternStoreTests.switchingTheReminderOffFixesTheNextStartAtOnce`).
+
+**Arrival on a device is UNRUN.**
+
 ## What the feature is
 
 Ten notification types — §14.2's nine plus `prayer` — all local (`UNUserNotificationCenter`, no
