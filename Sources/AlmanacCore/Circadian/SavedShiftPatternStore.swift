@@ -321,13 +321,13 @@ extension SavedShiftPatternStore {
         for day in try ShiftPatternExpander.occurrences(for: draft, patternId: ruleId, through: last,
                                                         timeModel: timeModel)
         where LogicalDay(day.date) >= first {
+            // Missing past days are history too: a new pattern must not turn
+            // an unrecorded day into a shift that was never entered.
+            if LogicalDay(day.date) < today { continue }
             guard let existing = try shifts.newestSource(on: day.date) else {
                 try shifts.logOccurrence(day)
                 continue
             }
-            // A day before today is history: not its shift, and not the note
-            // of whichever pattern ran then.
-            if LogicalDay(day.date) < today { continue }
             let record = existing.record
             if record.isManualOverride {
                 // Their entry wins. The note is only ever the pattern's: a

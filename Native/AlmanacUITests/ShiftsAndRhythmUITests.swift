@@ -162,6 +162,24 @@ final class ShiftsAndRhythmUITests: XCTestCase {
 
     // MARK: - Arabic
 
+    func testManualNightShiftsOfferAReadinessCapWithoutASavedPattern() {
+        launch(seeding: "night:0")
+        openShiftsAndRhythm()
+        let cap = app.steppers["saved-pattern-cap"]
+        XCTAssertTrue(app.reveal(cap), "manual night shifts apply a cap, so its control must be reachable")
+        XCTAssertTrue(cap.label.contains("15%"), cap.label)
+        cap.buttons["saved-pattern-cap-Increment"].tap()
+        XCTAssertTrue(app.waitUntil(timeout: 3) { cap.label.contains("16%") }, cap.label)
+        app.terminate()
+        // Relaunch without the seed, which deliberately resets shift state.
+        app.launchArguments.removeLast(2)
+        app.launch()
+        openShiftsAndRhythm()
+        let restored = app.steppers["saved-pattern-cap"]
+        XCTAssertTrue(app.reveal(restored))
+        XCTAssertTrue(restored.label.contains("16%"), "the cap did not survive relaunch: \(restored.label)")
+    }
+
     /// The catalog gate proves each string has an Arabic entry; this proves the
     /// entries are the ones the screen looks up. Everything asserted is Arabic
     /// text that exists only in the catalog, and the identifiers are the same

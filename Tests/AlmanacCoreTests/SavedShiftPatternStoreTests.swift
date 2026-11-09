@@ -216,6 +216,20 @@ struct SavedShiftPatternStoreTests {
                 "a day from today on takes the new pattern's note")
     }
 
+    @Test("A backdated pattern leaves unrecorded past days empty and keeps its original cadence")
+    func backdatedPatternDoesNotInventHistory() throws {
+        let id = try store.save(threeNights(start: "2026-10-21"))
+        try store.use(id, today: LogicalDay("2026-10-24"))
+        for day in ["2026-10-21", "2026-10-22", "2026-10-23"] {
+            #expect(try shift(on: day) == nil)
+        }
+        #expect(try shift(on: "2026-10-24") == .rest,
+                "the anchor still controls phase; activation does not restart block one")
+        #expect(try shift(on: "2026-10-25") == .night)
+        try store.refresh(today: LogicalDay("2026-10-25"))
+        #expect(try shift(on: "2026-10-23") == nil)
+    }
+
     // MARK: - Period end
 
     private func days(start: String = "2026-10-21", cadence: ShiftCadence = .weekly) -> SavedShiftPatternDraft {

@@ -65,6 +65,9 @@ struct CircadianView: View {
             if !patterns.isEmpty {
                 patternsSection
             }
+            if hasShifts || !patterns.isEmpty {
+                nightReadinessSection
+            }
         }
         .listStyle(.insetGrouped)
         .almanacModuleSurface()
@@ -81,7 +84,10 @@ struct CircadianView: View {
         }
         .task { reload() }
         .sheet(isPresented: $addingShifts) {
-            ShiftEditorView(db: db) { reload() }
+            ShiftEditorView(db: db) {
+                reload()
+                Task { await notificationModel?.reconcileNotifications() }
+            }
         }
         .confirmationDialog(choosing?.name ?? "", isPresented: Binding(
             get: { choosing != nil }, set: { if !$0 { choosing = nil } }
@@ -132,17 +138,23 @@ struct CircadianView: View {
                 }
                 .accessibilityIdentifier("saved-pattern-reminder")
             }
-            Stepper(value: Binding(get: { capPercent }, set: setCap), in: 1...50, step: 1) {
-                Text("Most a run of nights takes off readiness: \(Int(capPercent))%")
-                    .font(AlmanacTypography.font(.body))
-            }
-            .accessibilityIdentifier("saved-pattern-cap")
         } header: {
             AlmanacSectionHeader(title: String(localized: "Saved patterns"))
         } footer: {
             Text(reminderOn
                  ? "The evening before a week or month ends, Almanac asks you to pick what runs next. Until you pick, the running pattern keeps going."
                  : "With the reminder off, the pattern you set as next starts when the week or month ends. With none set, the running pattern keeps going.")
+        }
+    }
+
+    /// The cap applies to manually entered shifts and rotations too.
+    private var nightReadinessSection: some View {
+        Section {
+            Stepper(value: Binding(get: { capPercent }, set: setCap), in: 1...50, step: 1) {
+                Text("Most a run of nights takes off readiness: \(Int(capPercent))%")
+                    .font(AlmanacTypography.font(.body))
+            }
+            .accessibilityIdentifier("saved-pattern-cap")
         }
     }
 

@@ -1202,6 +1202,12 @@ Choices made in building it (PR #24). **None of these has been confirmed.**
 - **The new Arabic strings are machine drafts**, not reviewed by a native
   speaker.
 
+Follow-up review, 2026-11-09: activating a backdated pattern also leaves
+previously unrecorded historical days empty; its original anchor still controls
+its weekly/monthly phase. The readiness cap is reachable for one-day shifts and
+rotations without creating a saved pattern. Saving in the shift editor now
+reconciles reminders immediately rather than waiting for foreground.
+
 ### Weighing
 
 **Meter fraction**:
