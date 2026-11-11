@@ -175,9 +175,14 @@ final class NutritionModel: ObservableObject {
             values.first(where: { $0.nutrientID == nutrientID })?.scaled(toGrams: grams)
         }
         let energy = EnergyEstimate.preferred(from: values, basis: .per100g)?.scaled(toGrams: grams)
-        let carbohydrateGrams = scaled("carbohydrate_by_difference")
-            ?? scaled("carbohydrate_available")
-            ?? scaled("carbohydrate_available_monosaccharide")
+        // Total carbohydrate, read the way the calorie figure reads it. The
+        // first non-nil of three ids showed USDA's figure with fibre, CIQUAL's
+        // and AFCD's without it, and CoFID's monosaccharide equivalents as if
+        // they were a weight — so "carbs" meant a different thing per source.
+        // Nil when fibre is unstated for an available-carbohydrate food: a
+        // total is never guessed.
+        let carbohydrateGrams = GeneralAtwater.totalCarbohydrateGrams(from: values, basis: .per100g)
+            .map { $0 * grams / 100 }
         return MacroPreview(kilocalories: energy?.kilocalories, proteinGrams: scaled("protein"),
                             fatGrams: scaled("fat_total"), carbohydrateGrams: carbohydrateGrams)
     }
