@@ -27,7 +27,7 @@ struct TabRoutingTests {
 
     @Test("A route's tab is stable, so a link does not move under a tap")
     func routeTabIsStable() {
-        #expect(AppRoute.bodyComposition.tab == .journal)
+        #expect(AppRoute.timeline.tab == .journal)
         #expect(AppRoute.profile.tab == .settings)
         #expect(AppRoute.settingsRoot.tab == .settings)
     }
@@ -37,17 +37,17 @@ struct TabRoutingTests {
     @Test("Tapping a route from the tab that owns it pushes")
     func sameTabPushes() {
         let plan = TabRouting.plan(selection: .journal,
-                                   paths: [.journal: [.bodyComposition]],
+                                   paths: [.journal: [.timeline]],
                                    goingTo: .laboratory)
         #expect(plan.selection == .journal, "Already there; switching tabs would be a visible no-op with a flicker")
-        #expect(plan.paths[.journal] == [.bodyComposition, .laboratory])
+        #expect(plan.paths[.journal] == [.timeline, .laboratory])
     }
 
     @Test("Tapping a route from another tab switches tab and pushes onto that tab's stack")
     func otherTabSwitchesAndPushes() {
-        let plan = TabRouting.plan(selection: .today, paths: [:], goingTo: .bodyComposition)
+        let plan = TabRouting.plan(selection: .today, paths: [:], goingTo: .timeline)
         #expect(plan.selection == .journal)
-        #expect(plan.paths[.journal] == [.bodyComposition])
+        #expect(plan.paths[.journal] == [.timeline])
     }
 
     @Test("A cross-tab tap leaves the tab you left exactly as you left it")
@@ -60,9 +60,9 @@ struct TabRoutingTests {
             .trends: [.trendsRoot, .trendsDetail],
             .journal: [.training]
         ]
-        let plan = TabRouting.plan(selection: .today, paths: before, goingTo: .bodyComposition)
+        let plan = TabRouting.plan(selection: .today, paths: before, goingTo: .timeline)
         #expect(plan.paths[.trends] == [.trendsRoot, .trendsDetail])
-        #expect(plan.paths[.journal] == [.training, .bodyComposition])
+        #expect(plan.paths[.journal] == [.training, .timeline])
         #expect(plan.paths[.today] == before[.today])
     }
 
@@ -72,8 +72,8 @@ struct TabRoutingTests {
         // nothing. Pushing a duplicate would leave a Back button that returns to
         // an identical screen, which reads as a bug.
         let plan = TabRouting.plan(selection: .journal,
-                                   paths: [.journal: [.bodyComposition]], goingTo: .bodyComposition)
-        #expect(plan.paths[.journal] == [.bodyComposition])
+                                   paths: [.journal: [.timeline]], goingTo: .timeline)
+        #expect(plan.paths[.journal] == [.timeline])
         #expect(plan.selection == .journal)
     }
 
@@ -84,9 +84,9 @@ struct TabRoutingTests {
         // alternative (popping back to the existing A) is a jump nobody asked
         // for, and it discards B.
         let plan = TabRouting.plan(selection: .journal,
-                                   paths: [.journal: [.bodyComposition, .laboratory]],
-                                   goingTo: .bodyComposition)
-        #expect(plan.paths[.journal] == [.bodyComposition, .laboratory, .bodyComposition])
+                                   paths: [.journal: [.timeline, .laboratory]],
+                                   goingTo: .timeline)
+        #expect(plan.paths[.journal] == [.timeline, .laboratory, .timeline])
     }
 
     // MARK: - Going back
@@ -98,7 +98,7 @@ struct TabRoutingTests {
         // not try to remove an element that is not there. Pinned because that
         // is the shape of bug that crashes rather than misbehaves.
         let plan = TabRouting.plan(selection: .journal,
-                                   paths: [.journal: [.bodyComposition]],
+                                   paths: [.journal: [.timeline]],
                                    popping: true)
         #expect(plan.paths[.journal] == [])
         #expect(plan.selection == .journal, "Popping does not change tab; that would be a second, invisible effect")
@@ -113,7 +113,7 @@ struct TabRoutingTests {
     @Test("Popping to the root clears everything and keeps the tab")
     func popToRoot() {
         let plan = TabRouting.plan(selection: .journal,
-                                   paths: [.journal: [.bodyComposition, .laboratory, .laboratoryImportHistory]],
+                                   paths: [.journal: [.timeline, .laboratory, .laboratoryImportHistory]],
                                    poppingToRoot: true)
         #expect(plan.paths[.journal] == [])
         #expect(plan.selection == .journal)
@@ -125,7 +125,7 @@ struct TabRoutingTests {
     func selectingATabLeavesItsPath() {
         // Switching to Journal and back has to return you to the screen you
         // left, or every tab switch is a silent reset of whatever you had open.
-        let before: [AppTab: [AppRoute]] = [.journal: [.bodyComposition, .laboratory]]
+        let before: [AppTab: [AppRoute]] = [.journal: [.timeline, .laboratory]]
         let plan = TabRouting.plan(selection: .journal, paths: before, goingToTab: .trends)
         #expect(plan.selection == .trends)
         #expect(plan.paths[.journal] == before[.journal])
