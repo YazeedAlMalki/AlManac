@@ -63,7 +63,7 @@ struct ReadinessDashboardView: View {
 
                     FeedbackPromptView(model: model)
                 }
-                .frame(maxWidth: 760, alignment: .leading)
+                .frame(maxWidth: AlmanacMetrics.contentWidth, alignment: .leading)
                 .padding(.horizontal, AlmanacMetrics.screenInset)
                 .padding(.top, 22)
                 .padding(.bottom, 36)
@@ -283,7 +283,7 @@ struct ReadinessDashboardView: View {
                         // A reading is a door. Each of these rows is the name of
                         // a feature, and Today is where someone first wonders
                         // *where* hydration is logged — so tapping the row takes
-                        // them there, switching to Modules if it has to. Sleep
+                        // them there, switching to Journal if it has to. Sleep
                         // has no row above it on purpose: it is read from Apple
                         // Health and nothing in Almanac writes it, so it is a
                         // reading, not a door, and a button that goes nowhere is

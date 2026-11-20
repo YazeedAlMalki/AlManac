@@ -501,17 +501,15 @@ final class OwnerRequestedFeaturesUITests: XCTestCase {
     private static func milliliters(_ label: String) -> Int { Int(label.filter(\.isNumber)) ?? -1 }
 
     private func openModule(_ name: String) {
-        let modules = app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 15), "the Modules destination is missing")
-        modules.tap()
+        XCTAssertTrue(app.buttons["tab-journal"].waitForExistence(timeout: 15), "the Journal tab is missing")
+        app.openJournalTab()
         let link = app.buttons[name]
-        XCTAssertTrue(app.reveal(link), "\(name) is not reachable from Modules")
+        XCTAssertTrue(app.reveal(link), "\(name) is not reachable from Journal")
         link.tap()
     }
 
     private func openSettings() {
-        openModule("Settings")
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10),
-                      "Settings did not open")
+        XCTAssertTrue(app.buttons["tab-settings"].waitForExistence(timeout: 15), "the Settings tab is missing")
+        app.openSettingsTab()
     }
 }

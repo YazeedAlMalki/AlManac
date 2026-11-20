@@ -1,7 +1,7 @@
 ---
 name: design-critique
 description: Structured design feedback on a screen of the Almanac iOS app. Trigger with "critique this screen", "what do you think of Today", "review the Quick Log sheet", or with a simulator screenshot path. Reads the Swift source and, where possible, a captured screenshot.
-argument-hint: "<screen name, e.g. today | trends | modules | quick-log | settings, or a screenshot path>"
+argument-hint: "<screen name, e.g. today | trends | journal | quick-log | settings, or a screenshot path>"
 ---
 
 # /design-critique
@@ -47,7 +47,7 @@ Which screen maps to which view:
 |---|---|---|
 | `today` | `ReadinessDashboardView` | `ReadinessDashboardView.swift` |
 | `trends` | `TrendsView` | `TrendsView.swift` |
-| `modules` | `ModulesView` | `MoreViews.swift` |
+| `journal` | `JournalView` | `MoreViews.swift` |
 | `quick-log` | `QuickLogView` | `QuickLogView.swift` |
 | `check-in` | `MoodSorenessCheckInView` | `MoodSorenessCheckInView.swift` |
 | `settings` | `SettingsView` | `SettingsView.swift` |
@@ -63,7 +63,7 @@ any of them, so prefer going and looking over describing them from memory.
   for VoiceOver. Its children still appear individually in the tree's text list; only the
   target list is flat. A low target count is not "this screen is not interactive".
 - A sheet does not remove the screen beneath it. Quick Log open still reports Today's
-  `Today` / `Trends` / `Modules` buttons. Judge what is reachable by the screenshot, not by
+  `Today` / `Trends` / `Journal` / `Settings` buttons. Judge what is reachable by the screenshot, not by
   whether the element is in the tree.
 
 ## What I Need From You

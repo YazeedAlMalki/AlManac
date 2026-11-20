@@ -6,8 +6,6 @@ final class BodyCircumferenceUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        XCTAssertTrue(app.buttons["Modules"].waitForExistence(timeout: 15))
-        app.buttons["Modules"].tap()
         openSettings(app)
         let toggle = app.switches["Track left/right arms and thighs"]
         // Start from a known state: a previous partial run may have left it on.
@@ -15,7 +13,7 @@ final class BodyCircumferenceUITests: XCTestCase {
         XCTAssertEqual(toggle.value as? String, "0")
         tapSwitch(toggle)
         XCTAssertEqual(toggle.value as? String, "1")
-        app.navigationBars["Settings"].buttons.firstMatch.tap()
+        app.openJournalTab()
         openCircumferences(app)
 
         app.buttons["Log circumference"].tap()
@@ -42,8 +40,6 @@ final class BodyCircumferenceUITests: XCTestCase {
 
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.buttons["Modules"].waitForExistence(timeout: 15))
-        app.buttons["Modules"].tap()
         openSettings(app)
         // Re-queried, not the `toggle` captured before `terminate()`. An element
         // from a terminated process is a snapshot of a hierarchy that no longer
@@ -59,7 +55,7 @@ final class BodyCircumferenceUITests: XCTestCase {
         // the tap, and an immediate read saw "1" (CI 2026-10-17, df94ead).
         XCTAssertTrue(app.waitUntil(timeout: 5) { toggleAfterRelaunch.value as? String == "0" },
                       "the side switch did not turn off: \(String(describing: toggleAfterRelaunch.value))")
-        app.navigationBars["Settings"].buttons.firstMatch.tap()
+        app.openJournalTab()
         openCircumferences(app)
         XCTAssertTrue(app.staticTexts[noteText].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Arm · right: 80.5 cm"].exists, "Turning sides off must retain the old row")
@@ -98,20 +94,16 @@ final class BodyCircumferenceUITests: XCTestCase {
     }
 
     private func openSettings(_ app: XCUIApplication) {
-        let settings = app.buttons["Settings"]
-        XCTAssertTrue(app.reveal(settings), "Settings is not reachable from Modules")
-        settings.tap()
+        // A launch takes longer than the helper's own wait for the bar.
+        XCTAssertTrue(app.buttons["tab-settings"].waitForExistence(timeout: 15))
+        app.openSettingsTab()
         let toggle = app.switches["Track left/right arms and thighs"]
         XCTAssertTrue(app.reveal(toggle), "the sides toggle is not reachable")
     }
 
     private func openCircumferences(_ app: XCUIApplication) {
-        let profile = app.buttons["Profile"]
-        // Upward, not downward: this is called straight after leaving Settings,
-        // so the list is wherever Settings left it rather than at the top.
-        XCTAssertTrue(app.reveal(profile, direction: .down), "Profile is not reachable from Modules")
-        profile.tap()
-        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 10), "Profile did not open")
+        // Profile, and so its rows, live inside Settings (owner, 2026-10-22).
+        app.openProfile()
         let destination = app.buttons["Body circumferences"]
         XCTAssertTrue(app.reveal(destination), "Body circumferences is not reachable from Profile")
         destination.tap()

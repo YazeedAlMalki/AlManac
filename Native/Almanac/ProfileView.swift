@@ -50,9 +50,9 @@ struct ProfileView: View {
 
     var body: some View {
         Form {
-            // Rows, each pushing its own screen onto the Modules stack this
+            // Rows, each pushing its own screen onto the Settings stack this
             // screen is on. Built from `AppRoute.profileRows`, the same way the
-            // Modules menu is built from `AppRoute.menu`.
+            // Journal index is built from `AppRoute.menu`.
             Section {
                 ForEach(AppRoute.profileRows) { route in
                     NavigationLink(value: route) {

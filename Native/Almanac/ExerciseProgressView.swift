@@ -50,7 +50,7 @@ struct ExerciseProgressView: View {
                     }
                 }
             }
-            .frame(maxWidth: 760, alignment: .leading)
+            .frame(maxWidth: AlmanacMetrics.contentWidth, alignment: .leading)
             .padding(.horizontal, AlmanacMetrics.screenInset)
             .padding(.vertical, AlmanacMetrics.cardPadding)
         }

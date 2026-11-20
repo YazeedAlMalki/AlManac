@@ -5,9 +5,10 @@ import XCTest
 ///
 /// Two paths carry the text, and this drives both: the bottom bar's labels are
 /// written by AlmanacCore (`AppTab.title`, through its own `ar.lproj` table),
-/// and the Modules screen's title is a SwiftUI literal (the app's
+/// and the Journal screen's title is a SwiftUI literal (the app's
 /// `Localizable.xcstrings`). Then the direction: in Arabic the bar runs right
-/// to left, so Today — the bar's leading tab — sits to the right of Modules.
+/// to left, so the reading order Today, Trends, the action, Journal, Settings
+/// runs from the right edge to the left.
 ///
 /// Every other UI suite pins `-AppleLanguages (en)`, so this one launch is the
 /// only Arabic one, and PR #2's ASCII day keys keep it from writing anything the
@@ -19,23 +20,30 @@ final class ArabicUITests: XCTestCase {
         app.launch()
 
         let today = app.buttons["tab-today"]
-        let modules = app.buttons["tab-modules"]
+        let trends = app.buttons["tab-trends"]
+        let action = app.buttons["quick-log"]
+        let journal = app.buttons["tab-journal"]
+        let settings = app.buttons["tab-settings"]
         XCTAssertTrue(today.waitForExistence(timeout: 15), "no bottom bar")
         XCTAssertEqual(today.label, "اليوم", "the Today tab is not in Arabic")
-        XCTAssertEqual(app.buttons["tab-trends"].label, "الاتجاهات", "the Trends tab is not in Arabic")
-        XCTAssertEqual(modules.label, "الأقسام", "the Modules tab is not in Arabic")
-        XCTAssertGreaterThan(today.frame.minX, modules.frame.minX,
-                             "the bar is not right to left: Today should sit to the right of Modules")
+        XCTAssertEqual(trends.label, "الاتجاهات", "the Trends tab is not in Arabic")
+        XCTAssertEqual(action.label, "إضافة سجل", "the action's label is not in Arabic")
+        XCTAssertEqual(journal.label, "المفكرة", "the Journal tab is not in Arabic")
+        XCTAssertEqual(settings.label, "الإعدادات", "the Settings tab is not in Arabic")
+        let order = [today, trends, action, journal, settings].map(\.frame.midX)
+        XCTAssertEqual(order, order.sorted(by: >),
+                       "the bar is not right to left: Today, Trends, the action, Journal, Settings "
+                       + "should run from the right edge; midX \(order)")
 
-        modules.tap()
-        XCTAssertTrue(app.navigationBars["الأقسام"].waitForExistence(timeout: 10),
-                      "the Modules screen's title is not in Arabic: "
+        journal.tap()
+        XCTAssertTrue(app.navigationBars["المفكرة"].waitForExistence(timeout: 10),
+                      "the Journal screen's title is not in Arabic: "
                       + "\(app.navigationBars.allElementsBoundByIndex.map(\.identifier))")
     }
 
     // MARK: - The screenshot pass
 
-    /// Every Modules row, by the Arabic its menu shows (AlmanacCore's
+    /// Every Journal row, by the Arabic its index shows (AlmanacCore's
     /// `ar.lproj`), with a short ASCII name for the attachment. Each is opened
     /// from a fresh launch, so the order here is only the attachments' order.
     private static let modules: [(name: String, arabic: String)] = [
@@ -47,15 +55,13 @@ final class ArabicUITests: XCTestCase {
         ("supplements", "المكمّلات"),
         ("prayer", "الصلاة"),
         ("timeline", "الخط الزمني"),
-        ("profile", "الملف الشخصي"),
         ("body-composition", "تكوين الجسم"),
         ("laboratory", "المختبر"),
         ("vitals", "المؤشرات الحيوية"),
         ("body-circumferences", "محيطات الجسم"),
-        ("settings", "الإعدادات"),
     ]
 
-    /// The rows above that are Profile rows, not Modules rows: opened through
+    /// The rows above that are Profile rows, not Journal rows: opened through
     /// Profile. Kept in the list above so every later screen keeps its number.
     private static let profileRows: Set<String> = ["body-composition", "body-circumferences"]
 
@@ -116,23 +122,37 @@ final class ArabicUITests: XCTestCase {
             print("ARABIC-PASS\t\(tag("04-insights"))\tnot reachable from Trends")
         }
 
-        openModulesRoot(app)
-        capture(app, "05-modules")
+        openJournalRoot(app)
+        capture(app, "05-journal")
+
+        // Settings is a tab and Profile is inside it (2026-10-22).
+        openSettingsRoot(app)
+        capture(app, "06-settings")
+        let profile = app.buttons["settings-profile"]
+        if app.reveal(profile) {
+            profile.tap()
+            capture(app, "07-profile")
+        } else {
+            print("ARABIC-PASS\t\(tag("07-profile"))\tno Profile row in Settings")
+        }
 
         for (index, module) in Self.modules.enumerated() {
             let name = String(format: "%02d-%@", index + 10, module.name)
-            openModulesRoot(app)
             if Self.profileRows.contains(module.name) {
-                let profile = app.buttons["الملف الشخصي"]
+                // Profile rows: Settings → Profile (owner, 2026-10-22).
+                openSettingsRoot(app)
+                let profile = app.buttons["settings-profile"]
                 guard app.reveal(profile) else {
-                    print("ARABIC-PASS\t\(tag(name))\tno Modules row reads الملف الشخصي")
+                    print("ARABIC-PASS\t\(tag(name))\tno Profile row in Settings")
                     continue
                 }
                 profile.tap()
+            } else {
+                openJournalRoot(app)
             }
             let row = app.buttons[module.arabic]
             guard app.reveal(row) else {
-                print("ARABIC-PASS\t\(tag(name))\tno Modules row reads \(module.arabic)")
+                print("ARABIC-PASS\t\(tag(name))\tno Journal row reads \(module.arabic)")
                 continue
             }
             row.tap()
@@ -149,17 +169,25 @@ final class ArabicUITests: XCTestCase {
 
     /// Screens with charts, whose element positions are printed in the
     /// populated run.
-    private static let chartScreens: Set<String> = ["03-trends", "04-insights", "21-vitals"]
+    private static let chartScreens: Set<String> = ["03-trends", "04-insights", "20-vitals"]
 
-    /// The Modules tab at its root. A relaunch rather than the back button:
+    /// The Journal tab at its root. A relaunch rather than the back button:
     /// it is the one route back that works from any screen, sheet or alert.
-    private func openModulesRoot(_ app: XCUIApplication) {
+    private func openJournalRoot(_ app: XCUIApplication) {
+        openTabRoot(app, "tab-journal", title: "المفكرة")
+    }
+
+    private func openSettingsRoot(_ app: XCUIApplication) {
+        openTabRoot(app, "tab-settings", title: "الإعدادات")
+    }
+
+    private func openTabRoot(_ app: XCUIApplication, _ identifier: String, title: String) {
         app.terminate()
         app.launch()
-        let modules = app.buttons["tab-modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 15), "no bottom bar")
-        modules.tap()
-        _ = app.navigationBars["الأقسام"].waitForExistence(timeout: 10)
+        let tab = app.buttons[identifier]
+        XCTAssertTrue(tab.waitForExistence(timeout: 15), "no bottom bar")
+        tab.tap()
+        _ = app.navigationBars[title].waitForExistence(timeout: 10)
         settle(app)
     }
 

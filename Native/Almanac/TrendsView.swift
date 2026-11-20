@@ -112,7 +112,7 @@ struct TrendsView: View {
                         selectedRecord
                     }
                 }
-                .frame(maxWidth: 760, alignment: .leading)
+                .frame(maxWidth: AlmanacMetrics.contentWidth, alignment: .leading)
                 .padding(.horizontal, AlmanacMetrics.screenInset)
                 .padding(.top, 18)
                 .padding(.bottom, 32)

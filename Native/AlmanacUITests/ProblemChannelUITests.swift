@@ -99,11 +99,11 @@ final class ProblemChannelUITests: XCTestCase {
     }
 
     private func openModule(_ name: String) {
-        let modules = app.buttons["Modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 15), "the Modules destination is missing")
+        let modules = app.buttons["tab-journal"]
+        XCTAssertTrue(modules.waitForExistence(timeout: 15), "the Journal tab is missing")
         modules.tap()
         let link = app.buttons[name]
-        XCTAssertTrue(app.reveal(link), "\(name) is not reachable from Modules")
+        XCTAssertTrue(app.reveal(link), "\(name) is not reachable from Journal")
         link.tap()
     }
 }

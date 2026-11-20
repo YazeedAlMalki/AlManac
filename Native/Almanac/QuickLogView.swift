@@ -77,7 +77,7 @@ struct QuickLogView: View {
                         destination: .digestion
                     )
                 }
-                .frame(maxWidth: 760, alignment: .leading)
+                .frame(maxWidth: AlmanacMetrics.contentWidth, alignment: .leading)
                 .padding(.horizontal, AlmanacMetrics.screenInset)
                 .padding(.top, 22)
                 .padding(.bottom, 32)
@@ -198,7 +198,7 @@ struct QuickLogView: View {
 }
 
 /// The body logger. A Profile row (`AppRoute.bodyLog`), pushed onto the
-/// Modules stack, so it has no stack or Cancel of its own: Back cancels.
+/// Settings stack (it is a Profile row), so it has no stack or Cancel of its own: Back cancels.
 @MainActor
 struct QuickBodyLogView: View {
     let db: Database?
