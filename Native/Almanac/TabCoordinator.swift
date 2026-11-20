@@ -7,13 +7,14 @@ import AlmanacCore
 /// `NavigationLink` can only ever push within its own tab. Tapping a button
 /// that names a feature has to be able to cross that line, and the state it
 /// needs — the selection, and a stack per tab — has to live in exactly one
-/// place. Two of the three tabs' `NavigationStack`s are created here for that
-/// reason; Modules' already is, and is handed its path.
+/// place. Journal's and Settings' `NavigationStack`s are handed their paths
+/// from here for that reason.
 ///
 /// **This adapter holds no rules.** Every decision it makes is a `TabRouting`
-/// plan, and those are pure functions in the core module with 16 tests over
-/// them. What is left here is the part SwiftUI needs and a test cannot reach:
-/// a `Binding` per tab, and the `@Published` that redraws the bar.
+/// plan, and those are pure functions in the core module, pinned by
+/// `TabRoutingTests`. What is left here is the part SwiftUI needs and a test
+/// cannot reach: a `Binding` per tab, the `@Published` that redraws the bar,
+/// and the root identity that pops what no path holds.
 ///
 /// It is a `class` rather than a `struct` for one reason: `NavigationStack`'s
 /// path is a `Binding`, and a `Binding` into a value type rebuilt on every
@@ -26,6 +27,13 @@ final class TabCoordinator: ObservableObject {
     /// stacks against two different states for a frame.
     @Published private var state: TabRouting.Plan
 
+    /// Bumped each time a tab is tapped while it is showing; the app gives
+    /// the tab's root this as its identity. Separate from `state` because it
+    /// is not a navigation decision — it exists for the screens a plain
+    /// `NavigationLink { … }` pushed, which no path holds and so clearing a
+    /// path cannot pop.
+    @Published private var rootResets: [AppTab: Int] = [:]
+
     init(initial: AppTab = .today) {
         self.state = TabRouting.Plan(selection: initial, paths: [:])
     }
@@ -34,19 +42,18 @@ final class TabCoordinator: ObservableObject {
 
     var selected: AppTab { state.selection }
 
-    /// The bar's own selection, so tapping a tab is a `Binding` assignment and
-    /// not a bespoke action.
-    var selectionBinding: Binding<AppTab> {
-        Binding(
-            get: { [weak self] in self?.state.selection ?? .today },
-            set: { [weak self] newValue in
-                guard let self else { return }
-                self.apply(TabRouting.plan(selection: self.state.selection,
-                                           paths: self.state.paths,
-                                           goingToTab: newValue))
-            }
-        )
+    /// A tap on the bar. Tapping the tab already showing pops it to its root;
+    /// tapping another switches to it with its stack as it was left.
+    func tap(_ tab: AppTab) {
+        if tab == state.selection {
+            rootResets[tab, default: 0] += 1
+        }
+        apply(TabRouting.plan(selection: state.selection, paths: state.paths, reselecting: tab))
     }
+
+    /// The identity of a tab's root view. Changes only when the tab is tapped
+    /// while showing.
+    func rootIdentity(for tab: AppTab) -> Int { rootResets[tab, default: 0] }
 
     /// One tab's stack, as `NavigationStack(path:)` wants it.
     ///
@@ -89,8 +96,7 @@ final class TabCoordinator: ObservableObject {
         apply(TabRouting.plan(selection: state.selection, paths: state.paths, popping: true))
     }
 
-    /// Clear the current tab's stack. Tapping the Modules tab while deep inside
-    /// it should return you to the list, not leave you where you were.
+    /// Clear the current tab's stack.
     func popToRoot() {
         apply(TabRouting.plan(selection: state.selection, paths: state.paths, poppingToRoot: true))
     }

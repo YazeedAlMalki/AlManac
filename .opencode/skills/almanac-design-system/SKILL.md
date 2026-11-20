@@ -71,7 +71,8 @@ Never hardcode these. All of them live in `DesignSystem.swift`.
 
 ## Screen anatomy
 
-- Three destinations (Today, Trends, Modules) and one action (Quick Log) in a custom bar
+- Four destinations (Today, Trends, Journal, Settings) and one action (Quick Log, third
+  of five equal columns, so it sits on the centreline) in a custom bar
   in the layout flow — not a `TabView`, and not `safeAreaInset`, because a navigation
   stack swallows the inset and traps the last row.
 - Today is the app's most important screen: date, title, greeting, the one prominent

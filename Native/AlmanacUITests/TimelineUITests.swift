@@ -18,7 +18,7 @@ final class TimelineUITests: XCTestCase {
                        "the app refused to open: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
     }
 
-    func testTimelineOpensFromModulesAndStatesItsPeriod() {
+    func testTimelineOpensFromJournalAndStatesItsPeriod() {
         openTimeline()
         // The header states the range rather than leaving "today" to be assumed,
         // because a logical day is not a calendar day and the footer says so.
@@ -77,13 +77,13 @@ final class TimelineUITests: XCTestCase {
     // MARK: - Helpers
 
     private func openTimeline() {
-        let modules = app.buttons["Modules"]
+        let modules = app.buttons["tab-journal"]
         XCTAssertTrue(modules.waitForExistence(timeout: 10))
         modules.tap()
-        XCTAssertTrue(app.navigationBars["Modules"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Journal"].waitForExistence(timeout: 5))
 
         let timeline = app.buttons["Timeline"]
-        XCTAssertTrue(app.reveal(timeline), "Timeline is missing from Modules")
+        XCTAssertTrue(app.reveal(timeline), "Timeline is missing from Journal")
         timeline.tap()
         XCTAssertTrue(app.navigationBars["Timeline"].waitForExistence(timeout: 5))
     }

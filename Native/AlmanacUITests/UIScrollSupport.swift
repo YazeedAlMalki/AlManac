@@ -492,39 +492,66 @@ extension XCUIApplication {
 
 
 extension XCUIApplication {
-    /// Taps the Modules tab and waits for the Modules list.
+    /// Taps the Journal tab and waits for the Journal index.
     ///
     /// Three tests failed on 2026-10-16 and 17 (AllergenFilter, NotificationSettings,
     /// TrainingProgram), each a few seconds after a fresh launch and each passing
-    /// on the same commit in the other run. All three tapped Modules and went on
+    /// on the same commit in the other run. All three tapped the tab and went on
     /// without checking it opened, so they failed later, on a row that was not
     /// there, with messages that blamed the row ("Settings is not offered", after
     /// three minutes of swiping). Checking here names the step that failed: the
     /// tab tap, or the row.
-    func openModulesTab(file: StaticString = #filePath, line: UInt = #line) {
-        let modules = buttons["tab-modules"].exists ? buttons["tab-modules"] : buttons["Modules"].firstMatch
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Modules tab", file: file, line: line)
-        modules.tap()
-        XCTAssertTrue(navigationBars["Modules"].waitForExistence(timeout: 5),
-                      "the Modules tab did not open; navigation bars: \(navigationBars.allElementsBoundByIndex.map(\.identifier))",
+    ///
+    /// Tapping the tab already showing pops it to its root, so this also brings
+    /// a test back to the index from inside a module.
+    func openJournalTab(file: StaticString = #filePath, line: UInt = #line) {
+        openTab("tab-journal", showing: "Journal", file: file, line: line)
+    }
+
+    /// Taps the Settings tab and waits for Settings' root.
+    func openSettingsTab(file: StaticString = #filePath, line: UInt = #line) {
+        openTab("tab-settings", showing: "Settings", file: file, line: line)
+    }
+
+    /// Settings → Profile, the only way into Profile since it left the
+    /// Journal index.
+    func openProfile(file: StaticString = #filePath, line: UInt = #line) {
+        openSettingsTab(file: file, line: line)
+        let row = buttons["settings-profile"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "no Profile row in Settings", file: file, line: line)
+        row.tap()
+        XCTAssertTrue(navigationBars["Profile"].waitForExistence(timeout: 10),
+                      "Profile never opened: \(navigationBars.allElementsBoundByIndex.map(\.identifier))",
                       file: file, line: line)
     }
 
-    /// Modules → Profile → `row`, checked at each step. Shifts & rhythm, Body
+    private func openTab(_ identifier: String, showing title: String,
+                         file: StaticString, line: UInt) {
+        let tab = buttons[identifier]
+        XCTAssertTrue(tab.waitForExistence(timeout: 10), "no \(identifier) in the bar", file: file, line: line)
+        tab.tap()
+        XCTAssertTrue(navigationBars[title].waitForExistence(timeout: 5),
+                      "the \(title) tab did not open; navigation bars: \(navigationBars.allElementsBoundByIndex.map(\.identifier))",
+                      file: file, line: line)
+    }
+
+    /// Settings → Profile → `row`, checked at each step. Shifts & rhythm, Body
     /// composition, Body circumferences and the body logger are Profile rows,
-    /// not Modules rows.
+    /// not Journal rows, and Profile is reached from Settings (owner,
+    /// 2026-10-22).
     ///
-    /// The Modules bar is waited on by `firstMatch`, not by its title, and the
-    /// two labels are parameters, so the Arabic run can use it too.
+    /// The Settings bar is waited on by `firstMatch`, not by its title, and the
+    /// Profile row by its identifier, and the Profile title is a parameter, so
+    /// the Arabic run can use it too.
     func openProfileRow(_ row: String, title: String? = nil, profile: String = "Profile",
                         file: StaticString = #filePath, line: UInt = #line) {
-        let modules = buttons["tab-modules"]
-        XCTAssertTrue(modules.waitForExistence(timeout: 10), "no Modules tab", file: file, line: line)
-        modules.tap()
+        let settings = buttons["tab-settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10), "no Settings tab", file: file, line: line)
+        settings.tap()
         XCTAssertTrue(navigationBars.firstMatch.waitForExistence(timeout: 10),
-                      "the Modules menu did not open", file: file, line: line)
-        let profileRow = buttons[profile]
-        XCTAssertTrue(reveal(profileRow), "no \(profile) row in Modules", file: file, line: line)
+                      "the Settings tab did not open", file: file, line: line)
+        let profileRow = buttons["settings-profile"]
+        XCTAssertTrue(reveal(profileRow), "no \(profile) row in Settings", file: file, line: line)
         profileRow.tap()
         XCTAssertTrue(navigationBars[profile].waitForExistence(timeout: 10),
                       "\(profile) did not open", file: file, line: line)

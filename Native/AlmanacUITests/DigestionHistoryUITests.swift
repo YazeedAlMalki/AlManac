@@ -1,6 +1,6 @@
 import XCTest
 
-/// Digestion history, reached from Modules → Digestion (BRD §6.3's read side).
+/// Digestion history, reached from Journal → Digestion (BRD §6.3's read side).
 ///
 /// What this covers that `DigestionHistoryTests` cannot: that the screen is
 /// reachable, that an entry logged through Quick Log is counted under its type,
@@ -113,19 +113,19 @@ final class DigestionHistoryUITests: XCTestCase {
 
     private func openHistory() {
         // Already on Digestion from an earlier visit: its back button is also
-        // labelled "Modules", so a bare "Modules" query matches two buttons.
+        // labelled "Journal", so a bare "Journal" query matches two buttons.
         // Go back with the navigation bar's own button instead.
         let digestionBar = app.navigationBars["Digestion"]
         if digestionBar.exists {
             digestionBar.buttons.firstMatch.tap()
         } else {
-            let modules = app.buttons["Modules"].firstMatch
+            let modules = app.buttons["tab-journal"]
             XCTAssertTrue(modules.waitForExistence(timeout: 10))
             modules.tap()
         }
-        XCTAssertTrue(app.navigationBars["Modules"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Journal"].waitForExistence(timeout: 5))
         let link = app.buttons["Digestion"]
-        XCTAssertTrue(app.reveal(link), "Modules does not offer Digestion")
+        XCTAssertTrue(app.reveal(link), "Journal does not offer Digestion")
         link.tap()
         XCTAssertTrue(app.navigationBars["Digestion"].waitForExistence(timeout: 5))
         // The counts load just after the screen appears; wait for them.

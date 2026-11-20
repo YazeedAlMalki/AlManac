@@ -15,7 +15,9 @@ import Foundation
 public enum AlmanacIcon {
     public static let today = "circle.grid.2x2"
     public static let trends = "chart.xyaxis.line"
-    public static let modules = "square.grid.2x2"
+    /// Not a grid: Today is `circle.grid.2x2`, and two grids side by side on
+    /// the bar read as one icon drawn twice.
+    public static let journal = "book.closed"
     public static let quickAdd = "plus"
     public static let sleep = "bed.double"
     public static let hydration = "drop"

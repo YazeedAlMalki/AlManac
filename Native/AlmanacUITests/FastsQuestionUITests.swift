@@ -47,7 +47,7 @@ final class FastsQuestionUITests: XCTestCase {
         app.terminate()
         app.launchArguments.removeAll { $0 == "-AlmanacAskFastsAgain" }
         app.launch()
-        XCTAssertTrue(app.buttons["Modules"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.buttons["tab-journal"].waitForExistence(timeout: 15))
         XCTAssertFalse(question.waitForExistence(timeout: 3), "the question was asked again after a relaunch")
     }
 }

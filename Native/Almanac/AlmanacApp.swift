@@ -16,7 +16,7 @@ struct AlmanacApp: App {
     @StateObject private var trackingModel = TrackingCalendarModel()
     @StateObject private var notificationModel = NotificationModel()
     /// Owned here, above the bar, because it is the one piece of state that has
-    /// to be shared by all three tabs: which tab is showing, and how deep each
+    /// to be shared by all four tabs: which tab is showing, and how deep each
     /// tab's stack is. Everything else in the app is per-feature.
     @StateObject private var tabs = TabCoordinator()
     @State private var quickLogging = false
@@ -125,7 +125,7 @@ struct AlmanacApp: App {
         // trapped behind the bar — Settings could not be scrolled to.
         VStack(spacing: 0) {
             selectedDestination
-            AlmanacNavigationBar(selection: tabs.selectionBinding, quickLog: { quickLogging = true })
+            AlmanacNavigationBar(selection: tabs.selected, select: tabs.tap, quickLog: { quickLogging = true })
         }
             .environment(\.tabCoordinator, tabs)
             .sheet(isPresented: $quickLogging, onDismiss: {
@@ -199,8 +199,18 @@ struct AlmanacApp: App {
             .background(AlmanacPalette.canvas.ignoresSafeArea())
     }
 
-    @ViewBuilder
+    /// The selected tab's root, rebuilt when its tab is tapped again.
+    ///
+    /// The coordinator's paths only hold the routes it pushed. A screen pushed
+    /// by a plain `NavigationLink { … }` — Settings → All reminders, a trend's
+    /// detail — is not in any path, so clearing the path alone would leave it
+    /// on screen. A new identity is the one thing that pops those too.
     private var selectedDestination: some View {
+        tabRoot.id(tabs.rootIdentity(for: tabs.selected))
+    }
+
+    @ViewBuilder
+    private var tabRoot: some View {
         switch tabs.selected {
         case .today:
             ReadinessDashboardView(
@@ -221,14 +231,14 @@ struct AlmanacApp: App {
             // *into* Trends, that is the change where Trends adopts the
             // coordinator's path, not a wrapper added here.
             TrendsView(db: model.db)
-        case .modules:
+        case .journal:
             // `appShell` only renders when the store opened, and `db` is
             // assigned just before it, so this unwrap cannot fail in practice.
             // The `else` is there because "cannot fail in practice" is not the
             // same as "cannot fail", and a menu that silently vanishes is worse
             // than one that says why.
             if let db = model.db {
-                ModulesView(
+                JournalView(
                     db: db,
                 labModel: model,
                 hydrationModel: hydrationModel,
@@ -243,24 +253,66 @@ struct AlmanacApp: App {
                     notificationModel: notificationModel
                 )
             } else {
-                ContentUnavailableView("Modules unavailable",
-                                       systemImage: AlmanacIcon.modules,
+                ContentUnavailableView("Journal unavailable",
+                                       systemImage: AlmanacIcon.journal,
                                        description: Text("Almanac’s database is not open. Restart the app to try again."))
             }
+        case .settings:
+            // On the coordinator's path, like Journal, so a route the
+            // Settings tab owns — Profile — can be pushed from anywhere.
+            NavigationStack(path: tabs.path(for: .settings)) {
+                SettingsView(
+                    model: hydrationModel,
+                    labModel: model,
+                    healthModel: healthModel,
+                    trackingModel: trackingModel,
+                    notificationModel: notificationModel
+                )
+                .navigationDestination(for: AppRoute.self) { route in
+                    settingsDestination(for: route)
+                }
+            }
+        }
+    }
+
+    /// The screens the Settings tab's stack can push. A route lands on the
+    /// stack of the tab it names, so only `.settings` routes arrive here:
+    /// Profile, and the rows Profile pushes on top of itself
+    /// (`AppRoute.profileRows`). The rest are Journal's and are drawn by
+    /// `JournalView`.
+    @ViewBuilder
+    private func settingsDestination(for route: AppRoute) -> some View {
+        switch route {
+        case .profile:
+            if let db = model.db {
+                ProfileView(db: db, readinessModel: readinessModel)
+            }
+        case .circadian:
+            if let db = model.db {
+                CircadianView(db: db, notificationModel: notificationModel)
+            }
+        case .bodyCircumference:
+            if let db = model.db {
+                BodyCircumferenceView(db: db, healthModel: healthModel)
+            }
+        case .bodyComposition:
+            MeasurementsView(db: model.db, trackingModel: trackingModel)
+        case .bodyLog:
+            QuickBodyLogView(db: model.db, trackingModel: trackingModel, isFastDay: fastingModel.isFastDay)
+        default:
+            EmptyView()
         }
     }
 }
 
 
 private struct AlmanacNavigationBar: View {
-    @Binding var selection: AppTab
+    let selection: AppTab
+    /// Every tap, including one on the tab already showing — that one pops
+    /// the tab to its root, so the bar reports it rather than swallowing it
+    /// as a no-op assignment.
+    let select: (AppTab) -> Void
     let quickLog: () -> Void
-    /// The quick-log action's own column. The bar has three destinations and
-    /// one action, so the action gets a fixed column and the three tabs share
-    /// what is left. Today and Trends sit in one half-width group and Modules
-    /// in the other, which is what puts the action on the bar's true
-    /// centreline: two equal halves with a fixed column between them.
-    private static let quickLogColumn: CGFloat = 68
 
     /// A destination's icon well, the gap under it, and the one caption line
     /// below that. These three are the tab row's vertical geometry, and both
@@ -270,41 +322,29 @@ private struct AlmanacNavigationBar: View {
     private static let iconGap: CGFloat = 3
     private static let captionLine: CGFloat = 15
 
-    /// How far the quick-log action is lifted to sit on the tab icons' line.
-    /// A destination column is `iconWell + iconGap + captionLine` tall and is
-    /// centred in the row, which leaves its icon well sitting high in that
-    /// column; the action is full height, so it is raised by half of
-    /// everything below the icon well to share that line rather than hang low
-    /// against its neighbours.
-    private static let iconLineLift: CGFloat = (iconGap + captionLine) / 2
-
     var body: some View {
+        // Five equal columns from `AppBar.slots`: four destinations and the
+        // action third, on the bar's centreline. Equal columns are the whole
+        // layout — the old two-halves-and-a-fixed-column arithmetic is what
+        // spaced the targets unevenly.
         HStack(spacing: 0) {
-            // Built from `AppTab.barGroup` rather than written out. The bar's
-            // layout arithmetic — two equal halves with a fixed column between
-            // them — is what puts the quick-log action on the true centreline,
-            // and a hand-written `HStack` of three buttons is a second place
-            // for that arithmetic to live.
-            HStack(spacing: 0) {
-                ForEach(AppTab.allCases.filter { $0.barGroup == .leadingHalf }) { tab in
-                    destinationButton(tab)
+            ForEach(AppBar.slots) { slot in
+                switch slot {
+                case .destination(let tab): destinationButton(tab)
+                case .quickAdd: quickLogButton
                 }
             }
-            .frame(maxWidth: .infinity)
-
-            quickLogButton
-
-            HStack(spacing: 0) {
-                ForEach(AppTab.allCases.filter { $0.barGroup == .trailingHalf }) { tab in
-                    destinationButton(tab)
-                }
-            }
-            .frame(maxWidth: .infinity)
         }
+        // On an iPad the columns would otherwise spread across the whole
+        // width. Capped at the content column's width and centred, so the bar
+        // lines up with the screen above it; the surface still runs edge to
+        // edge.
+        .frame(maxWidth: AlmanacMetrics.contentWidth)
         .frame(height: 66)
         .padding(.horizontal, 8)
         .padding(.top, 6)
         .padding(.bottom, 10)
+        .frame(maxWidth: .infinity)
         .background(AlmanacPalette.surface)
         .overlay(alignment: .top) {
             AlmanacRule()
@@ -320,12 +360,10 @@ private struct AlmanacNavigationBar: View {
     /// The quick-log action, in the bar's own flow rather than floated above
     /// it. It used to be an overlay offset upward out of the bar, which put
     /// the top of a 52pt target over the scrolling content underneath — a tap
-    /// there went to quick log instead of the row that owned it — and
-    /// overlapped the right edge of the Trends button, because a
-    /// fixed-width spacer between three `.frame(maxWidth: .infinity)`
-    /// buttons cannot centre anything. In the flow the column is 68pt, so no
-    /// destination can sit under it. The shadow replaces the overlap as the
-    /// thing that lifts the action off the bar.
+    /// there went to quick log instead of the row that owned it. In the flow
+    /// it has a column of its own, so no destination can sit under it. The
+    /// shadow replaces the overlap as the thing that lifts the action off the
+    /// bar.
     private var quickLogButton: some View {
         Button(action: quickLog) {
             Image(systemName: AlmanacIcon.quickAdd)
@@ -337,18 +375,23 @@ private struct AlmanacNavigationBar: View {
                 .shadow(color: AlmanacPalette.accent.opacity(0.28), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
-        .frame(width: Self.quickLogColumn)
+        .frame(maxWidth: .infinity)
+        // Lifted to sit on the tab icons' line. A destination column is
+        // `iconWell + iconGap + captionLine` tall and centred in the row,
+        // which leaves its icon well high in that column; the action is full
+        // height, so it is raised by half of everything below the icon well
+        // rather than hanging low against its neighbours.
         .alignmentGuide(VerticalAlignment.center) { dim in
-            dim.height / 2 + Self.iconLineLift
+            dim.height / 2 + (Self.iconGap + Self.captionLine) / 2
         }
-        .accessibilityLabel("Quick log")
-        .accessibilityHint("Choose water, food, training, or a body measurement")
+        .accessibilityLabel("Add a record")
+        .accessibilityHint("Choose water, food, training, or digestion")
         .accessibilityIdentifier("quick-log")
     }
 
     private func destinationButton(_ tab: AppTab) -> some View {
         Button {
-            selection = tab
+            select(tab)
         } label: {
             VStack(spacing: Self.iconGap) {
                 Image(systemName: tab.icon)
@@ -358,10 +401,13 @@ private struct AlmanacNavigationBar: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 Text(tab.title)
                     .font(AlmanacTypography.font(.caption))
+                    // Five captions in one row: at xLarge, "Settings" is ~62pt
+                    // in a ~75pt slot, so a larger size truncates it. The
+                    // clamp is on the caption only; VoiceOver reads the label.
                     .dynamicTypeSize(...DynamicTypeSize.xLarge)
             }
             .foregroundStyle(selection == tab ? AlmanacPalette.accent : AlmanacPalette.textSecondary)
-            .frame(maxWidth: .infinity, minHeight: 50)
+            .frame(maxWidth: .infinity, minHeight: AlmanacMetrics.minimumControl)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -370,7 +416,7 @@ private struct AlmanacNavigationBar: View {
         // The bar is hand-built rather than a `TabView`, which means it does not
         // inherit the system's handle on its own items — and a custom bar with
         // no identifier is ambiguous to every test the moment a screen is
-        // pushed. "Modules" then names two buttons at once: this tab and the
+        // pushed. "Journal" then names two buttons at once: this tab and the
         // navigation bar's back button, which is labelled with the screen it
         // came from. That is not a test-only problem; it is the same collision a
         // screen reader user hits, so the identifier is part of the bar rather

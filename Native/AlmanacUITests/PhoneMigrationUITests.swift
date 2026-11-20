@@ -55,7 +55,6 @@ final class PhoneMigrationUITests: XCTestCase {
         XCTAssertTrue(restore.waitForExistence(timeout: 10),
                       "the new backup is not listed as restorable")
         back(from: "Backup & restore")
-        back(from: "Settings")
 
         // A change the backup does not hold.
         openProfile()
@@ -99,7 +98,6 @@ final class PhoneMigrationUITests: XCTestCase {
         XCTAssertTrue(app.element("backup-needs-email").waitForExistence(timeout: 5),
                       "Backup & restore does not say a backup needs an email")
         back(from: "Backup & restore")
-        back(from: "Settings")
 
         openProfile()
         saveEmail("not-an-email")
@@ -120,7 +118,6 @@ final class PhoneMigrationUITests: XCTestCase {
         XCTAssertTrue(create.isEnabled, "Create backup stays disabled with a valid email on the profile")
         XCTAssertFalse(app.element("backup-needs-email").exists)
         back(from: "Backup & restore")
-        back(from: "Settings")
 
         openProfile()
         saveEmail(original.isEmpty ? "name@example.com" : original)
@@ -135,15 +132,11 @@ final class PhoneMigrationUITests: XCTestCase {
                        "the app refused to open: \(app.staticTexts.allElementsBoundByIndex.map(\.label))")
     }
 
-    /// Checked, so a lost tab tap is named as one (`openModulesTab`).
-    private func openModules() {
-        app.openModulesTab()
-    }
-
+    /// Settings → Profile. Checked, so a lost tab tap is named as one.
     private func openProfile() {
-        openModules()
-        let row = app.buttons["Profile"]
-        XCTAssertTrue(app.reveal(row), "no Profile row in Modules")
+        app.openSettingsTab()
+        let row = app.buttons["settings-profile"]
+        XCTAssertTrue(app.reveal(row), "no Profile row in Settings")
         XCTAssertTrue(app.waitUntilSettled(row), "the Profile row's frame kept moving")
         row.tap()
         XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 10),
@@ -181,11 +174,7 @@ final class PhoneMigrationUITests: XCTestCase {
     }
 
     private func openBackups() {
-        openModules()
-        let settings = app.buttons["Settings"]
-        XCTAssertTrue(app.reveal(settings), "Settings is not offered")
-        settings.tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+        app.openSettingsTab()
         let link = app.buttons["Backup & restore"]
         XCTAssertTrue(app.reveal(link), "Settings does not offer Backup & restore")
         link.tap()
@@ -241,8 +230,8 @@ final class PhoneMigrationUITests: XCTestCase {
         back(from: "Profile")
     }
 
-    /// The bar's back button, not its Save: the custom tab bar does not pop a
-    /// stack, so every screen opened is left the way it was entered.
+    /// The navigation bar's back button, not its Save, so every screen opened
+    /// is left the way it was entered.
     private func back(from title: String) {
         let button = app.navigationBars[title].buttons
             .matching(NSPredicate(format: "label != %@", "Save")).firstMatch

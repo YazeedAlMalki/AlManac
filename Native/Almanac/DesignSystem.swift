@@ -253,6 +253,10 @@ enum AlmanacMetrics {
     static let cardRadius: CGFloat = 14
     static let controlRadius: CGFloat = 10
     static let minimumControl: CGFloat = 50
+    /// The widest a screen's content column grows, so a line of text or a row
+    /// of controls stays readable on an iPad. The bottom bar's row is capped
+    /// at the same width, so it lines up with the screen above it.
+    static let contentWidth: CGFloat = 760
     /// The weight of a rule. One value, because rules are the structural
     /// device and a screen showing them at two weights has no hierarchy —
     /// `docs/ui/measure.sh` reported 0.33pt, 0.67pt and 1.00pt on Today.

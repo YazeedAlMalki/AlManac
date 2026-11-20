@@ -283,14 +283,7 @@ final class AllergenFilterUITests: XCTestCase {
     }
 
     private func openProfile() throws {
-        app.openModulesTab()
-
-        let row = app.buttons["Profile"]
-        for _ in 0..<12 where !row.exists { app.swipeUp() }
-        XCTAssertTrue(row.waitForExistence(timeout: 5), "no Profile row in Modules")
-        row.tap()
-        XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 10),
-                      "Profile never opened: \(app.navigationBars.allElementsBoundByIndex.map(\.identifier))")
+        app.openProfile()
     }
 
     /// Quick Log → Food → Select food.
@@ -299,7 +292,7 @@ final class AllergenFilterUITests: XCTestCase {
     /// other way would not catch a regression where the search has become
     /// unreachable, which is the same class of bug as the one this file is about.
     private func openFoodSearch() throws {
-        let quickLog = app.buttons["Quick log"]
+        let quickLog = app.buttons["quick-log"]
         XCTAssertTrue(quickLog.waitForExistence(timeout: 10),
                       "no Quick log tab: \(app.buttons.allElementsBoundByIndex.map(\.label))")
         quickLog.tap()

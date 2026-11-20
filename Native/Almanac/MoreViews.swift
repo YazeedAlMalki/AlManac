@@ -3,7 +3,7 @@ import AlmanacCore
 import Combine
 import Foundation
 
-/// The Modules menu.
+/// The Journal index: the modules, grouped.
 ///
 /// **Generated from `AppRoute.menu`, not written out.** The list of screens and
 /// the list of things you can be navigated to are the same list, which is the
@@ -16,7 +16,7 @@ import Foundation
 /// is one `case` plus one `switch` arm in `AppRoute.tab` — the latter
 /// compiler-enforced.
 @MainActor
-struct ModulesView: View {
+struct JournalView: View {
     /// Non-optional, and the callers make that true.
     ///
     /// Half the screens behind this menu need a database outright — they open
@@ -48,7 +48,7 @@ struct ModulesView: View {
     private var emptyPath: Binding<[AppRoute]> { .constant([]) }
 
     var body: some View {
-        NavigationStack(path: tabs?.path(for: .modules) ?? emptyPath) {
+        NavigationStack(path: tabs?.path(for: .journal) ?? emptyPath) {
             List {
                 Section {
                     Text("Everything you enter stays in Almanac’s local database on this device. Apple Health is used only for the connections you enable.")
@@ -70,7 +70,7 @@ struct ModulesView: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(AlmanacPalette.canvas)
-            .navigationTitle("Modules")
+            .navigationTitle("Journal")
             .toolbarBackground(AlmanacPalette.canvas, for: .navigationBar)
             .almanacScreen()
             .navigationDestination(for: AppRoute.self) { route in
@@ -101,10 +101,6 @@ struct ModulesView: View {
             ContextTagsView(db: db, trackingModel: trackingModel)
         case .prayer:
             PrayerView(model: prayerModel, notificationModel: notificationModel)
-        case .circadian:
-            CircadianView(db: db, notificationModel: notificationModel)
-        case .bodyCircumference:
-            BodyCircumferenceView(db: db, healthModel: healthModel)
         case .vitals:
             VitalsView(db: db, readinessModel: readinessModel, healthModel: healthModel)
         case .laboratory:
@@ -113,26 +109,15 @@ struct ModulesView: View {
             LabImportHistoryView(model: labModel)
         case .timeline:
             DayTimelineView(db: db)
-        case .bodyComposition:
-            MeasurementsView(db: db, trackingModel: trackingModel)
-        case .bodyLog:
-            QuickBodyLogView(db: db, trackingModel: trackingModel, isFastDay: fastingModel.isFastDay)
         case .digestion:
             DigestionHistoryView(db: db)
-        case .profile:
-            ProfileView(db: db, readinessModel: readinessModel)
-        case .settings:
-            SettingsView(
-                model: hydrationModel,
-                labModel: labModel,
-                healthModel: healthModel,
-                trackingModel: trackingModel,
-                notificationModel: notificationModel
-            )
-        // The tab roots. Reached by pushing a tab's own root onto itself, which
-        // no caller does — the bar switches tabs instead — so they are here only
-        // because `AppRoute` is exhaustive and this switch has to be too.
-        case .todayRoot, .trendsRoot, .trendsDetail:
+        // The tab roots, Profile and Profile's rows. A route is pushed onto the
+        // stack of the tab it names, so these never reach Journal's: the roots
+        // are drawn by `AlmanacApp.selectedDestination`, and Profile and its
+        // rows by the Settings tab's stack. They are here only because
+        // `AppRoute` is exhaustive and this switch has to be too.
+        case .todayRoot, .trendsRoot, .trendsDetail, .settingsRoot, .profile,
+             .circadian, .bodyCircumference, .bodyComposition, .bodyLog:
             EmptyView()
         }
     }
