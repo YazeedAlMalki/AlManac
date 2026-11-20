@@ -150,6 +150,7 @@ final class CrossTabNavigationUITests: XCTestCase {
         }
         XCTAssertFalse(app.buttons["quicklog-destination-body"].exists,
                        "Quick Log still offers the body logger")
+    }
 
     /// VoiceOver reads the bar in its visual order: Today, Trends, the
     /// action, Journal, Settings. A query's elements come back in
