@@ -57,7 +57,9 @@ final class PrivacyUITests: XCTestCase {
         // Every table of a populated simulator database is read and written, so
         // allow more than a minute.
         XCTAssertTrue(app.buttons["settings-share-export"].waitForExistence(timeout: 180),
-                      "no export was offered")
+                      "no export was offered; on screen: "
+                      + "\(app.buttons.allElementsBoundByIndex.map(\.identifier)) "
+                      + "\(app.staticTexts.allElementsBoundByIndex.map(\.label))")
         XCTAssertTrue(app.staticTexts.allElementsBoundByIndex.contains { $0.label.contains("not encrypted") },
                       "the export screen does not say the file is not encrypted: "
                       + "\(app.staticTexts.allElementsBoundByIndex.map(\.label))")

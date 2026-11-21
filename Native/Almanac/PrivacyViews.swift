@@ -71,6 +71,13 @@ struct DataRightsRows: View {
                 }
                 .disabled(isExporting)
                 .accessibilityIdentifier("settings-export-data")
+                // Presentations hang off one row each, not off the Group: a modifier
+                // on a Group is copied onto every row it holds, and two rows
+                // watching one binding left the CI run with no sheet (2026-11-21).
+                .sheet(item: $exportedFile, onDismiss: { DataExportFiles.removeAll() }) { exported in
+                    DataExportSheet(file: exported.url)
+                }
+                .editorError($error)
             }
             Button(role: .destructive) {
                 confirmErase = true
@@ -87,10 +94,6 @@ struct DataRightsRows: View {
                 Text("All your records, backups and settings on this phone are deleted and cannot be recovered. Data already in Apple Health stays there; remove it in the Health app. Backups you shared with others are not affected.")
             }
         }
-        .sheet(item: $exportedFile, onDismiss: { DataExportFiles.removeAll() }) { exported in
-            DataExportSheet(file: exported.url)
-        }
-        .editorError($error)
     }
 
     private func export(_ db: Database) {
@@ -100,7 +103,7 @@ struct DataRightsRows: View {
         Task {
             do {
                 // Reads every table of the person's records; keep it off the main actor.
-                try await Task.detached(priority: .userInitiated) {
+                _ = try await Task.detached(priority: .userInitiated) {
                     try DataExport(db: db).write(to: file.path)
                 }.value
                 exportedFile = ExportedFile(url: file)
