@@ -97,6 +97,10 @@ struct SettingsView: View {
                 NavigationLink("Attributions") {
                     AttributionsView(db: labModel.db)
                 }
+                NavigationLink("Privacy") {
+                    PrivacyNoticeView()
+                }
+                .accessibilityIdentifier("settings-privacy")
             }
             Section("Health") {
                 Toggle("Track left/right arms and thighs", isOn: Binding(
@@ -126,6 +130,7 @@ struct SettingsView: View {
                         BackupView(db: db)
                     }
                 }
+                DataRightsRows(db: labModel.db)
             }
         }
         .scrollContentBackground(.hidden)

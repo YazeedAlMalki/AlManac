@@ -13490,6 +13490,216 @@
           }
         }
       }
+    },
+    "Modules" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأقسام"
+          }
+        }
+      }
+    },
+    "Privacy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخصوصية"
+          }
+        }
+      }
+    },
+    "Where your data lives" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أين تُحفَظ بياناتك"
+          }
+        }
+      }
+    },
+    "Everything you record stays on this phone. Almanac has no account, no server and no analytics, and it makes no network requests of its own. A link to a source opens in your browser only when you tap it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل ما تسجّله يبقى على هذا الهاتف. ليس لدى Almanac حساب ولا خادم ولا تحليلات، ولا يُجري أي طلبات شبكة بنفسه. لا يُفتح رابط مصدر في متصفحك إلا عندما تنقر عليه."
+          }
+        }
+      }
+    },
+    "What Almanac keeps" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما يحتفظ به Almanac"
+          }
+        }
+      }
+    },
+    "The records you enter, or choose to bring in from Apple Health: meals, water, training, body measurements, sleep, laboratory results, mood, digestion, fasting and prayer settings, and the profile details you give it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السجلات التي تدخلها أو تختار جلبها من تطبيق «الصحة» من Apple: الوجبات والماء والتمارين وقياسات الجسم والنوم ونتائج المختبر والمزاج والهضم وإعدادات الصيام والصلاة، وبيانات الملف الشخصي التي تقدّمها له."
+          }
+        }
+      }
+    },
+    "Permissions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الأذونات"
+          }
+        }
+      }
+    },
+    "Apple Health: Almanac reads and writes only the kinds of data you allow. Location: used once, when you ask for it, to work out prayer times; the coordinates are kept on this phone. Notifications: reminders are scheduled on this phone." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تطبيق «الصحة» من Apple: يقرأ Almanac ويكتب فقط أنواع البيانات التي تسمح بها. الموقع: يُستخدم مرة واحدة عندما تطلبه لحساب مواقيت الصلاة، وتبقى الإحداثيات على هذا الهاتف. الإشعارات: تُجدوَل التذكيرات على هذا الهاتف."
+          }
+        }
+      }
+    },
+    "Sharing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المشاركة"
+          }
+        }
+      }
+    },
+    "Nothing leaves your phone unless you share it. A backup you share is encrypted with a passphrase you choose. An export of your data is a readable file and is not encrypted, so share it only with people and apps you trust." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يغادر شيء هاتفك إلا إذا شاركته. النسخة الاحتياطية التي تشاركها تُشفَّر بعبارة مرور تختارها. أما تصدير بياناتك فهو ملف مقروء وغير مشفّر، فلا تشاركه إلا مع أشخاص وتطبيقات تثق بهم."
+          }
+        }
+      }
+    },
+    "Your choices" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خياراتك"
+          }
+        }
+      }
+    },
+    "You can export your data, or erase everything, from Settings. You can change permissions in iOS Settings, or delete the app. Data already in Apple Health stays there until you remove it in the Health app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكنك تصدير بياناتك أو مسح كل شيء من الإعدادات. ويمكنك تغيير الأذونات من إعدادات iOS أو حذف التطبيق. تبقى البيانات الموجودة بالفعل في تطبيق «الصحة» فيه إلى أن تزيلها من هناك."
+          }
+        }
+      }
+    },
+    "Food, exercise and laboratory reference data comes from public datasets credited under Attributions." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأتي بيانات المراجع الغذائية وبيانات التمارين والمختبر من مجموعات بيانات عامة مذكورة ضمن «حقوق المصادر»."
+          }
+        }
+      }
+    },
+    "Export my data…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصدير بياناتي…"
+          }
+        }
+      }
+    },
+    "Export my data" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصدير بياناتي"
+          }
+        }
+      }
+    },
+    "Erase all data…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسح كل البيانات…"
+          }
+        }
+      }
+    },
+    "Erase everything?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسح كل شيء؟"
+          }
+        }
+      }
+    },
+    "Erase everything and restart" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسح كل شيء وإعادة التشغيل"
+          }
+        }
+      }
+    },
+    "All your records, backups and settings on this phone are deleted and cannot be recovered. Data already in Apple Health stays there; remove it in the Health app. Backups you shared with others are not affected." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُحذَف كل سجلاتك ونسخك الاحتياطية وإعداداتك على هذا الهاتف ولا يمكن استرجاعها. تبقى البيانات الموجودة بالفعل في تطبيق «الصحة» فيه، فأزلها من هناك. لا تتأثر النسخ الاحتياطية التي شاركتها مع الآخرين."
+          }
+        }
+      }
+    },
+    "Share export" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مشاركة التصدير"
+          }
+        }
+      }
+    },
+    "This file is a readable copy of your records. It is not encrypted. Share it only with people and apps you trust." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الملف نسخة مقروءة من سجلاتك وهو غير مشفّر. لا تشاركه إلا مع أشخاص وتطبيقات تثق بهم."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

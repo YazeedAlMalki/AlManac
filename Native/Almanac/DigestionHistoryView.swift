@@ -11,7 +11,7 @@ import AlmanacCore
 /// would be that advisory arriving without the review.
 ///
 /// **Every grade and colour carries words** (BRD §6.20). Rows read "Type 4,
-/// Smooth, soft sausage" and "Colour grade 8 of 8, Grade 8 — dark brown"; the
+/// Smooth, soft log" and "Colour grade 8 of 8, Grade 8 — dark brown"; the
 /// chart's bars are one neutral colour and say what they count in their
 /// accessibility labels, so nothing on this screen depends on seeing a colour.
 @MainActor

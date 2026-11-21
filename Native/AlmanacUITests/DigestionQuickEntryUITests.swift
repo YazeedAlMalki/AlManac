@@ -9,13 +9,13 @@ private enum BristolType: Int, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .type1: return "Separate hard lumps"
-        case .type2: return "Lumpy, sausage-shaped"
-        case .type3: return "Sausage-shaped, smooth"
-        case .type4: return "Smooth, soft sausage"
-        case .type5: return "Soft blobs with clear edges"
-        case .type6: return "Mushy pieces"
-        case .type7: return "Entirely liquid"
+        case .type1: return "Hard pellets"
+        case .type2: return "Hard, knobbly log"
+        case .type3: return "Firm log with cracks"
+        case .type4: return "Smooth, soft log"
+        case .type5: return "Soft, separate lumps"
+        case .type6: return "Mushy, ragged pieces"
+        case .type7: return "Watery"
         }
     }
 }
