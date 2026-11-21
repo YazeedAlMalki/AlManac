@@ -193,51 +193,64 @@ struct AlmanacApp: App {
 
     @ViewBuilder
     private var selectedDestination: some View {
-        switch tabs.selected {
-        case .today:
-            ReadinessDashboardView(
-                model: readinessModel,
-                trainingModel: trainingModel,
-                hydrationModel: hydrationModel,
-                nutritionModel: nutritionModel,
-                trackingModel: trackingModel,
-                fastingModel: fastingModel
+        // Prototype-only branch: a launch argument names one of the three Today
+        // directions under review. An ordinary launch returns nil here and every
+        // line below is exactly what shipped. See `Prototypes/`.
+        if let direction = PrototypeTodayHost.requestedDirection() {
+            PrototypeTodayHost(
+                direction: direction,
+                readiness: readinessModel,
+                hydration: hydrationModel,
+                nutrition: nutritionModel,
+                training: trainingModel
             )
-        case .trends:
-            // Deliberately *not* wrapped in the coordinator's stack. Trends brings
-            // its own `NavigationStack` and pushes its own links inside it, and
-            // nesting a second one inside the first is a back button that pops
-            // the wrong stack. It is also the only tab with nothing outside to
-            // reach it — a cross-tab link names a feature, and Trends is a
-            // feature only the bar links to. If a route ever needs to push
-            // *into* Trends, that is the change where Trends adopts the
-            // coordinator's path, not a wrapper added here.
-            TrendsView(db: model.db)
-        case .modules:
-            // `appShell` only renders when the store opened, and `db` is
-            // assigned just before it, so this unwrap cannot fail in practice.
-            // The `else` is there because "cannot fail in practice" is not the
-            // same as "cannot fail", and a menu that silently vanishes is worse
-            // than one that says why.
-            if let db = model.db {
-                ModulesView(
-                    db: db,
-                labModel: model,
-                hydrationModel: hydrationModel,
-                nutritionModel: nutritionModel,
-                trainingModel: trainingModel,
-                programModel: programModel,
-                healthModel: healthModel,
-                readinessModel: readinessModel,
-                trackingModel: trackingModel,
-                prayerModel: prayerModel,
-                fastingModel: fastingModel,
-                    notificationModel: notificationModel
+        } else {
+            switch tabs.selected {
+            case .today:
+                ReadinessDashboardView(
+                    model: readinessModel,
+                    trainingModel: trainingModel,
+                    hydrationModel: hydrationModel,
+                    nutritionModel: nutritionModel,
+                    trackingModel: trackingModel,
+                    fastingModel: fastingModel
                 )
-            } else {
-                ContentUnavailableView("Modules unavailable",
-                                       systemImage: AlmanacIcon.modules,
-                                       description: Text("Almanac’s database is not open. Restart the app to try again."))
+            case .trends:
+                // Deliberately *not* wrapped in the coordinator's stack. Trends brings
+                // its own `NavigationStack` and pushes its own links inside it, and
+                // nesting a second one inside the first is a back button that pops
+                // the wrong stack. It is also the only tab with nothing outside to
+                // reach it — a cross-tab link names a feature, and Trends is a
+                // feature only the bar links to. If a route ever needs to push
+                // *into* Trends, that is the change where Trends adopts the
+                // coordinator's path, not a wrapper added here.
+                TrendsView(db: model.db)
+            case .modules:
+                // `appShell` only renders when the store opened, and `db` is
+                // assigned just before it, so this unwrap cannot fail in practice.
+                // The `else` is there because "cannot fail in practice" is not the
+                // same as "cannot fail", and a menu that silently vanishes is worse
+                // than one that says why.
+                if let db = model.db {
+                    ModulesView(
+                        db: db,
+                    labModel: model,
+                    hydrationModel: hydrationModel,
+                    nutritionModel: nutritionModel,
+                    trainingModel: trainingModel,
+                    programModel: programModel,
+                    healthModel: healthModel,
+                    readinessModel: readinessModel,
+                    trackingModel: trackingModel,
+                    prayerModel: prayerModel,
+                    fastingModel: fastingModel,
+                        notificationModel: notificationModel
+                    )
+                } else {
+                    ContentUnavailableView("Modules unavailable",
+                                           systemImage: AlmanacIcon.modules,
+                                           description: Text("Almanac’s database is not open. Restart the app to try again."))
+                }
             }
         }
     }
