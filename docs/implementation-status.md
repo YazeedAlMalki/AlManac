@@ -1,6 +1,7 @@
 # Almanac implementation status
 
-Updated 2026-11-20 (latest): the 2026-10-22 bottom bar (Journal, Settings tab) merged onto master; Profile and its rows now live on the Settings tab; not re-scored.
+Updated 2026-11-21 (latest): the security audit's non-duplicate work merged onto master (restore refuses a foreign schema, SQLite built without FTS5 and extension loading, Almanac's own Bristol wording, a privacy notice, export and erase in Settings); not re-scored, and not yet run on a device.
+Updated 2026-11-20: the 2026-10-22 bottom bar (Journal, Settings tab) merged onto master; Profile and its rows now live on the Settings tab; not re-scored.
 Updated 2026-11-03: fresh re-score of `ede0763`; nothing moves (1,130 / 1,200); both UI failures root-caused.
 Updated 2026-10-22: shared backups are passphrase-encrypted (`BackupEncryption`, CONTEXT.md "Backup encryption"); not re-scored.
 Updated 2026-10-22: the bottom bar — Today, Trends, [+], Journal, Settings; not re-scored.

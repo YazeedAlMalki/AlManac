@@ -62,10 +62,11 @@ struct AttributionTests {
         }
     }
 
-    /// The seven Bristol type names are published wording (Lewis & Heaton,
-    /// 1997), shipped in the digestion screens, so the scale is a bundled source
-    /// and needs an entry like any dataset. Its licence has not been
-    /// identified, and the entry says that rather than naming one.
+    /// The digestion screens use the seven-type scale of Lewis & Heaton (1997),
+    /// so the scale is a bundled source and needs an entry like any dataset. The
+    /// type names and summaries are Almanac's own words (audit P0-1, 2026-10-22);
+    /// the entry credits the paper's origin of the scale and says that nothing is
+    /// reproduced, rather than naming a licence nobody granted.
     @Test("The Bristol Stool Form Scale is a bundled source, credited to its paper")
     func bristolScaleIsCredited() throws {
         #expect(AttributionCatalog.bundledSourceIds.contains("bristol-stool-form-scale"))
@@ -75,9 +76,9 @@ struct AttributionTests {
         #expect(entry.sourceURL == "https://doi.org/10.3109/00365529709011203")
         #expect(entry.sourceNotice == "Lewis SJ, Heaton KW. Stool form scale as a useful guide to intestinal "
                 + "transit time. Scandinavian Journal of Gastroenterology. 1997;32(9):920–924.")
-        #expect(entry.licenses.map(\.name) == ["No licence identified"],
-                "the licence is unknown and must say so, not borrow an open licence")
-        #expect(entry.isModified, "the in-app summaries are shortened from the published descriptions")
+        #expect(entry.licenses.map(\.name) == ["Credited as the origin of the scale; no text or images reproduced"],
+                "the entry must not borrow an open licence the paper never granted")
+        #expect(entry.isModified, "the in-app names and summaries are Almanac's own wording")
         try AttributionAudit.assertAttributed(["bristol-stool-form-scale"])
     }
 

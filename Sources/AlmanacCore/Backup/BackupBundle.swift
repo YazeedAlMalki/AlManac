@@ -192,7 +192,27 @@ public extension BackupService {
         defer { try? fm.removeItem(at: tmpDir) }
         let restoredFile = tmpDir.appendingPathComponent("restored.sqlite")
         try Data(dbBytes).write(to: restoredFile, options: .atomic)
-        let restored = try Database(path: restoredFile.path)
+        let restored: Database
+        do { restored = try Database(path: restoredFile.path) }
+        catch { throw BackupError.corruptBundle(reason: "database payload is not an Almanac database") }
+        // The payload's schema is compared with this app's own **before** any
+        // statement that could evaluate it. The checksums only prove the bundle
+        // is intact, not who made it, and a restore swaps the whole file in, so
+        // anything the payload defines beyond what the migrations define
+        // (triggers, views, expression indexes, loosened CHECK constraints,
+        // virtual tables) would become part of the live database. Reading
+        // `sqlite_master` evaluates none of them. (Audit finding S-01.)
+        do {
+            guard try schemaObjects(of: restored) == schemaObjects(of: db) else {
+                throw BackupError.corruptBundle(
+                    reason: "database payload is not an Almanac database this app version can restore: "
+                        + "it carries triggers, views, indexes or tables this app version does not define")
+            }
+        } catch let error as BackupError {
+            throw error
+        } catch {
+            throw BackupError.corruptBundle(reason: "database payload is not an Almanac database")
+        }
         let payloadVersion: Int64
         let integrity: String?
         do {
@@ -210,13 +230,6 @@ public extension BackupService {
         // disagree is refused rather than swapped in over a live database.
         guard payloadVersion == expected else {
             throw BackupError.incompatibleSchemaVersion(found: payloadVersion, expected: expected)
-        }
-        // Triggers and views run inside every later write and read. The
-        // checksums only prove the bundle is intact, not who made it, so a
-        // payload may not bring any this app version does not define itself.
-        guard try schemaCode(of: restored) == schemaCode(of: db) else {
-            throw BackupError.corruptBundle(
-                reason: "database payload carries triggers or views this app version does not define")
         }
         try HydrationStore(db: restored).reconcileAfterRestore()
         // Spec line 1942 step 6d: "Rebuild nutrition_window assignments for
@@ -327,11 +340,20 @@ public extension BackupService {
         }
     }
 
-    /// Every trigger and view in `database`, by type, name and definition.
-    private func schemaCode(of database: Database) throws -> Set<String> {
+    /// Every schema object in `database` that the migrations are responsible
+    /// for, by type, name, table and exact definition. SQLite's own bookkeeping
+    /// (`sqlite_sequence`, `sqlite_stat1`, …) is left out, as are the implicit
+    /// indexes it creates for UNIQUE/PRIMARY KEY constraints (no stored `sql`):
+    /// both follow from the definitions that are compared.
+    ///
+    /// Both databases are at the same migration head when this is compared, and
+    /// no code outside the migrations creates schema, so equality is the right
+    /// test: a legitimate backup differs from the live database in rows only.
+    private func schemaObjects(of database: Database) throws -> Set<String> {
         Set(try database.query("""
-            SELECT type || ':' || name || ':' || COALESCE(sql, '') AS k
-            FROM sqlite_master WHERE type IN ('trigger', 'view');
+            SELECT type || char(31) || name || char(31) || tbl_name || char(31) || sql AS k
+            FROM sqlite_master
+            WHERE name NOT LIKE 'sqlite!_%' ESCAPE '!' AND sql IS NOT NULL;
             """).compactMap { $0.string("k") })
     }
 

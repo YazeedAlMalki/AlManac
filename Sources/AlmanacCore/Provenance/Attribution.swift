@@ -133,7 +133,9 @@ public enum AttributionCatalog {
         ),
         // The exercise library's two further sources (owner, 2026-10-19;
         // `ExerciseLibrarySeed`). free-exercise-db's publisher does not say
-        // where its photos come from; the owner accepted that risk.
+        // where its photos come from; the owner accepted that risk, and
+        // re-confirmed keeping them on 2026-10-22 after the security audit
+        // (P0-1; CONTEXT.md, "Exercise photos").
         Attribution(
             sourceId: "free-exercise-db",
             title: "Free Exercise DB exercises and photos",
@@ -226,19 +228,22 @@ public enum AttributionCatalog {
             sourceNotice: "Food Standards Australia New Zealand. Australian Food Composition Database, "
                 + "Release 3. Licensed under CC BY 4.0. FSANZ does not endorse Almanac or its use of the work."
         ),
-        // The seven type names in the digestion screens are the scale's
-        // published wording (`BristolType.displayName`), so the scale is a
-        // bundled source. No licence for it has been identified; the entry
-        // says so rather than naming one. Open item in CONTEXT.md.
+        // The digestion screens use the seven-type scale of Lewis & Heaton. Since
+        // 2026-10-22 (audit P0-1) the type names and summaries are Almanac's own
+        // words and no text or image from the paper is reproduced, so the entry
+        // credits the scale's origin and says so, instead of naming a licence
+        // nobody granted. It stays a bundled source so the credit cannot be
+        // dropped by accident.
         Attribution(
             sourceId: "bristol-stool-form-scale",
             title: "Bristol Stool Form Scale",
             author: "S. J. Lewis and K. W. Heaton, University of Bristol",
             sourceURL: "https://doi.org/10.3109/00365529709011203",
-            licenses: [licenceNotIdentified(workURL: "https://doi.org/10.3109/00365529709011203")],
+            licenses: [LicenseReference(name: "Credited as the origin of the scale; no text or images reproduced",
+                                        url: "https://doi.org/10.3109/00365529709011203")],
             isModified: true,
-            modificationNote: "The seven type names are shown as published; the one-line summary under "
-                + "each is shortened from the published descriptions.",
+            modificationNote: "Almanac describes the seven types in its own words. The numbering and order "
+                + "are the scale's; the names and one-line summaries are not copied from the paper.",
             sourceNotice: "Lewis SJ, Heaton KW. Stool form scale as a useful guide to intestinal "
                 + "transit time. Scandinavian Journal of Gastroenterology. 1997;32(9):920–924."
         ),

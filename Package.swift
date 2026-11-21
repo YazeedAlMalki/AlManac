@@ -21,12 +21,19 @@ let package = Package(
             sources: ["sqlite3.c"],
             publicHeadersPath: "include",
             cSettings: [
-                .define("SQLITE_ENABLE_FTS5"),
+                // FTS5 is not enabled: nothing in the app or its bundled
+                // databases uses it, and every module compiled in is attack
+                // surface for a database file the app did not write (a
+                // restored backup). The restore also refuses any schema the
+                // migrations do not define. (Audit findings S-01, S-05.)
                 .define("SQLITE_ENABLE_JSON1"),
                 .define("SQLITE_DQS", to: "0"),
                 .define("SQLITE_DEFAULT_FOREIGN_KEYS", to: "1"),
                 .define("SQLITE_THREADSAFE", to: "1"),
-                .define("SQLITE_OMIT_DEPRECATED")
+                .define("SQLITE_OMIT_DEPRECATED"),
+                // No runtime extension loading: the app never uses it, and the
+                // amalgamation only omits it by default on VxWorks. (S-04.)
+                .define("SQLITE_OMIT_LOAD_EXTENSION")
             ]
         ),
         // Vendored batoulapps/adhan-swift (MIT) — prayer-time astronomical
